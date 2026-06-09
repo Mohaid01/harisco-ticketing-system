@@ -62,11 +62,17 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
     return;
   }
 
+  const HC_PREFIX = 'hc-';
+  const rawUsername = username.toLowerCase().trim();
+  const normalizedUsername = rawUsername.startsWith(HC_PREFIX)
+    ? rawUsername.slice(HC_PREFIX.length)
+    : rawUsername;
+
   try {
     const db = getDb();
     const user = await db.get(
       'SELECT id, name, email, username, role, avatar, passwordHash FROM users WHERE username = ?',
-      [username.toLowerCase().trim()]
+      [normalizedUsername]
     );
 
     if (!user) {
