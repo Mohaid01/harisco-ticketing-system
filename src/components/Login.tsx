@@ -1,14 +1,15 @@
 import React, { useState } from "react";
 import logoFull from "../assets/harisco-full-logo.png";
-import { User, Lock, ArrowRight, AlertCircle } from "lucide-react";
+import { Lock, ArrowRight, AlertCircle } from "lucide-react";
 import type { AppUser } from "../types";
+import { EMPLOYEE_ID_PREFIX } from "../constants";
 
 interface LoginProps {
   onLoginSuccess: (token: string, user: AppUser) => void;
 }
 
 export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
-  const [username, setUsername] = useState("");
+  const [employeeCode, setEmployeeCode] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -24,7 +25,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ username: `${EMPLOYEE_ID_PREFIX}${employeeCode}`, password }),
       });
 
       const data = await response.json();
@@ -71,31 +72,44 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
         <form onSubmit={handleLogin}>
           <div className="form-group">
             <label htmlFor="login-username" className="form-label">
-              Username
+              Employee ID
             </label>
-            <div style={{ position: "relative" }}>
+            <div style={{ position: "relative", display: "flex" }}>
+              <span
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  padding: "0 12px",
+                  backgroundColor: "var(--bg-secondary)",
+                  border: "1px solid var(--border-color)",
+                  borderRight: "none",
+                  borderRadius: "8px 0 0 8px",
+                  color: "var(--text-muted)",
+                  fontWeight: 600,
+                  fontSize: "14px",
+                  userSelect: "none",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {EMPLOYEE_ID_PREFIX}
+              </span>
               <input
                 id="login-username"
                 type="text"
                 className="form-input"
                 style={{
-                  paddingLeft: "38px",
+                  borderRadius: "0 8px 8px 0",
                   backgroundColor: "var(--bg-primary)",
+                  flex: 1,
                 }}
-                placeholder="Enter your username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                placeholder="12345"
+                maxLength={5}
+                value={employeeCode}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, "");
+                  setEmployeeCode(val);
+                }}
                 required
-              />
-              <User
-                size={16}
-                style={{
-                  position: "absolute",
-                  left: "12px",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  color: "var(--text-muted)",
-                }}
               />
             </div>
           </div>
