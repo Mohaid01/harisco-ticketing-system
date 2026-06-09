@@ -116,22 +116,42 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
         {/* Left Column: Description, Justification, Comments */}
         <div>
           <div className="panel" style={{ padding: '24px', marginBottom: '24px' }}>
-            {/* Description */}
-            <h2 className="panel-title" style={{ fontSize: '0.95rem', marginBottom: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px' }}>
-              Problem Description
-            </h2>
-            <div className="desc-card">{ticket.description}</div>
+            {/* Conditional Details Based on Ticket Type */}
+            {(ticket.type === 'hardware' || ticket.type === 'software') && (
+              <>
+                <h2 className="panel-title" style={{ fontSize: '0.95rem', marginBottom: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px' }}>
+                  Problem Details
+                </h2>
+                <div className="desc-card">{ticket.description}</div>
+              </>
+            )}
 
-            {/* Justification */}
-            <div className="justification-card">
-              <span className="justification-title">
-                <FileText size={14} />
-                Justification & Details
-              </span>
-              <p style={{ color: 'var(--text-primary)', fontSize: '0.9rem' }}>
-                {ticket.justification || 'No custom justification details supplied.'}
-              </p>
-            </div>
+            {ticket.type === 'maintenance' && (
+              <>
+                <h2 className="panel-title" style={{ fontSize: '0.95rem', marginBottom: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px' }}>
+                  Software List
+                </h2>
+                <div className="desc-card">
+                  <ul style={{ paddingLeft: '20px', margin: 0 }}>
+                    {ticket.description.split('\n').map((software, index) => (
+                      <li key={index} style={{ marginBottom: '4px' }}>{software}</li>
+                    ))}
+                  </ul>
+                </div>
+              </>
+            )}
+
+            {ticket.type === 'upgrade' && (
+              <div className="justification-card">
+                <span className="justification-title">
+                  <FileText size={14} />
+                  Justification
+                </span>
+                <p style={{ color: 'var(--text-primary)', fontSize: '0.9rem' }}>
+                  {ticket.justification}
+                </p>
+              </div>
+            )}
 
             {/* Comments Thread */}
             <div className="comments-container">

@@ -30,17 +30,35 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!title.trim() || !description.trim() || !justification.trim()) {
-      setErrorMsg('All fields are required. Please describe the problem and fill in the justification.');
-      return;
+    let finalDescription = description.trim();
+    let finalJustification = justification.trim();
+
+    if (type === 'hardware' || type === 'software') {
+      if (!title.trim() || !finalDescription) {
+        setErrorMsg('Title and Details are required.');
+        return;
+      }
+      finalJustification = 'N/A - Standard Issue';
+    } else if (type === 'maintenance') {
+      if (!title.trim() || !finalDescription) {
+        setErrorMsg('Title and Software List are required.');
+        return;
+      }
+      finalJustification = 'N/A - Software Installation';
+    } else if (type === 'upgrade') {
+      if (!title.trim() || !finalJustification) {
+        setErrorMsg('Title and Justification are required.');
+        return;
+      }
+      finalDescription = 'N/A - System Upgrade';
     }
 
     setErrorMsg(null);
     onSubmit({
       title,
       type,
-      justification,
-      description,
+      justification: finalJustification,
+      description: finalDescription,
     });
 
     // Reset Form
@@ -106,33 +124,51 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
               </select>
             </div>
 
-            {/* Justification */}
-            <div className="form-group">
-              <label htmlFor="ticket-justification-input" className="form-label">Justification / Importance</label>
-              <textarea
-                id="ticket-justification-input"
-                className="form-input"
-                style={{ minHeight: '70px', resize: 'vertical' }}
-                placeholder="Why is this installation, upgrade, or issue fixing required?"
-                value={justification}
-                onChange={(e) => setJustification(e.target.value)}
-                required
-              />
-            </div>
+            {/* Conditional Fields Based on Type */}
+            {(type === 'hardware' || type === 'software') && (
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label htmlFor="ticket-description-input" className="form-label">Details / Troubleshooting Specifics</label>
+                <textarea
+                  id="ticket-description-input"
+                  className="form-input"
+                  style={{ minHeight: '100px', resize: 'vertical' }}
+                  placeholder="Describe specific symptoms or details about this request..."
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  required
+                />
+              </div>
+            )}
 
-            {/* Description */}
-            <div className="form-group" style={{ marginBottom: 0 }}>
-              <label htmlFor="ticket-description-input" className="form-label">Details / Troubleshooting Specifics</label>
-              <textarea
-                id="ticket-description-input"
-                className="form-input"
-                style={{ minHeight: '100px', resize: 'vertical' }}
-                placeholder="Describe specific symptoms or details about this request..."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                required
-              />
-            </div>
+            {type === 'maintenance' && (
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label htmlFor="ticket-description-input" className="form-label">Software List</label>
+                <textarea
+                  id="ticket-description-input"
+                  className="form-input"
+                  style={{ minHeight: '100px', resize: 'vertical' }}
+                  placeholder="Enter one software per line..."
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  required
+                />
+              </div>
+            )}
+
+            {type === 'upgrade' && (
+              <div className="form-group">
+                <label htmlFor="ticket-justification-input" className="form-label">Justification / Importance</label>
+                <textarea
+                  id="ticket-justification-input"
+                  className="form-input"
+                  style={{ minHeight: '70px', resize: 'vertical' }}
+                  placeholder="Why is this system upgrade required?"
+                  value={justification}
+                  onChange={(e) => setJustification(e.target.value)}
+                  required
+                />
+              </div>
+            )}
           </div>
 
           <div style={{ padding: '16px 24px', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
