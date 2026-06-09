@@ -3,11 +3,20 @@ import { open, Database } from 'sqlite';
 import bcrypt from 'bcryptjs';
 import path from 'path';
 
+import fs from 'fs';
+
 let db: Database<sqlite3.Database, sqlite3.Statement>;
 
 export async function initDb() {
-  const dbPath = path.resolve(process.cwd(), 'database.sqlite');
+  const dbPath = process.env.DB_PATH || path.resolve(process.cwd(), 'database.sqlite');
   
+  if (process.env.DB_PATH) {
+    const dbDir = path.dirname(dbPath);
+    if (!fs.existsSync(dbDir)) {
+      fs.mkdirSync(dbDir, { recursive: true });
+    }
+  }
+
   db = await open({
     filename: dbPath,
     driver: sqlite3.Database
