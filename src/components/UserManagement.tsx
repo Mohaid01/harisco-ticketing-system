@@ -44,8 +44,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
     // Check if username already exists
     if (
       users.some(
-        (u) =>
-          u.username?.toLowerCase() === formattedCode.toLowerCase(),
+        (u) => u.username?.toLowerCase() === formattedCode.toLowerCase(),
       )
     ) {
       setErrorMsg("A user with this employee code already exists.");
