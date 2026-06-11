@@ -24,7 +24,19 @@ interface AuthRequest extends Request {
     email: string;
     role: 'it' | 'employee' | 'manager';
     avatar: string;
+    needsPasswordReset?: number;
   };
+}
+
+interface DbUser {
+  id: string;
+  name: string;
+  email: string;
+  username: string;
+  role: 'it' | 'employee' | 'manager';
+  avatar: string;
+  passwordHash: string;
+  needsPasswordReset: number;
 }
 
 interface DbTicket {
@@ -86,6 +98,7 @@ function authenticateToken(req: AuthRequest, res: Response, next: NextFunction) 
       email: string;
       role: 'it' | 'employee' | 'manager';
       avatar: string;
+      needsPasswordReset?: number;
     };
     next();
   });
@@ -101,8 +114,8 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
 
   try {
     const db = getDb();
-    const user = await db.get(
-      'SELECT id, name, email, username, role, avatar, passwordHash FROM users WHERE LOWER(username) = ?',
+    const user = await db.get<DbUser>(
+      'SELECT id, name, email, username, role, avatar, passwordHash, needsPasswordReset FROM users WHERE LOWER(username) = ?',
       [username.toLowerCase().trim()]
     );
 
@@ -125,6 +138,7 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
       username: user.username,
       role: user.role,
       avatar: user.avatar,
+      needsPasswordReset: user.needsPasswordReset,
     };
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
 
@@ -138,8 +152,66 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
   }
 });
 
-app.get('/api/auth/me', authenticateToken, (req: AuthRequest, res: Response) => {
-  res.json({ user: req.user });
+app.get('/api/auth/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const db = getDb();
+    const user = await db.get<DbUser>(
+      'SELECT id, name, email, username, role, avatar, needsPasswordReset FROM users WHERE id = ?',
+      [req.user?.id]
+    );
+    if (!user) {
+      res.status(404).json({ error: 'User not found.' });
+      return;
+    }
+    res.json({ user });
+  } catch {
+    res.status(500).json({ error: 'Failed to fetch current user.' });
+  }
+});
+
+
+app.post('/api/auth/reset-password', authenticateToken, async (req: AuthRequest, res: Response) => {
+  const { password } = req.body;
+  if (!password || password.trim().length < 4) {
+    res.status(400).json({ error: 'Password must be at least 4 characters long.' });
+    return;
+  }
+
+  try {
+    const db = getDb();
+    const passwordHash = await bcrypt.hash(password, 10);
+    const userId = req.user?.id;
+
+    await db.run(
+      'UPDATE users SET passwordHash = ?, needsPasswordReset = 0 WHERE id = ?',
+      [passwordHash, userId]
+    );
+
+    // Fetch updated user to sign a new token
+    const user = await db.get<DbUser>('SELECT id, name, email, username, role, avatar, needsPasswordReset FROM users WHERE id = ?', [userId]);
+    if (!user) {
+      res.status(404).json({ error: 'User not found.' });
+      return;
+    }
+
+    const payload = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      username: user.username,
+      role: user.role,
+      avatar: user.avatar,
+      needsPasswordReset: user.needsPasswordReset,
+    };
+    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
+
+    res.json({
+      token,
+      user: payload,
+    });
+  } catch {
+    res.status(500).json({ error: 'Failed to reset password.' });
+  }
 });
 
 // Users Routes (IT Administrator only for POST/DELETE, all authenticated users for GET)
@@ -189,7 +261,7 @@ app.post('/api/users', authenticateToken, async (req: AuthRequest, res: Response
     const userId = `usr-${Date.now()}`;
 
     await db.run(
-      'INSERT INTO users (id, name, email, username, role, avatar, passwordHash) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO users (id, name, email, username, role, avatar, passwordHash, needsPasswordReset) VALUES (?, ?, ?, ?, ?, ?, ?, 1)',
       [userId, name, email.toLowerCase().trim(), username.toLowerCase().trim(), role, '', passwordHash]
     );
 

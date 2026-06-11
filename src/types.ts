@@ -6,6 +6,7 @@ export interface AppUser {
   email: string;
   username?: string;
   role: UserRole;
+  needsPasswordReset?: number;
 }
 
 export type TicketType = 'hardware' | 'software' | 'maintenance' | 'upgrade';

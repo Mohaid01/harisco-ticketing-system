@@ -31,7 +31,8 @@ export async function initDb() {
       username TEXT UNIQUE NOT NULL,
       role TEXT CHECK(role IN ('it', 'employee', 'manager')) NOT NULL,
       avatar TEXT NOT NULL,
-      passwordHash TEXT NOT NULL
+      passwordHash TEXT NOT NULL,
+      needsPasswordReset INTEGER DEFAULT 1
     )
   `);
 
@@ -57,6 +58,12 @@ export async function initDb() {
 
   try {
     await db.exec('ALTER TABLE tickets ADD COLUMN quotation REAL');
+  } catch {
+    // Column might already exist, ignore error
+  }
+
+  try {
+    await db.exec('ALTER TABLE users ADD COLUMN needsPasswordReset INTEGER DEFAULT 1');
   } catch {
     // Column might already exist, ignore error
   }
@@ -96,7 +103,7 @@ export async function initDb() {
     const passwordHash = await bcrypt.hash(adminPassword, 10);
 
     await db.run(
-      'INSERT INTO users (id, name, email, username, role, avatar, passwordHash) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO users (id, name, email, username, role, avatar, passwordHash, needsPasswordReset) VALUES (?, ?, ?, ?, ?, ?, ?, 0)',
       [
         'usr-1',
         'Mohid Bin Shahid',

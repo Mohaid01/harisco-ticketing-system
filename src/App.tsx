@@ -7,6 +7,7 @@ import { NewTicketModal } from './components/NewTicketModal';
 import { UserManagement } from './components/UserManagement';
 import { ActivityLog } from './components/ActivityLog';
 import { Login } from './components/Login';
+import { PasswordReset } from './components/PasswordReset';
 import { APP_TITLE, STATUS_LABELS } from './constants';
 import type { Ticket, AppUser, TicketStatus, TicketType, ActiveTab, UserRole } from './types';
 
@@ -33,7 +34,6 @@ function App() {
       }
 
       try {
-        // Fetch current user details to verify session
         const authRes = await fetch('/api/auth/me', {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -43,7 +43,13 @@ function App() {
         }
 
         const authData = await authRes.json();
-        setCurrentUser(authData.user);
+        const user: AppUser = authData.user;
+        setCurrentUser(user);
+
+        if (user.needsPasswordReset === 1) {
+          setLoading(false);
+          return;
+        }
 
         // Fetch tickets
         const ticketsRes = await fetch('/api/tickets', {
@@ -74,6 +80,7 @@ function App() {
 
     fetchSessionAndData();
   }, [token]);
+
 
   // Polling mechanism for real-time updates
   useEffect(() => {
@@ -141,11 +148,17 @@ function App() {
   // Filter IT users for assignees dropdown
   const itUsers = users.filter((u) => u.role === 'it');
 
-  // Handle Login success
   const handleLoginSuccess = (newToken: string, user: AppUser) => {
     localStorage.setItem('harisco_token', newToken);
     setToken(newToken);
     setCurrentUser(user);
+    setActiveTab('dashboard');
+  };
+
+  const handlePasswordResetSuccess = (newToken: string, updatedUser: AppUser) => {
+    localStorage.setItem('harisco_token', newToken);
+    setToken(newToken);
+    setCurrentUser(updatedUser);
     setActiveTab('dashboard');
   };
 
@@ -377,9 +390,18 @@ function App() {
     );
   }
 
-  // Login Screen if not authenticated
   if (!currentUser || !token) {
     return <Login onLoginSuccess={handleLoginSuccess} />;
+  }
+
+  if (currentUser.needsPasswordReset === 1) {
+    return (
+      <PasswordReset
+        token={token}
+        currentUser={currentUser}
+        onResetSuccess={handlePasswordResetSuccess}
+      />
+    );
   }
 
   return (
