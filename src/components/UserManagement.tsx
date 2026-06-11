@@ -45,7 +45,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
     if (
       users.some(
         (u) =>
-          (u as any).username?.toLowerCase() === formattedCode.toLowerCase(),
+          u.username?.toLowerCase() === formattedCode.toLowerCase(),
       )
     ) {
       setErrorMsg("A user with this employee code already exists.");
@@ -224,7 +224,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                   className="user-card-email"
                   style={{ display: "flex", alignItems: "center", gap: "4px" }}
                 >
-                  Code: {formatEmployeeCode((user as any).username || user.id)}
+                  Code: {formatEmployeeCode(user.username || user.id)}
                 </span>
 
                 <div style={{ marginBottom: "16px" }}>

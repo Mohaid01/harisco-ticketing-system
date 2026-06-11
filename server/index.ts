@@ -27,6 +27,43 @@ interface AuthRequest extends Request {
   };
 }
 
+interface DbTicket {
+  id: string;
+  title: string;
+  description: string;
+  type: 'hardware' | 'software' | 'maintenance' | 'upgrade';
+  status: string;
+  justification: string;
+  createdAt: string;
+  updatedAt: string;
+  reporterId: string;
+  reporterName: string;
+  reporterEmail: string;
+  assigneeId: string | null;
+  assigneeName: string | null;
+  quotation: number | null;
+}
+
+interface DbComment {
+  id: string;
+  ticketId: string;
+  authorId: string;
+  authorName: string;
+  authorRole: string;
+  avatar: string;
+  content: string;
+  createdAt: string;
+}
+
+interface DbActivityLog {
+  id: string;
+  ticketId: string;
+  action: string;
+  timestamp: string;
+  performedByName: string;
+  performedByRole: string;
+}
+
 // Authentication Middleware
 function authenticateToken(req: AuthRequest, res: Response, next: NextFunction) {
   const authHeader = req.headers['authorization'];
@@ -111,7 +148,7 @@ app.get('/api/users', authenticateToken, async (req: AuthRequest, res: Response)
     const db = getDb();
     const users = await db.all('SELECT id, name, email, username, role, avatar FROM users');
     res.json(users);
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Failed to fetch users.' });
   }
 });
@@ -191,7 +228,7 @@ app.delete('/api/users/:id', authenticateToken, async (req: AuthRequest, res: Re
     }
 
     res.json({ message: 'User deleted successfully.' });
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Failed to delete user.' });
   }
 });
@@ -204,7 +241,7 @@ app.get('/api/tickets', authenticateToken, async (req: AuthRequest, res: Respons
   try {
     const db = getDb();
     let ticketsQuery = 'SELECT * FROM tickets';
-    let queryParams: any[] = [];
+    const queryParams: (string | undefined)[] = [];
 
     // RBAC: Employee only sees tickets they raised. IT and Manager see all.
     if (userRole === 'employee') {
@@ -212,7 +249,7 @@ app.get('/api/tickets', authenticateToken, async (req: AuthRequest, res: Respons
       queryParams.push(userId);
     }
 
-    const tickets = await db.all(ticketsQuery, queryParams);
+    const tickets = await db.all<DbTicket[]>(ticketsQuery, queryParams);
     
     if (tickets.length === 0) {
       res.json([]);
@@ -220,25 +257,25 @@ app.get('/api/tickets', authenticateToken, async (req: AuthRequest, res: Respons
     }
 
     // Get all comments and logs to reconstruct full ticket shapes
-    const ticketIds = tickets.map((t: any) => t.id);
+    const ticketIds = tickets.map((t) => t.id);
     const placeholders = ticketIds.map(() => '?').join(',');
 
-    const comments = await db.all(
+    const comments = await db.all<DbComment[]>(
       `SELECT * FROM comments WHERE ticketId IN (${placeholders}) ORDER BY createdAt ASC`,
       ticketIds
     );
 
-    const logs = await db.all(
+    const logs = await db.all<DbActivityLog[]>(
       `SELECT * FROM activity_logs WHERE ticketId IN (${placeholders}) ORDER BY timestamp ASC`,
       ticketIds
     );
 
     // Map comments and logs back to their respective tickets
-    const ticketsMap = tickets.map((ticket: any) => {
+    const ticketsMap = tickets.map((ticket) => {
       return {
         ...ticket,
-        comments: comments.filter((c: any) => c.ticketId === ticket.id),
-        activityLogs: logs.filter((l: any) => l.ticketId === ticket.id),
+        comments: comments.filter((c) => c.ticketId === ticket.id),
+        activityLogs: logs.filter((l) => l.ticketId === ticket.id),
       };
     });
 
@@ -250,8 +287,8 @@ app.get('/api/tickets', authenticateToken, async (req: AuthRequest, res: Respons
 });
 
 app.post('/api/tickets', authenticateToken, async (req: AuthRequest, res: Response) => {
-  const { title, description, type, justification } = req.body;
-  if (!title || !description || !type || !justification) {
+  const { description, type, justification } = req.body;
+  if (!description || !type || !justification) {
     res.status(400).json({ error: 'Missing required ticket fields.' });
     return;
   }
@@ -261,8 +298,8 @@ app.post('/api/tickets', authenticateToken, async (req: AuthRequest, res: Respon
     
     // Generate sequential or random ticket code
     const countResult = await db.get<{ count: number }>('SELECT COUNT(*) as count FROM tickets');
-    const index = (countResult?.count || 0) + 106; // Start from 106
-    const ticketId = `TCK-${index}`;
+    const index = (countResult?.count || 0) + 1; // Start from 1
+    const ticketId = `HCIT-TCK-${index}`;
 
     const timestamp = new Date().toISOString();
     const reporterId = req.user?.id || '';
@@ -273,11 +310,11 @@ app.post('/api/tickets', authenticateToken, async (req: AuthRequest, res: Respon
     await db.run(
       `INSERT INTO tickets (
         id, title, description, type, status, justification, createdAt, updatedAt, 
-        reporterId, reporterName, reporterEmail, assigneeId, assigneeName
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL)`,
+        reporterId, reporterName, reporterEmail, assigneeId, assigneeName, quotation
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL)`,
       [
         ticketId,
-        title,
+        ticketId,
         description,
         type,
         'open', // First step in lifecycle
@@ -309,7 +346,7 @@ app.post('/api/tickets', authenticateToken, async (req: AuthRequest, res: Respon
     // Retrieve and send back the full created ticket
     res.status(201).json({
       id: ticketId,
-      title,
+      title: ticketId,
       description,
       type,
       status: 'awaiting_it_approval',
@@ -342,7 +379,7 @@ app.post('/api/tickets', authenticateToken, async (req: AuthRequest, res: Respon
 // Update Ticket Status (Approvals / Handover / Closure)
 app.post('/api/tickets/:id/status', authenticateToken, async (req: AuthRequest, res: Response) => {
   const ticketId = req.params.id;
-  const { status, actionMessage } = req.body;
+  const { status, actionMessage, quotation } = req.body;
 
   if (!status || !actionMessage) {
     res.status(400).json({ error: 'Status and actionMessage are required.' });
@@ -362,10 +399,17 @@ app.post('/api/tickets/:id/status', authenticateToken, async (req: AuthRequest, 
     const timestamp = new Date().toISOString();
 
     // Update status and updatedAt
-    await db.run(
-      'UPDATE tickets SET status = ?, updatedAt = ? WHERE id = ?',
-      [status, timestamp, ticketId]
-    );
+    if (quotation !== undefined) {
+      await db.run(
+        'UPDATE tickets SET status = ?, updatedAt = ?, quotation = ? WHERE id = ?',
+        [status, timestamp, quotation, ticketId]
+      );
+    } else {
+      await db.run(
+        'UPDATE tickets SET status = ?, updatedAt = ? WHERE id = ?',
+        [status, timestamp, ticketId]
+      );
+    }
 
     // Insert activity log
     const logId = `log-${Date.now()}`;
@@ -387,6 +431,7 @@ app.post('/api/tickets/:id/status', authenticateToken, async (req: AuthRequest, 
       success: true,
       status,
       updatedAt: timestamp,
+      quotation: quotation !== undefined ? quotation : ticket.quotation,
       newLog: {
         id: logId,
         ticketId,
@@ -543,7 +588,7 @@ app.get('/api/activity-logs', authenticateToken, async (req: AuthRequest, res: R
       FROM activity_logs al
       JOIN tickets t ON al.ticketId = t.id
     `;
-    let queryParams: any[] = [];
+    const queryParams: (string | undefined)[] = [];
 
     // RBAC: Employee only sees logs for tickets they raised. IT and Manager see all.
     if (userRole === 'employee') {
@@ -553,10 +598,9 @@ app.get('/api/activity-logs', authenticateToken, async (req: AuthRequest, res: R
 
     logsQuery += ' ORDER BY al.timestamp DESC';
 
-    const logs = await db.all(logsQuery, queryParams);
+    const logs = await db.all<(DbActivityLog & { ticketTitle: string })[]>(logsQuery, queryParams);
     res.json(logs);
-  } catch (error) {
-    console.error('Failed to fetch logs:', error);
+  } catch {
     res.status(500).json({ error: 'Failed to retrieve activity logs.' });
   }
 });

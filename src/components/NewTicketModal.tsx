@@ -7,7 +7,6 @@ interface NewTicketModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: {
-    title: string;
     description: string;
     justification: string;
     type: TicketType;
@@ -19,7 +18,6 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
   onClose,
   onSubmit,
 }) => {
-  const [title, setTitle] = useState('');
   const [type, setType] = useState<TicketType>('hardware');
   const [justification, setJustification] = useState('');
   const [description, setDescription] = useState('');
@@ -30,39 +28,36 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    let finalDescription = description.trim();
+    const finalDescription = description.trim();
     let finalJustification = justification.trim();
 
     if (type === 'hardware' || type === 'software') {
-      if (!title.trim() || !finalDescription) {
-        setErrorMsg('Title and Details are required.');
+      if (!finalDescription) {
+        setErrorMsg('Details are required.');
         return;
       }
       finalJustification = 'N/A - Standard Issue';
     } else if (type === 'maintenance') {
-      if (!title.trim() || !finalDescription) {
-        setErrorMsg('Title and Software List are required.');
+      if (!finalDescription) {
+        setErrorMsg('Software List is required.');
         return;
       }
       finalJustification = 'N/A - Software Installation';
     } else if (type === 'upgrade') {
-      if (!title.trim() || !finalJustification) {
-        setErrorMsg('Title and Justification are required.');
+      if (!finalDescription || !finalJustification) {
+        setErrorMsg('What to Upgrade list and Justifications are required.');
         return;
       }
-      finalDescription = 'N/A - System Upgrade';
     }
 
     setErrorMsg(null);
     onSubmit({
-      title,
       type,
       justification: finalJustification,
       description: finalDescription,
     });
 
     // Reset Form
-    setTitle('');
     setType('hardware');
     setJustification('');
     setDescription('');
@@ -91,20 +86,6 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
                 {errorMsg}
               </div>
             )}
-
-            {/* Title */}
-            <div className="form-group">
-              <label htmlFor="ticket-title-input" className="form-label">Title / Short Summary</label>
-              <input
-                id="ticket-title-input"
-                type="text"
-                className="form-input"
-                placeholder="e.g. Keyboard keys jammed on labeling terminal #3"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                required
-              />
-            </div>
 
             {/* Type Category */}
             <div className="form-group">
@@ -156,18 +137,33 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
             )}
 
             {type === 'upgrade' && (
-              <div className="form-group">
-                <label htmlFor="ticket-justification-input" className="form-label">Justification / Importance</label>
-                <textarea
-                  id="ticket-justification-input"
-                  className="form-input"
-                  style={{ minHeight: '70px', resize: 'vertical' }}
-                  placeholder="Why is this system upgrade required?"
-                  value={justification}
-                  onChange={(e) => setJustification(e.target.value)}
-                  required
-                />
-              </div>
+              <>
+                <div className="form-group">
+                  <label htmlFor="ticket-description-input" className="form-label">What to Upgrade (List)</label>
+                  <textarea
+                    id="ticket-description-input"
+                    className="form-input"
+                    style={{ minHeight: '100px', resize: 'vertical' }}
+                    placeholder="Enter items to upgrade, one per line..."
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label htmlFor="ticket-justification-input" className="form-label">Justifications</label>
+                  <textarea
+                    id="ticket-justification-input"
+                    className="form-input"
+                    style={{ minHeight: '70px', resize: 'vertical' }}
+                    placeholder="Why is this system upgrade required?"
+                    value={justification}
+                    onChange={(e) => setJustification(e.target.value)}
+                    required
+                  />
+                </div>
+              </>
             )}
           </div>
 

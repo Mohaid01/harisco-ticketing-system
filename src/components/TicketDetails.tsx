@@ -11,7 +11,7 @@ interface TicketDetailsProps {
   currentUser: AppUser;
   itUsers: AppUser[];
   onBack: () => void;
-  onUpdateStatus: (ticketId: string, status: TicketStatus, actionMessage: string) => void;
+  onUpdateStatus: (ticketId: string, status: TicketStatus, actionMessage: string, quotation?: number) => void;
   onAssignTicket: (ticketId: string, assigneeId: string, assigneeName: string) => void;
   onAddComment: (ticketId: string, content: string) => void;
 }
@@ -26,6 +26,7 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
   onAddComment,
 }) => {
   const [commentText, setCommentText] = useState('');
+  const [quotationAmount, setQuotationAmount] = useState<string>('');
 
   // Submit comment
   const handleSubmitComment = (e: React.FormEvent) => {
@@ -69,12 +70,19 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
   const canItApprove = currentUser.role === 'it' && ticket.status === 'awaiting_it_approval';
   const canManagerApprove = currentUser.role === 'manager' && ticket.status === 'awaiting_manager_approval';
   const canEmployeeAccept = 
-    currentUser.role === 'employee' && 
     ticket.status === 'awaiting_handover' && 
     ticket.reporterId === currentUser.id;
 
-  const handleItApprove = () => {
-    onUpdateStatus(ticket.id, 'awaiting_manager_approval', 'Approved by IT - Escalated to Manager');
+  const handleItResolve = () => {
+    onUpdateStatus(ticket.id, 'closed', 'Resolved by IT in-house');
+  };
+
+  const handleItEscalateWithQuotation = () => {
+    if (!quotationAmount) {
+      alert("Please provide a quotation amount before escalating.");
+      return;
+    }
+    onUpdateStatus(ticket.id, 'awaiting_manager_approval', `Approved by IT - Escalated to Manager with Quotation: Rs ${quotationAmount}`, Number(quotationAmount));
   };
 
   const handleManagerApprove = () => {
@@ -106,7 +114,7 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
             {getStatusBadge(ticket.status)}
           </div>
           <h1 className="page-title" style={{ fontSize: '1.4rem', marginBottom: 0 }}>
-            {ticket.title}
+            {TICKET_TYPE_LABELS[ticket.type]}
           </h1>
         </div>
       </div>
@@ -142,15 +150,28 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
             )}
 
             {ticket.type === 'upgrade' && (
-              <div className="justification-card">
-                <span className="justification-title">
-                  <FileText size={14} />
-                  Justification
-                </span>
-                <p style={{ color: 'var(--text-primary)', fontSize: '0.9rem' }}>
-                  {ticket.justification}
-                </p>
-              </div>
+              <>
+                <h2 className="panel-title" style={{ fontSize: '0.95rem', marginBottom: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px' }}>
+                  What to Upgrade
+                </h2>
+                <div className="desc-card" style={{ marginBottom: '20px' }}>
+                  <ul style={{ paddingLeft: '20px', margin: 0 }}>
+                    {ticket.description.split('\n').map((item, index) => (
+                      <li key={index} style={{ marginBottom: '4px' }}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="justification-card">
+                  <span className="justification-title">
+                    <FileText size={14} />
+                    Justifications
+                  </span>
+                  <p style={{ color: 'var(--text-primary)', fontSize: '0.9rem', marginTop: '8px' }}>
+                    {ticket.justification}
+                  </p>
+                </div>
+              </>
             )}
 
             {/* Comments Thread */}
@@ -250,16 +271,41 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
 
             {/* Workflow actions triggers */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {canItApprove && (
+              {canItApprove && (ticket.type === 'software' || ticket.type === 'maintenance') && (
                 <button
-                  id="btn-it-approve"
+                  id="btn-it-resolve"
                   className="btn btn-success"
                   style={{ width: '100%' }}
-                  onClick={handleItApprove}
+                  onClick={handleItResolve}
                 >
                   <CheckCircle2 size={16} />
-                  IT Review & Escalate
+                  Resolve Ticket (In-House)
                 </button>
+              )}
+
+              {canItApprove && (ticket.type === 'hardware' || ticket.type === 'upgrade') && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label htmlFor="quotation-input" className="form-label" style={{ fontSize: '0.8rem', marginBottom: 0 }}>
+                    Quotation Amount (Rs)
+                  </label>
+                  <input
+                    id="quotation-input"
+                    type="number"
+                    className="form-input"
+                    placeholder="Enter amount"
+                    value={quotationAmount}
+                    onChange={(e) => setQuotationAmount(e.target.value)}
+                  />
+                  <button
+                    id="btn-it-escalate"
+                    className="btn btn-success"
+                    style={{ width: '100%' }}
+                    onClick={handleItEscalateWithQuotation}
+                  >
+                    <CheckCircle2 size={16} />
+                    Submit Quotation & Escalate
+                  </button>
+                </div>
               )}
 
               {canManagerApprove && (
@@ -343,6 +389,17 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
                   <span style={{ fontSize: '0.88rem', fontWeight: 600 }}>{TICKET_TYPE_LABELS[ticket.type]}</span>
                 </div>
               </div>
+
+              {/* Quotation */}
+              {ticket.quotation !== undefined && ticket.quotation !== null && (
+                <div>
+                  <span className="form-label" style={{ fontSize: '0.72rem', textTransform: 'uppercase' }}>Quotation Amount</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                    <Tag size={16} style={{ color: 'var(--text-muted)' }} />
+                    <span style={{ fontSize: '0.88rem', fontWeight: 600 }}>Rs {ticket.quotation}</span>
+                  </div>
+                </div>
+              )}
 
               {/* Reporter details */}
               <div>

@@ -41,10 +41,10 @@ export const TicketList: React.FC<TicketListProps> = ({
 
         // Search text filter
         const matchesSearch =
-          ticket.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
           ticket.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
           ticket.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          ticket.reporterName.toLowerCase().includes(searchQuery.toLowerCase());
+          ticket.reporterName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          TICKET_TYPE_LABELS[ticket.type].toLowerCase().includes(searchQuery.toLowerCase());
 
         // Dropdown type filter
         const matchesType = typeFilter === 'all' || ticket.type === typeFilter;
@@ -127,7 +127,7 @@ export const TicketList: React.FC<TicketListProps> = ({
             <input
               id="search-tickets-input"
               type="text"
-              placeholder="Search ID, title, description..."
+              placeholder="Search ID, category, description..."
               className="form-input"
               style={{ paddingLeft: '36px', height: '38px', backgroundColor: 'var(--bg-primary)' }}
               value={searchQuery}
@@ -200,7 +200,7 @@ export const TicketList: React.FC<TicketListProps> = ({
             <thead>
               <tr>
                 <th>Ticket ID</th>
-                <th>Title</th>
+                <th>Description</th>
                 <th>Category Type</th>
                 <th>Raised By</th>
                 <th>Assignee</th>
@@ -214,8 +214,7 @@ export const TicketList: React.FC<TicketListProps> = ({
                   <td style={{ fontWeight: 'bold', width: '90px' }}>{ticket.id}</td>
                   <td>
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <span style={{ fontWeight: 600, color: 'white' }}>{ticket.title}</span>
-                      <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '340px' }}>
+                      <span style={{ fontWeight: 600, color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '340px' }}>
                         {ticket.description}
                       </span>
                     </div>

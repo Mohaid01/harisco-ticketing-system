@@ -158,7 +158,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <thead>
                 <tr>
                   <th>Ticket ID</th>
-                  <th>Title & Description</th>
+                  <th>Description</th>
                   <th>Category</th>
                   <th>Status</th>
                   <th>Updated At</th>
@@ -170,8 +170,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     <td style={{ fontWeight: 'bold', width: '90px' }}>{ticket.id}</td>
                     <td>
                       <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <span style={{ fontWeight: 600, color: 'white' }}>{ticket.title}</span>
-                        <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '300px' }}>
+                        <span style={{ fontWeight: 600, color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '300px' }}>
                           {ticket.description}
                         </span>
                       </div>

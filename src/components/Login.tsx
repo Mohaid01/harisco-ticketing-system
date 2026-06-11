@@ -37,8 +37,9 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
       }
 
       onLoginSuccess(data.token, data.user);
-    } catch (err: any) {
-      setError(err.message || "Server error. Please try again.");
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : "Server error. Please try again.";
+      setError(errMsg);
     } finally {
       setLoading(false);
     }

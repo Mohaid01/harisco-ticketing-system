@@ -108,7 +108,7 @@ function App() {
             return prevUsers;
           });
         }
-      } catch (err) {
+      } catch {
         // Silent catch for background polling
       }
     }, 5000); // 5 seconds
@@ -121,7 +121,7 @@ function App() {
     if (selectedTicketId) {
       const ticket = tickets.find((t) => t.id === selectedTicketId);
       if (ticket) {
-        document.title = `${ticket.id}: ${ticket.title} | ${APP_TITLE}`;
+        document.title = `${ticket.id} | ${APP_TITLE}`;
         return;
       }
     }
@@ -161,7 +161,7 @@ function App() {
   };
 
   // Handle status updates
-  const handleUpdateStatus = async (ticketId: string, status: TicketStatus, actionMessage: string) => {
+  const handleUpdateStatus = async (ticketId: string, status: TicketStatus, actionMessage: string, quotation?: number) => {
     if (!token || !currentUser) return;
     try {
       const res = await fetch(`/api/tickets/${ticketId}/status`, {
@@ -170,7 +170,7 @@ function App() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ status, actionMessage }),
+        body: JSON.stringify({ status, actionMessage, quotation }),
       });
       
       if (!res.ok) throw new Error('Failed to update status');
@@ -183,7 +183,7 @@ function App() {
         authorName: 'System Log',
         authorRole: 'it' as UserRole,
         avatar: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=100&h=100&q=80',
-        content: `Workflow updated to status: ${STATUS_LABELS[status]}.`,
+        content: `Workflow updated to status: ${STATUS_LABELS[status]}.${quotation !== undefined ? ` Quotation added: Rs ${quotation}` : ''}`,
         createdAt: new Date().toISOString(),
       };
 
@@ -194,6 +194,7 @@ function App() {
             ...t,
             status: result.status,
             updatedAt: result.updatedAt,
+            quotation: result.quotation !== undefined ? result.quotation : t.quotation,
             comments: [...t.comments, newComment],
             activityLogs: [...t.activityLogs, result.newLog],
           };
@@ -281,9 +282,7 @@ function App() {
     }
   };
 
-  // Handle creating tickets
   const handleCreateTicket = async (data: {
-    title: string;
     description: string;
     justification: string;
     type: TicketType;
@@ -332,9 +331,10 @@ function App() {
 
       const newUser = await res.json();
       setUsers((prevUsers) => [...prevUsers, newUser]);
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      alert(err.message || 'Error creating user. Please try again.');
+      const errMsg = err instanceof Error ? err.message : 'Error creating user. Please try again.';
+      alert(errMsg);
     }
   };
 
@@ -355,9 +355,10 @@ function App() {
       }
 
       setUsers((prevUsers) => prevUsers.filter((u) => u.id !== userId));
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      alert(err.message || 'Error deleting user. Please try again.');
+      const errMsg = err instanceof Error ? err.message : 'Error deleting user. Please try again.';
+      alert(errMsg);
     }
   };
 

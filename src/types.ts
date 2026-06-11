@@ -40,6 +40,7 @@ export interface Ticket {
   reporterEmail: string;
   assigneeId?: string; // matches AppUser.id
   assigneeName?: string;
+  quotation?: number;
   comments: TicketComment[];
   activityLogs: {
     id: string;

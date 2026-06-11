@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import type { Ticket, AppUser } from '../types';
-import { ROLE_LABELS } from '../constants';
+import { ROLE_LABELS, TICKET_TYPE_LABELS } from '../constants';
 import { Calendar, Tag, ShieldCheck, UserCheck, Play, Plus } from 'lucide-react';
 
 interface ActivityLogProps {
@@ -29,7 +29,7 @@ export const ActivityLog: React.FC<ActivityLogProps> = ({
       ticket.activityLogs.map((log) => ({
         ...log,
         ticketId: ticket.id,
-        ticketTitle: ticket.title,
+        ticketTitle: TICKET_TYPE_LABELS[ticket.type],
       }))
     );
 

@@ -50,9 +50,16 @@ export async function initDb() {
       reporterName TEXT NOT NULL,
       reporterEmail TEXT NOT NULL,
       assigneeId TEXT,
-      assigneeName TEXT
+      assigneeName TEXT,
+      quotation REAL
     )
   `);
+
+  try {
+    await db.exec('ALTER TABLE tickets ADD COLUMN quotation REAL');
+  } catch {
+    // Column might already exist, ignore error
+  }
 
   // Create Comments Table
   await db.exec(`
