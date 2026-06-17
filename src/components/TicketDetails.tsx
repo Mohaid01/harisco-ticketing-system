@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import type { Ticket, AppUser, TicketStatus } from '../types';
+import type { Ticket, AppUser, TicketStatus, TicketType } from '../types';
 import {
   TICKET_TYPE_LABELS,
   ROLE_LABELS,
+  TICKET_TYPE_OPTIONS,
 } from '../constants';
 import { ArrowLeft, Send, Calendar, User, Tag, ShieldAlert, Award, FileText, CheckCircle2, UserCheck } from 'lucide-react';
 
@@ -14,6 +15,7 @@ interface TicketDetailsProps {
   onUpdateStatus: (ticketId: string, status: TicketStatus, actionMessage: string, quotation?: number) => void;
   onAssignTicket: (ticketId: string, assigneeId: string, assigneeName: string) => void;
   onAddComment: (ticketId: string, content: string) => void;
+  onEditTicket?: (ticketId: string, data: { description: string, type: TicketType, justification: string }) => void;
 }
 
 export const TicketDetails: React.FC<TicketDetailsProps> = ({
@@ -24,9 +26,15 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
   onUpdateStatus,
   onAssignTicket,
   onAddComment,
+  onEditTicket,
 }) => {
   const [commentText, setCommentText] = useState('');
   const [quotationAmount, setQuotationAmount] = useState<string>('');
+  
+  const [isEditing, setIsEditing] = useState(false);
+  const [editDescription, setEditDescription] = useState(ticket.description);
+  const [editJustification, setEditJustification] = useState(ticket.justification);
+  const [editType, setEditType] = useState(ticket.type);
 
   // Submit comment
   const handleSubmitComment = (e: React.FormEvent) => {
@@ -72,6 +80,11 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
   const canEmployeeAccept = 
     ticket.status === 'awaiting_handover' && 
     ticket.reporterId === currentUser.id;
+  const canItClose = currentUser.role === 'it' && ticket.status !== 'closed';
+
+  const handleItClose = () => {
+    onUpdateStatus(ticket.id, 'closed', 'Closed by IT');
+  };
 
   const handleItResolve = () => {
     onUpdateStatus(ticket.id, 'closed', 'Resolved by IT in-house');
@@ -90,7 +103,14 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
   };
 
   const handleEmployeeAccept = () => {
-    onUpdateStatus(ticket.id, 'closed', 'Handover Accepted by Employee - Ticket Closed');
+    onUpdateStatus(ticket.id, 'awaiting_it_approval', 'Handover Accepted by Employee - Awaiting IT Closure');
+  };
+
+  const handleSaveEdit = () => {
+    if (onEditTicket) {
+      onEditTicket(ticket.id, { description: editDescription, type: editType, justification: editJustification });
+    }
+    setIsEditing(false);
   };
 
   return (
@@ -124,53 +144,87 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
         {/* Left Column: Description, Justification, Comments */}
         <div>
           <div className="panel" style={{ padding: '24px', marginBottom: '24px' }}>
-            {/* Conditional Details Based on Ticket Type */}
-            {(ticket.type === 'hardware' || ticket.type === 'software') && (
-              <>
-                <h2 className="panel-title" style={{ fontSize: '0.95rem', marginBottom: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px' }}>
-                  Problem Details
-                </h2>
-                <div className="desc-card">{ticket.description}</div>
-              </>
-            )}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px' }}>
+              <h2 className="panel-title" style={{ fontSize: '0.95rem', margin: 0 }}>
+                Ticket Content
+              </h2>
+              {currentUser.role === 'it' && !isEditing && ticket.status !== 'closed' && (
+                <button className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '0.75rem' }} onClick={() => setIsEditing(true)}>
+                  Edit Ticket
+                </button>
+              )}
+            </div>
 
-            {ticket.type === 'maintenance' && (
-              <>
-                <h2 className="panel-title" style={{ fontSize: '0.95rem', marginBottom: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px' }}>
-                  Software List
-                </h2>
-                <div className="desc-card">
-                  <ul style={{ paddingLeft: '20px', margin: 0 }}>
-                    {ticket.description.split('\n').map((software, index) => (
-                      <li key={index} style={{ marginBottom: '4px' }}>{software}</li>
+            {isEditing ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
+                <div>
+                  <label className="form-label" style={{ fontSize: '0.8rem', marginBottom: '4px' }}>Category Type</label>
+                  <select className="form-input" value={editType} onChange={(e) => setEditType(e.target.value as TicketType)}>
+                    {TICKET_TYPE_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
                     ))}
-                  </ul>
+                  </select>
                 </div>
-              </>
-            )}
-
-            {ticket.type === 'upgrade' && (
+                <div>
+                  <label className="form-label" style={{ fontSize: '0.8rem', marginBottom: '4px' }}>Description</label>
+                  <textarea className="form-input" style={{ minHeight: '100px' }} value={editDescription} onChange={(e) => setEditDescription(e.target.value)} />
+                </div>
+                {(editType === 'upgrade') && (
+                  <div>
+                    <label className="form-label" style={{ fontSize: '0.8rem', marginBottom: '4px' }}>Justification</label>
+                    <textarea className="form-input" style={{ minHeight: '80px' }} value={editJustification} onChange={(e) => setEditJustification(e.target.value)} />
+                  </div>
+                )}
+                <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                  <button className="btn btn-secondary" onClick={() => setIsEditing(false)}>Cancel</button>
+                  <button className="btn btn-primary" onClick={handleSaveEdit}>Save Changes</button>
+                </div>
+              </div>
+            ) : (
               <>
-                <h2 className="panel-title" style={{ fontSize: '0.95rem', marginBottom: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px' }}>
-                  What to Upgrade
-                </h2>
-                <div className="desc-card" style={{ marginBottom: '20px' }}>
-                  <ul style={{ paddingLeft: '20px', margin: 0 }}>
-                    {ticket.description.split('\n').map((item, index) => (
-                      <li key={index} style={{ marginBottom: '4px' }}>{item}</li>
-                    ))}
-                  </ul>
-                </div>
+                {/* Conditional Details Based on Ticket Type */}
+                {(ticket.type === 'hardware' || ticket.type === 'software') && (
+                  <>
+                    <h3 style={{ fontSize: '0.85rem', fontWeight: 600, margin: '0 0 8px 0' }}>Problem Details</h3>
+                    <div className="desc-card">{ticket.description}</div>
+                  </>
+                )}
 
-                <div className="justification-card">
-                  <span className="justification-title">
-                    <FileText size={14} />
-                    Justifications
-                  </span>
-                  <p style={{ color: 'var(--text-primary)', fontSize: '0.9rem', marginTop: '8px' }}>
-                    {ticket.justification}
-                  </p>
-                </div>
+                {ticket.type === 'maintenance' && (
+                  <>
+                    <h3 style={{ fontSize: '0.85rem', fontWeight: 600, margin: '0 0 8px 0' }}>Software List</h3>
+                    <div className="desc-card">
+                      <ul style={{ paddingLeft: '20px', margin: 0 }}>
+                        {ticket.description.split('\n').map((software, index) => (
+                          <li key={index} style={{ marginBottom: '4px' }}>{software}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </>
+                )}
+
+                {ticket.type === 'upgrade' && (
+                  <>
+                    <h3 style={{ fontSize: '0.85rem', fontWeight: 600, margin: '0 0 8px 0' }}>What to Upgrade</h3>
+                    <div className="desc-card" style={{ marginBottom: '20px' }}>
+                      <ul style={{ paddingLeft: '20px', margin: 0 }}>
+                        {ticket.description.split('\n').map((item, index) => (
+                          <li key={index} style={{ marginBottom: '4px' }}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <div className="justification-card">
+                      <span className="justification-title">
+                        <FileText size={14} />
+                        Justifications
+                      </span>
+                      <p style={{ color: 'var(--text-primary)', fontSize: '0.9rem', marginTop: '8px' }}>
+                        {ticket.justification}
+                      </p>
+                    </div>
+                  </>
+                )}
               </>
             )}
 
@@ -329,11 +383,23 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
                   onClick={handleEmployeeAccept}
                 >
                   <UserCheck size={16} />
-                  Accept Handover & Close
+                  Accept Handover
                 </button>
               )}
 
-              {!canItApprove && !canManagerApprove && !canEmployeeAccept && (
+              {canItClose && (
+                <button
+                  id="btn-it-close"
+                  className="btn btn-secondary"
+                  style={{ width: '100%', border: '1px solid var(--status-closed)', color: 'var(--status-closed)' }}
+                  onClick={handleItClose}
+                >
+                  <CheckCircle2 size={16} />
+                  Close Ticket
+                </button>
+              )}
+
+              {!canItApprove && !canManagerApprove && !canEmployeeAccept && !canItClose && (
                 <div style={{ padding: '12px', textAlign: 'center', backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)' }}>
                   <ShieldAlert size={20} style={{ color: 'var(--text-muted)', marginBottom: '4px' }} />
                   <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>

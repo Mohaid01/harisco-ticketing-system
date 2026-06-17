@@ -254,6 +254,42 @@ function App() {
     }
   };
 
+  // Handle edit ticket
+  const handleEditTicket = async (ticketId: string, data: { description: string, type: TicketType, justification: string }) => {
+    if (!token || !currentUser) return;
+    try {
+      const res = await fetch(`/api/tickets/${ticketId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!res.ok) throw new Error('Failed to edit ticket');
+      const result = await res.json();
+
+      setTickets((prevTickets) =>
+        prevTickets.map((t) => {
+          if (t.id !== ticketId) return t;
+          return {
+            ...t,
+            description: data.description,
+            type: data.type,
+            justification: data.justification,
+            updatedAt: result.updatedAt,
+            activityLogs: [...t.activityLogs, result.newLog],
+          };
+        })
+      );
+    } catch (err) {
+      console.error(err);
+      alert('Error editing ticket. Please try again.');
+    }
+  };
+
+
   // Handle adding comments
   const handleAddComment = async (ticketId: string, content: string) => {
     if (!token || !currentUser) return;
@@ -447,6 +483,7 @@ function App() {
               onUpdateStatus={handleUpdateStatus}
               onAssignTicket={handleAssignTicket}
               onAddComment={handleAddComment}
+              onEditTicket={handleEditTicket}
             />
           ) : activeTab === 'dashboard' ? (
             <Dashboard

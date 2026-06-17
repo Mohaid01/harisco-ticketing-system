@@ -589,6 +589,75 @@ app.post(
   },
 );
 
+// Edit Ticket (IT Admin action)
+app.put(
+  "/api/tickets/:id",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    if (req.user?.role !== "it") {
+      res.status(403).json({ error: "Forbidden. Ticket editing requires IT role." });
+      return;
+    }
+
+    const ticketId = req.params.id;
+    const { description, type, justification } = req.body;
+
+    if (!description || !type) {
+      res.status(400).json({ error: "Description and type are required." });
+      return;
+    }
+
+    try {
+      const db = getDb();
+      
+      const ticket = await db.get("SELECT * FROM tickets WHERE id = ?", [ticketId]);
+      if (!ticket) {
+        res.status(404).json({ error: "Ticket not found." });
+        return;
+      }
+
+      const timestamp = new Date().toISOString();
+
+      await db.run(
+        "UPDATE tickets SET description = ?, type = ?, justification = ?, updatedAt = ? WHERE id = ?",
+        [description, type, justification || "", timestamp, ticketId]
+      );
+
+      // Insert activity log
+      const logId = `log-${Date.now()}`;
+      await db.run(
+        `INSERT INTO activity_logs (
+        id, ticketId, action, timestamp, performedByName, performedByRole
+      ) VALUES (?, ?, ?, ?, ?, ?)`,
+        [
+          logId,
+          ticketId,
+          "Ticket details updated by IT",
+          timestamp,
+          req.user?.name || "",
+          req.user?.role || "it",
+        ]
+      );
+
+      res.json({
+        success: true,
+        updatedAt: timestamp,
+        newLog: {
+          id: logId,
+          ticketId,
+          action: "Ticket details updated by IT",
+          timestamp,
+          performedByName: req.user?.name || "",
+          performedByRole: req.user?.role || "it",
+        },
+      });
+    } catch (error) {
+      console.error("Failed to edit ticket:", error);
+      res.status(500).json({ error: "Failed to edit ticket." });
+    }
+  }
+);
+
 // Assign Ticket (IT Admin action)
 app.post(
   "/api/tickets/:id/assign",
