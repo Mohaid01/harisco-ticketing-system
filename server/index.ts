@@ -1,6 +1,8 @@
 import "dotenv/config";
 import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import path from "path";
@@ -16,8 +18,31 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-app.use(cors());
+
+// Security Headers (CSP disabled to allow Vite inline scripts/styles)
+app.use(helmet({ contentSecurityPolicy: false }));
+
+// Strict CORS: allow Vite dev server locally, but restrict in production
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' ? false : 'http://localhost:5173'
+}));
+
 app.use(express.json());
+
+// Apply global API rate limit
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 1000,
+  message: { error: "Too many requests from this IP, please try again later." }
+});
+app.use("/api", globalLimiter);
+
+// Strict rate limit for auth endpoint
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // Limit each IP to 10 login requests per window
+  message: { error: "Too many login attempts, please try again after 15 minutes." }
+});
 
 // Extend express Request interface for our middleware
 interface AuthRequest extends Request {
@@ -112,7 +137,7 @@ function authenticateToken(
 }
 
 // Auth Routes
-app.post("/api/auth/login", async (req: Request, res: Response) => {
+app.post("/api/auth/login", loginLimiter, async (req: Request, res: Response) => {
   const { username, password } = req.body;
   if (!username || !password) {
     res.status(400).json({ error: "Username and password are required." });

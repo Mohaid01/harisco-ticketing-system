@@ -1,26 +1,40 @@
-# Build and Runtime Image
+# Stage 1: Build the frontend
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copy package files and install dependencies
+COPY package*.json ./
+RUN npm install
+
+# Copy all source files (including .env for Vite build variables)
+COPY . .
+
+# Build the frontend
+RUN npm run build
+
+# Stage 2: Production environment
 FROM node:20-alpine
 
 WORKDIR /app
 
-# Copy package files
-COPY package.json package-lock.json ./
+# Copy package files and install dependencies
+COPY package*.json ./
+RUN npm install
 
-# Install all dependencies (including devDependencies needed for build and tsx)
-RUN npm ci
+# Copy backend files and built frontend
+COPY --from=builder /app/server ./server
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/tsconfig*.json ./
 
-# Copy the entire project
-COPY . .
+# Install tsx globally to run the backend
+RUN npm install -g tsx
 
-# Build the frontend (outputs to /dist)
-RUN npm run build
+# Create directory for SQLite database volume
+RUN mkdir -p /app/data
 
-# Expose port 8082
+# Expose the application port
 EXPOSE 8082
 
-# Set the port environment variable
-ENV PORT=8082
-ENV NODE_ENV=production
-
-# Run the backend server using tsx
-CMD ["npx", "tsx", "server/index.ts"]
+# Start the application
+CMD ["tsx", "server/index.ts"]
