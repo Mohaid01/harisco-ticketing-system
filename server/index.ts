@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { initDb, getDb } from "./db.js";
+import { sendEmail } from "./email.js";
 
 const JWT_SECRET = "harisco_super_secret_jwt_key_2026";
 const PORT = process.env.PORT || 8082;
@@ -305,27 +306,29 @@ app.post(
     }
 
     const { name, email, username, role, password } = req.body;
-    if (!name || !email || !username || !role) {
+    if (!name || !username || !role) {
       res
         .status(400)
-        .json({ error: "Name, email, username, and role are required." });
+        .json({ error: "Name, username, and role are required." });
       return;
     }
 
-    // If password is not provided, use default password
+    const finalEmail = email && email.trim() ? email.trim().toLowerCase() : null;
     const clearPassword = password || "hc123";
 
     try {
       const db = getDb();
 
-      // Check if email already exists
-      const existingEmail = await db.get(
-        "SELECT id FROM users WHERE email = ?",
-        [email.toLowerCase().trim()],
-      );
-      if (existingEmail) {
-        res.status(400).json({ error: "User with this email already exists." });
-        return;
+      // Check if email already exists (only if provided)
+      if (finalEmail) {
+        const existingEmail = await db.get(
+          "SELECT id FROM users WHERE email = ?",
+          [finalEmail],
+        );
+        if (existingEmail) {
+          res.status(400).json({ error: "User with this email already exists." });
+          return;
+        }
       }
 
       // Check if username already exists
@@ -348,7 +351,7 @@ app.post(
         [
           userId,
           name,
-          email.toLowerCase().trim(),
+          finalEmail,
           username.toLowerCase().trim(),
           role,
           "",
@@ -359,7 +362,7 @@ app.post(
       res.status(201).json({
         id: userId,
         name,
-        email: email.toLowerCase().trim(),
+        email: finalEmail,
         username: username.toLowerCase().trim(),
         role,
       });
@@ -403,6 +406,58 @@ app.delete(
       res.status(500).json({ error: "Failed to delete user." });
     }
   },
+);
+
+app.put(
+  "/api/users/:id",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    if (req.user?.role !== "it") {
+      res.status(403).json({ error: "Forbidden. User modification requires IT role." });
+      return;
+    }
+
+    const userId = req.params.id;
+    const { name, email } = req.body;
+
+    if (!name || !name.trim()) {
+      res.status(400).json({ error: "Name is required." });
+      return;
+    }
+
+    const finalEmail = email && email.trim() ? email.trim().toLowerCase() : null;
+
+    try {
+      const db = getDb();
+
+      // If email is provided, check if another user already has it
+      if (finalEmail) {
+        const existingEmail = await db.get(
+          "SELECT id FROM users WHERE LOWER(email) = ? AND id != ?",
+          [finalEmail, userId]
+        );
+        if (existingEmail) {
+          res.status(400).json({ error: "User with this email already exists." });
+          return;
+        }
+      }
+
+      const result = await db.run(
+        "UPDATE users SET name = ?, email = ? WHERE id = ?",
+        [name.trim(), finalEmail, userId]
+      );
+
+      if (result.changes === 0) {
+        res.status(404).json({ error: "User not found." });
+        return;
+      }
+
+      res.json({ id: userId, name: name.trim(), email: finalEmail });
+    } catch (error) {
+      console.error("Failed to update user:", error);
+      res.status(500).json({ error: "Failed to update user details." });
+    }
+  }
 );
 
 // Tickets Routes
@@ -524,6 +579,24 @@ app.post(
         ],
       );
 
+      // Inform all IT personnel via email if created by an employee
+      if (req.user?.role === "employee") {
+        try {
+          const itUsers = await db.all<{ email: string }>(
+            "SELECT email FROM users WHERE role = 'it' AND email IS NOT NULL AND email != ''"
+          );
+          for (const itUser of itUsers) {
+            sendEmail(
+              itUser.email,
+              `[New Ticket] ${ticketId} Raised by ${reporterName}`,
+              `Hello,\n\nA new support ticket has been raised by ${reporterName} (${reporterEmail}).\n\nTicket ID: ${ticketId}\nType: ${type}\nDescription:\n${description}\n\nPlease log in to review and assign this ticket.`
+            ).catch((err) => console.error("Email send failed:", err));
+          }
+        } catch (err) {
+          console.error("Failed to query IT users for email notification:", err);
+        }
+      }
+
       // Retrieve and send back the full created ticket
       res.status(201).json({
         id: ticketId,
@@ -613,6 +686,45 @@ app.post(
           req.user?.role || "employee",
         ],
       );
+
+      // Rule 2: Escalated to manager -> Inform manager(s) via email
+      if (status === "awaiting_manager_approval") {
+        try {
+          const managers = await db.all<{ email: string }>(
+            "SELECT email FROM users WHERE role = 'manager' AND email IS NOT NULL AND email != ''"
+          );
+          for (const mgr of managers) {
+            sendEmail(
+              mgr.email,
+              `[Escalation Request] Ticket ${ticketId} Awaiting Manager Approval`,
+              `Hello,\n\nA ticket has been escalated for your approval by ${req.user?.name || "IT"}.\n\nTicket ID: ${ticketId}\nQuotation Amount: Rs ${quotation !== undefined ? quotation : (ticket.quotation || 'N/A')}\nEscalation Message: ${actionMessage}\n\nPlease log in to review and approve this request.`
+            ).catch((err) => console.error("Email send failed:", err));
+          }
+        } catch (err) {
+          console.error("Failed to query managers for escalation email:", err);
+        }
+      }
+
+      // Rule 3: Approved by manager -> Inform assigned IT engineer via email
+      if (ticket.status === "awaiting_manager_approval" && status === "awaiting_handover") {
+        if (ticket.assigneeId) {
+          try {
+            const assignee = await db.get<{ email: string }>(
+              "SELECT email FROM users WHERE id = ? AND email IS NOT NULL AND email != ''",
+              [ticket.assigneeId]
+            );
+            if (assignee && assignee.email) {
+              sendEmail(
+                assignee.email,
+                `[Approved by Manager] Ticket ${ticketId} Ready for Handover`,
+                `Hello,\n\nThe ticket assigned to you has been approved by the manager.\n\nTicket ID: ${ticketId}\nDescription: ${ticket.description}\n\nPlease proceed with the resolution work and handover.`
+              ).catch((err) => console.error("Email send failed:", err));
+            }
+          } catch (err) {
+            console.error("Failed to query assignee for approval email:", err);
+          }
+        }
+      }
 
       res.json({
         success: true,

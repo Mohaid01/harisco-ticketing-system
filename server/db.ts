@@ -27,7 +27,7 @@ export async function initDb() {
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
-      email TEXT UNIQUE NOT NULL,
+      email TEXT UNIQUE,
       username TEXT UNIQUE NOT NULL,
       role TEXT CHECK(role IN ('it', 'employee', 'manager')) NOT NULL,
       avatar TEXT NOT NULL,
@@ -35,6 +35,37 @@ export async function initDb() {
       needsPasswordReset INTEGER DEFAULT 1
     )
   `);
+
+  // Migrate existing users table if email is NOT NULL
+  try {
+    const tableInfo = await db.all<{ name: string; notnull: number }>(
+      "PRAGMA table_info(users)",
+    );
+    const emailCol = tableInfo.find((c) => c.name === "email");
+    if (emailCol && emailCol.notnull === 1) {
+      console.log("Migrating users table to allow nullable email...");
+      await db.exec("ALTER TABLE users RENAME TO users_old");
+      await db.exec(`
+        CREATE TABLE users (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          email TEXT UNIQUE,
+          username TEXT UNIQUE NOT NULL,
+          role TEXT CHECK(role IN ('it', 'employee', 'manager')) NOT NULL,
+          avatar TEXT NOT NULL,
+          passwordHash TEXT NOT NULL,
+          needsPasswordReset INTEGER DEFAULT 1
+        )
+      `);
+      await db.exec(
+        "INSERT INTO users SELECT id, name, email, username, role, avatar, passwordHash, needsPasswordReset FROM users_old",
+      );
+      await db.exec("DROP TABLE users_old");
+      console.log("Migration completed.");
+    }
+  } catch (err) {
+    console.error("Migration check failed:", err);
+  }
 
   // Create Tickets Table
   await db.exec(`

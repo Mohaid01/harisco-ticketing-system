@@ -434,6 +434,35 @@ function App() {
     }
   };
 
+  // Handle updating users (IT only)
+  const handleUpdateUser = async (userId: string, data: { name: string; email: string | null }) => {
+    if (!token || !currentUser) return;
+    try {
+      const res = await fetch(`/api/users/${userId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || 'Failed to update user');
+      }
+
+      const updatedUser = await res.json();
+      setUsers((prevUsers) =>
+        prevUsers.map((u) => (u.id === userId ? { ...u, name: updatedUser.name, email: updatedUser.email } : u))
+      );
+    } catch (err) {
+      console.error(err);
+      const errMsg = err instanceof Error ? err.message : 'Error updating user. Please try again.';
+      alert(errMsg);
+    }
+  };
+
   // Loading state skeleton screen
   if (loading) {
     return (
@@ -533,6 +562,7 @@ function App() {
               currentUser={currentUser}
               onAddUser={handleAddUser}
               onDeleteUser={handleDeleteUser}
+              onUpdateUser={handleUpdateUser}
             />
           ) : (
             <ActivityLog
