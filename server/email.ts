@@ -10,10 +10,10 @@ const fromAddress =
 
 let transporter: nodemailer.Transporter | null = null;
 
-const hasSmtpConfig =
-  !!process.env.SMTP_HOST && !!process.env.SMTP_USER && !!process.env.SMTP_PASS;
+// const hasSmtpConfig =
+//   !!process.env.SMTP_HOST && !!process.env.SMTP_USER && !!process.env.SMTP_PASS;
 
-if (hasSmtpConfig) {
+if (host) {
   transporter = nodemailer.createTransport({
     host,
     port,
