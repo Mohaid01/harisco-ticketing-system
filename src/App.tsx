@@ -8,6 +8,7 @@ import { UserManagement } from './components/UserManagement';
 import { ActivityLog } from './components/ActivityLog';
 import { Login } from './components/Login';
 import { PasswordReset } from './components/PasswordReset';
+import { ChangePasswordModal } from './components/ChangePasswordModal';
 import { APP_TITLE, STATUS_LABELS } from './constants';
 import type { Ticket, AppUser, TicketStatus, TicketType, ActiveTab, UserRole } from './types';
 
@@ -20,6 +21,7 @@ function App() {
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
 
   // Load session and data
@@ -289,6 +291,27 @@ function App() {
     }
   };
 
+  // Handle delete ticket
+  const handleDeleteTicket = async (ticketId: string) => {
+    if (!token || !currentUser) return;
+    try {
+      const res = await fetch(`/api/tickets/${ticketId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) throw new Error('Failed to delete ticket');
+
+      setTickets((prevTickets) => prevTickets.filter((t) => t.id !== ticketId));
+      setSelectedTicketId(null);
+    } catch (err) {
+      console.error(err);
+      alert('Error deleting ticket. Please try again.');
+    }
+  };
+
 
   // Handle adding comments
   const handleAddComment = async (ticketId: string, content: string) => {
@@ -451,6 +474,7 @@ function App() {
           setSelectedTicketId(null);
         }}
         onLogout={handleLogout}
+        onChangePasswordClick={() => setIsPasswordModalOpen(true)}
       />
 
       {/* Main Section */}
@@ -484,6 +508,7 @@ function App() {
               onAssignTicket={handleAssignTicket}
               onAddComment={handleAddComment}
               onEditTicket={handleEditTicket}
+              onDeleteTicket={handleDeleteTicket}
             />
           ) : activeTab === 'dashboard' ? (
             <Dashboard
@@ -525,6 +550,15 @@ function App() {
         onClose={() => setIsCreateModalOpen(false)}
         onSubmit={handleCreateTicket}
       />
+
+      {/* Change Password Modal */}
+      {token && (
+        <ChangePasswordModal
+          isOpen={isPasswordModalOpen}
+          onClose={() => setIsPasswordModalOpen(false)}
+          token={token}
+        />
+      )}
     </div>
   );
 }

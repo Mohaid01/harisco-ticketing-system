@@ -16,6 +16,7 @@ interface TicketDetailsProps {
   onAssignTicket: (ticketId: string, assigneeId: string, assigneeName: string) => void;
   onAddComment: (ticketId: string, content: string) => void;
   onEditTicket?: (ticketId: string, data: { description: string, type: TicketType, justification: string }) => void;
+  onDeleteTicket?: (ticketId: string) => void;
 }
 
 export const TicketDetails: React.FC<TicketDetailsProps> = ({
@@ -27,6 +28,7 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
   onAssignTicket,
   onAddComment,
   onEditTicket,
+  onDeleteTicket,
 }) => {
   const [commentText, setCommentText] = useState('');
   const [quotationAmount, setQuotationAmount] = useState<string>('');
@@ -75,12 +77,22 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
   };
 
   // RBAC Action checks
-  const canItApprove = currentUser.role === 'it' && ticket.status === 'awaiting_it_approval';
+  const isHandoverAccepted = ticket.activityLogs.length > 0 && 
+    ticket.activityLogs[ticket.activityLogs.length - 1].action.includes('Handover Accepted');
+
+  const canItApprove = currentUser.role === 'it' && 
+    ticket.status === 'awaiting_it_approval' && 
+    !isHandoverAccepted;
+
   const canManagerApprove = currentUser.role === 'manager' && ticket.status === 'awaiting_manager_approval';
+
   const canEmployeeAccept = 
     ticket.status === 'awaiting_handover' && 
     ticket.reporterId === currentUser.id;
-  const canItClose = currentUser.role === 'it' && ticket.status !== 'closed';
+
+  const canItClose = currentUser.role === 'it' && 
+    ticket.status === 'awaiting_it_approval' && 
+    isHandoverAccepted;
 
   const handleItClose = () => {
     onUpdateStatus(ticket.id, 'closed', 'Closed by IT');
@@ -111,6 +123,15 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
       onEditTicket(ticket.id, { description: editDescription, type: editType, justification: editJustification });
     }
     setIsEditing(false);
+  };
+
+  const handleDeleteClick = () => {
+    if (onDeleteTicket) {
+      const confirmed = window.confirm(`WARNING: You are about to permanently delete ticket ${ticket.id}.\n\nAre you sure you want to proceed?`);
+      if (confirmed) {
+        onDeleteTicket(ticket.id);
+      }
+    }
   };
 
   return (
@@ -148,10 +169,22 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
               <h2 className="panel-title" style={{ fontSize: '0.95rem', margin: 0 }}>
                 Ticket Content
               </h2>
-              {currentUser.role === 'it' && !isEditing && ticket.status !== 'closed' && (
-                <button className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '0.75rem' }} onClick={() => setIsEditing(true)}>
-                  Edit Ticket
-                </button>
+              {currentUser.role === 'it' && !isEditing && (
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  {ticket.status !== 'closed' && (
+                    <button className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '0.75rem' }} onClick={() => setIsEditing(true)}>
+                      Edit Ticket
+                    </button>
+                  )}
+                  <button
+                    id="btn-delete-ticket"
+                    className="btn btn-danger"
+                    style={{ padding: '4px 8px', fontSize: '0.75rem', backgroundColor: '#dc2626', color: 'white', border: 'none' }}
+                    onClick={handleDeleteClick}
+                  >
+                    Delete Ticket
+                  </button>
+                </div>
               )}
             </div>
 
@@ -325,42 +358,43 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
 
             {/* Workflow actions triggers */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {canItApprove && (ticket.type === 'software' || ticket.type === 'maintenance') && (
-                <button
-                  id="btn-it-resolve"
-                  className="btn btn-success"
-                  style={{ width: '100%' }}
-                  onClick={handleItResolve}
-                >
-                  <CheckCircle2 size={16} />
-                  Resolve Ticket (In-House)
-                </button>
-              )}
-
-              {canItApprove && (ticket.type === 'hardware' || ticket.type === 'upgrade') && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label htmlFor="quotation-input" className="form-label" style={{ fontSize: '0.8rem', marginBottom: 0 }}>
-                    Quotation Amount (Rs)
-                  </label>
-                  <input
-                    id="quotation-input"
-                    type="number"
-                    className="form-input"
-                    placeholder="Enter amount"
-                    value={quotationAmount}
-                    onChange={(e) => setQuotationAmount(e.target.value)}
-                  />
+              {canItApprove && (
+                <>
                   <button
-                    id="btn-it-escalate"
+                    id="btn-it-resolve"
                     className="btn btn-success"
                     style={{ width: '100%' }}
-                    onClick={handleItEscalateWithQuotation}
+                    onClick={handleItResolve}
                   >
                     <CheckCircle2 size={16} />
-                    Submit Quotation & Escalate
+                    Resolve Ticket (In-House)
                   </button>
-                </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '12px', borderTop: '1px solid var(--border-color)', paddingTop: '12px' }}>
+                    <label htmlFor="quotation-input" className="form-label" style={{ fontSize: '0.8rem', marginBottom: 0 }}>
+                      Quotation Amount (Rs)
+                    </label>
+                    <input
+                      id="quotation-input"
+                      type="number"
+                      className="form-input"
+                      placeholder="Enter amount"
+                      value={quotationAmount}
+                      onChange={(e) => setQuotationAmount(e.target.value)}
+                    />
+                    <button
+                      id="btn-it-escalate"
+                      className="btn btn-success"
+                      style={{ width: '100%' }}
+                      onClick={handleItEscalateWithQuotation}
+                    >
+                      <CheckCircle2 size={16} />
+                      Submit Quotation & Escalate
+                    </button>
+                  </div>
+                </>
               )}
+
 
               {canManagerApprove && (
                 <button

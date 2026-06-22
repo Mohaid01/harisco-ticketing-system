@@ -230,6 +230,52 @@ app.post(
   },
 );
 
+app.post(
+  "/api/auth/change-password",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    const { oldPassword, newPassword } = req.body;
+    if (!oldPassword || !newPassword || newPassword.trim().length < 4) {
+      res
+        .status(400)
+        .json({ error: "New password must be at least 4 characters long." });
+      return;
+    }
+
+    try {
+      const db = getDb();
+      const userId = req.user?.id;
+
+      // Fetch user to compare old password
+      const user = await db.get<DbUser>(
+        "SELECT passwordHash FROM users WHERE id = ?",
+        [userId],
+      );
+      if (!user) {
+        res.status(404).json({ error: "User not found." });
+        return;
+      }
+
+      const isMatch = await bcrypt.compare(oldPassword, user.passwordHash);
+      if (!isMatch) {
+        res.status(400).json({ error: "Incorrect old password." });
+        return;
+      }
+
+      const newPasswordHash = await bcrypt.hash(newPassword, 10);
+      await db.run(
+        "UPDATE users SET passwordHash = ?, needsPasswordReset = 0 WHERE id = ?",
+        [newPasswordHash, userId],
+      );
+
+      res.json({ message: "Password updated successfully." });
+    } catch (error) {
+      console.error("Change password error:", error);
+      res.status(500).json({ error: "Failed to update password." });
+    }
+  },
+);
+
 // Users Routes (IT Administrator only for POST/DELETE, all authenticated users for GET)
 app.get(
   "/api/users",
@@ -654,6 +700,36 @@ app.put(
     } catch (error) {
       console.error("Failed to edit ticket:", error);
       res.status(500).json({ error: "Failed to edit ticket." });
+    }
+  }
+);
+
+app.delete(
+  "/api/tickets/:id",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    if (req.user?.role !== "it") {
+      res.status(403).json({ error: "Forbidden. Ticket deletion requires IT role." });
+      return;
+    }
+
+    const ticketId = req.params.id;
+
+    try {
+      const db = getDb();
+      
+      const ticket = await db.get("SELECT id FROM tickets WHERE id = ?", [ticketId]);
+      if (!ticket) {
+        res.status(404).json({ error: "Ticket not found." });
+        return;
+      }
+
+      await db.run("DELETE FROM tickets WHERE id = ?", [ticketId]);
+
+      res.json({ success: true, message: "Ticket deleted successfully." });
+    } catch (error) {
+      console.error("Failed to delete ticket:", error);
+      res.status(500).json({ error: "Failed to delete ticket." });
     }
   }
 );

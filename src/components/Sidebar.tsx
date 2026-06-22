@@ -2,7 +2,7 @@ import React from 'react';
 import logoFull from '../assets/harisco-full-logo.png';
 import type { AppUser, ActiveTab } from '../types';
 import { ROLE_LABELS } from '../constants';
-import { LayoutDashboard, Ticket, Users, Activity, LogOut } from 'lucide-react';
+import { LayoutDashboard, Ticket, Users, Activity, LogOut, Key } from 'lucide-react';
 import { formatEmployeeCode } from '../utils';
 
 interface SidebarProps {
@@ -10,6 +10,7 @@ interface SidebarProps {
   activeTab: ActiveTab;
   setActiveTab: (tab: ActiveTab) => void;
   onLogout: () => void;
+  onChangePasswordClick: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -17,6 +18,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   activeTab,
   setActiveTab,
   onLogout,
+  onChangePasswordClick,
 }) => {
   // Define menu items
   const menuItems = [
@@ -97,9 +99,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
         <button
+          id="btn-sidebar-reset-password"
+          className="btn btn-secondary"
+          style={{ width: '100%', padding: '6px 12px', fontSize: '0.8rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', backgroundColor: 'rgba(255, 255, 255, 0.05)', border: '1px solid var(--border-color)', color: 'white' }}
+          onClick={onChangePasswordClick}
+        >
+          <Key size={14} />
+          Reset Password
+        </button>
+        <button
           id="btn-sidebar-logout"
           className="btn btn-danger"
-          style={{ width: '100%', padding: '6px 12px', fontSize: '0.8rem', marginTop: '4px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px' }}
+          style={{ width: '100%', padding: '6px 12px', fontSize: '0.8rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px' }}
           onClick={onLogout}
         >
           <LogOut size={14} />

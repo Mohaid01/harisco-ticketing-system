@@ -207,7 +207,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <strong style={{ color: 'white' }}>Raise:</strong> Employee raises ticket (Hardware, Software, Maintenance, Upgrade).
               </li>
               <li>
-                <strong style={{ color: 'white' }}>IT Review:</strong> IT Administrator reviews ticket details and justification, then approves it.
+                <strong style={{ color: 'white' }}>IT Review:</strong> IT reviews ticket and chooses to resolve in-house or submit quotation.
               </li>
               <li>
                 <strong style={{ color: 'white' }}>Manager Signoff:</strong> Manager approves escalated tickets to initiate execution work.
@@ -216,7 +216,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <strong style={{ color: 'white' }}>Handover:</strong> IT resolves issue, triggering employee handover acceptance checklist.
               </li>
               <li>
-                <strong style={{ color: 'white' }}>Closure:</strong> Employee accepts the handover and closes the ticket.
+                <strong style={{ color: 'white' }}>Closure:</strong> Employee accepts handover, then IT closes the ticket.
               </li>
             </ol>
           </div>
@@ -225,10 +225,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <h2 className="panel-title" style={{ marginBottom: '12px' }}>Role Specifications</h2>
             <ul style={{ paddingLeft: '16px', fontSize: '0.8rem', display: 'flex', flexDirection: 'column', gap: '6px', color: 'var(--text-secondary)' }}>
               <li>
-                <strong>Employee:</strong> Create issues, view own tickets, and close ticket once issue resolved.
+                <strong>Employee:</strong> Create issues, view own tickets, and accept handover once issue resolved.
               </li>
               <li>
-                <strong>IT Admin:</strong> Add/remove users, audit all tickets, assign technicians, approve escalated tasks.
+                <strong>IT Admin:</strong> Add/remove users, audit all tickets, assign support engineers, approve tasks, and close tickets.
               </li>
               <li>
                 <strong>Manager:</strong> Approve ticket escalations, view all tickets, and track SLA statistics.
