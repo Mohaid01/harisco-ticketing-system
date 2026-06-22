@@ -1,16 +1,17 @@
 import nodemailer from "nodemailer";
 
-const host = process.env.SMTP_HOST || "your-smtp-host.com";
+const host = process.env.SMTP_HOST || "smtp.gmail.com";
 const port = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : 587;
-const user = process.env.SMTP_USER || "your-smtp-username";
-const pass = process.env.SMTP_PASS || "your-smtp-password";
+const user = process.env.SMTP_USER || "itdepartment@harisco.com";
+const pass = process.env.SMTP_PASS || "zuuowxoxgyqnnvmk";
 const secure = process.env.SMTP_SECURE || false;
 const fromAddress =
   process.env.SMTP_FROM || '"IT Department" <itdepartment@harisco.com>';
 
 let transporter: nodemailer.Transporter | null = null;
 
-const hasSmtpConfig = !!process.env.SMTP_HOST && !!process.env.SMTP_USER && !!process.env.SMTP_PASS;
+const hasSmtpConfig =
+  !!process.env.SMTP_HOST && !!process.env.SMTP_USER && !!process.env.SMTP_PASS;
 
 if (hasSmtpConfig) {
   transporter = nodemailer.createTransport({
