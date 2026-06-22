@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   harisco-ticketing:
@@ -18,7 +18,7 @@ services:
 
   cloudflared:
     image: cloudflare/cloudflared:latest
-    container_name: cloudflared-tunnel
+    container_name: ticketing-system-cloudflared-tunnel
     command: tunnel run
     environment:
       - TUNNEL_TOKEN=eyJhIjoiZGNiNTYxMDIxOWQ3OTAzNTdlZmUxMzJiNDg4ZTM2MzEiLCJ0IjoiYTQ0Y2Q5NGMtZDFiOS00MzhjLWFiMjEtNTJmNTA0YTkzMzFhIiwicyI6Ik1HWmxNbUkwWW1VdE1tRTNZaTAwWldZekxUaGpOall0TW1GbE1tWmtNekZpTVdWbCJ9
