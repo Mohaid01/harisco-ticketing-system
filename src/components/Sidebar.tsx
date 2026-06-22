@@ -1,9 +1,16 @@
-import React from 'react';
-import logoFull from '../assets/harisco-full-logo.png';
-import type { AppUser, ActiveTab } from '../types';
-import { ROLE_LABELS } from '../constants';
-import { LayoutDashboard, Ticket, Users, Activity, LogOut, Key } from 'lucide-react';
-import { formatEmployeeCode } from '../utils';
+import React from "react";
+import logoFull from "../assets/harisco-full-logo.png";
+import type { AppUser, ActiveTab } from "../types";
+import { ROLE_LABELS } from "../constants";
+import {
+  LayoutDashboard,
+  Ticket,
+  Users,
+  Activity,
+  LogOut,
+  Key,
+} from "lucide-react";
+import { formatEmployeeCode } from "../utils";
 
 interface SidebarProps {
   currentUser: AppUser;
@@ -22,14 +29,36 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   // Define menu items
   const menuItems = [
-    { id: 'dashboard' as ActiveTab, label: 'Dashboard', icon: LayoutDashboard, roles: ['it', 'employee', 'manager'] },
-    { id: 'tickets' as ActiveTab, label: 'Tickets', icon: Ticket, roles: ['it', 'employee', 'manager'] },
-    { id: 'users' as ActiveTab, label: 'User Management', icon: Users, roles: ['it'] },
-    { id: 'activity_log' as ActiveTab, label: 'Activity Logs', icon: Activity, roles: ['it', 'employee', 'manager'] },
+    {
+      id: "dashboard" as ActiveTab,
+      label: "Dashboard",
+      icon: LayoutDashboard,
+      roles: ["it", "employee", "manager"],
+    },
+    {
+      id: "tickets" as ActiveTab,
+      label: "Tickets",
+      icon: Ticket,
+      roles: ["it", "employee", "manager"],
+    },
+    {
+      id: "users" as ActiveTab,
+      label: "User Management",
+      icon: Users,
+      roles: ["it"],
+    },
+    {
+      id: "activity_log" as ActiveTab,
+      label: "Activity Logs",
+      icon: Activity,
+      roles: ["it", "employee", "manager"],
+    },
   ];
 
   // Filter items by current user role
-  const visibleItems = menuItems.filter((item) => item.roles.includes(currentUser.role));
+  const visibleItems = menuItems.filter((item) =>
+    item.roles.includes(currentUser.role),
+  );
 
   const getRoleBadgeClass = (role: string) => {
     return `role-badge-pill role-badge-${role}`;
@@ -41,7 +70,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="logo-container">
           <img src={logoFull} alt="Harisco Logo" className="logo-full" />
         </div>
-        <span className="sidebar-tagline">Service Desk operations</span>
+        <span className="sidebar-tagline">IT Support Operations</span>
       </div>
 
       <nav style={{ flex: 1 }}>
@@ -53,7 +82,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <li key={item.id}>
                 <button
                   id={`sidebar-tab-${item.id}`}
-                  className={`sidebar-item ${isActive ? 'active' : ''}`}
+                  className={`sidebar-item ${isActive ? "active" : ""}`}
                   onClick={() => setActiveTab(item.id)}
                 >
                   <Icon size={18} />
@@ -65,31 +94,64 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </ul>
       </nav>
 
-      <div className="sidebar-footer" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <div
+        className="sidebar-footer"
+        style={{ display: "flex", flexDirection: "column", gap: "12px" }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <div
             style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '50%',
-              backgroundColor: 'var(--color-primary)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '0.85rem',
+              width: "40px",
+              height: "40px",
+              borderRadius: "50%",
+              backgroundColor: "var(--color-primary)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "0.85rem",
               fontWeight: 700,
-              color: 'white',
+              color: "white",
               flexShrink: 0,
             }}
           >
-            {currentUser.name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)}
+            {currentUser.name
+              .split(" ")
+              .map((n) => n[0])
+              .join("")
+              .toUpperCase()
+              .slice(0, 2)}
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', flex: 1 }}>
-            <span style={{ fontSize: '0.88rem', fontWeight: 600, color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden",
+              flex: 1,
+            }}
+          >
+            <span
+              style={{
+                fontSize: "0.88rem",
+                fontWeight: 600,
+                color: "white",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+            >
               {currentUser.name}
             </span>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              Employee Code: {formatEmployeeCode(currentUser.username || currentUser.id)}
+            <span
+              style={{
+                fontSize: "0.75rem",
+                color: "var(--text-secondary)",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+            >
+              Employee Code:{" "}
+              {formatEmployeeCode(currentUser.username || currentUser.id)}
             </span>
             <div>
               <span className={getRoleBadgeClass(currentUser.role)}>
@@ -101,7 +163,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <button
           id="btn-sidebar-reset-password"
           className="btn btn-secondary"
-          style={{ width: '100%', padding: '6px 12px', fontSize: '0.8rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', backgroundColor: 'rgba(255, 255, 255, 0.05)', border: '1px solid var(--border-color)', color: 'white' }}
+          style={{
+            width: "100%",
+            padding: "6px 12px",
+            fontSize: "0.8rem",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            gap: "6px",
+            backgroundColor: "rgba(255, 255, 255, 0.05)",
+            border: "1px solid var(--border-color)",
+            color: "white",
+          }}
           onClick={onChangePasswordClick}
         >
           <Key size={14} />
@@ -110,7 +183,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <button
           id="btn-sidebar-logout"
           className="btn btn-danger"
-          style={{ width: '100%', padding: '6px 12px', fontSize: '0.8rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px' }}
+          style={{
+            width: "100%",
+            padding: "6px 12px",
+            fontSize: "0.8rem",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            gap: "6px",
+          }}
           onClick={onLogout}
         >
           <LogOut size={14} />

@@ -337,6 +337,7 @@ h1.page-title {
 .stat-card.done .stat-icon { background-color: var(--status-closed-bg); color: var(--status-closed); }
 
 .stat-value {
+  display: block;
   font-size: 2rem;
   font-weight: 700;
   color: white;
@@ -345,6 +346,7 @@ h1.page-title {
 }
 
 .stat-desc {
+  display: block;
   font-size: 0.75rem;
   color: var(--text-muted);
 }

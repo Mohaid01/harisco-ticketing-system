@@ -15,7 +15,10 @@ interface UserManagementProps {
     password?: string;
   }) => void;
   onDeleteUser: (userId: string) => void;
-  onUpdateUser?: (userId: string, data: { name: string; email: string | null }) => void;
+  onUpdateUser?: (
+    userId: string,
+    data: { name: string; email: string | null },
+  ) => void;
 }
 
 export const UserManagement: React.FC<UserManagementProps> = ({
@@ -192,7 +195,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                 id="user-password-input"
                 type="password"
                 className="form-input"
-                placeholder="Optional (defaults to harisco123)"
+                placeholder={`Optional (defaults to ${import.meta.env.DEFAULT_USER_PASSWORD})`}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
@@ -236,9 +239,21 @@ export const UserManagement: React.FC<UserManagementProps> = ({
             {users.map((user) => (
               <div className="user-card" key={user.id}>
                 {editingUserId === user.id ? (
-                  <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "10px" }}>
+                  <div
+                    style={{
+                      width: "100%",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "10px",
+                    }}
+                  >
                     <div className="form-group" style={{ marginBottom: "8px" }}>
-                      <label className="form-label" style={{ fontSize: "0.75rem", marginBottom: "4px" }}>Full Name</label>
+                      <label
+                        className="form-label"
+                        style={{ fontSize: "0.75rem", marginBottom: "4px" }}
+                      >
+                        Full Name
+                      </label>
                       <input
                         type="text"
                         className="form-input"
@@ -248,8 +263,16 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                         required
                       />
                     </div>
-                    <div className="form-group" style={{ marginBottom: "12px" }}>
-                      <label className="form-label" style={{ fontSize: "0.75rem", marginBottom: "4px" }}>Email Address</label>
+                    <div
+                      className="form-group"
+                      style={{ marginBottom: "12px" }}
+                    >
+                      <label
+                        className="form-label"
+                        style={{ fontSize: "0.75rem", marginBottom: "4px" }}
+                      >
+                        Email Address
+                      </label>
                       <input
                         type="email"
                         className="form-input"
@@ -262,14 +285,22 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                     <div style={{ display: "flex", gap: "8px", width: "100%" }}>
                       <button
                         className="btn btn-secondary"
-                        style={{ flex: 1, padding: "6px 10px", fontSize: "0.75rem" }}
+                        style={{
+                          flex: 1,
+                          padding: "6px 10px",
+                          fontSize: "0.75rem",
+                        }}
                         onClick={() => setEditingUserId(null)}
                       >
                         Cancel
                       </button>
                       <button
                         className="btn btn-primary"
-                        style={{ flex: 1, padding: "6px 10px", fontSize: "0.75rem" }}
+                        style={{
+                          flex: 1,
+                          padding: "6px 10px",
+                          fontSize: "0.75rem",
+                        }}
                         onClick={() => handleSaveEdit(user.id)}
                       >
                         Save
@@ -300,13 +331,36 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                     <span className="user-card-name">{user.name}</span>
                     <span
                       className="user-card-email"
-                      style={{ display: "flex", flexDirection: "column", gap: "2px", alignItems: "center", fontSize: "0.78rem", color: "var(--text-secondary)" }}
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "2px",
+                        alignItems: "center",
+                        fontSize: "0.78rem",
+                        color: "var(--text-secondary)",
+                      }}
                     >
-                      <span>Code: {formatEmployeeCode(user.username || user.id)}</span>
+                      <span>
+                        Code: {formatEmployeeCode(user.username || user.id)}
+                      </span>
                       {user.email ? (
-                        <span style={{ color: "var(--color-primary-solid)", wordBreak: "break-all" }}>{user.email}</span>
+                        <span
+                          style={{
+                            color: "var(--color-primary-solid)",
+                            wordBreak: "break-all",
+                          }}
+                        >
+                          {user.email}
+                        </span>
                       ) : (
-                        <span style={{ fontStyle: "italic", color: "var(--text-muted)" }}>No Email Address</span>
+                        <span
+                          style={{
+                            fontStyle: "italic",
+                            color: "var(--text-muted)",
+                          }}
+                        >
+                          No Email Address
+                        </span>
                       )}
                     </span>
 
@@ -316,7 +370,15 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                       </span>
                     </div>
 
-                    <div className="user-card-actions" style={{ display: "flex", flexDirection: "column", gap: "6px", width: "100%" }}>
+                    <div
+                      className="user-card-actions"
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "6px",
+                        width: "100%",
+                      }}
+                    >
                       <button
                         className="btn btn-secondary"
                         style={{

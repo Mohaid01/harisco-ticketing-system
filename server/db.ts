@@ -130,7 +130,8 @@ export async function initDb() {
   // Seed initial admin user if table is empty
   const userCount = await db.get<{ count: number }>('SELECT COUNT(*) as count FROM users');
   if (userCount && userCount.count === 0) {
-    const adminPassword = 'HarisCo@95#';
+    const adminPassword = process.env.ADMIN_INITIAL_PASSWORD;
+    if (!adminPassword) throw new Error("ADMIN_INITIAL_PASSWORD required");
     const passwordHash = await bcrypt.hash(adminPassword, 10);
 
     await db.run(

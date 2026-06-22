@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
 import jwt from "jsonwebtoken";
@@ -7,7 +8,8 @@ import { fileURLToPath } from "url";
 import { initDb, getDb } from "./db.js";
 import { sendEmail } from "./email.js";
 
-const JWT_SECRET = "harisco_super_secret_jwt_key_2026";
+const JWT_SECRET = process.env.JWT_SECRET as string;
+if (!JWT_SECRET) throw new Error("JWT_SECRET is required");
 const PORT = process.env.PORT || 8082;
 
 const __filename = fileURLToPath(import.meta.url);
@@ -307,14 +309,15 @@ app.post(
 
     const { name, email, username, role, password } = req.body;
     if (!name || !username || !role) {
-      res
-        .status(400)
-        .json({ error: "Name, username, and role are required." });
+      res.status(400).json({ error: "Name, username, and role are required." });
       return;
     }
 
-    const finalEmail = email && email.trim() ? email.trim().toLowerCase() : null;
-    const clearPassword = password || "hc123";
+    const finalEmail =
+      email && email.trim() ? email.trim().toLowerCase() : null;
+    const defaultPassword = process.env.DEFAULT_USER_PASSWORD;
+    if (!defaultPassword) throw new Error("DEFAULT_USER_PASSWORD required");
+    const clearPassword = password || defaultPassword;
 
     try {
       const db = getDb();
@@ -326,7 +329,9 @@ app.post(
           [finalEmail],
         );
         if (existingEmail) {
-          res.status(400).json({ error: "User with this email already exists." });
+          res
+            .status(400)
+            .json({ error: "User with this email already exists." });
           return;
         }
       }
@@ -413,7 +418,9 @@ app.put(
   authenticateToken,
   async (req: AuthRequest, res: Response) => {
     if (req.user?.role !== "it") {
-      res.status(403).json({ error: "Forbidden. User modification requires IT role." });
+      res
+        .status(403)
+        .json({ error: "Forbidden. User modification requires IT role." });
       return;
     }
 
@@ -425,7 +432,8 @@ app.put(
       return;
     }
 
-    const finalEmail = email && email.trim() ? email.trim().toLowerCase() : null;
+    const finalEmail =
+      email && email.trim() ? email.trim().toLowerCase() : null;
 
     try {
       const db = getDb();
@@ -434,17 +442,19 @@ app.put(
       if (finalEmail) {
         const existingEmail = await db.get(
           "SELECT id FROM users WHERE LOWER(email) = ? AND id != ?",
-          [finalEmail, userId]
+          [finalEmail, userId],
         );
         if (existingEmail) {
-          res.status(400).json({ error: "User with this email already exists." });
+          res
+            .status(400)
+            .json({ error: "User with this email already exists." });
           return;
         }
       }
 
       const result = await db.run(
         "UPDATE users SET name = ?, email = ? WHERE id = ?",
-        [name.trim(), finalEmail, userId]
+        [name.trim(), finalEmail, userId],
       );
 
       if (result.changes === 0) {
@@ -457,7 +467,7 @@ app.put(
       console.error("Failed to update user:", error);
       res.status(500).json({ error: "Failed to update user details." });
     }
-  }
+  },
 );
 
 // Tickets Routes
@@ -591,17 +601,20 @@ app.post(
       if (req.user?.role === "employee") {
         try {
           const itUsers = await db.all<{ email: string }>(
-            "SELECT email FROM users WHERE role = 'it' AND email IS NOT NULL AND email != ''"
+            "SELECT email FROM users WHERE role = 'it' AND email IS NOT NULL AND email != ''",
           );
           for (const itUser of itUsers) {
             sendEmail(
               itUser.email,
               `[New Ticket] ${ticketId} Raised by ${reporterName}`,
-              `Hello,\n\nA new support ticket has been raised by ${reporterName} (${reporterEmail}).\n\nTicket ID: ${ticketId}\nType: ${type}\nDescription:\n${description}\n\nPlease log in to review and assign this ticket.`
+              `Hello,\n\nA new support ticket has been raised by ${reporterName} (${reporterEmail}).\n\nTicket ID: ${ticketId}\nType: ${type}\nDescription:\n${description}\n\nPlease log in to review and assign this ticket.`,
             ).catch((err) => console.error("Email send failed:", err));
           }
         } catch (err) {
-          console.error("Failed to query IT users for email notification:", err);
+          console.error(
+            "Failed to query IT users for email notification:",
+            err,
+          );
         }
       }
 
@@ -699,13 +712,13 @@ app.post(
       if (status === "awaiting_manager_approval") {
         try {
           const managers = await db.all<{ email: string }>(
-            "SELECT email FROM users WHERE role = 'manager' AND email IS NOT NULL AND email != ''"
+            "SELECT email FROM users WHERE role = 'manager' AND email IS NOT NULL AND email != ''",
           );
           for (const mgr of managers) {
             sendEmail(
               mgr.email,
               `[Escalation Request] Ticket ${ticketId} Awaiting Manager Approval`,
-              `Hello,\n\nA ticket has been escalated for your approval by ${req.user?.name || "IT"}.\n\nTicket ID: ${ticketId}\nQuotation Amount: Rs ${quotation !== undefined ? quotation : (ticket.quotation || 'N/A')}\nEscalation Message: ${actionMessage}\n\nPlease log in to review and approve this request.`
+              `Hello,\n\nA ticket has been escalated for your approval by ${req.user?.name || "IT"}.\n\nTicket ID: ${ticketId}\nQuotation Amount: Rs ${quotation !== undefined ? quotation : ticket.quotation || "N/A"}\nEscalation Message: ${actionMessage}\n\nPlease log in to review and approve this request.`,
             ).catch((err) => console.error("Email send failed:", err));
           }
         } catch (err) {
@@ -714,18 +727,21 @@ app.post(
       }
 
       // Rule 3: Approved by manager -> Inform assigned IT engineer via email
-      if (ticket.status === "awaiting_manager_approval" && status === "awaiting_handover") {
+      if (
+        ticket.status === "awaiting_manager_approval" &&
+        status === "awaiting_handover"
+      ) {
         if (ticket.assigneeId) {
           try {
             const assignee = await db.get<{ email: string }>(
               "SELECT email FROM users WHERE id = ? AND email IS NOT NULL AND email != ''",
-              [ticket.assigneeId]
+              [ticket.assigneeId],
             );
             if (assignee && assignee.email) {
               sendEmail(
                 assignee.email,
                 `[Approved by Manager] Ticket ${ticketId} Ready for Handover`,
-                `Hello,\n\nThe ticket assigned to you has been approved by the manager.\n\nTicket ID: ${ticketId}\nDescription: ${ticket.description}\n\nPlease proceed with the resolution work and handover.`
+                `Hello,\n\nThe ticket assigned to you has been approved by the manager.\n\nTicket ID: ${ticketId}\nDescription: ${ticket.description}\n\nPlease proceed with the resolution work and handover.`,
               ).catch((err) => console.error("Email send failed:", err));
             }
           } catch (err) {
@@ -761,7 +777,9 @@ app.put(
   authenticateToken,
   async (req: AuthRequest, res: Response) => {
     if (req.user?.role !== "it") {
-      res.status(403).json({ error: "Forbidden. Ticket editing requires IT role." });
+      res
+        .status(403)
+        .json({ error: "Forbidden. Ticket editing requires IT role." });
       return;
     }
 
@@ -775,8 +793,10 @@ app.put(
 
     try {
       const db = getDb();
-      
-      const ticket = await db.get("SELECT * FROM tickets WHERE id = ?", [ticketId]);
+
+      const ticket = await db.get("SELECT * FROM tickets WHERE id = ?", [
+        ticketId,
+      ]);
       if (!ticket) {
         res.status(404).json({ error: "Ticket not found." });
         return;
@@ -786,7 +806,7 @@ app.put(
 
       await db.run(
         "UPDATE tickets SET description = ?, type = ?, justification = ?, updatedAt = ? WHERE id = ?",
-        [description, type, justification || "", timestamp, ticketId]
+        [description, type, justification || "", timestamp, ticketId],
       );
 
       // Insert activity log
@@ -802,7 +822,7 @@ app.put(
           timestamp,
           req.user?.name || "",
           req.user?.role || "it",
-        ]
+        ],
       );
 
       res.json({
@@ -821,7 +841,7 @@ app.put(
       console.error("Failed to edit ticket:", error);
       res.status(500).json({ error: "Failed to edit ticket." });
     }
-  }
+  },
 );
 
 app.delete(
@@ -829,7 +849,9 @@ app.delete(
   authenticateToken,
   async (req: AuthRequest, res: Response) => {
     if (req.user?.role !== "it") {
-      res.status(403).json({ error: "Forbidden. Ticket deletion requires IT role." });
+      res
+        .status(403)
+        .json({ error: "Forbidden. Ticket deletion requires IT role." });
       return;
     }
 
@@ -837,8 +859,10 @@ app.delete(
 
     try {
       const db = getDb();
-      
-      const ticket = await db.get("SELECT id FROM tickets WHERE id = ?", [ticketId]);
+
+      const ticket = await db.get("SELECT id FROM tickets WHERE id = ?", [
+        ticketId,
+      ]);
       if (!ticket) {
         res.status(404).json({ error: "Ticket not found." });
         return;
@@ -851,7 +875,7 @@ app.delete(
       console.error("Failed to delete ticket:", error);
       res.status(500).json({ error: "Failed to delete ticket." });
     }
-  }
+  },
 );
 
 // Assign Ticket (IT Admin action)
