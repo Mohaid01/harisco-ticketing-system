@@ -530,11 +530,19 @@ app.post(
     try {
       const db = getDb();
 
-      // Generate sequential or random ticket code
-      const countResult = await db.get<{ count: number }>(
-        "SELECT COUNT(*) as count FROM tickets",
-      );
-      const index = (countResult?.count || 0) + 1; // Start from 1
+      // Generate sequential ticket code based on max index to prevent collision after deletions
+      const allTickets = await db.all<{ id: string }>("SELECT id FROM tickets");
+      let maxIndex = 0;
+      for (const t of allTickets) {
+        const match = t.id.match(/HCIT-TCK-(\d+)/);
+        if (match) {
+          const num = parseInt(match[1], 10);
+          if (num > maxIndex) {
+            maxIndex = num;
+          }
+        }
+      }
+      const index = maxIndex + 1;
       const ticketId = `HCIT-TCK-${index}`;
 
       const timestamp = new Date().toISOString();
