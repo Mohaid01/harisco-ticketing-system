@@ -1,5 +1,5 @@
 export interface AttendanceLog {
-  id?: number;
+  id: number;
   userId: string;
   name: string;
   ioTime: string;

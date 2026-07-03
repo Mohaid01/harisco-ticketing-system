@@ -99,6 +99,18 @@ export async function initDb() {
     // Column might already exist, ignore error
   }
 
+  try {
+    await db.exec('ALTER TABLE users ADD COLUMN department TEXT');
+  } catch {
+    // Column might already exist, ignore error
+  }
+
+  try {
+    await db.exec('ALTER TABLE users ADD COLUMN designation TEXT');
+  } catch {
+    // Column might already exist, ignore error
+  }
+
   // Create Comments Table
   await db.exec(`
     CREATE TABLE IF NOT EXISTS comments (

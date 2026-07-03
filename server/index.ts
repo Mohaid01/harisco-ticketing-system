@@ -313,7 +313,7 @@ app.get(
     try {
       const db = getDb();
       const users = await db.all(
-        "SELECT id, name, email, username, role, avatar FROM users",
+        "SELECT id, name, email, username, role, avatar, department, designation FROM users",
       );
       res.json(users);
     } catch {
@@ -451,7 +451,7 @@ app.put(
     }
 
     const userId = req.params.id;
-    const { name, email } = req.body;
+    const { name, email, department, designation } = req.body;
 
     if (!name || !name.trim()) {
       res.status(400).json({ error: "Name is required." });
@@ -460,6 +460,8 @@ app.put(
 
     const finalEmail =
       email && email.trim() ? email.trim().toLowerCase() : null;
+    const finalDepartment = department && department.trim() ? department.trim() : null;
+    const finalDesignation = designation && designation.trim() ? designation.trim() : null;
 
     try {
       const db = getDb();
@@ -479,8 +481,8 @@ app.put(
       }
 
       const result = await db.run(
-        "UPDATE users SET name = ?, email = ? WHERE id = ?",
-        [name.trim(), finalEmail, userId],
+        "UPDATE users SET name = ?, email = ?, department = ?, designation = ? WHERE id = ?",
+        [name.trim(), finalEmail, finalDepartment, finalDesignation, userId],
       );
 
       if (result.changes === 0) {
@@ -488,7 +490,7 @@ app.put(
         return;
       }
 
-      res.json({ id: userId, name: name.trim(), email: finalEmail });
+      res.json({ id: userId, name: name.trim(), email: finalEmail, department: finalDepartment, designation: finalDesignation });
     } catch (error) {
       console.error("Failed to update user:", error);
       res.status(500).json({ error: "Failed to update user details." });
@@ -1105,6 +1107,37 @@ app.get(
   }
 );
 
+// Delete a single attendance log (IT only)
+app.delete(
+  "/api/attendance/:id",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    if (req.user?.role !== "it") {
+      res.status(403).json({ error: "Forbidden. Attendance log deletion requires IT role." });
+      return;
+    }
+
+    const logId = parseInt(req.params.id, 10);
+    if (isNaN(logId)) {
+      res.status(400).json({ error: "Invalid log ID." });
+      return;
+    }
+
+    try {
+      const db = getDb();
+      const result = await db.run("DELETE FROM attendance_logs WHERE id = ?", [logId]);
+      if (result.changes === 0) {
+        res.status(404).json({ error: "Attendance log not found." });
+        return;
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Failed to delete attendance log:", error);
+      res.status(500).json({ error: "Failed to delete attendance log." });
+    }
+  }
+);
+
 // Attendance SSE Stream endpoint for real-time updates
 app.get("/api/attendance/stream", authenticateToken, (req: AuthRequest, res: Response) => {
   res.setHeader("Content-Type", "text/event-stream");
@@ -1247,8 +1280,19 @@ async function startServer() {
                     [userId, `${punchDate}%`]
                   );
                   const count = dayLogsCount ? dayLogsCount.count : 0;
+
                   if (count === 0) {
-                    status = "Check-In";
+                    // Extract hour in PKT (UTC+5) to enforce the 6 PM check-in cutoff
+                    const punchHourPKT = (() => {
+                      try {
+                        const dateStr = punchTime.includes("T") ? punchTime : punchTime.replace(" ", "T");
+                        const d = new Date(dateStr + (dateStr.endsWith("Z") ? "" : "+05:00"));
+                        return d.getHours();
+                      } catch {
+                        return 0;
+                      }
+                    })();
+                    status = punchHourPKT >= 18 ? "Ignored" : "Check-In";
                   } else if (count === 1) {
                     status = "Check-Out";
                   } else {

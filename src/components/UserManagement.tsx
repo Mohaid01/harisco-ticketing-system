@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import type { AppUser, UserRole } from "../types";
 import { ROLE_LABELS } from "../constants";
-import { UserPlus, Trash2 } from "lucide-react";
+import { UserPlus, Trash2, Building2, Briefcase } from "lucide-react";
 import { formatEmployeeCode } from "../utils";
 
 interface UserManagementProps {
@@ -17,7 +17,7 @@ interface UserManagementProps {
   onDeleteUser: (userId: string) => void;
   onUpdateUser?: (
     userId: string,
-    data: { name: string; email: string | null },
+    data: { name: string; email: string | null; department?: string | null; designation?: string | null },
   ) => void;
 }
 
@@ -35,10 +35,11 @@ export const UserManagement: React.FC<UserManagementProps> = ({
   const [role, setRole] = useState<UserRole>("employee");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // States for inline user editing
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editEmail, setEditEmail] = useState("");
+  const [editDepartment, setEditDepartment] = useState("");
+  const [editDesignation, setEditDesignation] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,12 +52,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
 
     const formattedCode = formatEmployeeCode(username.trim());
 
-    // Check if username already exists
-    if (
-      users.some(
-        (u) => u.username?.toLowerCase() === formattedCode.toLowerCase(),
-      )
-    ) {
+    if (users.some((u) => u.username?.toLowerCase() === formattedCode.toLowerCase())) {
       setErrorMsg("A user with this employee code already exists.");
       return;
     }
@@ -85,43 +81,37 @@ export const UserManagement: React.FC<UserManagementProps> = ({
       onUpdateUser(userId, {
         name: editName.trim(),
         email: editEmail.trim() || null,
+        department: editDepartment.trim() || null,
+        designation: editDesignation.trim() || null,
       });
     }
     setEditingUserId(null);
   };
 
-  const getRoleBadgeClass = (role: string) => {
-    return `role-badge-pill role-badge-${role}`;
+  const startEdit = (user: AppUser) => {
+    setEditingUserId(user.id);
+    setEditName(user.name);
+    setEditEmail(user.email || "");
+    setEditDepartment(user.department || "");
+    setEditDesignation(user.designation || "");
   };
+
+  const getRoleBadgeClass = (r: string) => `role-badge-pill role-badge-${r}`;
+
+  const inlineInputStyle: React.CSSProperties = { fontSize: "0.85rem", padding: "6px 10px" };
+  const inlineLabelStyle: React.CSSProperties = { fontSize: "0.75rem", marginBottom: "4px" };
 
   return (
     <div>
       <div style={{ marginBottom: "24px" }}>
         <h1 className="page-title">User Management</h1>
-        <p className="page-subtitle">
-          Add and delete user accounts. Manage role authorizations.
-        </p>
+        <p className="page-subtitle">Add and delete user accounts. Manage role authorizations.</p>
       </div>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 2fr",
-          gap: "24px",
-          alignItems: "start",
-        }}
-      >
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "24px", alignItems: "start" }}>
         {/* Left Column: Add User Form */}
         <div className="panel" style={{ padding: "24px" }}>
-          <h2
-            className="panel-title"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              marginBottom: "20px",
-            }}
-          >
+          <h2 className="panel-title" style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "20px" }}>
             <UserPlus size={18} className="status-progress" />
             Add New User
           </h2>
@@ -144,9 +134,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
 
           <form onSubmit={handleSubmit}>
             <div className="form-group">
-              <label htmlFor="user-name-input" className="form-label">
-                Full Name
-              </label>
+              <label htmlFor="user-name-input" className="form-label">Full Name</label>
               <input
                 id="user-name-input"
                 type="text"
@@ -159,9 +147,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
             </div>
 
             <div className="form-group">
-              <label htmlFor="user-username-input" className="form-label">
-                Employee Code
-              </label>
+              <label htmlFor="user-username-input" className="form-label">Employee Code</label>
               <input
                 id="user-username-input"
                 type="text"
@@ -174,9 +160,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
             </div>
 
             <div className="form-group">
-              <label htmlFor="user-email-input" className="form-label">
-                Email Address (Optional)
-              </label>
+              <label htmlFor="user-email-input" className="form-label">Email Address (Optional)</label>
               <input
                 id="user-email-input"
                 type="email"
@@ -188,9 +172,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
             </div>
 
             <div className="form-group">
-              <label htmlFor="user-password-input" className="form-label">
-                Password
-              </label>
+              <label htmlFor="user-password-input" className="form-label">Password</label>
               <input
                 id="user-password-input"
                 type="password"
@@ -202,9 +184,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
             </div>
 
             <div className="form-group" style={{ marginBottom: "24px" }}>
-              <label htmlFor="user-role-select" className="form-label">
-                System Role
-              </label>
+              <label htmlFor="user-role-select" className="form-label">System Role</label>
               <select
                 id="user-role-select"
                 className="form-input"
@@ -218,12 +198,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
               </select>
             </div>
 
-            <button
-              id="btn-add-user-submit"
-              type="submit"
-              className="btn btn-primary"
-              style={{ width: "100%" }}
-            >
+            <button id="btn-add-user-submit" type="submit" className="btn btn-primary" style={{ width: "100%" }}>
               Create Account
             </button>
           </form>
@@ -239,70 +214,32 @@ export const UserManagement: React.FC<UserManagementProps> = ({
             {users.map((user) => (
               <div className="user-card" key={user.id}>
                 {editingUserId === user.id ? (
-                  <div
-                    style={{
-                      width: "100%",
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "10px",
-                    }}
-                  >
-                    <div className="form-group" style={{ marginBottom: "8px" }}>
-                      <label
-                        className="form-label"
-                        style={{ fontSize: "0.75rem", marginBottom: "4px" }}
-                      >
-                        Full Name
-                      </label>
-                      <input
-                        type="text"
-                        className="form-input"
-                        style={{ fontSize: "0.85rem", padding: "6px 10px" }}
-                        value={editName}
-                        onChange={(e) => setEditName(e.target.value)}
-                        required
-                      />
+                  <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "10px" }}>
+                    <div className="form-group" style={{ marginBottom: "0" }}>
+                      <label className="form-label" style={inlineLabelStyle}>Full Name</label>
+                      <input type="text" className="form-input" style={inlineInputStyle} value={editName} onChange={(e) => setEditName(e.target.value)} required />
                     </div>
-                    <div
-                      className="form-group"
-                      style={{ marginBottom: "12px" }}
-                    >
-                      <label
-                        className="form-label"
-                        style={{ fontSize: "0.75rem", marginBottom: "4px" }}
-                      >
-                        Email Address
+                    <div className="form-group" style={{ marginBottom: "0" }}>
+                      <label className="form-label" style={inlineLabelStyle}>Email Address</label>
+                      <input type="email" className="form-input" style={inlineInputStyle} value={editEmail} onChange={(e) => setEditEmail(e.target.value)} placeholder="Optional" />
+                    </div>
+                    <div className="form-group" style={{ marginBottom: "0" }}>
+                      <label className="form-label" style={{ ...inlineLabelStyle, display: "flex", alignItems: "center", gap: "4px" }}>
+                        <Building2 size={12} /> Department
                       </label>
-                      <input
-                        type="email"
-                        className="form-input"
-                        style={{ fontSize: "0.85rem", padding: "6px 10px" }}
-                        value={editEmail}
-                        onChange={(e) => setEditEmail(e.target.value)}
-                        placeholder="Optional"
-                      />
+                      <input type="text" className="form-input" style={inlineInputStyle} value={editDepartment} onChange={(e) => setEditDepartment(e.target.value)} placeholder="e.g. Operations" />
+                    </div>
+                    <div className="form-group" style={{ marginBottom: "12px" }}>
+                      <label className="form-label" style={{ ...inlineLabelStyle, display: "flex", alignItems: "center", gap: "4px" }}>
+                        <Briefcase size={12} /> Designation
+                      </label>
+                      <input type="text" className="form-input" style={inlineInputStyle} value={editDesignation} onChange={(e) => setEditDesignation(e.target.value)} placeholder="e.g. Senior Engineer" />
                     </div>
                     <div style={{ display: "flex", gap: "8px", width: "100%" }}>
-                      <button
-                        className="btn btn-secondary"
-                        style={{
-                          flex: 1,
-                          padding: "6px 10px",
-                          fontSize: "0.75rem",
-                        }}
-                        onClick={() => setEditingUserId(null)}
-                      >
+                      <button className="btn btn-secondary" style={{ flex: 1, padding: "6px 10px", fontSize: "0.75rem" }} onClick={() => setEditingUserId(null)}>
                         Cancel
                       </button>
-                      <button
-                        className="btn btn-primary"
-                        style={{
-                          flex: 1,
-                          padding: "6px 10px",
-                          fontSize: "0.75rem",
-                        }}
-                        onClick={() => handleSaveEdit(user.id)}
-                      >
+                      <button className="btn btn-primary" style={{ flex: 1, padding: "6px 10px", fontSize: "0.75rem" }} onClick={() => handleSaveEdit(user.id)}>
                         Save
                       </button>
                     </div>
@@ -311,86 +248,47 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                   <>
                     <div
                       className="user-card-avatar"
-                      style={{
-                        backgroundColor: "var(--color-primary)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: "1.2rem",
-                        fontWeight: 700,
-                        color: "white",
-                      }}
+                      style={{ backgroundColor: "var(--color-primary)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.2rem", fontWeight: 700, color: "white" }}
                     >
-                      {user.name
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")
-                        .toUpperCase()
-                        .slice(0, 2)}
+                      {user.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)}
                     </div>
                     <span className="user-card-name">{user.name}</span>
-                    <span
-                      className="user-card-email"
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "2px",
-                        alignItems: "center",
-                        fontSize: "0.78rem",
-                        color: "var(--text-secondary)",
-                      }}
-                    >
-                      <span>
-                        Code: {formatEmployeeCode(user.username || user.id)}
-                      </span>
+
+                    <span className="user-card-email" style={{ display: "flex", flexDirection: "column", gap: "2px", alignItems: "center", fontSize: "0.78rem", color: "var(--text-secondary)" }}>
+                      <span>Code: {formatEmployeeCode(user.username || user.id)}</span>
                       {user.email ? (
-                        <span
-                          style={{
-                            color: "var(--color-primary-solid)",
-                            wordBreak: "break-all",
-                          }}
-                        >
-                          {user.email}
-                        </span>
+                        <span style={{ color: "var(--color-primary-solid)", wordBreak: "break-all" }}>{user.email}</span>
                       ) : (
-                        <span
-                          style={{
-                            fontStyle: "italic",
-                            color: "var(--text-muted)",
-                          }}
-                        >
-                          No Email Address
-                        </span>
+                        <span style={{ fontStyle: "italic", color: "var(--text-muted)" }}>No Email Address</span>
                       )}
                     </span>
 
+                    {(user.designation || user.department) && (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "2px", alignItems: "center", marginBottom: "4px" }}>
+                        {user.designation && (
+                          <span style={{ fontSize: "0.75rem", color: "var(--text-primary)", fontWeight: 500, display: "flex", alignItems: "center", gap: "4px" }}>
+                            <Briefcase size={11} style={{ color: "var(--text-muted)" }} />
+                            {user.designation}
+                          </span>
+                        )}
+                        {user.department && (
+                          <span style={{ fontSize: "0.72rem", color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: "4px" }}>
+                            <Building2 size={11} style={{ color: "var(--text-muted)" }} />
+                            {user.department}
+                          </span>
+                        )}
+                      </div>
+                    )}
+
                     <div style={{ marginBottom: "16px" }}>
-                      <span className={getRoleBadgeClass(user.role)}>
-                        {ROLE_LABELS[user.role]}
-                      </span>
+                      <span className={getRoleBadgeClass(user.role)}>{ROLE_LABELS[user.role]}</span>
                     </div>
 
-                    <div
-                      className="user-card-actions"
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "6px",
-                        width: "100%",
-                      }}
-                    >
+                    <div className="user-card-actions" style={{ display: "flex", flexDirection: "column", gap: "6px", width: "100%" }}>
                       <button
                         className="btn btn-secondary"
-                        style={{
-                          width: "100%",
-                          padding: "6px 12px",
-                          fontSize: "0.8rem",
-                        }}
-                        onClick={() => {
-                          setEditingUserId(user.id);
-                          setEditName(user.name);
-                          setEditEmail(user.email || "");
-                        }}
+                        style={{ width: "100%", padding: "6px 12px", fontSize: "0.8rem" }}
+                        onClick={() => startEdit(user)}
                       >
                         Edit User
                       </button>
@@ -398,11 +296,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                         <button
                           id={`btn-delete-user-${user.id}`}
                           className="btn btn-danger"
-                          style={{
-                            width: "100%",
-                            padding: "6px 12px",
-                            fontSize: "0.8rem",
-                          }}
+                          style={{ width: "100%", padding: "6px 12px", fontSize: "0.8rem" }}
                           onClick={() => onDeleteUser(user.id)}
                         >
                           <Trash2 size={12} />

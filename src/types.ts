@@ -7,6 +7,8 @@ export interface AppUser {
   username?: string;
   role: UserRole;
   needsPasswordReset?: number;
+  department?: string | null;
+  designation?: string | null;
 }
 
 export type TicketType = 'hardware' | 'software' | 'maintenance' | 'upgrade';
@@ -55,7 +57,7 @@ export interface Ticket {
 export type ActiveTab = 'dashboard' | 'tickets' | 'users' | 'activity_log' | 'attendance';
 
 export interface AttendanceLog {
-  id?: number;
+  id: number;
   userId: string;
   name: string;
   ioTime: string;
