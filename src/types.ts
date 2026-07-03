@@ -52,4 +52,15 @@ export interface Ticket {
   }[];
 }
 
-export type ActiveTab = 'dashboard' | 'tickets' | 'users' | 'activity_log';
+export type ActiveTab = 'dashboard' | 'tickets' | 'users' | 'activity_log' | 'attendance';
+
+export interface AttendanceLog {
+  id?: number;
+  userId: string;
+  name: string;
+  ioTime: string;
+  method: string;
+  status: string;
+  timestamp?: string;
+}
+

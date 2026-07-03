@@ -6,6 +6,7 @@ import { TicketDetails } from "./components/TicketDetails";
 import { NewTicketModal } from "./components/NewTicketModal";
 import { UserManagement } from "./components/UserManagement";
 import { ActivityLog } from "./components/ActivityLog";
+import { Attendance } from "./components/Attendance";
 import { Login } from "./components/Login";
 import { PasswordReset } from "./components/PasswordReset";
 import { ChangePasswordModal } from "./components/ChangePasswordModal";
@@ -643,6 +644,8 @@ function App() {
               onDeleteUser={handleDeleteUser}
               onUpdateUser={handleUpdateUser}
             />
+          ) : activeTab === "attendance" ? (
+            <Attendance currentUser={currentUser} />
           ) : (
             <ActivityLog
               tickets={tickets}

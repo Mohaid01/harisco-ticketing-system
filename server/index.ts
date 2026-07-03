@@ -9,6 +9,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { initDb, getDb } from "./db.js";
 import { sendEmail } from "./email.js";
+import { WebSocketServer } from "ws";
 
 const JWT_SECRET = process.env.JWT_SECRET as string;
 if (!JWT_SECRET) throw new Error("JWT_SECRET is required");
@@ -1085,6 +1086,22 @@ app.get(
   },
 );
 
+// Attendance logs GET endpoint
+app.get(
+  "/api/attendance",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const db = getDb();
+      const logs = await db.all("SELECT * FROM attendance_logs ORDER BY timestamp DESC");
+      res.json(logs);
+    } catch (error) {
+      console.error("Failed to retrieve attendance logs:", error);
+      res.status(500).json({ error: "Failed to retrieve attendance logs." });
+    }
+  }
+);
+
 // Start Database and Server
 // Serve static frontend files in production
 app.use(express.static(path.join(__dirname, "../dist")));
@@ -1097,8 +1114,169 @@ app.get(/.*/, (req, res) => {
 async function startServer() {
   try {
     await initDb();
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       console.log(`Backend server is running on http://localhost:${PORT}`);
+    });
+
+    // Integrated WebSocket Server for the biometric attendance device (Pioneer XML Bridge)
+    const wss = new WebSocketServer({ noServer: true });
+
+    server.on("upgrade", (request, socket, head) => {
+      // Handle websocket upgrade
+      wss.handleUpgrade(request, socket, head, (ws) => {
+        wss.emit("connection", ws, request);
+      });
+    });
+
+    const lastProcessedPunchMap = new Map<string, string>();
+    const METHOD_MAP: Record<string, string> = {
+      FP: "Fingerprint",
+      FACE: "Face",
+      CD: "Card",
+      CARD: "Card",
+      PWD: "Password",
+    };
+
+    wss.on("connection", (ws, req) => {
+      console.log(
+        `📡 [DEVICE CONNECTED] Connection open from IP: ${req.socket.remoteAddress}`,
+      );
+
+      ws.on("message", async (message) => {
+        const rawString = message.toString("utf8").trim();
+
+        const serialNoMatch = rawString.match(
+          /<DeviceSerialNo>(.*?)<\/DeviceSerialNo>/,
+        );
+        const serialNo = serialNoMatch ? serialNoMatch[1] : "RSS20230560326";
+
+        // 1. HANDSHAKE STEP 1: Registration
+        if (rawString.includes("<Request>Register</Request>")) {
+          const xmlResponse = `<?xml version="1.0"?>\r\n<Message>\r\n<Response>Register</Response>\r\n<Result>OK</Result>\r\n<DeviceSerialNo>${serialNo}</DeviceSerialNo>\r\n</Message>`;
+          return ws.send(xmlResponse);
+        }
+
+        // 2. HANDSHAKE STEP 2: Login
+        if (rawString.includes("<Request>Login</Request>")) {
+          const sessionToken = `TOKEN_${Date.now()}`;
+          const xmlLoginResponse = `<?xml version="1.0"?>\r\n<Message>\r\n<Response>Login</Response>\r\n<Result>OK</Result>\r\n<DeviceSerialNo>${serialNo}</DeviceSerialNo>\r\n<Token>${sessionToken}</Token>\r\n</Message>`;
+          return ws.send(xmlLoginResponse);
+        }
+
+        // 3. MANAGEMENT LOG HOOK (OpLog_v2)
+        if (rawString.includes("OpLog_v2")) {
+          try {
+            const transId =
+              rawString.match(/<TransID>(.*?)<\/TransID>/)?.[1] || "0";
+            const logId = rawString.match(/<LogID>(.*?)<\/LogID>/)?.[1] || "0";
+            const xmlOpResponse = `<?xml version="1.0"?>\r\n<Message>\r\n<Response>OpLog_v2</Response>\r\n<Result>OK</Result>\r\n<DeviceSerialNo>${serialNo}</DeviceSerialNo>\r\n<TransID>${transId}</TransID>\r\n<LogID>${logId}</LogID>\r\n</Message>`;
+            ws.send(xmlOpResponse);
+          } catch (err: any) {
+            console.error("❌ [ERROR] Processing Management Log:", err.message);
+          }
+          return;
+        }
+
+        // 4. LIVE ATTENDANCE PUNCH CAPTURE (TimeLog_v2 Event Core)
+        if (rawString.includes("TimeLog_v2")) {
+          try {
+            const userId = rawString.match(/<UserID>(.*?)<\/UserID>/)?.[1];
+            const punchTime = rawString.match(/<Time>(.*?)<\/Time>/)?.[1];
+            const actionRaw =
+              rawString.match(/<Action>(.*?)<\/Action>/)?.[1] || "FACE";
+            const attendStat =
+              rawString.match(/<AttendStat>(.*?)<\/AttendStat>/)?.[1] || "None";
+            const transId =
+              rawString.match(/<TransID>(.*?)<\/TransID>/)?.[1] || "0";
+            const logId = rawString.match(/<LogID>(.*?)<\/LogID>/)?.[1] || "0";
+
+            if (userId && punchTime) {
+              const xmlLogResponse = `<?xml version="1.0"?>\r\n<Message>\r\n<Response>TimeLog_v2</Response>\r\n<Result>OK</Result>\r\n<DeviceSerialNo>${serialNo}</DeviceSerialNo>\r\n<TransID>${transId}</TransID>\r\n<LogID>${logId}</LogID>\r\n</Message>`;
+              ws.send(xmlLogResponse);
+
+              const scanMethod = METHOD_MAP[actionRaw.toUpperCase()] || actionRaw;
+
+              if (userId === "0" || userId === "00000000") {
+                console.log(
+                  `⚠️ [SECURITY] Dropped a failed/unregistered scan attempt.`,
+                );
+                return;
+              }
+
+              const lastPunchTime = lastProcessedPunchMap.get(userId);
+
+              if (lastPunchTime !== punchTime) {
+                lastProcessedPunchMap.set(userId, punchTime);
+
+                const status = attendStat === "DutyOff" ? "Check-Out" : "Check-In";
+
+                // Pull name dynamically from our SQLite database
+                let parsedName = `Employee (ID: ${userId})`;
+                try {
+                  const db = getDb();
+                  // Standardize username lookup: check username = 'HC-' + padded 5-digit ID, or matching username/ID directly
+                  const paddedId = String(userId).padStart(5, '0');
+                  const targetUsername = `HC-${paddedId}`;
+                  const userDoc = await db.get<{ name: string }>(
+                    "SELECT name FROM users WHERE LOWER(username) = ? OR id = ?",
+                    [targetUsername.toLowerCase(), userId]
+                  );
+                  if (userDoc && userDoc.name) {
+                    parsedName = userDoc.name;
+                  }
+                } catch (lookupError: any) {
+                  console.error(
+                    "⚠️ [DB USER LOOKUP ERROR] Falling back to default name layout:",
+                    lookupError.message,
+                  );
+                }
+
+                console.log(
+                  `\n======================================================`,
+                );
+                console.log(`✅ [NEW ATTENDANCE CAPTURED]`);
+                console.log(`👤 Name:   ${parsedName}`);
+                console.log(`🆔 ID:     ${userId}`);
+                console.log(`⏰ Time:   ${punchTime}`);
+                console.log(`🛡️ Method: ${scanMethod}`);
+                console.log(`🚦 Status: ${status}`);
+                console.log(
+                  `======================================================\n`,
+                );
+
+                try {
+                  const db = getDb();
+                  await db.run(
+                    "INSERT INTO attendance_logs (name, userId, ioTime, method, status) VALUES (?, ?, ?, ?, ?)",
+                    [parsedName, userId, punchTime, scanMethod, status]
+                  );
+                  console.log(`[DB] Saved log profile successfully.`);
+                } catch (err: any) {
+                  console.error(
+                    "❌ [DB] Database Storage Error:",
+                    err.message,
+                  );
+                }
+              }
+            }
+          } catch (err: any) {
+            console.error("❌ [ERROR] Parsing XML Data Block:", err.message);
+          }
+          return;
+        }
+
+        // 5. HEARTBEAT MANAGER
+        if (
+          rawString.includes("<Request>Heartbeat</Request>") ||
+          rawString.includes("Heartbeat")
+        ) {
+          console.log("💓 [SOCKET HEARTBEAT] Device is online.");
+          const xmlHeartbeatResponse = `<?xml version="1.0"?>\r\n<Message>\r\n<Response>Heartbeat</Response>\r\n<Result>OK</Result>\r\n</Message>`;
+          return ws.send(xmlHeartbeatResponse);
+        }
+      });
+
+      ws.on("close", () => console.log("🔌 [DEVICE DISCONNECTED] Channel closed."));
     });
   } catch (err) {
     console.error("Failed to start database/server:", err);

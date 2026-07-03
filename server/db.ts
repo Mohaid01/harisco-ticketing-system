@@ -127,6 +127,19 @@ export async function initDb() {
     )
   `);
 
+  // Create Attendance Logs Table
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS attendance_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      userId TEXT NOT NULL,
+      ioTime TEXT NOT NULL,
+      method TEXT NOT NULL,
+      status TEXT NOT NULL,
+      timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
   // Seed initial admin user if table is empty
   const userCount = await db.get<{ count: number }>('SELECT COUNT(*) as count FROM users');
   if (userCount && userCount.count === 0) {
