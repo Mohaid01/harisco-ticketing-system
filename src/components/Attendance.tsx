@@ -1,17 +1,23 @@
 import React, { useState, useEffect } from "react";
 import type { AppUser, AttendanceLog } from "../types";
 import { formatEmployeeCode } from "../utils";
-import { RefreshCw, Search, Clock } from "lucide-react";
+import { RefreshCw, Search, Clock, Calendar } from "lucide-react";
 
 interface AttendanceProps {
   currentUser: AppUser;
 }
 
 export const Attendance: React.FC<AttendanceProps> = ({ currentUser }) => {
+  const getTodayPKT = () => {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Karachi' }).format(new Date());
+  };
+
   const [logs, setLogs] = useState<AttendanceLog[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [fromDate, setFromDate] = useState<string>(getTodayPKT());
+  const [toDate, setToDate] = useState<string>(getTodayPKT());
 
   const fetchLogs = async (isSilent = false) => {
     if (!isSilent) setLoading(true);
@@ -35,9 +41,37 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser }) => {
 
   useEffect(() => {
     fetchLogs();
+
+    const token = localStorage.getItem("harisco_token");
+    if (!token) return;
+
+    // Connect to Server-Sent Events for instant live updates
+    const eventSource = new EventSource(`/api/attendance/stream?token=${token}`);
+    
+    eventSource.onmessage = (event) => {
+      try {
+        const newLog = JSON.parse(event.data);
+        setLogs((prevLogs) => {
+          // Avoid duplicates if the same log comes twice
+          if (prevLogs.some(log => log.id === newLog.id)) return prevLogs;
+          return [newLog, ...prevLogs];
+        });
+      } catch (err) {
+        console.error("Failed to parse live attendance log", err);
+      }
+    };
+
+    eventSource.onerror = (err) => {
+      console.error("SSE Connection Error:", err);
+      // EventSource automatically tries to reconnect
+    };
+
+    return () => {
+      eventSource.close();
+    };
   }, []);
 
-  // Filter logs based on user role and search query
+  // Filter logs based on user role, date, and search query
   const filteredLogs = logs.filter((log) => {
     // RBAC: employees only see their own attendance logs
     if (currentUser.role === "employee") {
@@ -47,6 +81,11 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser }) => {
         return false;
       }
     }
+
+    // Date filtering (log.timestamp format is YYYY-MM-DD HH:MM:SS)
+    const logDateStr = log.timestamp ? log.timestamp.split(" ")[0] : (log.ioTime ? log.ioTime.split(" ")[0] : "");
+    if (fromDate && logDateStr < fromDate) return false;
+    if (toDate && logDateStr > toDate) return false;
 
     // Search query matching name, ID, status or method
     const q = searchQuery.toLowerCase();
@@ -84,26 +123,50 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser }) => {
       </div>
 
       <div className="panel" style={{ padding: "24px" }}>
-        {/* Search controls */}
-        <div style={{ position: "relative", marginBottom: "20px" }}>
-          <input
-            type="text"
-            className="form-input"
-            style={{ paddingLeft: "40px" }}
-            placeholder="Search logs by name, employee code, or check-in status..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-          <Search
-            size={18}
-            style={{
-              position: "absolute",
-              left: "12px",
-              top: "50%",
-              transform: "translateY(-50%)",
-              color: "var(--text-muted)",
-            }}
-          />
+        {/* Search & Filter controls */}
+        <div style={{ display: "flex", gap: "16px", marginBottom: "20px", flexWrap: "wrap" }}>
+          <div style={{ position: "relative", flex: "1 1 300px" }}>
+            <input
+              type="text"
+              className="form-input"
+              style={{ paddingLeft: "40px", width: "100%" }}
+              placeholder="Search logs by name, employee code, or status..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            <Search
+              size={18}
+              style={{
+                position: "absolute",
+                left: "12px",
+                top: "50%",
+                transform: "translateY(-50%)",
+                color: "var(--text-muted)",
+              }}
+            />
+          </div>
+          <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <Calendar size={16} style={{ color: "var(--text-muted)" }} />
+              <input 
+                type="date" 
+                className="form-input" 
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+                style={{ width: "140px" }}
+              />
+            </div>
+            <span style={{ color: "var(--text-muted)" }}>to</span>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <input 
+                type="date" 
+                className="form-input" 
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                style={{ width: "140px" }}
+              />
+            </div>
+          </div>
         </div>
 
         {loading ? (
@@ -126,10 +189,9 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser }) => {
                 <tr>
                   <th>Employee Code</th>
                   <th>Name</th>
-                  <th>Log Time</th>
                   <th>Punch Status</th>
                   <th>Method</th>
-                  <th>Sync Time</th>
+                  <th>Attendance Time</th>
                 </tr>
               </thead>
               <tbody>
@@ -148,12 +210,6 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser }) => {
                         {log.name}
                       </td>
                       <td>
-                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                          <Clock size={14} style={{ color: "var(--text-muted)" }} />
-                          <span>{log.ioTime ? new Date(log.ioTime.replace(" ", "T") + "Z").toLocaleString("en-US", { timeZone: "Asia/Karachi", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "N/A"}</span>
-                        </div>
-                      </td>
-                      <td>
                         <span
                           className="badge"
                           style={{
@@ -170,16 +226,21 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser }) => {
                       <td>
                         <span className="badge badge-type">{log.method}</span>
                       </td>
-                      <td style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
-                        {log.timestamp
-                          ? new Date(log.timestamp.replace(" ", "T") + "Z").toLocaleString("en-US", {
-                              timeZone: "Asia/Karachi",
-                              month: "short",
-                              day: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })
-                          : "N/A"}
+                      <td>
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                          <Clock size={14} style={{ color: "var(--text-muted)" }} />
+                          <span style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>
+                            {log.timestamp
+                              ? new Date(log.timestamp.replace(" ", "T") + "Z").toLocaleString("en-US", {
+                                  timeZone: "Asia/Karachi",
+                                  month: "short",
+                                  day: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })
+                              : "N/A"}
+                          </span>
+                        </div>
                       </td>
                     </tr>
                   );

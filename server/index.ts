@@ -112,7 +112,7 @@ function authenticateToken(
   next: NextFunction,
 ) {
   const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" ")[1];
+  const token = (authHeader && authHeader.split(" ")[1]) || (req.query.token as string);
 
   if (!token) {
     res.status(401).json({ error: "Authentication token required." });
@@ -1086,6 +1086,9 @@ app.get(
   },
 );
 
+// Set to keep track of SSE clients for real-time attendance updates
+const sseClients = new Set<Response>();
+
 // Attendance logs GET endpoint
 app.get(
   "/api/attendance",
@@ -1101,6 +1104,20 @@ app.get(
     }
   }
 );
+
+// Attendance SSE Stream endpoint for real-time updates
+app.get("/api/attendance/stream", authenticateToken, (req: AuthRequest, res: Response) => {
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.flushHeaders();
+
+  sseClients.add(res);
+
+  req.on("close", () => {
+    sseClients.delete(res);
+  });
+});
 
 // Start Database and Server
 // Serve static frontend files in production
@@ -1246,11 +1263,24 @@ async function startServer() {
 
                 try {
                   const db = getDb();
-                  await db.run(
+                  const insertResult = await db.run(
                     "INSERT INTO attendance_logs (name, userId, ioTime, method, status) VALUES (?, ?, ?, ?, ?)",
                     [parsedName, userId, punchTime, scanMethod, status]
                   );
                   console.log(`[DB] Saved log profile successfully.`);
+                  
+                  // Broadcast the new log to all connected SSE clients
+                  try {
+                    const newLog = await db.get("SELECT * FROM attendance_logs WHERE id = ?", insertResult.lastID);
+                    if (newLog) {
+                      const message = `data: ${JSON.stringify(newLog)}\n\n`;
+                      for (const client of sseClients) {
+                        client.write(message);
+                      }
+                    }
+                  } catch (e) {
+                    console.error("Failed to broadcast new attendance log", e);
+                  }
                 } catch (err: any) {
                   console.error(
                     "❌ [DB] Database Storage Error:",
