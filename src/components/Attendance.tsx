@@ -150,7 +150,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser }) => {
                       <td>
                         <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                           <Clock size={14} style={{ color: "var(--text-muted)" }} />
-                          <span>{log.ioTime}</span>
+                          <span>{log.ioTime ? new Date(log.ioTime.replace(" ", "T") + "Z").toLocaleString("en-US", { timeZone: "Asia/Karachi", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "N/A"}</span>
                         </div>
                       </td>
                       <td>
@@ -172,7 +172,8 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser }) => {
                       </td>
                       <td style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
                         {log.timestamp
-                          ? new Date(log.timestamp).toLocaleString("en-US", {
+                          ? new Date(log.timestamp.replace(" ", "T") + "Z").toLocaleString("en-US", {
+                              timeZone: "Asia/Karachi",
                               month: "short",
                               day: "numeric",
                               hour: "2-digit",
