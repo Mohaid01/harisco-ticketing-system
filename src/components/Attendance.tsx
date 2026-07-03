@@ -196,10 +196,19 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser }) => {
               </thead>
               <tbody>
                 {filteredLogs.map((log, index) => {
-                  const isCheckIn = log.status.toLowerCase().includes("in");
-                  const badgeColor = isCheckIn ? "var(--status-closed)" : "var(--status-it-approval)";
-                  const badgeBg = isCheckIn ? "var(--status-closed-bg)" : "var(--status-it-approval-bg)";
-                  const badgeBorder = isCheckIn ? "var(--status-closed-border)" : "var(--status-it-approval-border)";
+                  let badgeColor = "var(--text-secondary)";
+                  let badgeBg = "rgba(148, 163, 184, 0.12)";
+                  let badgeBorder = "rgba(148, 163, 184, 0.35)";
+
+                  if (log.status === "Check-In") {
+                    badgeColor = "var(--status-closed)";
+                    badgeBg = "var(--status-closed-bg)";
+                    badgeBorder = "var(--status-closed-border)";
+                  } else if (log.status === "Check-Out") {
+                    badgeColor = "var(--status-it-approval)";
+                    badgeBg = "var(--status-it-approval-bg)";
+                    badgeBorder = "var(--status-it-approval-border)";
+                  }
 
                   return (
                     <tr key={index} style={{ cursor: "default" }}>

@@ -1225,10 +1225,9 @@ async function startServer() {
               if (lastPunchTime !== punchTime) {
                 lastProcessedPunchMap.set(userId, punchTime);
 
-                const status = attendStat === "DutyOff" ? "Check-Out" : "Check-In";
-
-                // Pull name dynamically from our SQLite database
                 let parsedName = `Employee (ID: ${userId})`;
+                let status = "Check-In";
+
                 try {
                   const db = getDb();
                   // Standardize username lookup: check username = 'HC-' + padded 5-digit ID, or matching username/ID directly
@@ -1241,11 +1240,26 @@ async function startServer() {
                   if (userDoc && userDoc.name) {
                     parsedName = userDoc.name;
                   }
+
+                  const punchDate = punchTime.includes(" ") ? punchTime.split(" ")[0] : (punchTime.includes("T") ? punchTime.split("T")[0] : punchTime);
+                  const dayLogsCount = await db.get<{ count: number }>(
+                    "SELECT COUNT(*) as count FROM attendance_logs WHERE userId = ? AND ioTime LIKE ?",
+                    [userId, `${punchDate}%`]
+                  );
+                  const count = dayLogsCount ? dayLogsCount.count : 0;
+                  if (count === 0) {
+                    status = "Check-In";
+                  } else if (count === 1) {
+                    status = "Check-Out";
+                  } else {
+                    status = "Ignored";
+                  }
                 } catch (lookupError: any) {
                   console.error(
-                    "⚠️ [DB USER LOOKUP ERROR] Falling back to default name layout:",
+                    "⚠️ [DB USER LOOKUP/STATUS ERROR] Falling back to default values:",
                     lookupError.message,
                   );
+                  status = attendStat === "DutyOff" ? "Check-Out" : "Check-In";
                 }
 
                 console.log(
