@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import type { AppUser, AttendanceLog } from "../types";
 import { formatEmployeeCode } from "../utils";
-import { RefreshCw, Search, Calendar, User, Clock, ShieldCheck } from "lucide-react";
+import { RefreshCw, Search, Clock } from "lucide-react";
 
 interface AttendanceProps {
   currentUser: AppUser;
