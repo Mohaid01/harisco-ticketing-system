@@ -1,12 +1,14 @@
 import React, { useState } from "react";
 import type { AppUser, UserRole } from "../types";
 import { ROLE_LABELS } from "../constants";
-import { UserPlus, Trash2, Building2, Briefcase } from "lucide-react";
+import { UserPlus, Trash2, Building2, Briefcase, KeyRound } from "lucide-react";
 import { formatEmployeeCode } from "../utils";
+import { ResetUserPasswordModal } from "./ResetUserPasswordModal";
 
 interface UserManagementProps {
   users: AppUser[];
   currentUser: AppUser;
+  token: string;
   onAddUser: (data: {
     name: string;
     email: string;
@@ -24,6 +26,7 @@ interface UserManagementProps {
 export const UserManagement: React.FC<UserManagementProps> = ({
   users,
   currentUser,
+  token,
   onAddUser,
   onDeleteUser,
   onUpdateUser,
@@ -34,6 +37,8 @@ export const UserManagement: React.FC<UserManagementProps> = ({
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<UserRole>("employee");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const [resetPasswordTarget, setResetPasswordTarget] = useState<AppUser | null>(null);
 
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
@@ -293,15 +298,26 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                         Edit User
                       </button>
                       {user.id !== currentUser.id && (
-                        <button
-                          id={`btn-delete-user-${user.id}`}
-                          className="btn btn-danger"
-                          style={{ width: "100%", padding: "6px 12px", fontSize: "0.8rem" }}
-                          onClick={() => onDeleteUser(user.id)}
-                        >
-                          <Trash2 size={12} />
-                          Delete User
-                        </button>
+                        <>
+                          <button
+                            id={`btn-reset-password-${user.id}`}
+                            className="btn btn-secondary"
+                            style={{ width: "100%", padding: "6px 12px", fontSize: "0.8rem", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
+                            onClick={() => setResetPasswordTarget(user)}
+                          >
+                            <KeyRound size={12} />
+                            Reset Password
+                          </button>
+                          <button
+                            id={`btn-delete-user-${user.id}`}
+                            className="btn btn-danger"
+                            style={{ width: "100%", padding: "6px 12px", fontSize: "0.8rem" }}
+                            onClick={() => onDeleteUser(user.id)}
+                          >
+                            <Trash2 size={12} />
+                            Delete User
+                          </button>
+                        </>
                       )}
                     </div>
                   </>
@@ -311,6 +327,14 @@ export const UserManagement: React.FC<UserManagementProps> = ({
           </div>
         </div>
       </div>
+
+      {resetPasswordTarget && (
+        <ResetUserPasswordModal
+          targetUser={resetPasswordTarget}
+          token={token}
+          onClose={() => setResetPasswordTarget(null)}
+        />
+      )}
     </div>
   );
 };

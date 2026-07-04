@@ -640,6 +640,7 @@ function App() {
             <UserManagement
               users={users}
               currentUser={currentUser}
+              token={token}
               onAddUser={handleAddUser}
               onDeleteUser={handleDeleteUser}
               onUpdateUser={handleUpdateUser}

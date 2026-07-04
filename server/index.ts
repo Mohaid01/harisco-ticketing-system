@@ -439,6 +439,45 @@ app.delete(
   },
 );
 
+app.post(
+  "/api/users/:id/reset-password",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    if (req.user?.role !== "it") {
+      res.status(403).json({ error: "Forbidden. Password reset requires IT role." });
+      return;
+    }
+
+    const userId = req.params.id;
+    const { newPassword } = req.body;
+
+    if (!newPassword || newPassword.trim().length < 4) {
+      res.status(400).json({ error: "Password must be at least 4 characters long." });
+      return;
+    }
+
+    try {
+      const db = getDb();
+      const user = await db.get<{ id: string }>("SELECT id FROM users WHERE id = ?", [userId]);
+      if (!user) {
+        res.status(404).json({ error: "User not found." });
+        return;
+      }
+
+      const passwordHash = await bcrypt.hash(newPassword.trim(), 10);
+      await db.run(
+        "UPDATE users SET passwordHash = ?, needsPasswordReset = 1 WHERE id = ?",
+        [passwordHash, userId],
+      );
+
+      res.json({ message: "Password reset successfully. User will be prompted to set a new password on next login." });
+    } catch (error) {
+      console.error("Failed to reset user password:", error);
+      res.status(500).json({ error: "Failed to reset password." });
+    }
+  },
+);
+
 app.put(
   "/api/users/:id",
   authenticateToken,
