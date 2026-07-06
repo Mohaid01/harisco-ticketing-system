@@ -28,7 +28,7 @@ app.use(cors({
   origin: process.env.NODE_ENV === 'production' ? false : 'http://localhost:5173'
 }));
 
-app.use(express.json());
+app.use(express.json({ limit: "10mb" }));
 
 // Apply global API rate limit
 const globalLimiter = rateLimit({
