@@ -23,6 +23,9 @@ const app = express();
 // Security Headers (CSP disabled to allow Vite inline scripts/styles)
 app.use(helmet({ contentSecurityPolicy: false }));
 
+// Trust the first proxy (Cloudflare Tunnel) so rate-limiting and IP detection work correctly
+app.set("trust proxy", 1);
+
 // CORS: allow production domain and local dev server
 const allowedOrigins = [
   'https://tickets.harisco.com',
