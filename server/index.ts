@@ -15,6 +15,14 @@ const JWT_SECRET = process.env.JWT_SECRET as string;
 if (!JWT_SECRET) throw new Error("JWT_SECRET is required");
 const PORT = process.env.PORT || 8082;
 
+// Global crash handlers — log the exact error before process exits
+process.on("uncaughtException", (err) => {
+  console.error("[FATAL] uncaughtException:", err);
+});
+process.on("unhandledRejection", (reason) => {
+  console.error("[FATAL] unhandledRejection:", reason);
+});
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -43,6 +51,12 @@ const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 10, // Limit each IP to 10 login requests per window
   message: { error: "Too many login attempts, please try again after 15 minutes." }
+});
+
+// Log every API request for diagnostics
+app.use("/api", (req: Request, _res: Response, next: NextFunction) => {
+  console.log(`[REQ] ${req.method} ${req.path} | ip=${req.ip} | origin=${req.headers.origin || "none"}`);
+  next();
 });
 // Extend express Request interface for our middleware
 interface AuthRequest extends Request {
@@ -110,20 +124,24 @@ function authenticateToken(
   res: Response,
   next: NextFunction,
 ) {
+  console.log("[AUTH] authenticateToken called for:", req.path);
   const authHeader = req.headers["authorization"];
   const token = (authHeader && authHeader.split(" ")[1]) || (req.query.token as string);
 
   if (!token) {
+    console.log("[AUTH] No token found — returning 401");
     res.status(401).json({ error: "Authentication token required." });
     return;
   }
 
+  console.log("[AUTH] Token found, verifying with jwt.verify...");
   jwt.verify(token, JWT_SECRET, (err, decoded) => {
     if (err || !decoded || typeof decoded !== "object") {
+      console.error("[AUTH] jwt.verify failed:", err?.message);
       res.status(403).json({ error: "Invalid or expired token." });
       return;
     }
-
+    console.log("[AUTH] Token valid, user id:", (decoded as any).id);
     req.user = decoded as {
       id: string;
       name: string;
@@ -188,18 +206,23 @@ app.get(
   "/api/auth/me",
   authenticateToken,
   async (req: AuthRequest, res: Response) => {
+    console.log("[ME] Handler reached, querying DB for user id:", req.user?.id);
     try {
       const db = getDb();
+      console.log("[ME] DB instance obtained");
       const user = await db.get<DbUser>(
         "SELECT id, name, email, username, role, avatar, needsPasswordReset FROM users WHERE id = ?",
         [req.user?.id],
       );
+      console.log("[ME] DB query done, user found:", !!user);
       if (!user) {
         res.status(404).json({ error: "User not found." });
         return;
       }
       res.json({ user });
-    } catch {
+      console.log("[ME] Response sent successfully");
+    } catch (err) {
+      console.error("[ME] Error in /api/auth/me handler:", err);
       res.status(500).json({ error: "Failed to fetch current user." });
     }
   },
