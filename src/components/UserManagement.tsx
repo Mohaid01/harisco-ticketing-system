@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import type { AppUser, UserRole } from "../types";
 import { ROLE_LABELS } from "../constants";
-import { UserPlus, Trash2, Building2, Briefcase, KeyRound } from "lucide-react";
+import { UserPlus, Trash2, Building2, Briefcase, KeyRound, Image as ImageIcon } from "lucide-react";
 import { formatEmployeeCode } from "../utils";
 import { ResetUserPasswordModal } from "./ResetUserPasswordModal";
 
@@ -55,6 +55,32 @@ export const UserManagement: React.FC<UserManagementProps> = ({
   const [editDesignation, setEditDesignation] = useState("");
   const [editAvatar, setEditAvatar] = useState("");
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, isEdit: boolean) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith("image/")) {
+        alert("Please upload an image file.");
+        return;
+      }
+      // Validate file size (e.g. limit to 1MB to avoid database bloat)
+      if (file.size > 1024 * 1024) {
+        alert("Image size must be less than 1MB.");
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (isEdit) {
+          setEditAvatar(reader.result as string);
+        } else {
+          setAvatar(reader.result as string);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
@@ -77,7 +103,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
       username: formattedCode,
       role,
       password: password.trim() || undefined,
-      avatar: avatar.trim() || undefined,
+      avatar: avatar || undefined,
     });
 
     setName("");
@@ -99,7 +125,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
         email: editEmail.trim() || null,
         department: editDepartment.trim() || null,
         designation: editDesignation.trim() || null,
-        avatar: editAvatar.trim() || null,
+        avatar: editAvatar || null,
       });
     }
     setEditingUserId(null);
@@ -189,16 +215,42 @@ export const UserManagement: React.FC<UserManagementProps> = ({
               />
             </div>
 
+            {/* Picture Upload Field */}
             <div className="form-group">
-              <label htmlFor="user-avatar-input" className="form-label">Picture URL (Optional)</label>
-              <input
-                id="user-avatar-input"
-                type="url"
-                className="form-input"
-                placeholder="e.g. https://domain.com/photo.jpg"
-                value={avatar}
-                onChange={(e) => setAvatar(e.target.value)}
-              />
+              <label htmlFor="user-avatar-upload" className="form-label">Upload Profile Picture (Optional)</label>
+              <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                <input
+                  id="user-avatar-upload"
+                  type="file"
+                  accept="image/*"
+                  className="form-input"
+                  style={{ flex: 1 }}
+                  onChange={(e) => handleFileChange(e, false)}
+                />
+                {avatar && (
+                  <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                    <img
+                      src={avatar}
+                      alt="Preview"
+                      style={{
+                        width: "38px",
+                        height: "38px",
+                        borderRadius: "50%",
+                        objectFit: "cover",
+                        border: "1px solid var(--border-color)",
+                      }}
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      style={{ padding: "6px 10px", fontSize: "0.75rem", minWidth: "unset" }}
+                      onClick={() => setAvatar("")}
+                    >
+                      Clear
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="form-group">
@@ -253,10 +305,44 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                       <label className="form-label" style={inlineLabelStyle}>Email Address</label>
                       <input type="email" className="form-input" style={inlineInputStyle} value={editEmail} onChange={(e) => setEditEmail(e.target.value)} placeholder="Optional" />
                     </div>
+
+                    {/* Edit Profile Picture Upload Field */}
                     <div className="form-group" style={{ marginBottom: "0" }}>
-                      <label className="form-label" style={inlineLabelStyle}>Picture URL</label>
-                      <input type="url" className="form-input" style={inlineInputStyle} value={editAvatar} onChange={(e) => setEditAvatar(e.target.value)} placeholder="Optional" />
+                      <label className="form-label" style={inlineLabelStyle}>Upload Profile Picture</label>
+                      <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="form-input"
+                          style={{ ...inlineInputStyle, flex: 1 }}
+                          onChange={(e) => handleFileChange(e, true)}
+                        />
+                        {editAvatar && (
+                          <div style={{ display: "flex", gap: "4px", alignItems: "center" }}>
+                            <img
+                              src={editAvatar}
+                              alt="Edit Preview"
+                              style={{
+                                width: "30px",
+                                height: "30px",
+                                borderRadius: "50%",
+                                objectFit: "cover",
+                                border: "1px solid var(--border-color)",
+                              }}
+                            />
+                            <button
+                              type="button"
+                              className="btn btn-secondary"
+                              style={{ padding: "4px 8px", fontSize: "0.75rem", minWidth: "unset" }}
+                              onClick={() => setEditAvatar("")}
+                            >
+                              Clear
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
+
                     <div className="form-group" style={{ marginBottom: "0" }}>
                       <label className="form-label" style={{ ...inlineLabelStyle, display: "flex", alignItems: "center", gap: "4px" }}>
                         <Building2 size={12} /> Department
