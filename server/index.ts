@@ -1291,7 +1291,23 @@ async function startServer() {
         if (rawString.includes("TimeLog_v2")) {
           try {
             const userId = rawString.match(/<UserID>(.*?)<\/UserID>/)?.[1];
-            const punchTime = rawString.match(/<Time>(.*?)<\/Time>/)?.[1];
+            let punchTime = rawString.match(/<Time>(.*?)<\/Time>/)?.[1];
+            
+            // Adjust device time (UTC) to PKT (+5 hours)
+            if (punchTime) {
+              const dateObj = new Date(punchTime.replace(" ", "T") + "Z");
+              if (!isNaN(dateObj.getTime())) {
+                const pktDate = new Date(dateObj.getTime() + (5 * 60 * 60 * 1000));
+                const yyyy = pktDate.getUTCFullYear();
+                const MM = String(pktDate.getUTCMonth() + 1).padStart(2, '0');
+                const dd = String(pktDate.getUTCDate()).padStart(2, '0');
+                const hh = String(pktDate.getUTCHours()).padStart(2, '0');
+                const mm = String(pktDate.getUTCMinutes()).padStart(2, '0');
+                const ss = String(pktDate.getUTCSeconds()).padStart(2, '0');
+                punchTime = `${yyyy}-${MM}-${dd} ${hh}:${mm}:${ss}`;
+              }
+            }
+
             const actionRaw =
               rawString.match(/<Action>(.*?)<\/Action>/)?.[1] || "FACE";
             const attendStat =

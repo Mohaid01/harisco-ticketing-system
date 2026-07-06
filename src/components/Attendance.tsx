@@ -55,6 +55,14 @@ export const Attendance: React.FC<AttendanceProps> = ({
   const [viewMode, setViewMode] = useState<ViewMode>(
     isAdminRole ? "summary" : "individual",
   );
+  
+  const currentYearMonth = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Karachi",
+    year: "numeric",
+    month: "2-digit"
+  }).format(new Date()).slice(0, 7); // yyyy-mm
+  
+  const [selectedMonth, setSelectedMonth] = useState<string>(currentYearMonth);
 
   // Selection & Filtering
   const [selectedUserId, setSelectedUserId] = useState<string>(currentUser.id);
@@ -212,9 +220,32 @@ export const Attendance: React.FC<AttendanceProps> = ({
             daysPresent++;
             // Calculate hours from real punches
             if (dayPunches.length >= 2) {
-              totalHours += 8.0; // Timings: 9:30 AM to 6:00 PM (8 Hours)
+              const sorted = [...dayPunches].sort((a, b) => {
+                const tA = a.timestamp || a.ioTime || "";
+                const tB = b.timestamp || b.ioTime || "";
+                return tA.localeCompare(tB);
+              });
+              const firstStr = sorted[0].timestamp || sorted[0].ioTime || "";
+              const lastStr = sorted[sorted.length - 1].timestamp || sorted[sorted.length - 1].ioTime || "";
+              
+              const fDate = new Date(firstStr.replace(" ", "T") + (firstStr.includes("Z") || firstStr.includes("+") ? "" : "+05:00"));
+              const lDate = new Date(lastStr.replace(" ", "T") + (lastStr.includes("Z") || lastStr.includes("+") ? "" : "+05:00"));
+              
+              if (!isNaN(fDate.getTime()) && !isNaN(lDate.getTime())) {
+                const diff = (lDate.getTime() - fDate.getTime()) / (1000 * 60 * 60);
+                totalHours += diff;
+              }
             } else {
-              totalHours += 4.0; // Half day
+               // Single punch check-in, check if it's today and they haven't checked out yet
+               if (dateStr === todayStr) {
+                  const firstStr = dayPunches[0].timestamp || dayPunches[0].ioTime || "";
+                  const fDate = new Date(firstStr.replace(" ", "T") + (firstStr.includes("Z") || firstStr.includes("+") ? "" : "+05:00"));
+                  const currDate = new Date(); // local time assumption (could be slightly off if not PKT, but fine for UI)
+                  if (!isNaN(fDate.getTime())) {
+                    const diff = Math.max(0, (currDate.getTime() - fDate.getTime()) / (1000 * 60 * 60));
+                    totalHours += diff;
+                  }
+               }
             }
           } else {
             daysAbsent++;
@@ -268,7 +299,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
     );
   }, [employeeSummaries, selectedUserId]);
 
-  // Generate 30-day historical punch log for the selected employee
+  // Generate punch logs for the selected month for the Calendar view
   const selectedEmployeePunchLogs = useMemo(() => {
     if (!selectedEmployee) return [];
 
@@ -282,13 +313,15 @@ export const Attendance: React.FC<AttendanceProps> = ({
     );
 
     const list = [];
-    const tempDate = new Date();
+    
+    // Parse selectedMonth (yyyy-mm)
+    const [sYear, sMonth] = selectedMonth.split("-").map(Number);
+    const daysInMonth = new Date(sYear, sMonth, 0).getDate();
 
-    for (let i = 0; i < 30; i++) {
-      const dateStr = new Intl.DateTimeFormat("en-CA", {
-        timeZone: "Asia/Karachi",
-      }).format(tempDate);
-      const isWeekend = tempDate.getDay() === 0; // Only Sunday is off
+    for (let day = 1; day <= daysInMonth; day++) {
+      const tempDate = new Date(Date.UTC(sYear, sMonth - 1, day));
+      const dateStr = `${sYear}-${String(sMonth).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+      const isWeekend = tempDate.getUTCDay() === 0; // Only Sunday is off
 
       const dayPunches = userLogs.filter(
         (log) => parseLogDate(log) === dateStr,
@@ -317,6 +350,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
           : first.ioTime
             ? first.ioTime.split(" ")[1]
             : "--";
+            
         const lastOutTime = last
           ? last.timestamp
             ? last.timestamp.split(" ")[1]
@@ -325,23 +359,35 @@ export const Attendance: React.FC<AttendanceProps> = ({
               : "--"
           : "--";
 
-        let hours = 4.0;
-        let status: "Present" | "Half Day" | "Late Arrival" = "Half Day";
+        let hours = 0;
+        let status: "Present" | "Late Arrival" = "Present";
 
+        // Dynamic hours calculation based on exact punch times
+        const firstStr = first.timestamp || first.ioTime || "";
+        const fDate = new Date(firstStr.replace(" ", "T") + (firstStr.includes("Z") || firstStr.includes("+") ? "" : "+05:00"));
+        
         if (last) {
-          hours = 8.0; // Standard Shift timing hours (9:30 AM to 6:00 PM)
-          // Late arrival check: clocked in after 09:35 AM
-          const timeParts = firstInTime.split(":");
-          if (timeParts.length >= 2) {
-            const hour = parseInt(timeParts[0]);
-            const min = parseInt(timeParts[1]);
-            if (hour > 9 || (hour === 9 && min > 35)) {
-              status = "Late Arrival";
-            } else {
-              status = "Present";
-            }
-          } else {
-            status = "Present";
+           const lastStr = last.timestamp || last.ioTime || "";
+           const lDate = new Date(lastStr.replace(" ", "T") + (lastStr.includes("Z") || lastStr.includes("+") ? "" : "+05:00"));
+           if (!isNaN(fDate.getTime()) && !isNaN(lDate.getTime())) {
+              hours = (lDate.getTime() - fDate.getTime()) / (1000 * 60 * 60);
+           }
+        } else {
+           // If only one punch and it's today, calculate hours from firstIn to now
+           const todayStr = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Karachi" }).format(new Date());
+           if (dateStr === todayStr && !isNaN(fDate.getTime())) {
+              const currDate = new Date();
+              hours = Math.max(0, (currDate.getTime() - fDate.getTime()) / (1000 * 60 * 60));
+           }
+        }
+
+        // Late arrival check: clocked in after 09:35 AM
+        const timeParts = firstInTime.split(":");
+        if (timeParts.length >= 2) {
+          const hour = parseInt(timeParts[0]);
+          const min = parseInt(timeParts[1]);
+          if (hour > 9 || (hour === 9 && min > 35)) {
+            status = "Late Arrival";
           }
         }
 
@@ -349,7 +395,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
           date: dateStr,
           firstIn: firstInTime,
           lastOut: lastOutTime,
-          hours,
+          hours: Math.round(hours * 100) / 100,
           status,
         });
       } else {
@@ -361,10 +407,9 @@ export const Attendance: React.FC<AttendanceProps> = ({
           status: "No Data" as const,
         });
       }
-      tempDate.setDate(tempDate.getDate() - 1);
     }
     return list;
-  }, [selectedEmployee, logs]);
+  }, [selectedEmployee, logs, selectedMonth]);
 
   // Today's specific shift progress calculations
   const todayShiftProgress = useMemo(() => {
@@ -1153,7 +1198,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
 
                 {/* KPI 4: Leave Balance */}
                 <div className="stat-card handover">
-                  <div className="stat-header">
+                  <div className="stat-header" style={{ marginBottom: "12px" }}>
                     <span className="stat-label">Leave Balance</span>
                     <div
                       className="stat-icon"
@@ -1165,8 +1210,20 @@ export const Attendance: React.FC<AttendanceProps> = ({
                       <FileText size={16} />
                     </div>
                   </div>
-                  <span className="stat-value">12 Leaves</span>
-                  <span className="stat-desc">Remaining Annual Leaves</span>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px", width: "100%", marginTop: "6px" }}>
+                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                        <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--text-primary)" }}>12</span>
+                        <span style={{ fontSize: "0.65rem", color: "var(--text-secondary)", textTransform: "uppercase" }}>Casual</span>
+                     </div>
+                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                        <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--color-primary)" }}>14</span>
+                        <span style={{ fontSize: "0.65rem", color: "var(--text-secondary)", textTransform: "uppercase" }}>Annual</span>
+                     </div>
+                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                        <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--status-handover)" }}>8</span>
+                        <span style={{ fontSize: "0.65rem", color: "var(--text-secondary)", textTransform: "uppercase" }}>Medical</span>
+                     </div>
+                  </div>
                 </div>
               </div>
 
@@ -1347,67 +1404,98 @@ export const Attendance: React.FC<AttendanceProps> = ({
                   </div>
                 </div>
 
-                {/* 30-Day Punch Log Table */}
+                {/* Monthly Calendar View */}
                 <div className="panel" style={{ padding: "20px" }}>
-                  <h3 className="panel-title" style={{ marginBottom: "16px" }}>
-                    <Calendar
-                      size={16}
-                      style={{ color: "var(--color-primary)" }}
-                    />
-                    Detailed Punch Log (Past 30 Days)
-                  </h3>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                     <h3 className="panel-title">
+                       <Calendar
+                         size={16}
+                         style={{ color: "var(--color-primary)" }}
+                       />
+                       Monthly Attendance Calendar
+                     </h3>
+                     <input 
+                       type="month" 
+                       className="form-input" 
+                       style={{ padding: "6px 12px", fontSize: "0.85rem", width: "150px" }}
+                       value={selectedMonth}
+                       onChange={(e) => setSelectedMonth(e.target.value)}
+                     />
+                  </div>
 
                   <div
-                    className="table-wrapper"
-                    style={{ maxHeight: "350px", overflowY: "auto" }}
+                    style={{ 
+                       display: "grid", 
+                       gridTemplateColumns: "repeat(7, 1fr)", 
+                       gap: "8px",
+                       marginTop: "12px"
+                    }}
                   >
-                    <table className="data-table">
-                      <thead style={{ position: "sticky", top: 0, zIndex: 1 }}>
-                        <tr>
-                          <th>Date</th>
-                          <th>First In</th>
-                          <th>Last Out</th>
-                          <th>Total Hours</th>
-                          <th>Status</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {selectedEmployeePunchLogs.map((log) => (
-                          <tr key={log.date} style={{ cursor: "default" }}>
-                            <td style={{ fontWeight: 600 }}>
-                              {new Date(log.date).toLocaleDateString("en-US", {
-                                month: "short",
-                                day: "numeric",
-                                year: "numeric",
-                                timeZone: "Asia/Karachi",
-                              })}
-                            </td>
-                            <td>{log.firstIn}</td>
-                            <td>{log.lastOut}</td>
-                            <td style={{ fontWeight: 500 }}>
-                              {log.hours > 0 ? (
-                                <span
-                                  style={{
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    gap: "4px",
-                                  }}
-                                >
-                                  <Clock
-                                    size={12}
-                                    style={{ color: "var(--text-muted)" }}
-                                  />
-                                  {log.hours} hrs
-                                </span>
-                              ) : (
-                                "--"
+                     {/* Calendar Header */}
+                     {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
+                        <div key={d} style={{ textAlign: "center", fontWeight: 600, fontSize: "0.8rem", color: "var(--text-secondary)", paddingBottom: "8px" }}>{d}</div>
+                     ))}
+                     
+                     {/* Pad initial blank days */}
+                     {(() => {
+                        const [sYear, sMonth] = selectedMonth.split("-").map(Number);
+                        const firstDayObj = new Date(Date.UTC(sYear, sMonth - 1, 1));
+                        let startDay = firstDayObj.getUTCDay(); // 0 = Sunday
+                        if (startDay === 0) startDay = 7;
+                        
+                        const paddingDays = [];
+                        for (let i = 1; i < startDay; i++) {
+                           paddingDays.push(<div key={`pad-${i}`} style={{ minHeight: "80px", borderRadius: "8px", backgroundColor: "var(--bg-secondary)", opacity: 0.3 }} />);
+                        }
+                        return paddingDays;
+                     })()}
+                     
+                     {/* Calendar Days */}
+                     {selectedEmployeePunchLogs.map((log) => {
+                        const dayNum = parseInt(log.date.split("-")[2], 10);
+                        const isWeekend = log.status === "Weekend";
+                        
+                        return (
+                           <div 
+                              key={log.date} 
+                              style={{ 
+                                 minHeight: "85px", 
+                                 padding: "8px", 
+                                 borderRadius: "8px", 
+                                 backgroundColor: isWeekend ? "rgba(255,255,255,0.02)" : "var(--bg-secondary)",
+                                 border: "1px solid var(--border-color)",
+                                 display: "flex",
+                                 flexDirection: "column",
+                                 gap: "4px"
+                              }}
+                           >
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                 <span style={{ fontSize: "0.85rem", fontWeight: 600, color: isWeekend ? "var(--text-muted)" : "white" }}>{dayNum}</span>
+                                 <div style={{ transform: "scale(0.85)", transformOrigin: "right top" }}>
+                                    {getLogStatusBadge(log.status)}
+                                 </div>
+                              </div>
+                              
+                              {log.status !== "Weekend" && log.status !== "No Data" && (
+                                 <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: "2px", fontSize: "0.7rem", color: "var(--text-secondary)" }}>
+                                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                                       <span>In:</span>
+                                       <span style={{ color: "white", fontWeight: 500 }}>{log.firstIn === "--" ? "-" : log.firstIn.substring(0, 5)}</span>
+                                    </div>
+                                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                                       <span>Out:</span>
+                                       <span style={{ color: "white", fontWeight: 500 }}>{log.lastOut === "--" ? "-" : log.lastOut.substring(0, 5)}</span>
+                                    </div>
+                                    {log.hours > 0 && (
+                                       <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "2px" }}>
+                                          <span style={{ color: "var(--color-primary)", fontWeight: 600 }}>{log.hours}h</span>
+                                       </div>
+                                    )}
+                                 </div>
                               )}
-                            </td>
-                            <td>{getLogStatusBadge(log.status)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                           </div>
+                        );
+                     })}
                   </div>
                 </div>
               </div>
