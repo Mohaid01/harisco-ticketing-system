@@ -33,11 +33,9 @@ const PUNCH_STATUS = {
   IGNORED: "Ignored",
 } as const;
 
-// Shift Constants
+// Shift Constants (9:30 AM to 6:00 PM)
 const SHIFTS = {
-  MORNING: "Morning Shift (09:00 AM - 05:00 PM)",
-  EVENING: "Evening Shift (01:00 PM - 09:00 PM)",
-  NIGHT: "Night Shift (09:00 PM - 05:00 AM)",
+  GENERAL: "General Shift (09:30 AM - 06:00 PM)",
 } as const;
 
 // Helper to calculate a stable numeric hash for mock data consistency
@@ -126,12 +124,9 @@ export const Attendance: React.FC<AttendanceProps> = ({
     return ts ? ts.split(" ")[0] : "";
   };
 
-  // Determine user shift
+  // Determine user shift (all users have the standard 9:30 AM to 6:00 PM shift)
   const getUserShift = (userId: string): string => {
-    const hash = getDeterministicHash(userId, "shift");
-    if (hash % 3 === 0) return SHIFTS.EVENING;
-    if (hash % 3 === 1) return SHIFTS.NIGHT;
-    return SHIFTS.MORNING;
+    return SHIFTS.GENERAL;
   };
 
   // Determine user department
@@ -188,7 +183,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
       let daysPresent = 0;
       let daysAbsent = 0;
       let totalHours = 0;
-      const totalWorkDays = 22; // Target working days in current month
+      const totalWorkDays = 26; // Target working days in current month (Sunday only is off)
 
       // We look at the past 30 days
       const tempDate = new Date();
@@ -196,7 +191,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
         const dateStr = new Intl.DateTimeFormat("en-CA", {
           timeZone: "Asia/Karachi",
         }).format(tempDate);
-        const isWeekend = tempDate.getDay() === 0 || tempDate.getDay() === 6;
+        const isWeekend = tempDate.getDay() === 0; // Only Sunday is off
 
         if (!isWeekend) {
           const dayPunches = userLogs.filter(
@@ -206,7 +201,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
             daysPresent++;
             // Calculate hours from real punches
             if (dayPunches.length >= 2) {
-              totalHours += 8.0; // Approximation for valid checkout day
+              totalHours += 8.0; // Timings: 9:30 AM to 6:00 PM (8 Hours)
             } else {
               totalHours += 4.0; // Half day
             }
@@ -259,7 +254,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
     });
   }, [employeeSummaries, searchQuery, filterDepartment, filterShift]);
 
-  // Get departments & shifts list for filters
+  // Get departments list for filters
   const departmentsList = useMemo(() => {
     const depts = new Set<string>();
     allUsers.forEach((u) => depts.add(getUserDepartment(u)));
@@ -294,7 +289,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
       const dateStr = new Intl.DateTimeFormat("en-CA", {
         timeZone: "Asia/Karachi",
       }).format(tempDate);
-      const isWeekend = tempDate.getDay() === 0 || tempDate.getDay() === 6;
+      const isWeekend = tempDate.getDay() === 0; // Only Sunday is off
 
       const dayPunches = userLogs.filter(
         (log) => parseLogDate(log) === dateStr,
@@ -331,17 +326,17 @@ export const Attendance: React.FC<AttendanceProps> = ({
               : "--"
           : "--";
 
-        let hours = 4;
+        let hours = 4.0;
         let status: "Present" | "Half Day" | "Late Arrival" = "Half Day";
 
         if (last) {
-          hours = 8;
-          // Check if late arrival (e.g. clocked in after 09:05 AM)
+          hours = 8.0; // Standard Shift timing hours (9:30 AM to 6:00 PM)
+          // Late arrival check: clocked in after 09:35 AM
           const timeParts = firstInTime.split(":");
           if (timeParts.length >= 2) {
             const hour = parseInt(timeParts[0]);
             const min = parseInt(timeParts[1]);
-            if (hour > 9 || (hour === 9 && min > 5)) {
+            if (hour > 9 || (hour === 9 && min > 35)) {
               status = "Late Arrival";
             } else {
               status = "Present";
@@ -367,9 +362,9 @@ export const Attendance: React.FC<AttendanceProps> = ({
           | "On Leave"
           | "Late Arrival"
           | "Half Day" = "Present";
-        let firstIn = "08:54:12";
-        let lastOut = "17:02:45";
-        let hours = 8.1;
+        let firstIn = "09:24:12";
+        let lastOut = "18:02:45";
+        let hours = 8.0;
 
         if (seed % 20 === 0) {
           status = "Absent";
@@ -383,22 +378,22 @@ export const Attendance: React.FC<AttendanceProps> = ({
           hours = 0;
         } else if (seed % 20 === 2) {
           status = "Half Day";
-          firstIn = "09:02:15";
-          lastOut = "13:00:00";
+          firstIn = "09:28:15";
+          lastOut = "13:30:00";
           hours = 4.0;
         } else if (seed % 20 === 3 || seed % 20 === 4) {
           status = "Late Arrival";
-          firstIn = "09:18:22";
-          lastOut = "17:15:30";
-          hours = 7.95;
+          firstIn = "09:48:22";
+          lastOut = "18:15:30";
+          hours = 8.45;
         } else {
           // Adjust hours & punch times slightly for premium feel
           const offsetMin = (seed % 15) - 7;
-          const checkInMin = 50 + offsetMin;
+          const checkInMin = 25 + offsetMin;
           const checkOutMin = offsetMin;
-          firstIn = `08:${checkInMin < 10 ? "0" + checkInMin : checkInMin}:15`;
-          lastOut = `17:${checkOutMin < 10 ? "0" + checkOutMin : checkOutMin}:22`;
-          hours = 8.2 + offsetMin / 60;
+          firstIn = `09:${checkInMin < 10 ? "0" + checkInMin : checkInMin}:15`;
+          lastOut = `18:${checkOutMin < 0 ? 60 + checkOutMin : checkOutMin < 10 ? "0" + checkOutMin : checkOutMin}:22`;
+          hours = 8.0 + offsetMin / 60;
         }
 
         list.push({
@@ -510,7 +505,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
         }}
       >
         <div>
-          <h1 className="page-title">Attendance Management</h1>
+          <h1 className="page-title">Attendance</h1>
           <p className="page-subtitle">
             {isAdminRole
               ? "Monitor biometric records, review department-wise statistics, and inspect employee breakdowns."
@@ -678,9 +673,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
                       onChange={(e) => setFilterShift(e.target.value)}
                     >
                       <option value="All">All Shifts</option>
-                      <option value={SHIFTS.MORNING}>Morning Shift</option>
-                      <option value={SHIFTS.EVENING}>Evening Shift</option>
-                      <option value={SHIFTS.NIGHT}>Night Shift</option>
+                      <option value={SHIFTS.GENERAL}>General Shift</option>
                     </select>
                   </div>
                 </div>
@@ -1089,7 +1082,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
                     {selectedEmployee.daysPresent} /{" "}
                     {selectedEmployee.totalWorkDays}
                   </span>
-                  <span className="stat-desc">Target: 22 Working Days</span>
+                  <span className="stat-desc">Target: 26 Working Days</span>
                 </div>
 
                 {/* KPI 2: Days Absent */}
@@ -1143,7 +1136,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
                   <span className="stat-value">
                     {selectedEmployee.totalHours} hrs
                   </span>
-                  <span className="stat-desc">Target: 176 hours (Month)</span>
+                  <span className="stat-desc">Target: 208 hours (Month)</span>
                 </div>
 
                 {/* KPI 4: Leave Balance */}
@@ -1219,7 +1212,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
                       >
                         <div
                           style={{
-                            width: `${Math.min((todayShiftProgress.hours / 8) * 100, 100)}%`,
+                            width: `${Math.min((todayShiftProgress.hours / 8.0) * 100, 100)}%`,
                             height: "100%",
                             backgroundColor: "var(--color-primary)",
                             borderRadius: "3px",
