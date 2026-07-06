@@ -646,7 +646,7 @@ function App() {
               onUpdateUser={handleUpdateUser}
             />
           ) : activeTab === "attendance" ? (
-            <Attendance currentUser={currentUser} />
+            <Attendance currentUser={currentUser} allUsers={users} />
           ) : (
             <ActivityLog
               tickets={tickets}
