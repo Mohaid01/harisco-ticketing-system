@@ -56,6 +56,13 @@ export const Attendance: React.FC<AttendanceProps> = ({
     isAdminRole ? "summary" : "individual",
   );
   
+  // Live tick to force recalculation of dynamic ongoing hours
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(() => setTick((t) => t + 1), 60000); // update every minute
+    return () => clearInterval(timer);
+  }, []);
+  
   const currentYearMonth = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Karachi",
     year: "numeric",
@@ -389,7 +396,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
            // If only one punch and it's today, calculate hours from firstIn to now
            const todayStr = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Karachi" }).format(new Date());
            if (dateStr === todayStr && !isNaN(fDate.getTime())) {
-              const currDate = new Date();
+              const currDate = new Date(); 
               hours = Math.max(0, (currDate.getTime() - fDate.getTime()) / (1000 * 60 * 60));
            }
         }
@@ -422,26 +429,28 @@ export const Attendance: React.FC<AttendanceProps> = ({
       }
     }
     return list;
-  }, [selectedEmployee, logs, selectedMonth]);
+  }, [selectedEmployee, logs, selectedMonth, tick]);
 
   // Today's specific shift progress calculations
   const todayShiftProgress = useMemo(() => {
     if (!selectedEmployeePunchLogs.length)
       return { hours: 0, firstIn: "--", lastOut: "--" };
+    
     const todayStr = new Intl.DateTimeFormat("en-CA", {
       timeZone: "Asia/Karachi",
     }).format(new Date());
-    const todayRecord = selectedEmployeePunchLogs.find(
+    
+    const todayLog = selectedEmployeePunchLogs.find(
       (r) => r.date === todayStr,
     );
-    return todayRecord
-      ? {
-          hours: todayRecord.hours,
-          firstIn: todayRecord.firstIn,
-          lastOut: todayRecord.lastOut,
-        }
-      : { hours: 0, firstIn: "--", lastOut: "--" };
-  }, [selectedEmployeePunchLogs]);
+    
+    return {
+      firstIn: todayLog ? todayLog.firstIn : "--",
+      lastOut: todayLog ? todayLog.lastOut : "--",
+      hours: todayLog ? todayLog.hours : 0,
+      status: todayLog ? todayLog.status : "No Data",
+    };
+  }, [selectedEmployeePunchLogs, tick]);
 
   // Render Status Badge
   const getTodayStatusBadge = (status: string) => {
