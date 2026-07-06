@@ -146,10 +146,34 @@ export const Attendance: React.FC<AttendanceProps> = ({
     };
   }, []);
 
-  // Helper to parse dates correctly
-  const parseLogDate = (log: AttendanceLog): string => {
+  // Helper to parse dates correctly and convert device UTC to PKT (+5 hours)
+  const parseLogPKT = (log: AttendanceLog): { date: string; time: string; timestamp: string } => {
     const ts = log.timestamp || log.ioTime;
-    return ts ? ts.split(" ")[0] : "";
+    if (!ts) return { date: "", time: "--", timestamp: "" };
+    
+    // Treat the device time as UTC
+    const utcDate = new Date(ts.replace(" ", "T") + "Z");
+    if (isNaN(utcDate.getTime())) {
+      const parts = ts.split(" ");
+      return { date: parts[0], time: parts[1] || "--", timestamp: ts };
+    }
+    
+    // Convert to PKT (UTC+5)
+    const pktDate = new Date(utcDate.getTime() + 5 * 60 * 60 * 1000);
+    const yyyy = pktDate.getUTCFullYear();
+    const MM = String(pktDate.getUTCMonth() + 1).padStart(2, "0");
+    const dd = String(pktDate.getUTCDate()).padStart(2, "0");
+    const hh = String(pktDate.getUTCHours()).padStart(2, "0");
+    const mm = String(pktDate.getUTCMinutes()).padStart(2, "0");
+    const ss = String(pktDate.getUTCSeconds()).padStart(2, "0");
+    
+    const dateStr = `${yyyy}-${MM}-${dd}`;
+    const timeStr = `${hh}:${mm}:${ss}`;
+    return { date: dateStr, time: timeStr, timestamp: `${dateStr} ${timeStr}` };
+  };
+
+  const parseLogDate = (log: AttendanceLog): string => {
+    return parseLogPKT(log).date;
   };
 
   // Determine user department
@@ -184,8 +208,8 @@ export const Attendance: React.FC<AttendanceProps> = ({
 
       if (todayPunches.length > 0) {
         const sortedPunches = [...todayPunches].sort((a, b) => {
-          const tA = a.timestamp || a.ioTime || "";
-          const tB = b.timestamp || b.ioTime || "";
+          const tA = parseLogPKT(a).timestamp;
+          const tB = parseLogPKT(b).timestamp;
           return tA.localeCompare(tB);
         });
         const lastPunch = sortedPunches[sortedPunches.length - 1];
@@ -221,15 +245,15 @@ export const Attendance: React.FC<AttendanceProps> = ({
             // Calculate hours from real punches
             if (dayPunches.length >= 2) {
               const sorted = [...dayPunches].sort((a, b) => {
-                const tA = a.timestamp || a.ioTime || "";
-                const tB = b.timestamp || b.ioTime || "";
+                const tA = parseLogPKT(a).timestamp;
+                const tB = parseLogPKT(b).timestamp;
                 return tA.localeCompare(tB);
               });
-              const firstStr = sorted[0].timestamp || sorted[0].ioTime || "";
-              const lastStr = sorted[sorted.length - 1].timestamp || sorted[sorted.length - 1].ioTime || "";
+              const firstStr = parseLogPKT(sorted[0]).timestamp;
+              const lastStr = parseLogPKT(sorted[sorted.length - 1]).timestamp;
               
-              const fDate = new Date(firstStr.replace(" ", "T") + (firstStr.includes("Z") || firstStr.includes("+") ? "" : "+05:00"));
-              const lDate = new Date(lastStr.replace(" ", "T") + (lastStr.includes("Z") || lastStr.includes("+") ? "" : "+05:00"));
+              const fDate = new Date(firstStr.replace(" ", "T"));
+              const lDate = new Date(lastStr.replace(" ", "T"));
               
               if (!isNaN(fDate.getTime()) && !isNaN(lDate.getTime())) {
                 const diff = (lDate.getTime() - fDate.getTime()) / (1000 * 60 * 60);
@@ -238,9 +262,9 @@ export const Attendance: React.FC<AttendanceProps> = ({
             } else {
                // Single punch check-in, check if it's today and they haven't checked out yet
                if (dateStr === todayStr) {
-                  const firstStr = dayPunches[0].timestamp || dayPunches[0].ioTime || "";
-                  const fDate = new Date(firstStr.replace(" ", "T") + (firstStr.includes("Z") || firstStr.includes("+") ? "" : "+05:00"));
-                  const currDate = new Date(); // local time assumption (could be slightly off if not PKT, but fine for UI)
+                  const firstStr = parseLogPKT(dayPunches[0]).timestamp;
+                  const fDate = new Date(firstStr.replace(" ", "T"));
+                  const currDate = new Date(); 
                   if (!isNaN(fDate.getTime())) {
                     const diff = Math.max(0, (currDate.getTime() - fDate.getTime()) / (1000 * 60 * 60));
                     totalHours += diff;
@@ -337,38 +361,27 @@ export const Attendance: React.FC<AttendanceProps> = ({
         });
       } else if (dayPunches.length > 0) {
         const sorted = [...dayPunches].sort((a, b) => {
-          const tA = a.timestamp || a.ioTime || "";
-          const tB = b.timestamp || b.ioTime || "";
+          const tA = parseLogPKT(a).timestamp;
+          const tB = parseLogPKT(b).timestamp;
           return tA.localeCompare(tB);
         });
 
         const first = sorted[0];
         const last = sorted.length > 1 ? sorted[sorted.length - 1] : null;
 
-        const firstInTime = first.timestamp
-          ? first.timestamp.split(" ")[1]
-          : first.ioTime
-            ? first.ioTime.split(" ")[1]
-            : "--";
-            
-        const lastOutTime = last
-          ? last.timestamp
-            ? last.timestamp.split(" ")[1]
-            : last.ioTime
-              ? last.ioTime.split(" ")[1]
-              : "--"
-          : "--";
+        const firstInTime = parseLogPKT(first).time;
+        const lastOutTime = last ? parseLogPKT(last).time : "--";
 
         let hours = 0;
         let status: "Present" | "Late Arrival" = "Present";
 
         // Dynamic hours calculation based on exact punch times
-        const firstStr = first.timestamp || first.ioTime || "";
-        const fDate = new Date(firstStr.replace(" ", "T") + (firstStr.includes("Z") || firstStr.includes("+") ? "" : "+05:00"));
+        const firstStr = parseLogPKT(first).timestamp;
+        const fDate = new Date(firstStr.replace(" ", "T"));
         
         if (last) {
-           const lastStr = last.timestamp || last.ioTime || "";
-           const lDate = new Date(lastStr.replace(" ", "T") + (lastStr.includes("Z") || lastStr.includes("+") ? "" : "+05:00"));
+           const lastStr = parseLogPKT(last).timestamp;
+           const lDate = new Date(lastStr.replace(" ", "T"));
            if (!isNaN(fDate.getTime()) && !isNaN(lDate.getTime())) {
               hours = (lDate.getTime() - fDate.getTime()) / (1000 * 60 * 60);
            }
@@ -1114,125 +1127,116 @@ export const Attendance: React.FC<AttendanceProps> = ({
                 </div>
               </div>
 
-              {/* KPI Cards Grid */}
-              <div
-                className="dashboard-grid"
-                style={{
-                  gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-                }}
-              >
-                {/* KPI 1: Days Present */}
-                <div className="stat-card done">
-                  <div className="stat-header">
-                    <span className="stat-label">Days Present</span>
-                    <div
-                      className="stat-icon"
-                      style={{
-                        backgroundColor: "var(--status-closed-bg)",
-                        color: "var(--status-closed)",
-                      }}
-                    >
-                      <CheckCircle size={16} />
-                    </div>
-                  </div>
-                  <span className="stat-value">
-                    {selectedEmployee.daysPresent} /{" "}
-                    {selectedEmployee.totalWorkDays}
-                  </span>
-                  <span className="stat-desc">Target: 26 Working Days</span>
+              {/* Monthly Calendar View (Top) */}
+              <div className="panel" style={{ padding: "20px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                   <h3 className="panel-title">
+                     <Calendar
+                       size={16}
+                       style={{ color: "var(--color-primary)" }}
+                     />
+                     Monthly Attendance Calendar
+                   </h3>
+                   <select 
+                     className="form-input" 
+                     style={{ padding: "6px 12px", fontSize: "0.85rem", width: "150px" }}
+                     value={selectedMonth}
+                     onChange={(e) => setSelectedMonth(e.target.value)}
+                   >
+                      {Array.from({ length: 12 }).map((_, i) => {
+                         const d = new Date();
+                         d.setMonth(d.getMonth() - i);
+                         const yyyy = d.getFullYear();
+                         const mm = String(d.getMonth() + 1).padStart(2, '0');
+                         const val = `${yyyy}-${mm}`;
+                         const label = d.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+                         return <option key={val} value={val}>{label}</option>;
+                      })}
+                   </select>
                 </div>
 
-                {/* KPI 2: Days Absent */}
                 <div
-                  className="stat-card it-app"
-                  style={{
-                    borderLeft:
-                      selectedEmployee.daysAbsent > 0
-                        ? "4px solid #f43f5e"
-                        : "1px solid var(--border-color)",
+                  style={{ 
+                     display: "grid", 
+                     gridTemplateColumns: "repeat(7, 1fr)", 
+                     gap: "8px",
+                     marginTop: "12px"
                   }}
                 >
-                  <div className="stat-header">
-                    <span className="stat-label">Days Absent</span>
-                    <div
-                      className="stat-icon"
-                      style={{
-                        backgroundColor: "rgba(244, 63, 94, 0.12)",
-                        color: "#f43f5e",
-                      }}
-                    >
-                      <XCircle size={16} />
-                    </div>
-                  </div>
-                  <span
-                    className="stat-value"
-                    style={{
-                      color:
-                        selectedEmployee.daysAbsent > 0 ? "#f43f5e" : "white",
-                    }}
-                  >
-                    {selectedEmployee.daysAbsent}
-                  </span>
-                  <span className="stat-desc">Unexcused Absences</span>
-                </div>
-
-                {/* KPI 3: Hours Clocked */}
-                <div className="stat-card prog">
-                  <div className="stat-header">
-                    <span className="stat-label">Hours Clocked</span>
-                    <div
-                      className="stat-icon"
-                      style={{
-                        backgroundColor: "var(--status-progress-bg)",
-                        color: "var(--color-primary)",
-                      }}
-                    >
-                      <TrendingUp size={16} />
-                    </div>
-                  </div>
-                  <span className="stat-value">
-                    {selectedEmployee.totalHours} hrs
-                  </span>
-                  <span className="stat-desc">Target: 208 hours (Month)</span>
-                </div>
-
-                {/* KPI 4: Leave Balance */}
-                <div className="stat-card handover">
-                  <div className="stat-header" style={{ marginBottom: "12px" }}>
-                    <span className="stat-label">Leave Balance</span>
-                    <div
-                      className="stat-icon"
-                      style={{
-                        backgroundColor: "var(--status-handover-bg)",
-                        color: "var(--status-handover)",
-                      }}
-                    >
-                      <FileText size={16} />
-                    </div>
-                  </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px", width: "100%", marginTop: "6px" }}>
-                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                        <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--text-primary)" }}>12</span>
-                        <span style={{ fontSize: "0.65rem", color: "var(--text-secondary)", textTransform: "uppercase" }}>Casual</span>
-                     </div>
-                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                        <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--color-primary)" }}>14</span>
-                        <span style={{ fontSize: "0.65rem", color: "var(--text-secondary)", textTransform: "uppercase" }}>Annual</span>
-                     </div>
-                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                        <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--status-handover)" }}>8</span>
-                        <span style={{ fontSize: "0.65rem", color: "var(--text-secondary)", textTransform: "uppercase" }}>Medical</span>
-                     </div>
-                  </div>
+                   {/* Calendar Header */}
+                   {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
+                      <div key={d} style={{ textAlign: "center", fontWeight: 600, fontSize: "0.8rem", color: "var(--text-secondary)", paddingBottom: "8px" }}>{d}</div>
+                   ))}
+                   
+                   {/* Pad initial blank days */}
+                   {(() => {
+                      const [sYear, sMonth] = selectedMonth.split("-").map(Number);
+                      const firstDayObj = new Date(Date.UTC(sYear, sMonth - 1, 1));
+                      let startDay = firstDayObj.getUTCDay(); // 0 = Sunday
+                      if (startDay === 0) startDay = 7;
+                      
+                      const paddingDays = [];
+                      for (let i = 1; i < startDay; i++) {
+                         paddingDays.push(<div key={`pad-${i}`} style={{ minHeight: "80px", borderRadius: "8px", backgroundColor: "var(--bg-secondary)", opacity: 0.3 }} />);
+                      }
+                      return paddingDays;
+                   })()}
+                   
+                   {/* Calendar Days */}
+                   {selectedEmployeePunchLogs.map((log) => {
+                      const dayNum = parseInt(log.date.split("-")[2], 10);
+                      const isWeekend = log.status === "Weekend";
+                      
+                      return (
+                         <div 
+                            key={log.date} 
+                            style={{ 
+                               minHeight: "85px", 
+                               padding: "8px", 
+                               borderRadius: "8px", 
+                               backgroundColor: isWeekend ? "rgba(255,255,255,0.02)" : "var(--bg-secondary)",
+                               border: "1px solid var(--border-color)",
+                               display: "flex",
+                               flexDirection: "column",
+                               gap: "4px"
+                            }}
+                         >
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                               <span style={{ fontSize: "0.85rem", fontWeight: 600, color: isWeekend ? "var(--text-muted)" : "white" }}>{dayNum}</span>
+                               <div style={{ transform: "scale(0.85)", transformOrigin: "right top" }}>
+                                  {getLogStatusBadge(log.status)}
+                               </div>
+                            </div>
+                            
+                            {log.status !== "Weekend" && log.status !== "No Data" && (
+                               <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: "2px", fontSize: "0.7rem", color: "var(--text-secondary)" }}>
+                                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                                     <span>In:</span>
+                                     <span style={{ color: "white", fontWeight: 500 }}>{log.firstIn === "--" ? "-" : log.firstIn.substring(0, 5)}</span>
+                                  </div>
+                                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                                     <span>Out:</span>
+                                     <span style={{ color: "white", fontWeight: 500 }}>{log.lastOut === "--" ? "-" : log.lastOut.substring(0, 5)}</span>
+                                  </div>
+                                  {log.hours > 0 && (
+                                     <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "2px" }}>
+                                        <span style={{ color: "var(--color-primary)", fontWeight: 600 }}>{log.hours}h</span>
+                                     </div>
+                                  )}
+                               </div>
+                            )}
+                         </div>
+                      );
+                   })}
                 </div>
               </div>
 
-              {/* Today's Shift Progress & punch log table split */}
+              {/* Today's Shift Progress & KPI Cards split */}
               <div
                 className="dashboard-two-col"
-                style={{ gridTemplateColumns: "1fr 2fr" }}
+                style={{ gridTemplateColumns: "1fr 1fr", alignItems: "start" }}
               >
-                {/* Shift Progress Panel */}
+                {/* Shift Progress Panel (Left) */}
                 <div className="panel" style={{ padding: "20px" }}>
                   <h3 className="panel-title" style={{ marginBottom: "16px" }}>
                     <Clock
@@ -1404,98 +1408,117 @@ export const Attendance: React.FC<AttendanceProps> = ({
                   </div>
                 </div>
 
-                {/* Monthly Calendar View */}
-                <div className="panel" style={{ padding: "20px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-                     <h3 className="panel-title">
-                       <Calendar
-                         size={16}
-                         style={{ color: "var(--color-primary)" }}
-                       />
-                       Monthly Attendance Calendar
-                     </h3>
-                     <input 
-                       type="month" 
-                       className="form-input" 
-                       style={{ padding: "6px 12px", fontSize: "0.85rem", width: "150px" }}
-                       value={selectedMonth}
-                       onChange={(e) => setSelectedMonth(e.target.value)}
-                     />
+                {/* KPI Cards Grid (Right side, 2x2 layout) */}
+                <div
+                  className="dashboard-grid"
+                  style={{
+                    gridTemplateColumns: "repeat(2, 1fr)",
+                    height: "100%",
+                  }}
+                >
+                  {/* KPI 1: Days Present */}
+                  <div className="stat-card done">
+                    <div className="stat-header">
+                      <span className="stat-label">Days Present</span>
+                      <div
+                        className="stat-icon"
+                        style={{
+                          backgroundColor: "var(--status-closed-bg)",
+                          color: "var(--status-closed)",
+                        }}
+                      >
+                        <CheckCircle size={16} />
+                      </div>
+                    </div>
+                    <span className="stat-value">
+                      {selectedEmployee.daysPresent} /{" "}
+                      {selectedEmployee.totalWorkDays}
+                    </span>
+                    <span className="stat-desc">Target: 26 Working Days</span>
                   </div>
 
+                  {/* KPI 2: Days Absent */}
                   <div
-                    style={{ 
-                       display: "grid", 
-                       gridTemplateColumns: "repeat(7, 1fr)", 
-                       gap: "8px",
-                       marginTop: "12px"
+                    className="stat-card it-app"
+                    style={{
+                      borderLeft:
+                        selectedEmployee.daysAbsent > 0
+                          ? "4px solid #f43f5e"
+                          : "1px solid var(--border-color)",
                     }}
                   >
-                     {/* Calendar Header */}
-                     {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
-                        <div key={d} style={{ textAlign: "center", fontWeight: 600, fontSize: "0.8rem", color: "var(--text-secondary)", paddingBottom: "8px" }}>{d}</div>
-                     ))}
-                     
-                     {/* Pad initial blank days */}
-                     {(() => {
-                        const [sYear, sMonth] = selectedMonth.split("-").map(Number);
-                        const firstDayObj = new Date(Date.UTC(sYear, sMonth - 1, 1));
-                        let startDay = firstDayObj.getUTCDay(); // 0 = Sunday
-                        if (startDay === 0) startDay = 7;
-                        
-                        const paddingDays = [];
-                        for (let i = 1; i < startDay; i++) {
-                           paddingDays.push(<div key={`pad-${i}`} style={{ minHeight: "80px", borderRadius: "8px", backgroundColor: "var(--bg-secondary)", opacity: 0.3 }} />);
-                        }
-                        return paddingDays;
-                     })()}
-                     
-                     {/* Calendar Days */}
-                     {selectedEmployeePunchLogs.map((log) => {
-                        const dayNum = parseInt(log.date.split("-")[2], 10);
-                        const isWeekend = log.status === "Weekend";
-                        
-                        return (
-                           <div 
-                              key={log.date} 
-                              style={{ 
-                                 minHeight: "85px", 
-                                 padding: "8px", 
-                                 borderRadius: "8px", 
-                                 backgroundColor: isWeekend ? "rgba(255,255,255,0.02)" : "var(--bg-secondary)",
-                                 border: "1px solid var(--border-color)",
-                                 display: "flex",
-                                 flexDirection: "column",
-                                 gap: "4px"
-                              }}
-                           >
-                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                 <span style={{ fontSize: "0.85rem", fontWeight: 600, color: isWeekend ? "var(--text-muted)" : "white" }}>{dayNum}</span>
-                                 <div style={{ transform: "scale(0.85)", transformOrigin: "right top" }}>
-                                    {getLogStatusBadge(log.status)}
-                                 </div>
-                              </div>
-                              
-                              {log.status !== "Weekend" && log.status !== "No Data" && (
-                                 <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: "2px", fontSize: "0.7rem", color: "var(--text-secondary)" }}>
-                                    <div style={{ display: "flex", justifyContent: "space-between" }}>
-                                       <span>In:</span>
-                                       <span style={{ color: "white", fontWeight: 500 }}>{log.firstIn === "--" ? "-" : log.firstIn.substring(0, 5)}</span>
-                                    </div>
-                                    <div style={{ display: "flex", justifyContent: "space-between" }}>
-                                       <span>Out:</span>
-                                       <span style={{ color: "white", fontWeight: 500 }}>{log.lastOut === "--" ? "-" : log.lastOut.substring(0, 5)}</span>
-                                    </div>
-                                    {log.hours > 0 && (
-                                       <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "2px" }}>
-                                          <span style={{ color: "var(--color-primary)", fontWeight: 600 }}>{log.hours}h</span>
-                                       </div>
-                                    )}
-                                 </div>
-                              )}
-                           </div>
-                        );
-                     })}
+                    <div className="stat-header">
+                      <span className="stat-label">Days Absent</span>
+                      <div
+                        className="stat-icon"
+                        style={{
+                          backgroundColor: "rgba(244, 63, 94, 0.12)",
+                          color: "#f43f5e",
+                        }}
+                      >
+                        <XCircle size={16} />
+                      </div>
+                    </div>
+                    <span
+                      className="stat-value"
+                      style={{
+                        color:
+                          selectedEmployee.daysAbsent > 0 ? "#f43f5e" : "white",
+                      }}
+                    >
+                      {selectedEmployee.daysAbsent}
+                    </span>
+                    <span className="stat-desc">Unexcused Absences</span>
+                  </div>
+
+                  {/* KPI 3: Hours Clocked */}
+                  <div className="stat-card prog">
+                    <div className="stat-header">
+                      <span className="stat-label">Hours Clocked</span>
+                      <div
+                        className="stat-icon"
+                        style={{
+                          backgroundColor: "var(--status-progress-bg)",
+                          color: "var(--color-primary)",
+                        }}
+                      >
+                        <TrendingUp size={16} />
+                      </div>
+                    </div>
+                    <span className="stat-value">
+                      {selectedEmployee.totalHours} hrs
+                    </span>
+                    <span className="stat-desc">Target: 208 hours (Month)</span>
+                  </div>
+
+                  {/* KPI 4: Leave Balance */}
+                  <div className="stat-card handover">
+                    <div className="stat-header" style={{ marginBottom: "12px" }}>
+                      <span className="stat-label">Leave Balance</span>
+                      <div
+                        className="stat-icon"
+                        style={{
+                          backgroundColor: "var(--status-handover-bg)",
+                          color: "var(--status-handover)",
+                        }}
+                      >
+                        <FileText size={16} />
+                      </div>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px", width: "100%", marginTop: "6px" }}>
+                       <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                          <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--text-primary)" }}>12</span>
+                          <span style={{ fontSize: "0.65rem", color: "var(--text-secondary)", textTransform: "uppercase" }}>Casual</span>
+                       </div>
+                       <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                          <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--color-primary)" }}>14</span>
+                          <span style={{ fontSize: "0.65rem", color: "var(--text-secondary)", textTransform: "uppercase" }}>Annual</span>
+                       </div>
+                       <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                          <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--status-handover)" }}>8</span>
+                          <span style={{ fontSize: "0.65rem", color: "var(--text-secondary)", textTransform: "uppercase" }}>Medical</span>
+                       </div>
+                    </div>
                   </div>
                 </div>
               </div>
