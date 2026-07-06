@@ -41,6 +41,7 @@ app.use(cors({
   credentials: true,
 }));
 
+app.use(express.json({ limit: "10mb" }));
 
 // Extend express Request interface for our middleware
 interface AuthRequest extends Request {
