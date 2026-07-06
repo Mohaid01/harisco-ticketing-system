@@ -51,8 +51,16 @@ function App() {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        if (!authRes.ok) {
+        if (authRes.status === 401 || authRes.status === 403) {
+          // Token is invalid or expired — force logout
           throw new Error("Session expired");
+        }
+
+        if (!authRes.ok) {
+          // Server error or network issue — keep the token, don't log out
+          console.error("Session check failed with status:", authRes.status);
+          setLoading(false);
+          return;
         }
 
         const authData = await authRes.json();
@@ -82,7 +90,14 @@ function App() {
           setUsers(usersData);
         }
       } catch (err) {
-        console.error("Session verification failed:", err);
+        if (err instanceof TypeError) {
+          // Network failure (server down, connection reset) — keep token, don't log out
+          console.error("Session verification failed (network error):", err);
+          setLoading(false);
+          return;
+        }
+        // Explicit auth failure — clear session
+        console.error("Session expired or invalid:", err);
         localStorage.removeItem("harisco_token");
         setToken(null);
         setCurrentUser(null);
