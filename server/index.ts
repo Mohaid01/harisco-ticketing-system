@@ -2,7 +2,6 @@ import "dotenv/config";
 import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
 import helmet from "helmet";
-import rateLimit from "express-rate-limit";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import path from "path";
@@ -42,24 +41,6 @@ app.use(cors({
   credentials: true,
 }));
 
-app.use(express.json({ limit: "10mb" }));
-
-// Apply global API rate limit
-const globalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 1000,
-  validate: { xForwardedForHeader: false },
-  message: { error: "Too many requests from this IP, please try again later." }
-});
-app.use("/api", globalLimiter);
-
-// Strict rate limit for auth endpoint
-const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 10,
-  validate: { xForwardedForHeader: false },
-  message: { error: "Too many login attempts, please try again after 15 minutes." }
-});
 
 // Extend express Request interface for our middleware
 interface AuthRequest extends Request {
@@ -154,7 +135,7 @@ function authenticateToken(
 }
 
 // Auth Routes
-app.post("/api/auth/login", loginLimiter, async (req: Request, res: Response) => {
+app.post("/api/auth/login", async (req: Request, res: Response) => {
   const { username, password } = req.body;
   if (!username || !password) {
     res.status(400).json({ error: "Username and password are required." });
