@@ -68,7 +68,7 @@ interface AuthRequest extends Request {
     name: string;
     email: string;
     role: "it" | "employee" | "manager";
-    avatar: string;
+    avatar?: string;
     needsPasswordReset?: number;
   };
 }
@@ -183,21 +183,24 @@ app.post("/api/auth/login", loginLimiter, async (req: Request, res: Response) =>
       return;
     }
 
-    // Sign JWT
-    const payload = {
+    // Sign JWT — keep payload small, never include avatar (base64 images bloat headers)
+    const jwtPayload = {
       id: user.id,
       name: user.name,
       email: user.email,
       username: user.username,
       role: user.role,
-      avatar: user.avatar,
       needsPasswordReset: user.needsPasswordReset,
     };
-    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "7d" });
+    const token = jwt.sign(jwtPayload, JWT_SECRET, { expiresIn: "7d" });
 
+    // Return full user (including avatar) in response body only
     res.json({
       token,
-      user: payload,
+      user: {
+        ...jwtPayload,
+        avatar: user.avatar,
+      },
     });
   } catch (error) {
     console.error("Login error:", error);
