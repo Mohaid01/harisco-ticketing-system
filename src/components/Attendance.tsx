@@ -39,15 +39,6 @@ const SHIFTS = {
   GENERAL: "General Shift (09:30 AM - 06:00 PM)",
 } as const;
 
-// Helper to calculate a stable numeric hash for mock data consistency
-const getDeterministicHash = (userId: string, dateStr: string): number => {
-  let hash = 0;
-  const str = userId + dateStr;
-  for (let i = 0; i < str.length; i++) {
-    hash = str.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return Math.abs(hash);
-};
 
 export const Attendance: React.FC<AttendanceProps> = ({
   currentUser,
@@ -196,11 +187,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
           todayStatus = "Clocked Out";
         }
       } else {
-        // Deterministic check for leave or absent today
-        const dayHash = getDeterministicHash(uId, todayStr);
-        if (dayHash % 25 === 0) {
-          todayStatus = "On Leave";
-        }
+        todayStatus = "Absent";
       }
 
       // Calculate monthly stats using deterministic history + real logs
@@ -230,19 +217,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
               totalHours += 4.0; // Half day
             }
           } else {
-            // Deterministic mock fallback
-            const seed = getDeterministicHash(uId, dateStr);
-            if (seed % 20 === 0) {
-              daysAbsent++;
-            } else if (seed % 20 === 1) {
-              // On Leave, doesn't count as absent or present
-            } else if (seed % 20 === 2) {
-              daysPresent++;
-              totalHours += 4.0; // Half Day
-            } else {
-              daysPresent++;
-              totalHours += 8.0; // Present
-            }
+            daysAbsent++;
           }
         }
         tempDate.setDate(tempDate.getDate() - 1);
@@ -378,54 +353,12 @@ export const Attendance: React.FC<AttendanceProps> = ({
           status,
         });
       } else {
-        // Deterministic mock history
-        const seed = getDeterministicHash(uId, dateStr);
-        let status:
-          | "Present"
-          | "Absent"
-          | "On Leave"
-          | "Late Arrival"
-          | "Half Day" = "Present";
-        let firstIn = "09:24:12";
-        let lastOut = "18:02:45";
-        let hours = 8.0;
-
-        if (seed % 20 === 0) {
-          status = "Absent";
-          firstIn = "--";
-          lastOut = "--";
-          hours = 0;
-        } else if (seed % 20 === 1) {
-          status = "On Leave";
-          firstIn = "--";
-          lastOut = "--";
-          hours = 0;
-        } else if (seed % 20 === 2) {
-          status = "Half Day";
-          firstIn = "09:28:15";
-          lastOut = "13:30:00";
-          hours = 4.0;
-        } else if (seed % 20 === 3 || seed % 20 === 4) {
-          status = "Late Arrival";
-          firstIn = "09:48:22";
-          lastOut = "18:15:30";
-          hours = 8.45;
-        } else {
-          // Adjust hours & punch times slightly for premium feel
-          const offsetMin = (seed % 15) - 7;
-          const checkInMin = 25 + offsetMin;
-          const checkOutMin = offsetMin;
-          firstIn = `09:${checkInMin < 10 ? "0" + checkInMin : checkInMin}:15`;
-          lastOut = `18:${checkOutMin < 0 ? 60 + checkOutMin : checkOutMin < 10 ? "0" + checkOutMin : checkOutMin}:22`;
-          hours = 8.0 + offsetMin / 60;
-        }
-
         list.push({
           date: dateStr,
-          firstIn,
-          lastOut,
-          hours: Math.round(hours * 100) / 100,
-          status,
+          firstIn: "--",
+          lastOut: "--",
+          hours: 0,
+          status: "No Data" as const,
         });
       }
       tempDate.setDate(tempDate.getDate() - 1);
@@ -500,6 +433,15 @@ export const Attendance: React.FC<AttendanceProps> = ({
         return <span className="badge badge-handover">On Leave</span>;
       case "Weekend":
         return <span className="badge badge-type">Weekend</span>;
+      case "No Data":
+        return (
+          <span
+            className="badge badge-type"
+            style={{ color: "var(--text-muted)", borderColor: "var(--border-color)" }}
+          >
+            No Data
+          </span>
+        );
       default:
         return (
           <span
