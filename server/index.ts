@@ -31,6 +31,9 @@ const app = express();
 // Security Headers (CSP disabled to allow Vite inline scripts/styles)
 app.use(helmet({ contentSecurityPolicy: false }));
 
+// Required: trust Cloudflare Tunnel proxy so express-rate-limit reads X-Forwarded-For correctly
+app.set("trust proxy", 1);
+
 // Strict CORS: allow Vite dev server locally, but restrict in production
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' ? false : 'http://localhost:5173'
