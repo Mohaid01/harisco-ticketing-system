@@ -1147,6 +1147,26 @@ app.get(
   }
 );
 
+// Clear ALL attendance logs (IT only)
+app.delete(
+  "/api/attendance",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    if (req.user?.role !== "it") {
+      res.status(403).json({ error: "Forbidden. Clearing attendance logs requires IT role." });
+      return;
+    }
+    try {
+      const db = getDb();
+      await db.run("DELETE FROM attendance_logs");
+      res.json({ success: true, message: "All attendance logs cleared." });
+    } catch (error) {
+      console.error("Failed to clear attendance logs:", error);
+      res.status(500).json({ error: "Failed to clear attendance logs." });
+    }
+  }
+);
+
 // Delete a single attendance log (IT only)
 app.delete(
   "/api/attendance/:id",

@@ -18,6 +18,7 @@ import {
   FileText,
   ArrowLeft,
   ChevronRight,
+  Trash2,
 } from "lucide-react";
 
 interface AttendanceProps {
@@ -59,6 +60,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
   const [logs, setLogs] = useState<AttendanceLog[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [clearing, setClearing] = useState<boolean>(false);
   const [viewMode, setViewMode] = useState<ViewMode>(
     isAdminRole ? "summary" : "individual",
   );
@@ -87,6 +89,33 @@ export const Attendance: React.FC<AttendanceProps> = ({
     } finally {
       setLoading(false);
       setRefreshing(false);
+    }
+  };
+
+  const handleClearAttendance = async () => {
+    if (
+      !window.confirm(
+        "Are you sure you want to permanently delete ALL attendance logs? This action cannot be undone.",
+      )
+    )
+      return;
+    setClearing(true);
+    try {
+      const token = localStorage.getItem("harisco_token");
+      const res = await fetch("/api/attendance", {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        setLogs([]);
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to clear attendance logs.");
+      }
+    } catch {
+      alert("Network error. Could not clear attendance logs.");
+    } finally {
+      setClearing(false);
     }
   };
 
@@ -126,8 +155,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
 
   // Determine user shift (all users have the standard 9:30 AM to 6:00 PM shift)
   const getUserShift = (userId: string): string => {
-    console.log(userId);
-    return SHIFTS.GENERAL;
+    if (userId) return SHIFTS.GENERAL;
   };
 
   // Determine user department
@@ -567,6 +595,22 @@ export const Attendance: React.FC<AttendanceProps> = ({
             <RefreshCw size={14} className={refreshing ? "spin" : ""} />
             Refresh
           </button>
+          {currentUser.role === "it" && (
+            <button
+              className="btn btn-danger"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "8px 14px",
+              }}
+              onClick={handleClearAttendance}
+              disabled={clearing}
+            >
+              <Trash2 size={14} />
+              {clearing ? "Clearing..." : "Clear Attendance"}
+            </button>
+          )}
         </div>
       </div>
 
