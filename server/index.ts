@@ -609,7 +609,7 @@ app.post(
       const db = getDb();
 
       // Generate sequential ticket code based on max index to prevent collision after deletions
-      const allTickets = await db.all<{ id: string }>("SELECT id FROM tickets");
+      const allTickets = await db.all<{ id: string }[]>("SELECT id FROM tickets");
       let maxIndex = 0;
       for (const t of allTickets) {
         const match = t.id.match(/HCIT-TCK-(\d+)/);
@@ -668,7 +668,7 @@ app.post(
       // Inform all IT personnel via email if created by an employee
       if (req.user?.role === "employee") {
         try {
-          const itUsers = await db.all<{ email: string }>(
+          const itUsers = await db.all<{ email: string }[]>(
             "SELECT email FROM users WHERE role = 'it' AND email IS NOT NULL AND email != ''",
           );
           for (const itUser of itUsers) {
@@ -779,7 +779,7 @@ app.post(
       // Rule 2: Escalated to manager -> Inform manager(s) via email
       if (status === "awaiting_manager_approval") {
         try {
-          const managers = await db.all<{ email: string }>(
+          const managers = await db.all<{ email: string }[]>(
             "SELECT email FROM users WHERE role = 'manager' AND email IS NOT NULL AND email != ''",
           );
           for (const mgr of managers) {
@@ -1177,7 +1177,7 @@ app.delete(
       return;
     }
 
-    const logId = parseInt(req.params.id, 10);
+    const logId = parseInt(req.params.id as string, 10);
     if (isNaN(logId)) {
       res.status(400).json({ error: "Invalid log ID." });
       return;

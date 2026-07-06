@@ -38,10 +38,10 @@ export async function initDb() {
 
   // Migrate existing users table if email is NOT NULL
   try {
-    const tableInfo = await db.all<{ name: string; notnull: number }>(
+    const tableInfo = await db.all<{ name: string; notnull: number }[]>(
       "PRAGMA table_info(users)",
     );
-    const emailCol = tableInfo.find((c) => c.name === "email");
+    const emailCol = tableInfo.find((c: any) => c.name === "email");
     if (emailCol && emailCol.notnull === 1) {
       console.log("Migrating users table to allow nullable email...");
       await db.exec("ALTER TABLE users RENAME TO users_old");
