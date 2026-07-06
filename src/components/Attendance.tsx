@@ -6,7 +6,6 @@ import {
   Search,
   Clock,
   Calendar,
-  Trash2,
   Users,
   List,
   Filter,
@@ -51,15 +50,21 @@ const getDeterministicHash = (userId: string, dateStr: string): number => {
   return Math.abs(hash);
 };
 
-export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers }) => {
-  const isAdminRole = currentUser.role === "it" || currentUser.role === "manager";
+export const Attendance: React.FC<AttendanceProps> = ({
+  currentUser,
+  allUsers,
+}) => {
+  const isAdminRole =
+    currentUser.role === "it" || currentUser.role === "manager";
 
   // State Management
   const [logs, setLogs] = useState<AttendanceLog[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
-  const [viewMode, setViewMode] = useState<ViewMode>(isAdminRole ? "summary" : "individual");
-  
+  const [viewMode, setViewMode] = useState<ViewMode>(
+    isAdminRole ? "summary" : "individual",
+  );
+
   // Selection & Filtering
   const [selectedUserId, setSelectedUserId] = useState<string>(currentUser.id);
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -94,7 +99,9 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers })
     if (!token) return;
 
     // Set up SSE Stream for Live Updates
-    const eventSource = new EventSource(`/api/attendance/stream?token=${token}`);
+    const eventSource = new EventSource(
+      `/api/attendance/stream?token=${token}`,
+    );
 
     eventSource.onmessage = (event) => {
       try {
@@ -134,23 +141,28 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers })
 
   // Compute stats for all employees
   const employeeSummaries = useMemo(() => {
-    const todayStr = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Karachi" }).format(new Date());
+    const todayStr = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Karachi",
+    }).format(new Date());
 
     return allUsers.map((user) => {
       const uId = user.id;
       const formattedCode = formatEmployeeCode(user.username || user.id);
-      
+
       // Filter real biometric logs for this user
       const userLogs = logs.filter(
         (log) =>
           log.userId === uId ||
           log.userId === user.username ||
-          formatEmployeeCode(log.userId) === formattedCode
+          formatEmployeeCode(log.userId) === formattedCode,
       );
 
       // Find today's punches
-      const todayPunches = userLogs.filter((log) => parseLogDate(log) === todayStr);
-      let todayStatus: "Clocked In" | "Clocked Out" | "Absent" | "On Leave" = "Absent";
+      const todayPunches = userLogs.filter(
+        (log) => parseLogDate(log) === todayStr,
+      );
+      let todayStatus: "Clocked In" | "Clocked Out" | "Absent" | "On Leave" =
+        "Absent";
 
       if (todayPunches.length > 0) {
         const sortedPunches = [...todayPunches].sort((a, b) => {
@@ -181,11 +193,15 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers })
       // We look at the past 30 days
       const tempDate = new Date();
       for (let i = 0; i < 30; i++) {
-        const dateStr = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Karachi" }).format(tempDate);
+        const dateStr = new Intl.DateTimeFormat("en-CA", {
+          timeZone: "Asia/Karachi",
+        }).format(tempDate);
         const isWeekend = tempDate.getDay() === 0 || tempDate.getDay() === 6;
 
         if (!isWeekend) {
-          const dayPunches = userLogs.filter((log) => parseLogDate(log) === dateStr);
+          const dayPunches = userLogs.filter(
+            (log) => parseLogDate(log) === dateStr,
+          );
           if (dayPunches.length > 0) {
             daysPresent++;
             // Calculate hours from real punches
@@ -235,7 +251,8 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers })
         emp.formattedCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
         emp.id.toLowerCase().includes(searchQuery.toLowerCase());
 
-      const matchesDept = filterDepartment === "All" || emp.department === filterDepartment;
+      const matchesDept =
+        filterDepartment === "All" || emp.department === filterDepartment;
       const matchesShift = filterShift === "All" || emp.shift === filterShift;
 
       return matchesSearch && matchesDept && matchesShift;
@@ -251,7 +268,10 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers })
 
   // Find currently selected employee for Detailed Individual view
   const selectedEmployee = useMemo(() => {
-    return employeeSummaries.find((emp) => emp.id === selectedUserId) || employeeSummaries[0];
+    return (
+      employeeSummaries.find((emp) => emp.id === selectedUserId) ||
+      employeeSummaries[0]
+    );
   }, [employeeSummaries, selectedUserId]);
 
   // Generate 30-day historical punch log for the selected employee
@@ -264,17 +284,21 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers })
       (log) =>
         log.userId === uId ||
         log.userId === selectedEmployee.username ||
-        formatEmployeeCode(log.userId) === formattedCode
+        formatEmployeeCode(log.userId) === formattedCode,
     );
 
     const list = [];
     const tempDate = new Date();
 
     for (let i = 0; i < 30; i++) {
-      const dateStr = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Karachi" }).format(tempDate);
+      const dateStr = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Karachi",
+      }).format(tempDate);
       const isWeekend = tempDate.getDay() === 0 || tempDate.getDay() === 6;
 
-      const dayPunches = userLogs.filter((log) => parseLogDate(log) === dateStr);
+      const dayPunches = userLogs.filter(
+        (log) => parseLogDate(log) === dateStr,
+      );
 
       if (isWeekend) {
         list.push({
@@ -294,8 +318,18 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers })
         const first = sorted[0];
         const last = sorted.length > 1 ? sorted[sorted.length - 1] : null;
 
-        const firstInTime = first.timestamp ? first.timestamp.split(" ")[1] : first.ioTime ? first.ioTime.split(" ")[1] : "--";
-        const lastOutTime = last ? (last.timestamp ? last.timestamp.split(" ")[1] : last.ioTime ? last.ioTime.split(" ")[1] : "--") : "--";
+        const firstInTime = first.timestamp
+          ? first.timestamp.split(" ")[1]
+          : first.ioTime
+            ? first.ioTime.split(" ")[1]
+            : "--";
+        const lastOutTime = last
+          ? last.timestamp
+            ? last.timestamp.split(" ")[1]
+            : last.ioTime
+              ? last.ioTime.split(" ")[1]
+              : "--"
+          : "--";
 
         let hours = 4;
         let status: "Present" | "Half Day" | "Late Arrival" = "Half Day";
@@ -327,7 +361,12 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers })
       } else {
         // Deterministic mock history
         const seed = getDeterministicHash(uId, dateStr);
-        let status: "Present" | "Absent" | "On Leave" | "Late Arrival" | "Half Day" = "Present";
+        let status:
+          | "Present"
+          | "Absent"
+          | "On Leave"
+          | "Late Arrival"
+          | "Half Day" = "Present";
         let firstIn = "08:54:12";
         let lastOut = "17:02:45";
         let hours = 8.1;
@@ -359,7 +398,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers })
           const checkOutMin = offsetMin;
           firstIn = `08:${checkInMin < 10 ? "0" + checkInMin : checkInMin}:15`;
           lastOut = `17:${checkOutMin < 10 ? "0" + checkOutMin : checkOutMin}:22`;
-          hours = 8.2 + (offsetMin / 60);
+          hours = 8.2 + offsetMin / 60;
         }
 
         list.push({
@@ -377,27 +416,56 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers })
 
   // Today's specific shift progress calculations
   const todayShiftProgress = useMemo(() => {
-    if (!selectedEmployeePunchLogs.length) return { hours: 0, firstIn: "--", lastOut: "--" };
-    const todayStr = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Karachi" }).format(new Date());
-    const todayRecord = selectedEmployeePunchLogs.find(r => r.date === todayStr);
-    return todayRecord ? {
-      hours: todayRecord.hours,
-      firstIn: todayRecord.firstIn,
-      lastOut: todayRecord.lastOut,
-    } : { hours: 0, firstIn: "--", lastOut: "--" };
+    if (!selectedEmployeePunchLogs.length)
+      return { hours: 0, firstIn: "--", lastOut: "--" };
+    const todayStr = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Karachi",
+    }).format(new Date());
+    const todayRecord = selectedEmployeePunchLogs.find(
+      (r) => r.date === todayStr,
+    );
+    return todayRecord
+      ? {
+          hours: todayRecord.hours,
+          firstIn: todayRecord.firstIn,
+          lastOut: todayRecord.lastOut,
+        }
+      : { hours: 0, firstIn: "--", lastOut: "--" };
   }, [selectedEmployeePunchLogs]);
 
   // Render Status Badge
   const getTodayStatusBadge = (status: string) => {
     switch (status) {
       case "Clocked In":
-        return <span className="badge badge-closed"><CheckCircle size={12} /> Clocked In</span>;
+        return (
+          <span className="badge badge-closed">
+            <CheckCircle size={12} /> Clocked In
+          </span>
+        );
       case "Clocked Out":
-        return <span className="badge badge-type" style={{ borderColor: "var(--border-color)", color: "var(--text-secondary)" }}><Clock size={12} /> Clocked Out</span>;
+        return (
+          <span
+            className="badge badge-type"
+            style={{
+              borderColor: "var(--border-color)",
+              color: "var(--text-secondary)",
+            }}
+          >
+            <Clock size={12} /> Clocked Out
+          </span>
+        );
       case "On Leave":
-        return <span className="badge badge-m-app"><Calendar size={12} /> On Leave</span>;
+        return (
+          <span className="badge badge-m-app">
+            <Calendar size={12} /> On Leave
+          </span>
+        );
       default:
-        return <span className="badge badge-it-app"><XCircle size={12} /> Absent</span>;
+        return (
+          <span className="badge badge-it-app">
+            <XCircle size={12} /> Absent
+          </span>
+        );
     }
   };
 
@@ -414,14 +482,33 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers })
       case "Weekend":
         return <span className="badge badge-type">Weekend</span>;
       default:
-        return <span className="badge badge-danger" style={{ backgroundColor: "rgba(244, 63, 94, 0.1)", color: "#f43f5e", borderColor: "rgba(244, 63, 94, 0.2)" }}>Absent</span>;
+        return (
+          <span
+            className="badge badge-danger"
+            style={{
+              backgroundColor: "rgba(244, 63, 94, 0.1)",
+              color: "#f43f5e",
+              borderColor: "rgba(244, 63, 94, 0.2)",
+            }}
+          >
+            Absent
+          </span>
+        );
     }
   };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
       {/* Header Panel */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: "12px",
+        }}
+      >
         <div>
           <h1 className="page-title">Attendance Management</h1>
           <p className="page-subtitle">
@@ -432,10 +519,24 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers })
         </div>
         <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
           {isAdminRole && (
-            <div className="btn-group" style={{ display: "flex", background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", padding: "2px" }}>
+            <div
+              className="btn-group"
+              style={{
+                display: "flex",
+                background: "var(--bg-secondary)",
+                border: "1px solid var(--border-color)",
+                borderRadius: "var(--radius-md)",
+                padding: "2px",
+              }}
+            >
               <button
                 className={`btn ${viewMode === "summary" ? "btn-primary" : "btn-secondary"}`}
-                style={{ padding: "6px 14px", fontSize: "0.8rem", border: "none", borderRadius: "var(--radius-sm)" }}
+                style={{
+                  padding: "6px 14px",
+                  fontSize: "0.8rem",
+                  border: "none",
+                  borderRadius: "var(--radius-sm)",
+                }}
                 onClick={() => setViewMode("summary")}
               >
                 <List size={14} />
@@ -443,7 +544,12 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers })
               </button>
               <button
                 className={`btn ${viewMode === "individual" ? "btn-primary" : "btn-secondary"}`}
-                style={{ padding: "6px 14px", fontSize: "0.8rem", border: "none", borderRadius: "var(--radius-sm)" }}
+                style={{
+                  padding: "6px 14px",
+                  fontSize: "0.8rem",
+                  border: "none",
+                  borderRadius: "var(--radius-sm)",
+                }}
                 onClick={() => setViewMode("individual")}
               >
                 <Users size={14} />
@@ -453,7 +559,12 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers })
           )}
           <button
             className="btn btn-secondary"
-            style={{ display: "flex", alignItems: "center", gap: "8px", padding: "8px 14px" }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "8px 14px",
+            }}
             onClick={() => fetchLogs(true)}
             disabled={refreshing}
           >
@@ -464,7 +575,9 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers })
       </div>
 
       {loading ? (
-        <div style={{ display: "flex", justifyContent: "center", padding: "80px" }}>
+        <div
+          style={{ display: "flex", justifyContent: "center", padding: "80px" }}
+        >
           <div
             style={{
               width: "36px",
@@ -480,11 +593,22 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers })
         <>
           {/* ─────────────────── ALL EMPLOYEES SUMMARY VIEW ─────────────────── */}
           {viewMode === "summary" && isAdminRole && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            <div
+              style={{ display: "flex", flexDirection: "column", gap: "20px" }}
+            >
               {/* Search & Filter Bar */}
               <div className="panel" style={{ padding: "16px 20px" }}>
-                <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", alignItems: "center" }}>
-                  <div style={{ position: "relative", flex: 1, minWidth: "260px" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "16px",
+                    flexWrap: "wrap",
+                    alignItems: "center",
+                  }}
+                >
+                  <div
+                    style={{ position: "relative", flex: 1, minWidth: "260px" }}
+                  >
                     <input
                       type="text"
                       className="form-input"
@@ -504,29 +628,52 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers })
                       }}
                     />
                   </div>
-                  
+
                   {/* Department Filter */}
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                  >
                     <Filter size={14} style={{ color: "var(--text-muted)" }} />
                     <select
                       className="form-input"
-                      style={{ width: "160px", backgroundColor: "var(--bg-primary)" }}
+                      style={{
+                        width: "160px",
+                        backgroundColor: "var(--bg-primary)",
+                      }}
                       value={filterDepartment}
                       onChange={(e) => setFilterDepartment(e.target.value)}
                     >
                       <option value="All">All Departments</option>
                       {departmentsList.map((d) => (
-                        <option key={d} value={d}>{d}</option>
+                        <option key={d} value={d}>
+                          {d}
+                        </option>
                       ))}
                     </select>
                   </div>
 
                   {/* Shift Filter */}
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <Briefcase size={14} style={{ color: "var(--text-muted)" }} />
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                  >
+                    <Briefcase
+                      size={14}
+                      style={{ color: "var(--text-muted)" }}
+                    />
                     <select
                       className="form-input"
-                      style={{ width: "160px", backgroundColor: "var(--bg-primary)" }}
+                      style={{
+                        width: "160px",
+                        backgroundColor: "var(--bg-primary)",
+                      }}
                       value={filterShift}
                       onChange={(e) => setFilterShift(e.target.value)}
                     >
@@ -543,7 +690,10 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers })
               <div className="panel" style={{ padding: "20px" }}>
                 <div className="panel-header">
                   <h2 className="panel-title">
-                    <Building size={18} style={{ color: "var(--color-primary)" }} />
+                    <Building
+                      size={18}
+                      style={{ color: "var(--color-primary)" }}
+                    />
                     All-Employee Attendance Table ({filteredSummaries.length})
                   </h2>
                 </div>
@@ -560,18 +710,31 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers })
                         <th>Days Present</th>
                         <th>Days Absent</th>
                         <th>Total Hours (Month)</th>
-                        <th style={{ width: "120px", textAlign: "center" }}>Action</th>
+                        <th style={{ width: "120px", textAlign: "center" }}>
+                          Action
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
                       {filteredSummaries.map((emp) => (
-                        <tr key={emp.id} onClick={() => {
-                          setSelectedUserId(emp.id);
-                          setViewMode("individual");
-                        }}>
-                          <td style={{ fontWeight: 700, color: "white" }}>{emp.formattedCode}</td>
+                        <tr
+                          key={emp.id}
+                          onClick={() => {
+                            setSelectedUserId(emp.id);
+                            setViewMode("individual");
+                          }}
+                        >
+                          <td style={{ fontWeight: 700, color: "white" }}>
+                            {emp.formattedCode}
+                          </td>
                           <td>
-                            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "10px",
+                              }}
+                            >
                               <div
                                 style={{
                                   width: "32px",
@@ -587,32 +750,78 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers })
                                   color: "white",
                                 }}
                               >
-                                {emp.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)}
+                                {emp.name
+                                  .split(" ")
+                                  .map((n) => n[0])
+                                  .join("")
+                                  .toUpperCase()
+                                  .slice(0, 2)}
                               </div>
-                              <span style={{ fontWeight: 500 }}>{emp.name}</span>
+                              <span style={{ fontWeight: 500 }}>
+                                {emp.name}
+                              </span>
                             </div>
                           </td>
                           <td>
-                            <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>{emp.department}</span>
+                            <span
+                              style={{
+                                fontSize: "0.85rem",
+                                color: "var(--text-secondary)",
+                              }}
+                            >
+                              {emp.department}
+                            </span>
                           </td>
-                          <td style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>
+                          <td
+                            style={{
+                              fontSize: "0.82rem",
+                              color: "var(--text-muted)",
+                            }}
+                          >
                             {emp.shift.split(" (")[0]}
                           </td>
                           <td>{getTodayStatusBadge(emp.todayStatus)}</td>
-                          <td style={{ fontWeight: 600 }}>{emp.daysPresent} / {emp.totalWorkDays}</td>
-                          <td style={{ color: emp.daysAbsent > 0 ? "#f43f5e" : "var(--text-secondary)" }}>
+                          <td style={{ fontWeight: 600 }}>
+                            {emp.daysPresent} / {emp.totalWorkDays}
+                          </td>
+                          <td
+                            style={{
+                              color:
+                                emp.daysAbsent > 0
+                                  ? "#f43f5e"
+                                  : "var(--text-secondary)",
+                            }}
+                          >
                             {emp.daysAbsent}
                           </td>
                           <td>
-                            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                              <Clock size={13} style={{ color: "var(--text-muted)" }} />
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "6px",
+                              }}
+                            >
+                              <Clock
+                                size={13}
+                                style={{ color: "var(--text-muted)" }}
+                              />
                               <span>{emp.totalHours} hrs</span>
                             </div>
                           </td>
-                          <td style={{ textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
+                          <td
+                            style={{ textAlign: "center" }}
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             <button
                               className="btn btn-secondary"
-                              style={{ padding: "4px 10px", fontSize: "0.75rem", display: "inline-flex", alignItems: "center", gap: "4px" }}
+                              style={{
+                                padding: "4px 10px",
+                                fontSize: "0.75rem",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "4px",
+                              }}
                               onClick={() => {
                                 setSelectedUserId(emp.id);
                                 setViewMode("individual");
@@ -626,7 +835,14 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers })
                       ))}
                       {filteredSummaries.length === 0 && (
                         <tr>
-                          <td colSpan={9} style={{ textAlign: "center", padding: "40px", color: "var(--text-secondary)" }}>
+                          <td
+                            colSpan={9}
+                            style={{
+                              textAlign: "center",
+                              padding: "40px",
+                              color: "var(--text-secondary)",
+                            }}
+                          >
                             No employees match the search and filter criteria.
                           </td>
                         </tr>
@@ -640,24 +856,54 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers })
 
           {/* ─────────────────── DETAILED INDIVIDUAL VIEW ─────────────────── */}
           {viewMode === "individual" && selectedEmployee && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+            <div
+              style={{ display: "flex", flexDirection: "column", gap: "24px" }}
+            >
               {/* Back Navigation Bar for Managers/Admins */}
               {isAdminRole && (
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
                   <button
                     className="btn btn-secondary"
-                    style={{ padding: "6px 12px", fontSize: "0.8rem", display: "flex", alignItems: "center", gap: "6px" }}
+                    style={{
+                      padding: "6px 12px",
+                      fontSize: "0.8rem",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
+                    }}
                     onClick={() => setViewMode("summary")}
                   >
                     <ArrowLeft size={14} />
                     Back to All Employees Summary
                   </button>
 
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                    <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>Select Employee:</span>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "10px",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: "0.85rem",
+                        color: "var(--text-secondary)",
+                      }}
+                    >
+                      Select Employee:
+                    </span>
                     <select
                       className="form-input"
-                      style={{ width: "220px", backgroundColor: "var(--bg-secondary)" }}
+                      style={{
+                        width: "220px",
+                        backgroundColor: "var(--bg-secondary)",
+                      }}
                       value={selectedUserId}
                       onChange={(e) => setSelectedUserId(e.target.value)}
                     >
@@ -672,9 +918,30 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers })
               )}
 
               {/* Employee Detail Header Banner */}
-              <div className="panel" style={{ padding: "24px", background: "linear-gradient(135deg, var(--bg-secondary) 0%, rgba(14, 82, 155, 0.08) 100%)" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+              <div
+                className="panel"
+                style={{
+                  padding: "24px",
+                  background:
+                    "linear-gradient(135deg, var(--bg-secondary) 0%, rgba(14, 82, 155, 0.08) 100%)",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                    gap: "16px",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "16px",
+                    }}
+                  >
                     <div
                       style={{
                         width: "56px",
@@ -690,33 +957,107 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers })
                         boxShadow: "var(--shadow-sm)",
                       }}
                     >
-                      {selectedEmployee.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)}
+                      {selectedEmployee.name
+                        .split(" ")
+                        .map((n) => n[0])
+                        .join("")
+                        .toUpperCase()
+                        .slice(0, 2)}
                     </div>
                     <div>
-                      <h2 style={{ fontSize: "1.25rem", color: "white", fontWeight: 600, marginBottom: "2px" }}>
+                      <h2
+                        style={{
+                          fontSize: "1.25rem",
+                          color: "white",
+                          fontWeight: 600,
+                          marginBottom: "2px",
+                        }}
+                      >
                         {selectedEmployee.name}
                       </h2>
-                      <div style={{ display: "flex", gap: "16px", color: "var(--text-secondary)", fontSize: "0.85rem", flexWrap: "wrap" }}>
-                        <span>Code: <strong style={{ color: "white" }}>{selectedEmployee.formattedCode}</strong></span>
-                        <span>Department: <strong style={{ color: "white" }}>{selectedEmployee.department}</strong></span>
-                        <span>Shift: <strong style={{ color: "white" }}>{selectedEmployee.shift}</strong></span>
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: "16px",
+                          color: "var(--text-secondary)",
+                          fontSize: "0.85rem",
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <span>
+                          Code:{" "}
+                          <strong style={{ color: "white" }}>
+                            {selectedEmployee.formattedCode}
+                          </strong>
+                        </span>
+                        <span>
+                          Department:{" "}
+                          <strong style={{ color: "white" }}>
+                            {selectedEmployee.department}
+                          </strong>
+                        </span>
+                        <span>
+                          Shift:{" "}
+                          <strong style={{ color: "white" }}>
+                            {selectedEmployee.shift}
+                          </strong>
+                        </span>
                       </div>
                     </div>
                   </div>
                   <div>
                     {selectedEmployee.todayStatus === "Clocked In" ? (
-                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "6px" }}>
-                        <span className="badge badge-closed" style={{ padding: "8px 16px", fontSize: "0.85rem" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "flex-end",
+                          gap: "6px",
+                        }}
+                      >
+                        <span
+                          className="badge badge-closed"
+                          style={{ padding: "8px 16px", fontSize: "0.85rem" }}
+                        >
                           <CheckCircle size={14} /> Clocked In
                         </span>
-                        <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>Live Session Active</span>
+                        <span
+                          style={{
+                            fontSize: "0.75rem",
+                            color: "var(--text-muted)",
+                          }}
+                        >
+                          Live Session Active
+                        </span>
                       </div>
                     ) : (
-                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "6px" }}>
-                        <span className="badge badge-type" style={{ padding: "8px 16px", fontSize: "0.85rem", borderColor: "var(--border-color)", color: "var(--text-secondary)" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "flex-end",
+                          gap: "6px",
+                        }}
+                      >
+                        <span
+                          className="badge badge-type"
+                          style={{
+                            padding: "8px 16px",
+                            fontSize: "0.85rem",
+                            borderColor: "var(--border-color)",
+                            color: "var(--text-secondary)",
+                          }}
+                        >
                           <Clock size={14} /> Clocked Out
                         </span>
-                        <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>No Active Punch Session</span>
+                        <span
+                          style={{
+                            fontSize: "0.75rem",
+                            color: "var(--text-muted)",
+                          }}
+                        >
+                          No Active Punch Session
+                        </span>
                       </div>
                     )}
                   </div>
@@ -724,28 +1065,62 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers })
               </div>
 
               {/* KPI Cards Grid */}
-              <div className="dashboard-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
+              <div
+                className="dashboard-grid"
+                style={{
+                  gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                }}
+              >
                 {/* KPI 1: Days Present */}
                 <div className="stat-card done">
                   <div className="stat-header">
                     <span className="stat-label">Days Present</span>
-                    <div className="stat-icon" style={{ backgroundColor: "var(--status-closed-bg)", color: "var(--status-closed)" }}>
+                    <div
+                      className="stat-icon"
+                      style={{
+                        backgroundColor: "var(--status-closed-bg)",
+                        color: "var(--status-closed)",
+                      }}
+                    >
                       <CheckCircle size={16} />
                     </div>
                   </div>
-                  <span className="stat-value">{selectedEmployee.daysPresent} / {selectedEmployee.totalWorkDays}</span>
+                  <span className="stat-value">
+                    {selectedEmployee.daysPresent} /{" "}
+                    {selectedEmployee.totalWorkDays}
+                  </span>
                   <span className="stat-desc">Target: 22 Working Days</span>
                 </div>
 
                 {/* KPI 2: Days Absent */}
-                <div className="stat-card it-app" style={{ borderLeft: selectedEmployee.daysAbsent > 0 ? "4px solid #f43f5e" : "1px solid var(--border-color)" }}>
+                <div
+                  className="stat-card it-app"
+                  style={{
+                    borderLeft:
+                      selectedEmployee.daysAbsent > 0
+                        ? "4px solid #f43f5e"
+                        : "1px solid var(--border-color)",
+                  }}
+                >
                   <div className="stat-header">
                     <span className="stat-label">Days Absent</span>
-                    <div className="stat-icon" style={{ backgroundColor: "rgba(244, 63, 94, 0.12)", color: "#f43f5e" }}>
+                    <div
+                      className="stat-icon"
+                      style={{
+                        backgroundColor: "rgba(244, 63, 94, 0.12)",
+                        color: "#f43f5e",
+                      }}
+                    >
                       <XCircle size={16} />
                     </div>
                   </div>
-                  <span className="stat-value" style={{ color: selectedEmployee.daysAbsent > 0 ? "#f43f5e" : "white" }}>
+                  <span
+                    className="stat-value"
+                    style={{
+                      color:
+                        selectedEmployee.daysAbsent > 0 ? "#f43f5e" : "white",
+                    }}
+                  >
                     {selectedEmployee.daysAbsent}
                   </span>
                   <span className="stat-desc">Unexcused Absences</span>
@@ -755,11 +1130,19 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers })
                 <div className="stat-card prog">
                   <div className="stat-header">
                     <span className="stat-label">Hours Clocked</span>
-                    <div className="stat-icon" style={{ backgroundColor: "var(--status-progress-bg)", color: "var(--color-primary)" }}>
+                    <div
+                      className="stat-icon"
+                      style={{
+                        backgroundColor: "var(--status-progress-bg)",
+                        color: "var(--color-primary)",
+                      }}
+                    >
                       <TrendingUp size={16} />
                     </div>
                   </div>
-                  <span className="stat-value">{selectedEmployee.totalHours} hrs</span>
+                  <span className="stat-value">
+                    {selectedEmployee.totalHours} hrs
+                  </span>
                   <span className="stat-desc">Target: 176 hours (Month)</span>
                 </div>
 
@@ -767,7 +1150,13 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers })
                 <div className="stat-card handover">
                   <div className="stat-header">
                     <span className="stat-label">Leave Balance</span>
-                    <div className="stat-icon" style={{ backgroundColor: "var(--status-handover-bg)", color: "var(--status-handover)" }}>
+                    <div
+                      className="stat-icon"
+                      style={{
+                        backgroundColor: "var(--status-handover-bg)",
+                        color: "var(--status-handover)",
+                      }}
+                    >
                       <FileText size={16} />
                     </div>
                   </div>
@@ -777,21 +1166,57 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers })
               </div>
 
               {/* Today's Shift Progress & punch log table split */}
-              <div className="dashboard-two-col" style={{ gridTemplateColumns: "1fr 2fr" }}>
+              <div
+                className="dashboard-two-col"
+                style={{ gridTemplateColumns: "1fr 2fr" }}
+              >
                 {/* Shift Progress Panel */}
                 <div className="panel" style={{ padding: "20px" }}>
                   <h3 className="panel-title" style={{ marginBottom: "16px" }}>
-                    <Clock size={16} style={{ color: "var(--color-primary)" }} />
+                    <Clock
+                      size={16}
+                      style={{ color: "var(--color-primary)" }}
+                    />
                     Today's Shift Progress
                   </h3>
-                  
-                  <div style={{ display: "flex", flexDirection: "column", gap: "20px", marginTop: "10px" }}>
+
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "20px",
+                      marginTop: "10px",
+                    }}
+                  >
                     <div>
-                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
-                        <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>Shift Hours worked</span>
-                        <strong style={{ fontSize: "0.85rem" }}>{todayShiftProgress.hours} / 8.0 Hours</strong>
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          marginBottom: "6px",
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontSize: "0.85rem",
+                            color: "var(--text-secondary)",
+                          }}
+                        >
+                          Shift Hours worked
+                        </span>
+                        <strong style={{ fontSize: "0.85rem" }}>
+                          {todayShiftProgress.hours} / 8.0 Hours
+                        </strong>
                       </div>
-                      <div style={{ width: "100%", height: "6px", backgroundColor: "var(--bg-primary)", borderRadius: "3px", overflow: "hidden" }}>
+                      <div
+                        style={{
+                          width: "100%",
+                          height: "6px",
+                          backgroundColor: "var(--bg-primary)",
+                          borderRadius: "3px",
+                          overflow: "hidden",
+                        }}
+                      >
                         <div
                           style={{
                             width: `${Math.min((todayShiftProgress.hours / 8) * 100, 100)}%`,
@@ -804,30 +1229,114 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers })
                       </div>
                     </div>
 
-                    <div style={{ borderTop: "1px solid var(--border-color)", paddingTop: "16px" }}>
-                      <span style={{ display: "block", fontSize: "0.75rem", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: "10px", letterSpacing: "0.03em" }}>
+                    <div
+                      style={{
+                        borderTop: "1px solid var(--border-color)",
+                        paddingTop: "16px",
+                      }}
+                    >
+                      <span
+                        style={{
+                          display: "block",
+                          fontSize: "0.75rem",
+                          textTransform: "uppercase",
+                          color: "var(--text-muted)",
+                          marginBottom: "10px",
+                          letterSpacing: "0.03em",
+                        }}
+                      >
                         Clock Timestamps
                       </span>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between" }}>
-                          <span style={{ fontSize: "0.82rem", color: "var(--text-secondary)" }}>First In:</span>
-                          <strong style={{ fontSize: "0.82rem", color: todayShiftProgress.firstIn !== "--" ? "var(--status-closed)" : "var(--text-secondary)" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "10px",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontSize: "0.82rem",
+                              color: "var(--text-secondary)",
+                            }}
+                          >
+                            First In:
+                          </span>
+                          <strong
+                            style={{
+                              fontSize: "0.82rem",
+                              color:
+                                todayShiftProgress.firstIn !== "--"
+                                  ? "var(--status-closed)"
+                                  : "var(--text-secondary)",
+                            }}
+                          >
                             {todayShiftProgress.firstIn}
                           </strong>
                         </div>
-                        <div style={{ display: "flex", justifyContent: "space-between" }}>
-                          <span style={{ fontSize: "0.82rem", color: "var(--text-secondary)" }}>Last Out:</span>
-                          <strong style={{ fontSize: "0.82rem", color: todayShiftProgress.lastOut !== "--" ? "var(--color-primary)" : "var(--text-secondary)" }}>
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontSize: "0.82rem",
+                              color: "var(--text-secondary)",
+                            }}
+                          >
+                            Last Out:
+                          </span>
+                          <strong
+                            style={{
+                              fontSize: "0.82rem",
+                              color:
+                                todayShiftProgress.lastOut !== "--"
+                                  ? "var(--color-primary)"
+                                  : "var(--text-secondary)",
+                            }}
+                          >
                             {todayShiftProgress.lastOut}
                           </strong>
                         </div>
                       </div>
                     </div>
 
-                    <div style={{ backgroundColor: "rgba(14, 82, 155, 0.04)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", padding: "12px", display: "flex", gap: "10px", alignItems: "flex-start" }}>
-                      <AlertCircle size={15} style={{ color: "var(--color-primary-solid)", flexShrink: 0, marginTop: "2px" }} />
-                      <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)", lineHeight: "1.4" }}>
-                        Times are parsed directly from biometric punch entries synced with the centralized gateway.
+                    <div
+                      style={{
+                        backgroundColor: "rgba(14, 82, 155, 0.04)",
+                        border: "1px solid var(--border-color)",
+                        borderRadius: "var(--radius-md)",
+                        padding: "12px",
+                        display: "flex",
+                        gap: "10px",
+                        alignItems: "flex-start",
+                      }}
+                    >
+                      <AlertCircle
+                        size={15}
+                        style={{
+                          color: "var(--color-primary-solid)",
+                          flexShrink: 0,
+                          marginTop: "2px",
+                        }}
+                      />
+                      <span
+                        style={{
+                          fontSize: "0.75rem",
+                          color: "var(--text-secondary)",
+                          lineHeight: "1.4",
+                        }}
+                      >
+                        Times are parsed directly from biometric punch entries
+                        synced with the centralized gateway.
                       </span>
                     </div>
                   </div>
@@ -836,11 +1345,17 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers })
                 {/* 30-Day Punch Log Table */}
                 <div className="panel" style={{ padding: "20px" }}>
                   <h3 className="panel-title" style={{ marginBottom: "16px" }}>
-                    <Calendar size={16} style={{ color: "var(--color-primary)" }} />
+                    <Calendar
+                      size={16}
+                      style={{ color: "var(--color-primary)" }}
+                    />
                     Detailed Punch Log (Past 30 Days)
                   </h3>
 
-                  <div className="table-wrapper" style={{ maxHeight: "350px", overflowY: "auto" }}>
+                  <div
+                    className="table-wrapper"
+                    style={{ maxHeight: "350px", overflowY: "auto" }}
+                  >
                     <table className="data-table">
                       <thead style={{ position: "sticky", top: 0, zIndex: 1 }}>
                         <tr>
@@ -859,18 +1374,29 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers })
                                 month: "short",
                                 day: "numeric",
                                 year: "numeric",
-                                timeZone: "Asia/Karachi"
+                                timeZone: "Asia/Karachi",
                               })}
                             </td>
                             <td>{log.firstIn}</td>
                             <td>{log.lastOut}</td>
                             <td style={{ fontWeight: 500 }}>
                               {log.hours > 0 ? (
-                                <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
-                                  <Clock size={12} style={{ color: "var(--text-muted)" }} />
+                                <span
+                                  style={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: "4px",
+                                  }}
+                                >
+                                  <Clock
+                                    size={12}
+                                    style={{ color: "var(--text-muted)" }}
+                                  />
                                   {log.hours} hrs
                                 </span>
-                              ) : "--"}
+                              ) : (
+                                "--"
+                              )}
                             </td>
                             <td>{getLogStatusBadge(log.status)}</td>
                           </tr>
