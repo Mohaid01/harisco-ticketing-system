@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import type { AppUser, UserRole } from "../types";
 import { ROLE_LABELS } from "../constants";
-import { UserPlus, Trash2, Building2, Briefcase, KeyRound } from "lucide-react";
+import { UserPlus, Trash2, Building2, Briefcase, KeyRound, Image } from "lucide-react";
 import { formatEmployeeCode } from "../utils";
 import { ResetUserPasswordModal } from "./ResetUserPasswordModal";
 
@@ -15,11 +15,18 @@ interface UserManagementProps {
     username: string;
     role: UserRole;
     password?: string;
+    avatar?: string;
   }) => void;
   onDeleteUser: (userId: string) => void;
   onUpdateUser?: (
     userId: string,
-    data: { name: string; email: string | null; department?: string | null; designation?: string | null },
+    data: {
+      name: string;
+      email: string | null;
+      department?: string | null;
+      designation?: string | null;
+      avatar?: string | null;
+    },
   ) => void;
 }
 
@@ -35,6 +42,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [avatar, setAvatar] = useState("");
   const [role, setRole] = useState<UserRole>("employee");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -45,6 +53,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
   const [editEmail, setEditEmail] = useState("");
   const [editDepartment, setEditDepartment] = useState("");
   const [editDesignation, setEditDesignation] = useState("");
+  const [editAvatar, setEditAvatar] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,12 +77,14 @@ export const UserManagement: React.FC<UserManagementProps> = ({
       username: formattedCode,
       role,
       password: password.trim() || undefined,
+      avatar: avatar.trim() || undefined,
     });
 
     setName("");
     setEmail("");
     setUsername("");
     setPassword("");
+    setAvatar("");
     setRole("employee");
   };
 
@@ -88,6 +99,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
         email: editEmail.trim() || null,
         department: editDepartment.trim() || null,
         designation: editDesignation.trim() || null,
+        avatar: editAvatar.trim() || null,
       });
     }
     setEditingUserId(null);
@@ -99,6 +111,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
     setEditEmail(user.email || "");
     setEditDepartment(user.department || "");
     setEditDesignation(user.designation || "");
+    setEditAvatar(user.avatar || "");
   };
 
   const getRoleBadgeClass = (r: string) => `role-badge-pill role-badge-${r}`;
@@ -177,6 +190,18 @@ export const UserManagement: React.FC<UserManagementProps> = ({
             </div>
 
             <div className="form-group">
+              <label htmlFor="user-avatar-input" className="form-label">Picture URL (Optional)</label>
+              <input
+                id="user-avatar-input"
+                type="url"
+                className="form-input"
+                placeholder="e.g. https://domain.com/photo.jpg"
+                value={avatar}
+                onChange={(e) => setAvatar(e.target.value)}
+              />
+            </div>
+
+            <div className="form-group">
               <label htmlFor="user-password-input" className="form-label">Password</label>
               <input
                 id="user-password-input"
@@ -229,6 +254,10 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                       <input type="email" className="form-input" style={inlineInputStyle} value={editEmail} onChange={(e) => setEditEmail(e.target.value)} placeholder="Optional" />
                     </div>
                     <div className="form-group" style={{ marginBottom: "0" }}>
+                      <label className="form-label" style={inlineLabelStyle}>Picture URL</label>
+                      <input type="url" className="form-input" style={inlineInputStyle} value={editAvatar} onChange={(e) => setEditAvatar(e.target.value)} placeholder="Optional" />
+                    </div>
+                    <div className="form-group" style={{ marginBottom: "0" }}>
                       <label className="form-label" style={{ ...inlineLabelStyle, display: "flex", alignItems: "center", gap: "4px" }}>
                         <Building2 size={12} /> Department
                       </label>
@@ -251,12 +280,21 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                   </div>
                 ) : (
                   <>
-                    <div
-                      className="user-card-avatar"
-                      style={{ backgroundColor: "var(--color-primary)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.2rem", fontWeight: 700, color: "white" }}
-                    >
-                      {user.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)}
-                    </div>
+                    {user.avatar ? (
+                      <img
+                        src={user.avatar}
+                        alt={user.name}
+                        className="user-card-avatar"
+                        style={{ objectFit: "cover" }}
+                      />
+                    ) : (
+                      <div
+                        className="user-card-avatar"
+                        style={{ backgroundColor: "var(--color-primary)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.2rem", fontWeight: 700, color: "white" }}
+                      >
+                        {user.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)}
+                      </div>
+                    )}
                     <span className="user-card-name">{user.name}</span>
 
                     <span className="user-card-email" style={{ display: "flex", flexDirection: "column", gap: "2px", alignItems: "center", fontSize: "0.78rem", color: "var(--text-secondary)" }}>

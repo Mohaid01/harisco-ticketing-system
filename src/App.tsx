@@ -409,13 +409,13 @@ function App() {
     }
   };
 
-  // Handle adding users (IT only)
   const handleAddUser = async (data: {
     name: string;
     email: string;
     username: string;
     role: UserRole;
     password?: string;
+    avatar?: string;
   }) => {
     if (!token || !currentUser) return;
     try {
@@ -475,7 +475,7 @@ function App() {
   // Handle updating users (IT only)
   const handleUpdateUser = async (
     userId: string,
-    data: { name: string; email: string | null; department?: string | null; designation?: string | null },
+    data: { name: string; email: string | null; department?: string | null; designation?: string | null; avatar?: string | null },
   ) => {
     if (!token || !currentUser) return;
     try {
@@ -497,7 +497,7 @@ function App() {
       setUsers((prevUsers) =>
         prevUsers.map((u) =>
           u.id === userId
-            ? { ...u, name: updatedUser.name, email: updatedUser.email, department: updatedUser.department, designation: updatedUser.designation }
+            ? { ...u, name: updatedUser.name, email: updatedUser.email, department: updatedUser.department, designation: updatedUser.designation, avatar: updatedUser.avatar }
             : u,
         ),
       );

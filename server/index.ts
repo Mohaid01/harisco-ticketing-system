@@ -333,7 +333,7 @@ app.post(
       return;
     }
 
-    const { name, email, username, role, password } = req.body;
+    const { name, email, username, role, password, avatar } = req.body;
     if (!name || !username || !role) {
       res.status(400).json({ error: "Name, username, and role are required." });
       return;
@@ -385,7 +385,7 @@ app.post(
           finalEmail,
           username.toLowerCase().trim(),
           role,
-          "",
+          avatar ? avatar.trim() : "",
           passwordHash,
         ],
       );
@@ -396,6 +396,7 @@ app.post(
         email: finalEmail,
         username: username.toLowerCase().trim(),
         role,
+        avatar: avatar ? avatar.trim() : "",
       });
     } catch (error) {
       console.error("Failed to create user:", error);
@@ -490,7 +491,7 @@ app.put(
     }
 
     const userId = req.params.id;
-    const { name, email, department, designation } = req.body;
+    const { name, email, department, designation, avatar } = req.body;
 
     if (!name || !name.trim()) {
       res.status(400).json({ error: "Name is required." });
@@ -520,8 +521,8 @@ app.put(
       }
 
       const result = await db.run(
-        "UPDATE users SET name = ?, email = ?, department = ?, designation = ? WHERE id = ?",
-        [name.trim(), finalEmail, finalDepartment, finalDesignation, userId],
+        "UPDATE users SET name = ?, email = ?, department = ?, designation = ?, avatar = ? WHERE id = ?",
+        [name.trim(), finalEmail, finalDepartment, finalDesignation, avatar ? avatar.trim() : "", userId],
       );
 
       if (result.changes === 0) {
@@ -529,7 +530,7 @@ app.put(
         return;
       }
 
-      res.json({ id: userId, name: name.trim(), email: finalEmail, department: finalDepartment, designation: finalDesignation });
+      res.json({ id: userId, name: name.trim(), email: finalEmail, department: finalDepartment, designation: finalDesignation, avatar: avatar ? avatar.trim() : "" });
     } catch (error) {
       console.error("Failed to update user:", error);
       res.status(500).json({ error: "Failed to update user details." });

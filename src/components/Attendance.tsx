@@ -728,28 +728,42 @@ export const Attendance: React.FC<AttendanceProps> = ({
                                 gap: "10px",
                               }}
                             >
-                              <div
-                                style={{
-                                  width: "32px",
-                                  height: "32px",
-                                  borderRadius: "50%",
-                                  backgroundColor: "var(--color-primary-glow)",
-                                  border: "1px solid var(--border-color)",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  fontWeight: 600,
-                                  fontSize: "0.8rem",
-                                  color: "white",
-                                }}
-                              >
-                                {emp.name
-                                  .split(" ")
-                                  .map((n) => n[0])
-                                  .join("")
-                                  .toUpperCase()
-                                  .slice(0, 2)}
-                              </div>
+                              {emp.avatar ? (
+                                <img
+                                  src={emp.avatar}
+                                  alt={emp.name}
+                                  style={{
+                                    width: "32px",
+                                    height: "32px",
+                                    borderRadius: "50%",
+                                    objectFit: "cover",
+                                    border: "1px solid var(--border-color)",
+                                  }}
+                                />
+                              ) : (
+                                <div
+                                  style={{
+                                    width: "32px",
+                                    height: "32px",
+                                    borderRadius: "50%",
+                                    backgroundColor: "var(--color-primary-glow)",
+                                    border: "1px solid var(--border-color)",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    fontWeight: 600,
+                                    fontSize: "0.8rem",
+                                    color: "white",
+                                  }}
+                                >
+                                  {emp.name
+                                    .split(" ")
+                                    .map((n) => n[0])
+                                    .join("")
+                                    .toUpperCase()
+                                    .slice(0, 2)}
+                                </div>
+                              )}
                               <span style={{ fontWeight: 500 }}>
                                 {emp.name}
                               </span>
@@ -935,28 +949,43 @@ export const Attendance: React.FC<AttendanceProps> = ({
                       gap: "16px",
                     }}
                   >
-                    <div
-                      style={{
-                        width: "56px",
-                        height: "56px",
-                        borderRadius: "50%",
-                        backgroundColor: "var(--color-primary)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: "1.4rem",
-                        fontWeight: 700,
-                        color: "white",
-                        boxShadow: "var(--shadow-sm)",
-                      }}
-                    >
-                      {selectedEmployee.name
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")
-                        .toUpperCase()
-                        .slice(0, 2)}
-                    </div>
+                    {selectedEmployee.avatar ? (
+                      <img
+                        src={selectedEmployee.avatar}
+                        alt={selectedEmployee.name}
+                        style={{
+                          width: "56px",
+                          height: "56px",
+                          borderRadius: "50%",
+                          objectFit: "cover",
+                          boxShadow: "var(--shadow-sm)",
+                          border: "1px solid var(--border-color)",
+                        }}
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          width: "56px",
+                          height: "56px",
+                          borderRadius: "50%",
+                          backgroundColor: "var(--color-primary)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "1.4rem",
+                          fontWeight: 700,
+                          color: "white",
+                          boxShadow: "var(--shadow-sm)",
+                        }}
+                      >
+                        {selectedEmployee.name
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")
+                          .toUpperCase()
+                          .slice(0, 2)}
+                      </div>
+                    )}
                     <div>
                       <h2
                         style={{

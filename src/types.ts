@@ -9,6 +9,7 @@ export interface AppUser {
   needsPasswordReset?: number;
   department?: string | null;
   designation?: string | null;
+  avatar?: string | null;
 }
 
 export type TicketType = 'hardware' | 'software' | 'maintenance' | 'upgrade';
