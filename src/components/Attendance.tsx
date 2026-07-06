@@ -153,11 +153,6 @@ export const Attendance: React.FC<AttendanceProps> = ({
     return ts ? ts.split(" ")[0] : "";
   };
 
-  // Determine user shift (all users have the standard 9:30 AM to 6:00 PM shift)
-  const getUserShift = (userId: string): string => {
-    if (userId) return SHIFTS.GENERAL;
-  };
-
   // Determine user department
   const getUserDepartment = (user: AppUser): string => {
     return user.department || "Operations";
@@ -257,7 +252,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
         ...user,
         formattedCode,
         department: getUserDepartment(user),
-        shift: getUserShift(uId),
+        shift: SHIFTS.GENERAL,
         todayStatus,
         daysPresent,
         daysAbsent,
