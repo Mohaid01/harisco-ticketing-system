@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import type { AppUser, UserRole } from "../types";
 import { ROLE_LABELS } from "../constants";
-import { UserPlus, Trash2, Building2, Briefcase, KeyRound, Image } from "lucide-react";
+import { UserPlus, Trash2, Building2, Briefcase, KeyRound } from "lucide-react";
 import { formatEmployeeCode } from "../utils";
 import { ResetUserPasswordModal } from "./ResetUserPasswordModal";
 

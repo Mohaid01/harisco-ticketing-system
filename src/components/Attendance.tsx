@@ -126,6 +126,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
 
   // Determine user shift (all users have the standard 9:30 AM to 6:00 PM shift)
   const getUserShift = (userId: string): string => {
+    console.log(userId);
     return SHIFTS.GENERAL;
   };
 
@@ -746,7 +747,8 @@ export const Attendance: React.FC<AttendanceProps> = ({
                                     width: "32px",
                                     height: "32px",
                                     borderRadius: "50%",
-                                    backgroundColor: "var(--color-primary-glow)",
+                                    backgroundColor:
+                                      "var(--color-primary-glow)",
                                     border: "1px solid var(--border-color)",
                                     display: "flex",
                                     alignItems: "center",
