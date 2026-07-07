@@ -16,6 +16,8 @@ interface UserManagementProps {
     role: UserRole;
     password?: string;
     avatar?: string;
+    department?: string;
+    designation?: string;
   }) => void;
   onDeleteUser: (userId: string) => void;
   onUpdateUser?: (
@@ -44,6 +46,8 @@ export const UserManagement: React.FC<UserManagementProps> = ({
   const [password, setPassword] = useState("");
   const [avatar, setAvatar] = useState("");
   const [role, setRole] = useState<UserRole>("employee");
+  const [department, setDepartment] = useState("");
+  const [designation, setDesignation] = useState("");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const [resetPasswordTarget, setResetPasswordTarget] =
@@ -112,6 +116,8 @@ export const UserManagement: React.FC<UserManagementProps> = ({
       role,
       password: password.trim() || undefined,
       avatar: avatar || undefined,
+      department: department.trim() || undefined,
+      designation: designation.trim() || undefined,
     });
 
     setName("");
@@ -120,6 +126,8 @@ export const UserManagement: React.FC<UserManagementProps> = ({
     setPassword("");
     setAvatar("");
     setRole("employee");
+    setDepartment("");
+    setDesignation("");
   };
 
   const handleSaveEdit = (userId: string) => {
@@ -249,6 +257,34 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                 placeholder="e.g. abid@harisco.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="user-department-input" className="form-label">
+                Department (Optional)
+              </label>
+              <input
+                id="user-department-input"
+                type="text"
+                className="form-input"
+                placeholder="e.g. Operations"
+                value={department}
+                onChange={(e) => setDepartment(e.target.value)}
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="user-designation-input" className="form-label">
+                Designation (Optional)
+              </label>
+              <input
+                id="user-designation-input"
+                type="text"
+                className="form-input"
+                placeholder="e.g. Senior Engineer"
+                value={designation}
+                onChange={(e) => setDesignation(e.target.value)}
               />
             </div>
 

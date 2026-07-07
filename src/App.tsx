@@ -416,6 +416,8 @@ function App() {
     role: UserRole;
     password?: string;
     avatar?: string;
+    department?: string;
+    designation?: string;
   }) => {
     if (!token || !currentUser) return;
     try {

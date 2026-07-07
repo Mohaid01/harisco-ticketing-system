@@ -341,7 +341,7 @@ app.get(
     try {
       const db = getDb();
       const users = await db.all(
-        "SELECT id, name, email, username, role, avatar, department, designation FROM users",
+        "SELECT id, name, email, username, role, avatar, department, designation FROM users ORDER BY username ASC",
       );
       res.json(users);
     } catch {
@@ -361,7 +361,7 @@ app.post(
       return;
     }
 
-    const { name, email, username, role, password, avatar } = req.body;
+    const { name, email, username, role, password, avatar, department, designation } = req.body;
     if (!name || !username || !role) {
       res.status(400).json({ error: "Name, username, and role are required." });
       return;
@@ -406,7 +406,7 @@ app.post(
       const userId = `usr-${Date.now()}`;
 
       await db.run(
-        "INSERT INTO users (id, name, email, username, role, avatar, passwordHash, needsPasswordReset) VALUES (?, ?, ?, ?, ?, ?, ?, 1)",
+        "INSERT INTO users (id, name, email, username, role, avatar, passwordHash, needsPasswordReset, department, designation) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?)",
         [
           userId,
           name,
@@ -415,6 +415,8 @@ app.post(
           role,
           avatar ? avatar.trim() : "",
           passwordHash,
+          department ? department.trim() : null,
+          designation ? designation.trim() : null,
         ],
       );
 
@@ -425,6 +427,8 @@ app.post(
         username: username.toLowerCase().trim(),
         role,
         avatar: avatar ? avatar.trim() : "",
+        department: department ? department.trim() : null,
+        designation: designation ? designation.trim() : null,
       });
     } catch (error) {
       console.error("Failed to create user:", error);

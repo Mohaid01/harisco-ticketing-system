@@ -401,13 +401,23 @@ export const Attendance: React.FC<AttendanceProps> = ({
            }
         }
 
-        // Late arrival check: clocked in after 09:35 AM
+        // Late arrival check
         const timeParts = firstInTime.split(":");
         if (timeParts.length >= 2) {
           const hour = parseInt(timeParts[0]);
           const min = parseInt(timeParts[1]);
-          if (hour > 9 || (hour === 9 && min > 35)) {
-            status = "Late Arrival";
+          const isSaturday = tempDate.getUTCDay() === 6;
+          
+          if (isSaturday) {
+            // Saturday shift starts at 10:00 AM (grace period until 10:05 AM)
+            if (hour > 10 || (hour === 10 && min > 5)) {
+              status = "Late Arrival";
+            }
+          } else {
+            // Regular shift starts at 09:30 AM (grace period until 09:35 AM)
+            if (hour > 9 || (hour === 9 && min > 35)) {
+              status = "Late Arrival";
+            }
           }
         }
 
@@ -1004,8 +1014,8 @@ export const Attendance: React.FC<AttendanceProps> = ({
                         src={selectedEmployee.avatar}
                         alt={selectedEmployee.name}
                         style={{
-                          width: "56px",
-                          height: "56px",
+                          width: "72px",
+                          height: "72px",
                           borderRadius: "50%",
                           objectFit: "cover",
                           boxShadow: "var(--shadow-sm)",
@@ -1015,14 +1025,14 @@ export const Attendance: React.FC<AttendanceProps> = ({
                     ) : (
                       <div
                         style={{
-                          width: "56px",
-                          height: "56px",
+                          width: "72px",
+                          height: "72px",
                           borderRadius: "50%",
                           backgroundColor: "var(--color-primary)",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          fontSize: "1.4rem",
+                          fontSize: "1.8rem",
                           fontWeight: 700,
                           color: "white",
                           boxShadow: "var(--shadow-sm)",
@@ -1062,16 +1072,38 @@ export const Attendance: React.FC<AttendanceProps> = ({
                             {selectedEmployee.formattedCode}
                           </strong>
                         </span>
+                        {selectedEmployee.email && (
+                          <span>
+                            Email:{" "}
+                            <strong style={{ color: "white" }}>
+                              {selectedEmployee.email}
+                            </strong>
+                          </span>
+                        )}
                         <span>
                           Department:{" "}
                           <strong style={{ color: "white" }}>
                             {selectedEmployee.department}
                           </strong>
                         </span>
+                        {selectedEmployee.designation && (
+                          <span>
+                            Designation:{" "}
+                            <strong style={{ color: "white" }}>
+                              {selectedEmployee.designation}
+                            </strong>
+                          </span>
+                        )}
+                        <span>
+                          Role:{" "}
+                          <strong style={{ color: "white", textTransform: "capitalize" }}>
+                            {selectedEmployee.role}
+                          </strong>
+                        </span>
                         <span>
                           Shift:{" "}
                           <strong style={{ color: "white" }}>
-                            {selectedEmployee.shift}
+                            {new Date().getDay() === 6 ? "Saturday Shift (10:00 AM - 04:00 PM)" : selectedEmployee.shift}
                           </strong>
                         </span>
                       </div>
@@ -1280,7 +1312,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
                           Shift Hours worked
                         </span>
                         <strong style={{ fontSize: "0.85rem" }}>
-                          {todayShiftProgress.hours} / 8.0 Hours
+                          {todayShiftProgress.hours} / {new Date().getDay() === 6 ? "6.0" : "8.0"} Hours
                         </strong>
                       </div>
                       <div
@@ -1294,7 +1326,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
                       >
                         <div
                           style={{
-                            width: `${Math.min((todayShiftProgress.hours / 8.0) * 100, 100)}%`,
+                            width: `${Math.min((todayShiftProgress.hours / (new Date().getDay() === 6 ? 6.0 : 8.0)) * 100, 100)}%`,
                             height: "100%",
                             backgroundColor: "var(--color-primary)",
                             borderRadius: "3px",
