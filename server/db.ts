@@ -152,6 +152,22 @@ export async function initDb() {
     )
   `);
 
+  // Create Leave Applications Table
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS leave_applications (
+      id TEXT PRIMARY KEY,
+      userId TEXT NOT NULL,
+      userName TEXT NOT NULL,
+      category TEXT CHECK(category IN ('annual', 'casual', 'medical')) NOT NULL,
+      startDate TEXT NOT NULL,
+      endDate TEXT NOT NULL,
+      reason TEXT NOT NULL,
+      status TEXT CHECK(status IN ('pending', 'approved', 'rejected')) NOT NULL,
+      appliedAt TEXT NOT NULL,
+      FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+
   // Seed initial admin user if table is empty
   const userCount = await db.get<{ count: number }>('SELECT COUNT(*) as count FROM users');
   if (userCount && userCount.count === 0) {

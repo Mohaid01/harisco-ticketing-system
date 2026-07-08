@@ -55,7 +55,7 @@ export interface Ticket {
   }[];
 }
 
-export type ActiveTab = 'dashboard' | 'tickets' | 'users' | 'activity_log' | 'attendance';
+export type ActiveTab = 'dashboard' | 'tickets' | 'users' | 'activity_log' | 'attendance' | 'leaves';
 
 export interface AttendanceLog {
   id: number;
@@ -65,5 +65,20 @@ export interface AttendanceLog {
   method: string;
   status: string;
   timestamp?: string;
+}
+
+export type LeaveCategory = 'annual' | 'casual' | 'medical';
+export type LeaveStatus = 'pending' | 'approved' | 'rejected';
+
+export interface LeaveApplication {
+  id: string;
+  userId: string;
+  userName: string;
+  category: LeaveCategory;
+  startDate: string;
+  endDate: string;
+  reason: string;
+  status: LeaveStatus;
+  appliedAt: string;
 }
 

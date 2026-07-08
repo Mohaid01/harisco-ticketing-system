@@ -10,6 +10,7 @@ import {
   LogOut,
   Key,
   UserCheck,
+  Calendar,
 } from "lucide-react";
 import { formatEmployeeCode } from "../utils";
 
@@ -55,6 +56,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       roles: ["it", "employee", "manager"],
     },
     {
+      id: "leaves" as ActiveTab,
+      label: "Leave Management",
+      icon: Calendar,
+      roles: ["it", "employee", "manager"],
+    },
+    {
       id: "activity_log" as ActiveTab,
       label: "Activity Logs",
       icon: Activity,
@@ -85,15 +92,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {visibleItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
+            const isDisabled = item.id === "leaves" && currentUser.role === "employee";
             return (
               <li key={item.id}>
                 <button
                   id={`sidebar-tab-${item.id}`}
                   className={`sidebar-item ${isActive ? "active" : ""}`}
-                  onClick={() => setActiveTab(item.id)}
+                  onClick={() => !isDisabled && setActiveTab(item.id)}
+                  disabled={isDisabled}
+                  style={isDisabled ? { opacity: 0.5, cursor: "not-allowed" } : undefined}
                 >
                   <Icon size={18} />
-                  <span>{item.label}</span>
+                  <span>{item.label} {isDisabled && "(Disabled)"}</span>
                 </button>
               </li>
             );

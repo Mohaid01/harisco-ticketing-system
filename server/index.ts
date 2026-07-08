@@ -1199,7 +1199,7 @@ app.delete(
   }
 );
 
-// Delete a single attendance log (IT only)
+// Delete a single attendance log (IT only, Check-Out only)
 app.delete(
   "/api/attendance/:id",
   authenticateToken,
@@ -1217,6 +1217,16 @@ app.delete(
 
     try {
       const db = getDb();
+      const log = await db.get("SELECT status FROM attendance_logs WHERE id = ?", [logId]);
+      if (!log) {
+        res.status(404).json({ error: "Attendance log not found." });
+        return;
+      }
+      if (log.status !== "Check-Out") {
+        res.status(400).json({ error: "Only punch out (Check-Out) logs can be deleted." });
+        return;
+      }
+
       const result = await db.run("DELETE FROM attendance_logs WHERE id = ?", [logId]);
       if (result.changes === 0) {
         res.status(404).json({ error: "Attendance log not found." });
@@ -1243,6 +1253,112 @@ app.get("/api/attendance/stream", authenticateToken, (req: AuthRequest, res: Res
     sseClients.delete(res);
   });
 });
+
+// --------------------- LEAVE MANAGEMENT ROUTES ---------------------
+
+app.get(
+  "/api/leaves",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    const userId = req.user?.id;
+    const userRole = req.user?.role;
+
+    try {
+      const db = getDb();
+      let query = "SELECT * FROM leave_applications ORDER BY appliedAt DESC";
+      const params: any[] = [];
+
+      // Employees only see their own leaves
+      if (userRole === "employee") {
+        query = "SELECT * FROM leave_applications WHERE userId = ? ORDER BY appliedAt DESC";
+        params.push(userId);
+      }
+
+      const leaves = await db.all(query, params);
+      res.json(leaves);
+    } catch (error) {
+      console.error("Failed to fetch leaves:", error);
+      res.status(500).json({ error: "Failed to retrieve leave applications." });
+    }
+  }
+);
+
+app.post(
+  "/api/leaves",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    const { category, startDate, endDate, reason } = req.body;
+    if (!category || !startDate || !endDate || !reason) {
+      res.status(400).json({ error: "All fields are required." });
+      return;
+    }
+
+    try {
+      const db = getDb();
+      const leaveId = `leave-${Date.now()}`;
+      const timestamp = new Date().toISOString();
+
+      await db.run(
+        `INSERT INTO leave_applications (
+          id, userId, userName, category, startDate, endDate, reason, status, appliedAt
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          leaveId,
+          req.user?.id,
+          req.user?.name,
+          category,
+          startDate,
+          endDate,
+          reason,
+          "pending",
+          timestamp
+        ]
+      );
+
+      res.status(201).json({ success: true, id: leaveId });
+    } catch (error) {
+      console.error("Failed to submit leave:", error);
+      res.status(500).json({ error: "Failed to submit leave application." });
+    }
+  }
+);
+
+app.put(
+  "/api/leaves/:id/status",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    if (req.user?.role === "employee") {
+      res.status(403).json({ error: "Forbidden. Only managers or IT can update leave status." });
+      return;
+    }
+
+    const { status } = req.body;
+    if (!status || !["approved", "rejected"].includes(status)) {
+      res.status(400).json({ error: "Valid status (approved/rejected) is required." });
+      return;
+    }
+
+    try {
+      const db = getDb();
+      const leaveId = req.params.id;
+      
+      const result = await db.run(
+        "UPDATE leave_applications SET status = ? WHERE id = ?",
+        [status, leaveId]
+      );
+
+      if (result.changes === 0) {
+        res.status(404).json({ error: "Leave application not found." });
+        return;
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Failed to update leave status:", error);
+      res.status(500).json({ error: "Failed to update leave status." });
+    }
+  }
+);
 
 // Start Database and Server
 // Serve static frontend files in production

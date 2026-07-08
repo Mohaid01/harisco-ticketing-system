@@ -76,6 +76,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [filterDepartment, setFilterDepartment] = useState<string>("All");
   const [filterShift, setFilterShift] = useState<string>("All");
+  const [filterTodayStatus, setFilterTodayStatus] = useState<string>("All");
 
   // Fetch Attendance Logs from Biometric API
   const fetchLogs = async (isSilent = false) => {
@@ -122,6 +123,27 @@ export const Attendance: React.FC<AttendanceProps> = ({
       alert("Network error. Could not clear attendance logs.");
     } finally {
       setClearing(false);
+    }
+  };
+
+  const handleDeletePunchOut = async (logId: number, dateStr: string) => {
+    if (!window.confirm(`Are you sure you want to delete the punch out (second punch) for ${dateStr}?`)) {
+      return;
+    }
+    try {
+      const token = localStorage.getItem("harisco_token");
+      const res = await fetch(`/api/attendance/${logId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        setLogs((prev) => prev.filter((log) => log.id !== logId));
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to delete punch out.");
+      }
+    } catch {
+      alert("Network error. Could not delete punch out.");
     }
   };
 
@@ -310,10 +332,53 @@ export const Attendance: React.FC<AttendanceProps> = ({
       const matchesDept =
         filterDepartment === "All" || emp.department === filterDepartment;
       const matchesShift = filterShift === "All" || emp.shift === filterShift;
+      const matchesTodayStatus =
+        filterTodayStatus === "All" || emp.todayStatus === filterTodayStatus;
 
-      return matchesSearch && matchesDept && matchesShift;
+      return matchesSearch && matchesDept && matchesShift && matchesTodayStatus;
     });
-  }, [employeeSummaries, searchQuery, filterDepartment, filterShift]);
+  }, [employeeSummaries, searchQuery, filterDepartment, filterShift, filterTodayStatus]);
+
+  // Compute today's daily stats across ALL employees (not filtered)
+  const todayStats = useMemo(() => {
+    const todayStr = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Karachi" }).format(new Date());
+    const isSaturday = new Date().getDay() === 6;
+
+    let present = 0;
+    let absent = 0;
+    let late = 0;
+
+    for (const emp of employeeSummaries) {
+      const isPresent = emp.todayStatus === "Clocked In" || emp.todayStatus === "Clocked Out";
+      if (isPresent) {
+        present++;
+        const formattedCode = emp.formattedCode;
+        const todayPunches = logs.filter(
+          (log) =>
+            (log.userId === emp.id || log.userId === emp.username || formatEmployeeCode(log.userId) === formattedCode) &&
+            parseLogDate(log) === todayStr &&
+            log.status === PUNCH_STATUS.CHECK_IN,
+        );
+        if (todayPunches.length > 0) {
+          const sorted = [...todayPunches].sort((a, b) => parseLogPKT(a).timestamp.localeCompare(parseLogPKT(b).timestamp));
+          const firstInTime = parseLogPKT(sorted[0]).time;
+          const parts = firstInTime.split(":");
+          if (parts.length >= 2) {
+            const hour = parseInt(parts[0]);
+            const min = parseInt(parts[1]);
+            const isLate = isSaturday
+              ? hour > 10 || (hour === 10 && min > 5)
+              : hour > 9 || (hour === 9 && min > 35);
+            if (isLate) late++;
+          }
+        }
+      } else {
+        absent++;
+      }
+    }
+
+    return { present, absent, late };
+  }, [employeeSummaries, logs]);
 
   // Get departments list for filters
   const departmentsList = useMemo(() => {
@@ -421,10 +486,13 @@ export const Attendance: React.FC<AttendanceProps> = ({
           }
         }
 
+        const checkOutPunch = sorted.find((p) => p.status === PUNCH_STATUS.CHECK_OUT);
+
         list.push({
           date: dateStr,
           firstIn: firstInTime,
           lastOut: lastOutTime,
+          lastOutId: checkOutPunch ? checkOutPunch.id : undefined,
           hours: Math.round(hours * 100) / 100,
           status,
         });
@@ -735,6 +803,34 @@ export const Attendance: React.FC<AttendanceProps> = ({
                       <option value={SHIFTS.GENERAL}>General Shift</option>
                     </select>
                   </div>
+
+                  {/* Today's Status Filter */}
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                  >
+                    <Clock
+                      size={14}
+                      style={{ color: "var(--text-muted)" }}
+                    />
+                    <select
+                      className="form-input"
+                      style={{
+                        width: "160px",
+                        backgroundColor: "var(--bg-primary)",
+                      }}
+                      value={filterTodayStatus}
+                      onChange={(e) => setFilterTodayStatus(e.target.value)}
+                    >
+                      <option value="All">All Statuses</option>
+                      <option value="Clocked In">Clocked In</option>
+                      <option value="Clocked Out">Clocked Out</option>
+                      <option value="Absent">Absent</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 
@@ -748,6 +844,82 @@ export const Attendance: React.FC<AttendanceProps> = ({
                     />
                     All-Employee Attendance Table ({filteredSummaries.length})
                   </h2>
+                </div>
+
+                {/* Today's Stats Row */}
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(3, 1fr)",
+                    gap: "12px",
+                    marginBottom: "20px",
+                  }}
+                >
+                  <div
+                    style={{
+                      padding: "14px 18px",
+                      borderRadius: "var(--radius-md)",
+                      background: "rgba(34, 197, 94, 0.08)",
+                      border: "1px solid rgba(34, 197, 94, 0.2)",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                    }}
+                  >
+                    <CheckCircle size={20} style={{ color: "#22c55e", flexShrink: 0 }} />
+                    <div>
+                      <div style={{ fontSize: "1.4rem", fontWeight: 700, color: "#22c55e", lineHeight: 1 }}>
+                        {todayStats.present}
+                      </div>
+                      <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)", marginTop: "2px" }}>
+                        Present Today
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      padding: "14px 18px",
+                      borderRadius: "var(--radius-md)",
+                      background: "rgba(244, 63, 94, 0.08)",
+                      border: "1px solid rgba(244, 63, 94, 0.2)",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                    }}
+                  >
+                    <XCircle size={20} style={{ color: "#f43f5e", flexShrink: 0 }} />
+                    <div>
+                      <div style={{ fontSize: "1.4rem", fontWeight: 700, color: "#f43f5e", lineHeight: 1 }}>
+                        {todayStats.absent}
+                      </div>
+                      <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)", marginTop: "2px" }}>
+                        Absent Today
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      padding: "14px 18px",
+                      borderRadius: "var(--radius-md)",
+                      background: "rgba(251, 191, 36, 0.08)",
+                      border: "1px solid rgba(251, 191, 36, 0.2)",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                    }}
+                  >
+                    <AlertCircle size={20} style={{ color: "#fbbf24", flexShrink: 0 }} />
+                    <div>
+                      <div style={{ fontSize: "1.4rem", fontWeight: 700, color: "#fbbf24", lineHeight: 1 }}>
+                        {todayStats.late}
+                      </div>
+                      <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)", marginTop: "2px" }}>
+                        Late Arrivals
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="table-wrapper">
@@ -1255,9 +1427,31 @@ export const Attendance: React.FC<AttendanceProps> = ({
                                      <span>In:</span>
                                      <span style={{ color: "white", fontWeight: 500 }}>{log.firstIn === "--" ? "-" : log.firstIn.substring(0, 5)}</span>
                                   </div>
-                                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                                      <span>Out:</span>
-                                     <span style={{ color: "white", fontWeight: 500 }}>{log.lastOut === "--" ? "-" : log.lastOut.substring(0, 5)}</span>
+                                     <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                                        <span style={{ color: "white", fontWeight: 500 }}>{log.lastOut === "--" ? "-" : log.lastOut.substring(0, 5)}</span>
+                                        {currentUser.role === "it" && log.lastOutId && (
+                                           <button
+                                              onClick={(e) => {
+                                                 e.stopPropagation();
+                                                 handleDeletePunchOut(log.lastOutId, log.date);
+                                              }}
+                                              style={{
+                                                 background: "none",
+                                                 border: "none",
+                                                 color: "#f43f5e",
+                                                 cursor: "pointer",
+                                                 padding: "2px",
+                                                 display: "inline-flex",
+                                                 alignItems: "center",
+                                              }}
+                                              title="Delete Punch Out"
+                                           >
+                                              <Trash2 size={12} />
+                                           </button>
+                                        )}
+                                     </div>
                                   </div>
                                   {log.hours > 0 && (
                                      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "2px" }}>
