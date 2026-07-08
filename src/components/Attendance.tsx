@@ -241,6 +241,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
       );
       let todayStatus: "Clocked In" | "Clocked Out" | "Absent" | "On Leave" =
         "Absent";
+      let isLateToday = false;
 
       if (todayPunches.length > 0) {
         const sortedPunches = [...todayPunches].sort((a, b) => {
@@ -248,6 +249,23 @@ export const Attendance: React.FC<AttendanceProps> = ({
           const tB = parseLogPKT(b).timestamp;
           return tA.localeCompare(tB);
         });
+        
+        // Determine if they were late today based on first check-in
+        const firstCheckIn = sortedPunches.find((p) => p.status === PUNCH_STATUS.CHECK_IN);
+        if (firstCheckIn) {
+          const timeStr = parseLogPKT(firstCheckIn).time;
+          const parts = timeStr.split(":");
+          if (parts.length >= 2) {
+            const hour = parseInt(parts[0], 10);
+            const min = parseInt(parts[1], 10);
+            const isSaturday = new Date().getDay() === 6;
+            
+            isLateToday = isSaturday
+              ? hour > 10 || (hour === 10 && min >= 30)
+              : hour >= 10;
+          }
+        }
+
         const lastPunch = sortedPunches[sortedPunches.length - 1];
         if (lastPunch.status === PUNCH_STATUS.CHECK_IN) {
           todayStatus = "Clocked In";
@@ -324,6 +342,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
         department: getUserDepartment(user),
         shift: SHIFTS.GENERAL,
         todayStatus,
+        isLateToday,
         daysPresent,
         daysAbsent,
         totalHours: Math.round(totalHours),
@@ -343,8 +362,15 @@ export const Attendance: React.FC<AttendanceProps> = ({
       const matchesDept =
         filterDepartment === "All" || emp.department === filterDepartment;
       const matchesShift = filterShift === "All" || emp.shift === filterShift;
-      const matchesTodayStatus =
-        filterTodayStatus === "All" || emp.todayStatus === filterTodayStatus;
+      
+      let matchesTodayStatus = true;
+      if (filterTodayStatus === "Late Arrival") {
+        matchesTodayStatus = emp.isLateToday;
+      } else if (filterTodayStatus === "Present") {
+        matchesTodayStatus = emp.todayStatus === "Clocked In" || emp.todayStatus === "Clocked Out";
+      } else if (filterTodayStatus !== "All") {
+        matchesTodayStatus = emp.todayStatus === filterTodayStatus;
+      }
 
       return matchesSearch && matchesDept && matchesShift && matchesTodayStatus;
     });
@@ -861,8 +887,8 @@ export const Attendance: React.FC<AttendanceProps> = ({
                       onChange={(e) => setFilterTodayStatus(e.target.value)}
                     >
                       <option value="All">All Statuses</option>
-                      <option value="Clocked In">Clocked In</option>
-                      <option value="Clocked Out">Clocked Out</option>
+                      <option value="Present">Present</option>
+                      <option value="Late Arrival">Late Arrival</option>
                       <option value="Absent">Absent</option>
                     </select>
                   </div>
@@ -891,14 +917,17 @@ export const Attendance: React.FC<AttendanceProps> = ({
                   }}
                 >
                   <div
+                    onClick={() => setFilterTodayStatus("Present")}
                     style={{
                       padding: "14px 18px",
                       borderRadius: "var(--radius-md)",
                       background: "rgba(34, 197, 94, 0.08)",
-                      border: "1px solid rgba(34, 197, 94, 0.2)",
+                      border: filterTodayStatus === "Present" ? "2px solid #22c55e" : "1px solid rgba(34, 197, 94, 0.2)",
                       display: "flex",
                       alignItems: "center",
                       gap: "12px",
+                      cursor: "pointer",
+                      transition: "all 0.2s ease",
                     }}
                   >
                     <CheckCircle
@@ -929,14 +958,17 @@ export const Attendance: React.FC<AttendanceProps> = ({
                   </div>
 
                   <div
+                    onClick={() => setFilterTodayStatus("Absent")}
                     style={{
                       padding: "14px 18px",
                       borderRadius: "var(--radius-md)",
                       background: "rgba(244, 63, 94, 0.08)",
-                      border: "1px solid rgba(244, 63, 94, 0.2)",
+                      border: filterTodayStatus === "Absent" ? "2px solid #f43f5e" : "1px solid rgba(244, 63, 94, 0.2)",
                       display: "flex",
                       alignItems: "center",
                       gap: "12px",
+                      cursor: "pointer",
+                      transition: "all 0.2s ease",
                     }}
                   >
                     <XCircle
@@ -967,14 +999,17 @@ export const Attendance: React.FC<AttendanceProps> = ({
                   </div>
 
                   <div
+                    onClick={() => setFilterTodayStatus("Late Arrival")}
                     style={{
                       padding: "14px 18px",
                       borderRadius: "var(--radius-md)",
                       background: "rgba(251, 191, 36, 0.08)",
-                      border: "1px solid rgba(251, 191, 36, 0.2)",
+                      border: filterTodayStatus === "Late Arrival" ? "2px solid #fbbf24" : "1px solid rgba(251, 191, 36, 0.2)",
                       display: "flex",
                       alignItems: "center",
                       gap: "12px",
+                      cursor: "pointer",
+                      transition: "all 0.2s ease",
                     }}
                   >
                     <AlertCircle
