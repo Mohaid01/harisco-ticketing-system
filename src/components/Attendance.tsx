@@ -267,10 +267,15 @@ export const Attendance: React.FC<AttendanceProps> = ({
         }
 
         const lastPunch = sortedPunches[sortedPunches.length - 1];
-        if (lastPunch.status === PUNCH_STATUS.CHECK_IN) {
+        const lastStatus = (lastPunch.status || "").toLowerCase().replace(/[^a-z]/g, "");
+        
+        if (lastStatus.includes("in")) {
           todayStatus = "Clocked In";
-        } else if (lastPunch.status === PUNCH_STATUS.CHECK_OUT) {
+        } else if (lastStatus.includes("out")) {
           todayStatus = "Clocked Out";
+        } else {
+          // Fallback if they have punches but status string is weird
+          todayStatus = "Clocked In";
         }
       } else {
         todayStatus = "Absent";
