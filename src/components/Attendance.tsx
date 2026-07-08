@@ -1435,7 +1435,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
                                            <button
                                               onClick={(e) => {
                                                  e.stopPropagation();
-                                                 handleDeletePunchOut(log.lastOutId, log.date);
+                                                 handleDeletePunchOut(log.lastOutId!, log.date);
                                               }}
                                               style={{
                                                  background: "none",
