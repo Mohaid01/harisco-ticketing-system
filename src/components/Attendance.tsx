@@ -388,11 +388,16 @@ export const Attendance: React.FC<AttendanceProps> = ({
           const firstInTime = parseLogPKT(sorted[0]).time;
           const parts = firstInTime.split(":");
           if (parts.length >= 2) {
-            const hour = parseInt(parts[0]);
-            const min = parseInt(parts[1]);
+            const hour = parseInt(parts[0], 10);
+            const min = parseInt(parts[1], 10);
+            
+            // Grace periods:
+            // Saturday: 10:00 to 10:29
+            // Mon-Fri: 09:30 to 09:59
             const isLate = isSaturday
-              ? hour > 10 || (hour === 10 && min > 29)
-              : hour > 9 || (hour === 9 && min > 59);
+              ? hour > 10 || (hour === 10 && min >= 30)
+              : hour >= 10;
+              
             if (isLate) late++;
           }
         }
@@ -498,18 +503,19 @@ export const Attendance: React.FC<AttendanceProps> = ({
         // Late arrival check
         const timeParts = firstInTime.split(":");
         if (timeParts.length >= 2) {
-          const hour = parseInt(timeParts[0]);
-          const min = parseInt(timeParts[1]);
+          const hour = parseInt(timeParts[0], 10);
+          const min = parseInt(timeParts[1], 10);
           const isSaturday = tempDate.getUTCDay() === 6;
 
           if (isSaturday) {
-            // Saturday shift starts at 10:00 AM (grace period until 10:05 AM)
-            if (hour > 10 || (hour === 10 && min > 29)) {
+            // Saturday shift starts at 10:00 AM (grace period until 10:29 AM)
+            if (hour > 10 || (hour === 10 && min >= 30)) {
               status = "Late Arrival";
             }
           } else {
-            // Regular shift starts at 09:30 AM (grace period until 09:35 AM)
-            if (hour > 9 || (hour === 9 && min > 59)) {
+            // Regular shift starts at 09:30 AM (grace period until 09:59 AM)
+            // Any punch in at 10:00 AM or later is late.
+            if (hour >= 10) {
               status = "Late Arrival";
             }
           }
