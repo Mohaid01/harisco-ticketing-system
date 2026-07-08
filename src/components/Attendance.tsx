@@ -391,8 +391,8 @@ export const Attendance: React.FC<AttendanceProps> = ({
             const hour = parseInt(parts[0]);
             const min = parseInt(parts[1]);
             const isLate = isSaturday
-              ? hour > 10 || (hour === 10 && min > 5)
-              : hour > 9 || (hour === 9 && min > 35);
+              ? hour > 10 || (hour === 10 && min > 29)
+              : hour > 9 || (hour === 9 && min > 59);
             if (isLate) late++;
           }
         }
