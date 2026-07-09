@@ -281,21 +281,27 @@ export const Attendance: React.FC<AttendanceProps> = ({
         todayStatus = "Absent";
       }
 
-      // Calculate monthly stats using deterministic history + real logs
+      // Calculate monthly stats for the current month up to today
       let daysPresent = 0;
       let daysAbsent = 0;
       let totalHours = 0;
-      const totalWorkDays = 26; // Target working days in current month (Sunday only is off)
+      let totalWorkDays = 0;
 
-      // We look at the past 30 days
-      const tempDate = new Date();
-      for (let i = 0; i < 30; i++) {
+      const now = new Date();
+      // Ensure we use the current date in Pakistan timezone if possible, or just local
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth();
+      const currentDate = now.getDate();
+
+      for (let day = 1; day <= currentDate; day++) {
+        const tempDate = new Date(currentYear, currentMonth, day);
         const dateStr = new Intl.DateTimeFormat("en-CA", {
           timeZone: "Asia/Karachi",
         }).format(tempDate);
         const isWeekend = tempDate.getDay() === 0; // Only Sunday is off
 
         if (!isWeekend) {
+          totalWorkDays++;
           const dayPunches = userLogs.filter(
             (log) => parseLogDate(log) === dateStr,
           );
@@ -595,6 +601,39 @@ export const Attendance: React.FC<AttendanceProps> = ({
       status: todayLog ? todayLog.status : "No Data",
     };
   }, [selectedEmployeePunchLogs, tick]);
+
+  const individualStats = useMemo(() => {
+    let present = 0;
+    let absent = 0;
+    let totalHours = 0;
+    let workDaysCounted = 0;
+
+    const todayStr = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Karachi",
+    }).format(new Date());
+
+    selectedEmployeePunchLogs.forEach((log) => {
+      // Don't count days after today
+      if (log.date > todayStr) return;
+
+      if (log.status !== "Weekend") {
+        workDaysCounted++;
+        if (log.status === "Present" || log.status === "Late Arrival" || log.status === "Half Day") {
+          present++;
+          totalHours += log.hours;
+        } else if (log.status === "No Data") {
+          absent++;
+        }
+      }
+    });
+
+    return {
+      present,
+      absent,
+      totalHours: Math.round(totalHours),
+      workDaysCounted
+    };
+  }, [selectedEmployeePunchLogs]);
 
   // Render Status Badge
   const getTodayStatusBadge = (status: string) => {
@@ -1919,10 +1958,10 @@ export const Attendance: React.FC<AttendanceProps> = ({
                       </div>
                     </div>
                     <span className="stat-value">
-                      {selectedEmployee.daysPresent} /{" "}
-                      {selectedEmployee.totalWorkDays}
+                      {individualStats.present} /{" "}
+                      {individualStats.workDaysCounted}
                     </span>
-                    <span className="stat-desc">Target: 26 Working Days</span>
+                    <span className="stat-desc">For selected month up to today</span>
                   </div>
 
                   {/* KPI 2: Days Absent */}
@@ -1930,7 +1969,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
                     className="stat-card it-app"
                     style={{
                       borderLeft:
-                        selectedEmployee.daysAbsent > 0
+                        individualStats.absent > 0
                           ? "4px solid #f43f5e"
                           : "1px solid var(--border-color)",
                     }}
@@ -1951,10 +1990,10 @@ export const Attendance: React.FC<AttendanceProps> = ({
                       className="stat-value"
                       style={{
                         color:
-                          selectedEmployee.daysAbsent > 0 ? "#f43f5e" : "white",
+                          individualStats.absent > 0 ? "#f43f5e" : "white",
                       }}
                     >
-                      {selectedEmployee.daysAbsent}
+                      {individualStats.absent}
                     </span>
                     <span className="stat-desc">Unexcused Absences</span>
                   </div>
@@ -1974,9 +2013,9 @@ export const Attendance: React.FC<AttendanceProps> = ({
                       </div>
                     </div>
                     <span className="stat-value">
-                      {selectedEmployee.totalHours} hrs
+                      {individualStats.totalHours} hrs
                     </span>
-                    <span className="stat-desc">Target: 208 hours (Month)</span>
+                    <span className="stat-desc">For selected month up to today</span>
                   </div>
 
                   {/* KPI 4: Leave Balance */}
