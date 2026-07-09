@@ -618,10 +618,10 @@ export const Attendance: React.FC<AttendanceProps> = ({
 
       if (log.status !== "Weekend") {
         workDaysCounted++;
-        if (log.status === "Present" || log.status === "Late Arrival" || log.status === "Half Day") {
+        if (log.firstIn !== "--") {
           present++;
           totalHours += log.hours;
-        } else if (log.status === "No Data") {
+        } else {
           absent++;
         }
       }
