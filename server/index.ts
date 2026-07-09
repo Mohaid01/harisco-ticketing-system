@@ -41,20 +41,33 @@ app.use(cors({
 
 app.use(express.json({ limit: "10mb" }));
 
-// Apply global API rate limit
+// Strict rate limit for login endpoint (IP-based, since no user identity yet)
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  message: { error: "Too many login attempts, please try again after 15 minutes." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// User-identity-keyed rate limiter for all other API routes.
+// Falls back to IP if no Authorization token is present.
 const globalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 1000,
-  message: { error: "Too many requests from this IP, please try again later." }
+  windowMs: 15 * 60 * 1000,
+  max: 2000,
+  keyGenerator: (req: Request): string => {
+    const auth = req.headers.authorization;
+    if (auth?.startsWith("Bearer ")) {
+      // Use the raw token as the key — unique per user session
+      return auth.slice(7);
+    }
+    return req.ip ?? "unknown";
+  },
+  message: { error: "Too many requests, please try again later." },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 app.use("/api", globalLimiter);
-
-// Strict rate limit for auth endpoint
-const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // Limit each IP to 10 login requests per window
-  message: { error: "Too many login attempts, please try again after 15 minutes." }
-});
 
 // Log every API request for diagnostics
 app.use("/api", (req: Request, _res: Response, next: NextFunction) => {
