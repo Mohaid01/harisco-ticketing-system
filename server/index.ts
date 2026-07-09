@@ -1179,6 +1179,55 @@ app.get(
   }
 );
 
+// Add manual attendance punch (IT or Manager only)
+app.post(
+  "/api/attendance/manual",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    if (req.user?.role !== "it" && req.user?.role !== "manager") {
+      res.status(403).json({ error: "Forbidden. Only managers or IT can add manual attendance." });
+      return;
+    }
+
+    const { userId, date, time, status } = req.body;
+    if (!userId || !date || !time || !status) {
+      res.status(400).json({ error: "Missing required fields." });
+      return;
+    }
+
+    try {
+      const db = getDb();
+      // Combine date and time to PKT timestamp, then convert to UTC for DB
+      const pktDateStr = `${date}T${time}:00+05:00`;
+      const pktDate = new Date(pktDateStr);
+      
+      if (isNaN(pktDate.getTime())) {
+        res.status(400).json({ error: "Invalid date or time." });
+        return;
+      }
+
+      const year = pktDate.getUTCFullYear();
+      const month = String(pktDate.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(pktDate.getUTCDate()).padStart(2, '0');
+      const hours = String(pktDate.getUTCHours()).padStart(2, '0');
+      const minutes = String(pktDate.getUTCMinutes()).padStart(2, '0');
+      const seconds = String(pktDate.getUTCSeconds()).padStart(2, '0');
+      
+      const timestamp = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+
+      await db.run(
+        "INSERT INTO attendance_logs (userId, timestamp, status, ioTime) VALUES (?, ?, ?, ?)",
+        [userId, timestamp, status, timestamp]
+      );
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Failed to add manual attendance:", error);
+      res.status(500).json({ error: "Failed to add manual attendance." });
+    }
+  }
+);
+
 // Clear ALL attendance logs (IT only)
 app.delete(
   "/api/attendance",

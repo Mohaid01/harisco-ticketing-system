@@ -711,6 +711,45 @@ export const Attendance: React.FC<AttendanceProps> = ({
     }
   };
 
+  const handleAddManualPunch = async (date: string, type: "Check-In" | "Check-Out") => {
+    if (!isAdminRole) return;
+    
+    const time = window.prompt(`Enter time for manual ${type} on ${date} (24-hour format HH:MM):`, type === "Check-In" ? "09:30" : "18:00");
+    if (!time) return;
+
+    if (!/^([01]\d|2[0-3]):([0-5]\d)$/.test(time)) {
+      alert("Invalid time format. Please use HH:MM (e.g., 09:30, 18:00)");
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("harisco_token");
+      const res = await fetch("/api/attendance/manual", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          userId: selectedEmployee?.id,
+          date,
+          time,
+          status: type,
+        }),
+      });
+
+      if (res.ok) {
+        fetchLogs(true);
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to add manual punch.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error adding manual punch.");
+    }
+  };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
       {/* Header Panel */}
@@ -1656,8 +1695,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
                           </div>
                         </div>
 
-                        {log.status !== "Weekend" &&
-                          log.status !== "No Data" && (
+                        {log.status !== "Weekend" && (
                             <div
                               style={{
                                 marginTop: "auto",
@@ -1672,16 +1710,24 @@ export const Attendance: React.FC<AttendanceProps> = ({
                                 style={{
                                   display: "flex",
                                   justifyContent: "space-between",
+                                  alignItems: "center",
                                 }}
                               >
                                 <span>In:</span>
-                                <span
-                                  style={{ color: "white", fontWeight: 500 }}
-                                >
-                                  {log.firstIn === "--"
-                                    ? "-"
-                                    : log.firstIn.substring(0, 5)}
-                                </span>
+                                <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                                  <span style={{ color: "white", fontWeight: 500 }}>
+                                    {log.firstIn === "--" ? "-" : log.firstIn.substring(0, 5)}
+                                  </span>
+                                  {isAdminRole && log.firstIn === "--" && (
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); handleAddManualPunch(log.date, "Check-In"); }}
+                                      style={{ background: "none", border: "none", color: "var(--color-primary)", cursor: "pointer", padding: "2px", display: "flex", fontWeight: "bold" }}
+                                      title="Add Punch In"
+                                    >
+                                      +
+                                    </button>
+                                  )}
+                                </div>
                               </div>
                               <div
                                 style={{
@@ -1698,13 +1744,18 @@ export const Attendance: React.FC<AttendanceProps> = ({
                                     gap: "4px",
                                   }}
                                 >
-                                  <span
-                                    style={{ color: "white", fontWeight: 500 }}
-                                  >
-                                    {log.lastOut === "--"
-                                      ? "-"
-                                      : log.lastOut.substring(0, 5)}
+                                  <span style={{ color: "white", fontWeight: 500 }}>
+                                    {log.lastOut === "--" ? "-" : log.lastOut.substring(0, 5)}
                                   </span>
+                                  {isAdminRole && log.lastOut === "--" && (
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); handleAddManualPunch(log.date, "Check-Out"); }}
+                                      style={{ background: "none", border: "none", color: "var(--color-primary)", cursor: "pointer", padding: "2px", display: "flex", fontWeight: "bold" }}
+                                      title="Add Punch Out"
+                                    >
+                                      +
+                                    </button>
+                                  )}
                                   {currentUser.role === "it" &&
                                     log.lastOutId && (
                                       <button
