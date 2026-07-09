@@ -348,7 +348,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                 id="user-password-input"
                 type="password"
                 className="form-input"
-                placeholder={`Optional (defaults to ${import.meta.env.DEFAULT_USER_PASSWORD})`}
+                placeholder={`Optional (defaults to ${import.meta.env.VITE_DEFAULT_USER_PASSWORD})`}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />

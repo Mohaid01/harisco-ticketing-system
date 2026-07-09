@@ -35,9 +35,12 @@ app.use(helmet({ contentSecurityPolicy: false }));
 app.set("trust proxy", 1);
 
 // Strict CORS: allow Vite dev server locally, but restrict in production
-app.use(cors({
-  origin: process.env.NODE_ENV === 'production' ? false : 'http://localhost:5173'
-}));
+app.use(
+  cors({
+    origin:
+      process.env.NODE_ENV === "production" ? false : "http://localhost:5173",
+  }),
+);
 
 app.use(express.json({ limit: "10mb" }));
 
@@ -45,7 +48,9 @@ app.use(express.json({ limit: "10mb" }));
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 20,
-  message: { error: "Too many login attempts, please try again after 15 minutes." },
+  message: {
+    error: "Too many login attempts, please try again after 15 minutes.",
+  },
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -71,7 +76,9 @@ app.use("/api", globalLimiter);
 
 // Log every API request for diagnostics
 app.use("/api", (req: Request, _res: Response, next: NextFunction) => {
-  console.log(`[REQ] ${req.method} ${req.path} | ip=${req.ip} | origin=${req.headers.origin || "none"}`);
+  console.log(
+    `[REQ] ${req.method} ${req.path} | ip=${req.ip} | origin=${req.headers.origin || "none"}`,
+  );
   next();
 });
 // Extend express Request interface for our middleware
@@ -142,7 +149,8 @@ function authenticateToken(
 ) {
   console.log("[AUTH] authenticateToken called for:", req.path);
   const authHeader = req.headers["authorization"];
-  const token = (authHeader && authHeader.split(" ")[1]) || (req.query.token as string);
+  const token =
+    (authHeader && authHeader.split(" ")[1]) || (req.query.token as string);
 
   if (!token) {
     console.log("[AUTH] No token found — returning 401");
@@ -171,55 +179,59 @@ function authenticateToken(
 }
 
 // Auth Routes
-app.post("/api/auth/login", loginLimiter, async (req: Request, res: Response) => {
-  const { username, password } = req.body;
-  if (!username || !password) {
-    res.status(400).json({ error: "Username and password are required." });
-    return;
-  }
-
-  try {
-    const db = getDb();
-    const user = await db.get<DbUser>(
-      "SELECT id, name, email, username, role, avatar, passwordHash, needsPasswordReset FROM users WHERE LOWER(username) = ?",
-      [username.toLowerCase().trim()],
-    );
-
-    if (!user) {
-      res.status(401).json({ error: "Invalid username or password." });
+app.post(
+  "/api/auth/login",
+  loginLimiter,
+  async (req: Request, res: Response) => {
+    const { username, password } = req.body;
+    if (!username || !password) {
+      res.status(400).json({ error: "Username and password are required." });
       return;
     }
 
-    const isMatch = await bcrypt.compare(password, user.passwordHash);
-    if (!isMatch) {
-      res.status(401).json({ error: "Invalid username or password." });
-      return;
+    try {
+      const db = getDb();
+      const user = await db.get<DbUser>(
+        "SELECT id, name, email, username, role, avatar, passwordHash, needsPasswordReset FROM users WHERE LOWER(username) = ?",
+        [username.toLowerCase().trim()],
+      );
+
+      if (!user) {
+        res.status(401).json({ error: "Invalid username or password." });
+        return;
+      }
+
+      const isMatch = await bcrypt.compare(password, user.passwordHash);
+      if (!isMatch) {
+        res.status(401).json({ error: "Invalid username or password." });
+        return;
+      }
+
+      // Sign JWT — keep payload small, never include avatar (base64 images bloat headers)
+      const jwtPayload = {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        username: user.username,
+        role: user.role,
+        needsPasswordReset: user.needsPasswordReset,
+      };
+      const token = jwt.sign(jwtPayload, JWT_SECRET, { expiresIn: "7d" });
+
+      // Return full user (including avatar) in response body only
+      res.json({
+        token,
+        user: {
+          ...jwtPayload,
+          avatar: user.avatar,
+        },
+      });
+    } catch (error) {
+      console.error("Login error:", error);
+      res.status(500).json({ error: "Database or server error during login." });
     }
-
-    // Sign JWT — keep payload small, never include avatar (base64 images bloat headers)
-    const jwtPayload = {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      username: user.username,
-      role: user.role,
-      needsPasswordReset: user.needsPasswordReset,
-    };
-    const token = jwt.sign(jwtPayload, JWT_SECRET, { expiresIn: "7d" });
-
-    // Return full user (including avatar) in response body only
-    res.json({
-      token,
-      user: {
-        ...jwtPayload,
-        avatar: user.avatar,
-      },
-    });
-  } catch (error) {
-    console.error("Login error:", error);
-    res.status(500).json({ error: "Database or server error during login." });
-  }
-});
+  },
+);
 
 app.get(
   "/api/auth/me",
@@ -374,7 +386,16 @@ app.post(
       return;
     }
 
-    const { name, email, username, role, password, avatar, department, designation } = req.body;
+    const {
+      name,
+      email,
+      username,
+      role,
+      password,
+      avatar,
+      department,
+      designation,
+    } = req.body;
     if (!name || !username || !role) {
       res.status(400).json({ error: "Name, username, and role are required." });
       return;
@@ -382,7 +403,7 @@ app.post(
 
     const finalEmail =
       email && email.trim() ? email.trim().toLowerCase() : null;
-    const defaultPassword = process.env.DEFAULT_USER_PASSWORD;
+    const defaultPassword = process.env.VITE_DEFAULT_USER_PASSWORD;
     if (!defaultPassword) throw new Error("DEFAULT_USER_PASSWORD required");
     const clearPassword = password || defaultPassword;
 
@@ -490,7 +511,9 @@ app.post(
   authenticateToken,
   async (req: AuthRequest, res: Response) => {
     if (req.user?.role !== "it") {
-      res.status(403).json({ error: "Forbidden. Password reset requires IT role." });
+      res
+        .status(403)
+        .json({ error: "Forbidden. Password reset requires IT role." });
       return;
     }
 
@@ -498,13 +521,18 @@ app.post(
     const { newPassword } = req.body;
 
     if (!newPassword || newPassword.trim().length < 4) {
-      res.status(400).json({ error: "Password must be at least 4 characters long." });
+      res
+        .status(400)
+        .json({ error: "Password must be at least 4 characters long." });
       return;
     }
 
     try {
       const db = getDb();
-      const user = await db.get<{ id: string }>("SELECT id FROM users WHERE id = ?", [userId]);
+      const user = await db.get<{ id: string }>(
+        "SELECT id FROM users WHERE id = ?",
+        [userId],
+      );
       if (!user) {
         res.status(404).json({ error: "User not found." });
         return;
@@ -516,7 +544,10 @@ app.post(
         [passwordHash, userId],
       );
 
-      res.json({ message: "Password reset successfully. User will be prompted to set a new password on next login." });
+      res.json({
+        message:
+          "Password reset successfully. User will be prompted to set a new password on next login.",
+      });
     } catch (error) {
       console.error("Failed to reset user password:", error);
       res.status(500).json({ error: "Failed to reset password." });
@@ -545,8 +576,10 @@ app.put(
 
     const finalEmail =
       email && email.trim() ? email.trim().toLowerCase() : null;
-    const finalDepartment = department && department.trim() ? department.trim() : null;
-    const finalDesignation = designation && designation.trim() ? designation.trim() : null;
+    const finalDepartment =
+      department && department.trim() ? department.trim() : null;
+    const finalDesignation =
+      designation && designation.trim() ? designation.trim() : null;
 
     try {
       const db = getDb();
@@ -567,7 +600,14 @@ app.put(
 
       const result = await db.run(
         "UPDATE users SET name = ?, email = ?, department = ?, designation = ?, avatar = ? WHERE id = ?",
-        [name.trim(), finalEmail, finalDepartment, finalDesignation, avatar ? avatar.trim() : "", userId],
+        [
+          name.trim(),
+          finalEmail,
+          finalDepartment,
+          finalDesignation,
+          avatar ? avatar.trim() : "",
+          userId,
+        ],
       );
 
       if (result.changes === 0) {
@@ -575,7 +615,14 @@ app.put(
         return;
       }
 
-      res.json({ id: userId, name: name.trim(), email: finalEmail, department: finalDepartment, designation: finalDesignation, avatar: avatar ? avatar.trim() : "" });
+      res.json({
+        id: userId,
+        name: name.trim(),
+        email: finalEmail,
+        department: finalDepartment,
+        designation: finalDesignation,
+        avatar: avatar ? avatar.trim() : "",
+      });
     } catch (error) {
       console.error("Failed to update user:", error);
       res.status(500).json({ error: "Failed to update user details." });
@@ -654,7 +701,9 @@ app.post(
       const db = getDb();
 
       // Generate sequential ticket code based on max index to prevent collision after deletions
-      const allTickets = await db.all<{ id: string }[]>("SELECT id FROM tickets");
+      const allTickets = await db.all<{ id: string }[]>(
+        "SELECT id FROM tickets",
+      );
       let maxIndex = 0;
       for (const t of allTickets) {
         const match = t.id.match(/HCIT-TCK-(\d+)/);
@@ -1183,13 +1232,15 @@ app.get(
   async (req: AuthRequest, res: Response) => {
     try {
       const db = getDb();
-      const logs = await db.all("SELECT * FROM attendance_logs ORDER BY timestamp DESC");
+      const logs = await db.all(
+        "SELECT * FROM attendance_logs ORDER BY timestamp DESC",
+      );
       res.json(logs);
     } catch (error) {
       console.error("Failed to retrieve attendance logs:", error);
       res.status(500).json({ error: "Failed to retrieve attendance logs." });
     }
-  }
+  },
 );
 
 // Add manual attendance punch (IT or Manager only)
@@ -1198,7 +1249,11 @@ app.post(
   authenticateToken,
   async (req: AuthRequest, res: Response) => {
     if (req.user?.role !== "it" && req.user?.role !== "manager") {
-      res.status(403).json({ error: "Forbidden. Only managers or IT can add manual attendance." });
+      res
+        .status(403)
+        .json({
+          error: "Forbidden. Only managers or IT can add manual attendance.",
+        });
       return;
     }
 
@@ -1213,22 +1268,24 @@ app.post(
       // Combine date and time to PKT timestamp, then convert to UTC for DB
       const pktDateStr = `${date}T${time}:00+05:00`;
       const pktDate = new Date(pktDateStr);
-      
+
       if (isNaN(pktDate.getTime())) {
         res.status(400).json({ error: "Invalid date or time." });
         return;
       }
 
       const year = pktDate.getUTCFullYear();
-      const month = String(pktDate.getUTCMonth() + 1).padStart(2, '0');
-      const day = String(pktDate.getUTCDate()).padStart(2, '0');
-      const hours = String(pktDate.getUTCHours()).padStart(2, '0');
-      const minutes = String(pktDate.getUTCMinutes()).padStart(2, '0');
-      const seconds = String(pktDate.getUTCSeconds()).padStart(2, '0');
-      
+      const month = String(pktDate.getUTCMonth() + 1).padStart(2, "0");
+      const day = String(pktDate.getUTCDate()).padStart(2, "0");
+      const hours = String(pktDate.getUTCHours()).padStart(2, "0");
+      const minutes = String(pktDate.getUTCMinutes()).padStart(2, "0");
+      const seconds = String(pktDate.getUTCSeconds()).padStart(2, "0");
+
       const timestamp = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 
-      const user = await db.get("SELECT name FROM users WHERE id = ?", [userId]);
+      const user = await db.get("SELECT name FROM users WHERE id = ?", [
+        userId,
+      ]);
       if (!user) {
         res.status(404).json({ error: "Employee not found." });
         return;
@@ -1236,15 +1293,15 @@ app.post(
 
       await db.run(
         "INSERT INTO attendance_logs (name, userId, ioTime, method, status, timestamp) VALUES (?, ?, ?, ?, ?, ?)",
-        [user.name, userId, timestamp, "Manual", status, timestamp]
+        [user.name, userId, timestamp, "Manual", status, timestamp],
       );
-      
+
       res.json({ success: true });
     } catch (error) {
       console.error("Failed to add manual attendance:", error);
       res.status(500).json({ error: "Failed to add manual attendance." });
     }
-  }
+  },
 );
 
 // Clear ALL attendance logs (IT only)
@@ -1253,7 +1310,11 @@ app.delete(
   authenticateToken,
   async (req: AuthRequest, res: Response) => {
     if (req.user?.role !== "it") {
-      res.status(403).json({ error: "Forbidden. Clearing attendance logs requires IT role." });
+      res
+        .status(403)
+        .json({
+          error: "Forbidden. Clearing attendance logs requires IT role.",
+        });
       return;
     }
     try {
@@ -1264,7 +1325,7 @@ app.delete(
       console.error("Failed to clear attendance logs:", error);
       res.status(500).json({ error: "Failed to clear attendance logs." });
     }
-  }
+  },
 );
 
 // Delete a single attendance log (IT only, Check-Out only)
@@ -1273,7 +1334,11 @@ app.delete(
   authenticateToken,
   async (req: AuthRequest, res: Response) => {
     if (req.user?.role !== "it") {
-      res.status(403).json({ error: "Forbidden. Attendance log deletion requires IT role." });
+      res
+        .status(403)
+        .json({
+          error: "Forbidden. Attendance log deletion requires IT role.",
+        });
       return;
     }
 
@@ -1285,17 +1350,24 @@ app.delete(
 
     try {
       const db = getDb();
-      const log = await db.get("SELECT status FROM attendance_logs WHERE id = ?", [logId]);
+      const log = await db.get(
+        "SELECT status FROM attendance_logs WHERE id = ?",
+        [logId],
+      );
       if (!log) {
         res.status(404).json({ error: "Attendance log not found." });
         return;
       }
       if (log.status !== "Check-Out") {
-        res.status(400).json({ error: "Only punch out (Check-Out) logs can be deleted." });
+        res
+          .status(400)
+          .json({ error: "Only punch out (Check-Out) logs can be deleted." });
         return;
       }
 
-      const result = await db.run("DELETE FROM attendance_logs WHERE id = ?", [logId]);
+      const result = await db.run("DELETE FROM attendance_logs WHERE id = ?", [
+        logId,
+      ]);
       if (result.changes === 0) {
         res.status(404).json({ error: "Attendance log not found." });
         return;
@@ -1305,22 +1377,26 @@ app.delete(
       console.error("Failed to delete attendance log:", error);
       res.status(500).json({ error: "Failed to delete attendance log." });
     }
-  }
+  },
 );
 
 // Attendance SSE Stream endpoint for real-time updates
-app.get("/api/attendance/stream", authenticateToken, (req: AuthRequest, res: Response) => {
-  res.setHeader("Content-Type", "text/event-stream");
-  res.setHeader("Cache-Control", "no-cache");
-  res.setHeader("Connection", "keep-alive");
-  res.flushHeaders();
+app.get(
+  "/api/attendance/stream",
+  authenticateToken,
+  (req: AuthRequest, res: Response) => {
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.flushHeaders();
 
-  sseClients.add(res);
+    sseClients.add(res);
 
-  req.on("close", () => {
-    sseClients.delete(res);
-  });
-});
+    req.on("close", () => {
+      sseClients.delete(res);
+    });
+  },
+);
 
 // --------------------- LEAVE MANAGEMENT ROUTES ---------------------
 
@@ -1338,7 +1414,8 @@ app.get(
 
       // Employees only see their own leaves
       if (userRole === "employee") {
-        query = "SELECT * FROM leave_applications WHERE userId = ? ORDER BY appliedAt DESC";
+        query =
+          "SELECT * FROM leave_applications WHERE userId = ? ORDER BY appliedAt DESC";
         params.push(userId);
       }
 
@@ -1348,7 +1425,7 @@ app.get(
       console.error("Failed to fetch leaves:", error);
       res.status(500).json({ error: "Failed to retrieve leave applications." });
     }
-  }
+  },
 );
 
 app.post(
@@ -1379,8 +1456,8 @@ app.post(
           endDate,
           reason,
           "pending",
-          timestamp
-        ]
+          timestamp,
+        ],
       );
 
       res.status(201).json({ success: true, id: leaveId });
@@ -1388,7 +1465,7 @@ app.post(
       console.error("Failed to submit leave:", error);
       res.status(500).json({ error: "Failed to submit leave application." });
     }
-  }
+  },
 );
 
 app.put(
@@ -1396,23 +1473,29 @@ app.put(
   authenticateToken,
   async (req: AuthRequest, res: Response) => {
     if (req.user?.role === "employee") {
-      res.status(403).json({ error: "Forbidden. Only managers or IT can update leave status." });
+      res
+        .status(403)
+        .json({
+          error: "Forbidden. Only managers or IT can update leave status.",
+        });
       return;
     }
 
     const { status } = req.body;
     if (!status || !["approved", "rejected"].includes(status)) {
-      res.status(400).json({ error: "Valid status (approved/rejected) is required." });
+      res
+        .status(400)
+        .json({ error: "Valid status (approved/rejected) is required." });
       return;
     }
 
     try {
       const db = getDb();
       const leaveId = req.params.id;
-      
+
       const result = await db.run(
         "UPDATE leave_applications SET status = ? WHERE id = ?",
-        [status, leaveId]
+        [status, leaveId],
       );
 
       if (result.changes === 0) {
@@ -1425,7 +1508,7 @@ app.put(
       console.error("Failed to update leave status:", error);
       res.status(500).json({ error: "Failed to update leave status." });
     }
-  }
+  },
 );
 
 // Start Database and Server
@@ -1520,7 +1603,8 @@ async function startServer() {
               const xmlLogResponse = `<?xml version="1.0"?>\r\n<Message>\r\n<Response>TimeLog_v2</Response>\r\n<Result>OK</Result>\r\n<DeviceSerialNo>${serialNo}</DeviceSerialNo>\r\n<TransID>${transId}</TransID>\r\n<LogID>${logId}</LogID>\r\n</Message>`;
               ws.send(xmlLogResponse);
 
-              const scanMethod = METHOD_MAP[actionRaw.toUpperCase()] || actionRaw;
+              const scanMethod =
+                METHOD_MAP[actionRaw.toUpperCase()] || actionRaw;
 
               if (userId === "0" || userId === "00000000") {
                 console.log(
@@ -1540,20 +1624,24 @@ async function startServer() {
                 try {
                   const db = getDb();
                   // Standardize username lookup: check username = 'HC-' + padded 5-digit ID, or matching username/ID directly
-                  const paddedId = String(userId).padStart(5, '0');
+                  const paddedId = String(userId).padStart(5, "0");
                   const targetUsername = `HC-${paddedId}`;
                   const userDoc = await db.get<{ name: string }>(
                     "SELECT name FROM users WHERE LOWER(username) = ? OR id = ?",
-                    [targetUsername.toLowerCase(), userId]
+                    [targetUsername.toLowerCase(), userId],
                   );
                   if (userDoc && userDoc.name) {
                     parsedName = userDoc.name;
                   }
 
-                  const punchDate = punchTime.includes(" ") ? punchTime.split(" ")[0] : (punchTime.includes("T") ? punchTime.split("T")[0] : punchTime);
+                  const punchDate = punchTime.includes(" ")
+                    ? punchTime.split(" ")[0]
+                    : punchTime.includes("T")
+                      ? punchTime.split("T")[0]
+                      : punchTime;
                   const dayLogsCount = await db.get<{ count: number }>(
                     "SELECT COUNT(*) as count FROM attendance_logs WHERE userId = ? AND ioTime LIKE ?",
-                    [userId, `${punchDate}%`]
+                    [userId, `${punchDate}%`],
                   );
                   const count = dayLogsCount ? dayLogsCount.count : 0;
 
@@ -1561,8 +1649,12 @@ async function startServer() {
                     // Extract hour in PKT (UTC+5) to enforce the 6 PM check-in cutoff
                     const punchHourPKT = (() => {
                       try {
-                        const dateStr = punchTime.includes("T") ? punchTime : punchTime.replace(" ", "T");
-                        const d = new Date(dateStr + (dateStr.endsWith("Z") ? "" : "+05:00"));
+                        const dateStr = punchTime.includes("T")
+                          ? punchTime
+                          : punchTime.replace(" ", "T");
+                        const d = new Date(
+                          dateStr + (dateStr.endsWith("Z") ? "" : "+05:00"),
+                        );
                         return d.getHours();
                       } catch {
                         return 0;
@@ -1599,13 +1691,16 @@ async function startServer() {
                   const db = getDb();
                   const insertResult = await db.run(
                     "INSERT INTO attendance_logs (name, userId, ioTime, method, status) VALUES (?, ?, ?, ?, ?)",
-                    [parsedName, userId, punchTime, scanMethod, status]
+                    [parsedName, userId, punchTime, scanMethod, status],
                   );
                   console.log(`[DB] Saved log profile successfully.`);
-                  
+
                   // Broadcast the new log to all connected SSE clients
                   try {
-                    const newLog = await db.get("SELECT * FROM attendance_logs WHERE id = ?", insertResult.lastID);
+                    const newLog = await db.get(
+                      "SELECT * FROM attendance_logs WHERE id = ?",
+                      insertResult.lastID,
+                    );
                     if (newLog) {
                       const message = `data: ${JSON.stringify(newLog)}\n\n`;
                       for (const client of sseClients) {
@@ -1616,10 +1711,7 @@ async function startServer() {
                     console.error("Failed to broadcast new attendance log", e);
                   }
                 } catch (err: any) {
-                  console.error(
-                    "❌ [DB] Database Storage Error:",
-                    err.message,
-                  );
+                  console.error("❌ [DB] Database Storage Error:", err.message);
                 }
               }
             }
@@ -1640,7 +1732,9 @@ async function startServer() {
         }
       });
 
-      ws.on("close", () => console.log("🔌 [DEVICE DISCONNECTED] Channel closed."));
+      ws.on("close", () =>
+        console.log("🔌 [DEVICE DISCONNECTED] Channel closed."),
+      );
     });
   } catch (err) {
     console.error("Failed to start database/server:", err);
