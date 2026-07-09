@@ -1652,6 +1652,8 @@ export const Attendance: React.FC<AttendanceProps> = ({
                   {selectedEmployeePunchLogs.map((log) => {
                     const dayNum = parseInt(log.date.split("-")[2], 10);
                     const isWeekend = log.status === "Weekend";
+                    const todayStr = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Karachi" }).format(new Date());
+                    const isPastOrToday = log.date <= todayStr;
 
                     return (
                       <div
@@ -1718,7 +1720,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
                                   <span style={{ color: "white", fontWeight: 500 }}>
                                     {log.firstIn === "--" ? "-" : log.firstIn.substring(0, 5)}
                                   </span>
-                                  {isAdminRole && log.firstIn === "--" && (
+                                  {isAdminRole && log.firstIn === "--" && isPastOrToday && (
                                     <button
                                       onClick={(e) => { e.stopPropagation(); handleAddManualPunch(log.date, "Check-In"); }}
                                       style={{ background: "none", border: "none", color: "var(--color-primary)", cursor: "pointer", padding: "2px", display: "flex", fontWeight: "bold" }}
@@ -1747,7 +1749,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
                                   <span style={{ color: "white", fontWeight: 500 }}>
                                     {log.lastOut === "--" ? "-" : log.lastOut.substring(0, 5)}
                                   </span>
-                                  {isAdminRole && log.lastOut === "--" && (
+                                  {isAdminRole && log.lastOut === "--" && isPastOrToday && (
                                     <button
                                       onClick={(e) => { e.stopPropagation(); handleAddManualPunch(log.date, "Check-Out"); }}
                                       style={{ background: "none", border: "none", color: "var(--color-primary)", cursor: "pointer", padding: "2px", display: "flex", fontWeight: "bold" }}
