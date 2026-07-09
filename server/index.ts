@@ -1215,9 +1215,15 @@ app.post(
       
       const timestamp = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 
+      const user = await db.get("SELECT name FROM users WHERE id = ?", [userId]);
+      if (!user) {
+        res.status(404).json({ error: "Employee not found." });
+        return;
+      }
+
       await db.run(
-        "INSERT INTO attendance_logs (userId, timestamp, status, ioTime) VALUES (?, ?, ?, ?)",
-        [userId, timestamp, status, timestamp]
+        "INSERT INTO attendance_logs (name, userId, ioTime, method, status) VALUES (?, ?, ?, ?, ?)",
+        [user.name, userId, timestamp, "Manual", status]
       );
       
       res.json({ success: true });
