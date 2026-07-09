@@ -1222,8 +1222,8 @@ app.post(
       }
 
       await db.run(
-        "INSERT INTO attendance_logs (name, userId, ioTime, method, status) VALUES (?, ?, ?, ?, ?)",
-        [user.name, userId, timestamp, "Manual", status]
+        "INSERT INTO attendance_logs (name, userId, ioTime, method, status, timestamp) VALUES (?, ?, ?, ?, ?, ?)",
+        [user.name, userId, timestamp, "Manual", status, timestamp]
       );
       
       res.json({ success: true });
