@@ -239,8 +239,12 @@ export const Attendance: React.FC<AttendanceProps> = ({
       const todayPunches = userLogs.filter(
         (log) => parseLogDate(log) === todayStr,
       );
-      let todayStatus: "Clocked In" | "Clocked Out" | "Absent" | "On Leave" | "Site Duty" =
-        "Absent";
+      let todayStatus:
+        | "Clocked In"
+        | "Clocked Out"
+        | "Absent"
+        | "On Leave"
+        | "Site Duty" = "Absent";
       let isLateToday = false;
 
       if (todayPunches.length > 0) {
@@ -249,9 +253,11 @@ export const Attendance: React.FC<AttendanceProps> = ({
           const tB = parseLogPKT(b).timestamp;
           return tA.localeCompare(tB);
         });
-        
+
         // Determine if they were late today based on first check-in
-        const firstCheckIn = sortedPunches.find((p) => p.status === PUNCH_STATUS.CHECK_IN);
+        const firstCheckIn = sortedPunches.find(
+          (p) => p.status === PUNCH_STATUS.CHECK_IN,
+        );
         if (firstCheckIn) {
           const timeStr = parseLogPKT(firstCheckIn).time;
           const parts = timeStr.split(":");
@@ -259,7 +265,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
             const hour = parseInt(parts[0], 10);
             const min = parseInt(parts[1], 10);
             const isSaturday = new Date().getDay() === 6;
-            
+
             isLateToday = isSaturday
               ? hour > 10 || (hour === 10 && min >= 30)
               : hour >= 10;
@@ -267,10 +273,14 @@ export const Attendance: React.FC<AttendanceProps> = ({
         }
 
         const lastPunch = sortedPunches[sortedPunches.length - 1];
-        const lastStatus = (lastPunch.status || "").toLowerCase().replace(/[^a-z]/g, "");
-        
+        const lastStatus = (lastPunch.status || "")
+          .toLowerCase()
+          .replace(/[^a-z]/g, "");
+
         if (lastPunch.status === "Site Duty") {
           todayStatus = "Site Duty";
+        } else if (lastPunch.status === "On Leave") {
+          todayStatus = "On Leave";
         } else if (lastStatus.includes("in")) {
           todayStatus = "Clocked In";
         } else if (lastStatus.includes("out")) {
@@ -375,12 +385,15 @@ export const Attendance: React.FC<AttendanceProps> = ({
       const matchesDept =
         filterDepartment === "All" || emp.department === filterDepartment;
       const matchesShift = filterShift === "All" || emp.shift === filterShift;
-      
+
       let matchesTodayStatus = true;
       if (filterTodayStatus === "Late Arrival") {
         matchesTodayStatus = emp.isLateToday;
       } else if (filterTodayStatus === "Present") {
-        matchesTodayStatus = emp.todayStatus === "Clocked In" || emp.todayStatus === "Clocked Out" || emp.todayStatus === "Site Duty";
+        matchesTodayStatus =
+          emp.todayStatus === "Clocked In" ||
+          emp.todayStatus === "Clocked Out" ||
+          emp.todayStatus === "Site Duty";
       } else if (filterTodayStatus !== "All") {
         matchesTodayStatus = emp.todayStatus === filterTodayStatus;
       }
@@ -408,7 +421,9 @@ export const Attendance: React.FC<AttendanceProps> = ({
 
     for (const emp of employeeSummaries) {
       const isPresent =
-        emp.todayStatus === "Clocked In" || emp.todayStatus === "Clocked Out" || emp.todayStatus === "Site Duty";
+        emp.todayStatus === "Clocked In" ||
+        emp.todayStatus === "Clocked Out" ||
+        emp.todayStatus === "Site Duty";
       if (isPresent) {
         present++;
         const formattedCode = emp.formattedCode;
@@ -429,14 +444,14 @@ export const Attendance: React.FC<AttendanceProps> = ({
           if (parts.length >= 2) {
             const hour = parseInt(parts[0], 10);
             const min = parseInt(parts[1], 10);
-            
+
             // Grace periods:
             // Saturday: 10:00 to 10:29
             // Mon-Fri: 09:30 to 09:59
             const isLate = isSaturday
               ? hour > 10 || (hour === 10 && min >= 30)
               : hour >= 10;
-              
+
             if (isLate) late++;
           }
         }
@@ -513,7 +528,8 @@ export const Attendance: React.FC<AttendanceProps> = ({
         const lastOutTime = last ? parseLogPKT(last).time : "--";
 
         let hours = 0;
-        let status: "Present" | "Late Arrival" | "Site Duty" = "Present";
+        let status: "Present" | "Late Arrival" | "Site Duty" | "On Leave" =
+          "Present";
 
         // Dynamic hours calculation based on exact punch times
         const firstStr = parseLogPKT(first).timestamp;
@@ -559,12 +575,12 @@ export const Attendance: React.FC<AttendanceProps> = ({
             }
           }
         }
-        
+
         let finalFirstIn = firstInTime;
         let finalLastOut = lastOutTime;
 
-        if (first.status === "Site Duty") {
-          status = "Site Duty";
+        if (first.status === "Site Duty" || first.status === "On Leave") {
+          status = first.status;
           finalFirstIn = "N/A";
           finalLastOut = "N/A";
         }
@@ -642,7 +658,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
       present,
       absent,
       totalHours: Math.round(totalHours),
-      workDaysCounted
+      workDaysCounted,
     };
   }, [selectedEmployeePunchLogs]);
 
@@ -730,10 +746,16 @@ export const Attendance: React.FC<AttendanceProps> = ({
     }
   };
 
-  const handleAddManualPunch = async (date: string, type: "Check-In" | "Check-Out") => {
+  const handleAddManualPunch = async (
+    date: string,
+    type: "Check-In" | "Check-Out",
+  ) => {
     if (!isAdminRole) return;
-    
-    const time = window.prompt(`Enter time for manual ${type} on ${date} (24-hour format HH:MM):`, type === "Check-In" ? "09:30" : "18:00");
+
+    const time = window.prompt(
+      `Enter time for manual ${type} on ${date} (24-hour format HH:MM):`,
+      type === "Check-In" ? "09:30" : "18:00",
+    );
     if (!time) return;
 
     if (!/^([01]\d|2[0-3]):([0-5]\d)$/.test(time)) {
@@ -1024,7 +1046,10 @@ export const Attendance: React.FC<AttendanceProps> = ({
                       padding: "14px 18px",
                       borderRadius: "var(--radius-md)",
                       background: "rgba(34, 197, 94, 0.08)",
-                      border: filterTodayStatus === "Present" ? "2px solid #22c55e" : "1px solid rgba(34, 197, 94, 0.2)",
+                      border:
+                        filterTodayStatus === "Present"
+                          ? "2px solid #22c55e"
+                          : "1px solid rgba(34, 197, 94, 0.2)",
                       display: "flex",
                       alignItems: "center",
                       gap: "12px",
@@ -1065,7 +1090,10 @@ export const Attendance: React.FC<AttendanceProps> = ({
                       padding: "14px 18px",
                       borderRadius: "var(--radius-md)",
                       background: "rgba(244, 63, 94, 0.08)",
-                      border: filterTodayStatus === "Absent" ? "2px solid #f43f5e" : "1px solid rgba(244, 63, 94, 0.2)",
+                      border:
+                        filterTodayStatus === "Absent"
+                          ? "2px solid #f43f5e"
+                          : "1px solid rgba(244, 63, 94, 0.2)",
                       display: "flex",
                       alignItems: "center",
                       gap: "12px",
@@ -1106,7 +1134,10 @@ export const Attendance: React.FC<AttendanceProps> = ({
                       padding: "14px 18px",
                       borderRadius: "var(--radius-md)",
                       background: "rgba(251, 191, 36, 0.08)",
-                      border: filterTodayStatus === "Late Arrival" ? "2px solid #fbbf24" : "1px solid rgba(251, 191, 36, 0.2)",
+                      border:
+                        filterTodayStatus === "Late Arrival"
+                          ? "2px solid #fbbf24"
+                          : "1px solid rgba(251, 191, 36, 0.2)",
                       display: "flex",
                       alignItems: "center",
                       gap: "12px",
@@ -1671,7 +1702,9 @@ export const Attendance: React.FC<AttendanceProps> = ({
                   {selectedEmployeePunchLogs.map((log) => {
                     const dayNum = parseInt(log.date.split("-")[2], 10);
                     const isWeekend = log.status === "Weekend";
-                    const todayStr = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Karachi" }).format(new Date());
+                    const todayStr = new Intl.DateTimeFormat("en-CA", {
+                      timeZone: "Asia/Karachi",
+                    }).format(new Date());
                     const isPastOrToday = log.date <= todayStr;
 
                     return (
@@ -1717,112 +1750,157 @@ export const Attendance: React.FC<AttendanceProps> = ({
                         </div>
 
                         {log.status !== "Weekend" && (
+                          <div
+                            style={{
+                              marginTop: "auto",
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: "2px",
+                              fontSize: "0.7rem",
+                              color: "var(--text-secondary)",
+                            }}
+                          >
                             <div
                               style={{
-                                marginTop: "auto",
                                 display: "flex",
-                                flexDirection: "column",
-                                gap: "2px",
-                                fontSize: "0.7rem",
-                                color: "var(--text-secondary)",
+                                justifyContent: "space-between",
+                                alignItems: "center",
                               }}
                             >
+                              <span>In:</span>
                               <div
                                 style={{
                                   display: "flex",
-                                  justifyContent: "space-between",
                                   alignItems: "center",
+                                  gap: "4px",
                                 }}
                               >
-                                <span>In:</span>
-                                <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                                  <span style={{ color: "white", fontWeight: 500 }}>
-                                    {log.firstIn === "--" ? "-" : log.firstIn.substring(0, 5)}
-                                  </span>
-                                  {isAdminRole && log.firstIn === "--" && isPastOrToday && (
+                                <span
+                                  style={{ color: "white", fontWeight: 500 }}
+                                >
+                                  {log.firstIn === "--"
+                                    ? "-"
+                                    : log.firstIn.substring(0, 5)}
+                                </span>
+                                {isAdminRole &&
+                                  log.firstIn === "--" &&
+                                  isPastOrToday && (
                                     <button
-                                      onClick={(e) => { e.stopPropagation(); handleAddManualPunch(log.date, "Check-In"); }}
-                                      style={{ background: "none", border: "none", color: "var(--color-primary)", cursor: "pointer", padding: "2px", display: "flex", fontWeight: "bold" }}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleAddManualPunch(
+                                          log.date,
+                                          "Check-In",
+                                        );
+                                      }}
+                                      style={{
+                                        background: "none",
+                                        border: "none",
+                                        color: "var(--color-primary)",
+                                        cursor: "pointer",
+                                        padding: "2px",
+                                        display: "flex",
+                                        fontWeight: "bold",
+                                      }}
                                       title="Add Punch In"
                                     >
                                       +
                                     </button>
                                   )}
-                                </div>
                               </div>
+                            </div>
+                            <div
+                              style={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                              }}
+                            >
+                              <span>Out:</span>
                               <div
                                 style={{
                                   display: "flex",
-                                  justifyContent: "space-between",
                                   alignItems: "center",
+                                  gap: "4px",
                                 }}
                               >
-                                <span>Out:</span>
-                                <div
-                                  style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "4px",
-                                  }}
+                                <span
+                                  style={{ color: "white", fontWeight: 500 }}
                                 >
-                                  <span style={{ color: "white", fontWeight: 500 }}>
-                                    {log.lastOut === "--" ? "-" : log.lastOut.substring(0, 5)}
-                                  </span>
-                                  {isAdminRole && log.lastOut === "--" && isPastOrToday && (
+                                  {log.lastOut === "--"
+                                    ? "-"
+                                    : log.lastOut.substring(0, 5)}
+                                </span>
+                                {isAdminRole &&
+                                  log.lastOut === "--" &&
+                                  isPastOrToday && (
                                     <button
-                                      onClick={(e) => { e.stopPropagation(); handleAddManualPunch(log.date, "Check-Out"); }}
-                                      style={{ background: "none", border: "none", color: "var(--color-primary)", cursor: "pointer", padding: "2px", display: "flex", fontWeight: "bold" }}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleAddManualPunch(
+                                          log.date,
+                                          "Check-Out",
+                                        );
+                                      }}
+                                      style={{
+                                        background: "none",
+                                        border: "none",
+                                        color: "var(--color-primary)",
+                                        cursor: "pointer",
+                                        padding: "2px",
+                                        display: "flex",
+                                        fontWeight: "bold",
+                                      }}
                                       title="Add Punch Out"
                                     >
                                       +
                                     </button>
                                   )}
-                                  {currentUser.role === "it" &&
-                                    log.lastOutId && (
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleDeletePunchOut(
-                                            log.lastOutId!,
-                                            log.date,
-                                          );
-                                        }}
-                                        style={{
-                                          background: "none",
-                                          border: "none",
-                                          color: "#f43f5e",
-                                          cursor: "pointer",
-                                          padding: "2px",
-                                          display: "inline-flex",
-                                          alignItems: "center",
-                                        }}
-                                        title="Delete Punch Out"
-                                      >
-                                        <Trash2 size={12} />
-                                      </button>
-                                    )}
-                                </div>
+                                {currentUser.role === "it" && log.lastOutId && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDeletePunchOut(
+                                        log.lastOutId!,
+                                        log.date,
+                                      );
+                                    }}
+                                    style={{
+                                      background: "none",
+                                      border: "none",
+                                      color: "#f43f5e",
+                                      cursor: "pointer",
+                                      padding: "2px",
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                    }}
+                                    title="Delete Punch Out"
+                                  >
+                                    <Trash2 size={12} />
+                                  </button>
+                                )}
                               </div>
-                              {log.hours > 0 && (
-                                <div
+                            </div>
+                            {log.hours > 0 && (
+                              <div
+                                style={{
+                                  display: "flex",
+                                  justifyContent: "flex-end",
+                                  marginTop: "2px",
+                                }}
+                              >
+                                <span
                                   style={{
-                                    display: "flex",
-                                    justifyContent: "flex-end",
-                                    marginTop: "2px",
+                                    color: "var(--color-primary)",
+                                    fontWeight: 600,
                                   }}
                                 >
-                                  <span
-                                    style={{
-                                      color: "var(--color-primary)",
-                                      fontWeight: 600,
-                                    }}
-                                  >
-                                    {log.hours}h
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          )}
+                                  {log.hours}h
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -2033,7 +2111,9 @@ export const Attendance: React.FC<AttendanceProps> = ({
                       {individualStats.present} /{" "}
                       {individualStats.workDaysCounted}
                     </span>
-                    <span className="stat-desc">For selected month up to today</span>
+                    <span className="stat-desc">
+                      For selected month up to today
+                    </span>
                   </div>
 
                   {/* KPI 2: Days Absent */}
@@ -2061,8 +2141,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
                     <span
                       className="stat-value"
                       style={{
-                        color:
-                          individualStats.absent > 0 ? "#f43f5e" : "white",
+                        color: individualStats.absent > 0 ? "#f43f5e" : "white",
                       }}
                     >
                       {individualStats.absent}
@@ -2087,7 +2166,9 @@ export const Attendance: React.FC<AttendanceProps> = ({
                     <span className="stat-value">
                       {individualStats.totalHours} hrs
                     </span>
-                    <span className="stat-desc">For selected month up to today</span>
+                    <span className="stat-desc">
+                      For selected month up to today
+                    </span>
                   </div>
 
                   {/* KPI 4: Leave Balance */}

@@ -1503,6 +1503,57 @@ app.put(
         return;
       }
 
+      // Handle attendance logic if approved
+      if (status === "approved") {
+        const leave = await db.get("SELECT * FROM leave_applications WHERE id = ?", [leaveId]);
+        if (leave) {
+          const start = new Date(leave.startDate);
+          const end = new Date(leave.endDate);
+          
+          for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+            const dayOfWeek = d.getDay();
+            if (dayOfWeek === 0) continue; // Skip Sundays
+
+            let checkInTime = "09:30:00";
+            let checkOutTime = "18:00:00";
+
+            if (dayOfWeek === 6) { // Saturday
+              checkInTime = "10:00:00";
+              checkOutTime = "16:00:00";
+            }
+
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, "0");
+            const day = String(d.getDate()).padStart(2, "0");
+            
+            const getUtcTimestamp = (y: string, m: string, d2: string, timeStr: string) => {
+              const pktDateStr = `${y}-${m}-${d2}T${timeStr}+05:00`;
+              const pktDate = new Date(pktDateStr);
+              const uYear = pktDate.getUTCFullYear();
+              const uMonth = String(pktDate.getUTCMonth() + 1).padStart(2, "0");
+              const uDay = String(pktDate.getUTCDate()).padStart(2, "0");
+              const uHours = String(pktDate.getUTCHours()).padStart(2, "0");
+              const uMinutes = String(pktDate.getUTCMinutes()).padStart(2, "0");
+              const uSeconds = String(pktDate.getUTCSeconds()).padStart(2, "0");
+              return `${uYear}-${uMonth}-${uDay} ${uHours}:${uMinutes}:${uSeconds}`;
+            };
+            
+            const checkInTimestamp = getUtcTimestamp(String(year), month, day, checkInTime);
+            const checkOutTimestamp = getUtcTimestamp(String(year), month, day, checkOutTime);
+
+            await db.run(
+              "INSERT INTO attendance_logs (name, userId, ioTime, method, status, timestamp) VALUES (?, ?, ?, ?, ?, ?)",
+              [leave.userName, leave.userId, checkInTimestamp, "System", "On Leave", checkInTimestamp]
+            );
+
+            await db.run(
+              "INSERT INTO attendance_logs (name, userId, ioTime, method, status, timestamp) VALUES (?, ?, ?, ?, ?, ?)",
+              [leave.userName, leave.userId, checkOutTimestamp, "System", "On Leave", checkOutTimestamp]
+            );
+          }
+        }
+      }
+
       res.json({ success: true });
     } catch (error) {
       console.error("Failed to update leave status:", error);

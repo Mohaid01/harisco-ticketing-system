@@ -10,6 +10,7 @@ import {
   LogOut,
   Key,
   UserCheck,
+  Calendar,
   MapPin,
 } from "lucide-react";
 import { formatEmployeeCode } from "../utils";
@@ -55,12 +56,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: UserCheck,
       roles: ["it", "employee", "manager"],
     },
-    // {
-    //   id: "leaves" as ActiveTab,
-    //   label: "Leave Management",
-    //   icon: Calendar,
-    //   roles: ["it", "employee", "manager"],
-    // },
+    {
+      id: "leaves" as ActiveTab,
+      label: "Leave Management",
+      icon: Calendar,
+      roles: ["it", "employee", "manager"],
+    },
     {
       id: "site_duties" as ActiveTab,
       label: "Site Duties",

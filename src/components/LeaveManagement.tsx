@@ -1,7 +1,12 @@
 import React, { useState, useEffect } from "react";
-import type { AppUser, LeaveApplication, LeaveCategory, LeaveStatus } from "../types";
+import type {
+  AppUser,
+  LeaveApplication,
+  LeaveCategory,
+  LeaveStatus,
+} from "../types";
 import { formatEmployeeCode } from "../utils";
-import { Calendar, CheckCircle, Clock, XCircle, Plus } from "lucide-react";
+import { Calendar, CheckCircle, Clock, XCircle, Plus, X } from "lucide-react";
 
 interface LeaveManagementProps {
   currentUser: AppUser;
@@ -21,7 +26,10 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({
   const [endDate, setEndDate] = useState("");
   const [reason, setReason] = useState("");
 
-  const isAdminOrManager = currentUser.role === "it" || currentUser.role === "manager";
+  const todayStr = new Date().toISOString().split("T")[0];
+
+  const isAdminOrManager =
+    currentUser.role === "it" || currentUser.role === "manager";
 
   const fetchLeaves = async () => {
     try {
@@ -47,6 +55,16 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({
     e.preventDefault();
     if (!category || !startDate || !endDate || !reason) {
       alert("All fields are required.");
+      return;
+    }
+
+    if (startDate < todayStr) {
+      alert("Start date cannot be earlier than today.");
+      return;
+    }
+
+    if (new Date(endDate) < new Date(startDate)) {
+      alert("End date cannot be earlier than start date.");
       return;
     }
 
@@ -78,7 +96,12 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({
   };
 
   const handleUpdateStatus = async (id: string, status: LeaveStatus) => {
-    if (!window.confirm(`Are you sure you want to mark this request as ${status}?`)) return;
+    if (
+      !window.confirm(
+        `Are you sure you want to mark this request as ${status}?`,
+      )
+    )
+      return;
 
     try {
       const res = await fetch(`/api/leaves/${id}/status`, {
@@ -123,19 +146,6 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({
         );
     }
   };
-
-  if (currentUser.role === "employee") {
-    return (
-      <div className="panel" style={{ padding: "30px", textAlign: "center" }}>
-        <h2 className="panel-title" style={{ justifyContent: "center", marginBottom: "16px", fontSize: "1.4rem" }}>
-          Leave Management
-        </h2>
-        <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem" }}>
-          Leave application and management features are currently disabled for employee accounts.
-        </p>
-      </div>
-    );
-  }
 
   return (
     <div>
@@ -222,7 +232,10 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({
                           >
                             <button
                               className="btn btn-primary"
-                              style={{ padding: "4px 8px", fontSize: "0.75rem" }}
+                              style={{
+                                padding: "4px 8px",
+                                fontSize: "0.75rem",
+                              }}
                               onClick={() =>
                                 handleUpdateStatus(leave.id, "approved")
                               }
@@ -231,7 +244,10 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({
                             </button>
                             <button
                               className="btn btn-danger"
-                              style={{ padding: "4px 8px", fontSize: "0.75rem" }}
+                              style={{
+                                padding: "4px 8px",
+                                fontSize: "0.75rem",
+                              }}
                               onClick={() =>
                                 handleUpdateStatus(leave.id, "rejected")
                               }
@@ -271,78 +287,89 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({
 
       {/* Apply Leave Modal */}
       {showApplyModal && (
-        <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: "500px" }}>
-            <div className="modal-header">
-              <h2>Apply for Leave</h2>
+        <div className="modal-overlay" onClick={() => setShowApplyModal(false)}>
+          <div className="modal-content" style={{ maxWidth: "500px" }} onClick={(e) => e.stopPropagation()}>
+            <div className="panel-header" style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-color)', margin: 0 }}>
+              <h2 className="panel-title" style={{ fontSize: '1.15rem' }}>Apply for Leave</h2>
               <button
                 className="btn btn-secondary"
-                style={{ padding: "4px 8px" }}
+                style={{ width: '32px', height: '32px', padding: 0, borderRadius: '50%' }}
                 onClick={() => setShowApplyModal(false)}
               >
-                Close
+                <X size={16} />
               </button>
             </div>
             <form onSubmit={handleApply}>
-              <div className="form-group">
-                <label className="form-label">Leave Category</label>
-                <select
-                  className="form-input"
-                  style={{ backgroundColor: "var(--bg-primary)" }}
-                  value={category}
-                  onChange={(e) =>
-                    setCategory(e.target.value as LeaveCategory)
-                  }
-                  required
+              <div style={{ padding: '24px' }}>
+                <div className="form-group">
+                  <label className="form-label">Leave Category</label>
+                  <select
+                    className="form-input"
+                    style={{ backgroundColor: "var(--bg-primary)" }}
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value as LeaveCategory)}
+                    required
+                  >
+                    <option value="casual">Casual Leave</option>
+                    <option value="annual">Annual Leave</option>
+                    <option value="medical">Medical Leave</option>
+                  </select>
+                </div>
+
+                <div style={{ display: "flex", gap: "16px" }}>
+                  <div className="form-group" style={{ flex: 1 }}>
+                    <label className="form-label">Start Date</label>
+                    <input
+                      type="date"
+                      className="form-input"
+                      value={startDate}
+                      min={todayStr}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="form-group" style={{ flex: 1 }}>
+                    <label className="form-label">End Date</label>
+                    <input
+                      type="date"
+                      className="form-input"
+                      value={endDate}
+                      min={startDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">Reason</label>
+                  <textarea
+                    className="form-input"
+                    rows={3}
+                    style={{ minHeight: '100px', resize: 'vertical' }}
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                    placeholder="Please provide a brief reason for your leave..."
+                    required
+                  />
+                </div>
+              </div>
+
+              <div style={{ padding: '16px 24px', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setShowApplyModal(false)}
                 >
-                  <option value="casual">Casual Leave</option>
-                  <option value="annual">Annual Leave</option>
-                  <option value="medical">Medical Leave</option>
-                </select>
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                >
+                  Submit Application
+                </button>
               </div>
-
-              <div style={{ display: "flex", gap: "16px" }}>
-                <div className="form-group" style={{ flex: 1 }}>
-                  <label className="form-label">Start Date</label>
-                  <input
-                    type="date"
-                    className="form-input"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="form-group" style={{ flex: 1 }}>
-                  <label className="form-label">End Date</label>
-                  <input
-                    type="date"
-                    className="form-input"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Reason</label>
-                <textarea
-                  className="form-input"
-                  rows={3}
-                  value={reason}
-                  onChange={(e) => setReason(e.target.value)}
-                  placeholder="Please provide a brief reason for your leave..."
-                  required
-                />
-              </div>
-
-              <button
-                type="submit"
-                className="btn btn-primary"
-                style={{ width: "100%", marginTop: "10px" }}
-              >
-                Submit Application
-              </button>
             </form>
           </div>
         </div>
