@@ -1440,6 +1440,27 @@ app.post(
 
     try {
       const db = getDb();
+
+      // Check for overlapping approved site duties
+      const existingDuty = await db.get(
+        "SELECT id FROM site_duty_applications WHERE userId = ? AND status = 'approved' AND startDate <= ? AND endDate >= ?",
+        [req.user?.id, endDate, startDate]
+      );
+      if (existingDuty) {
+        res.status(400).json({ error: "Cannot apply for leave on a date with an approved site duty." });
+        return;
+      }
+
+      // Check for overlapping approved leaves (self check)
+      const existingLeave = await db.get(
+        "SELECT id FROM leave_applications WHERE userId = ? AND status = 'approved' AND startDate <= ? AND endDate >= ?",
+        [req.user?.id, endDate, startDate]
+      );
+      if (existingLeave) {
+        res.status(400).json({ error: "Cannot apply for leave on a date with an already approved leave." });
+        return;
+      }
+
       const leaveId = `leave-${Date.now()}`;
       const timestamp = new Date().toISOString();
 
@@ -1603,6 +1624,27 @@ app.post(
 
     try {
       const db = getDb();
+
+      // Check for overlapping approved leaves
+      const existingLeave = await db.get(
+        "SELECT id FROM leave_applications WHERE userId = ? AND status = 'approved' AND startDate <= ? AND endDate >= ?",
+        [req.user?.id, endDate, startDate]
+      );
+      if (existingLeave) {
+        res.status(400).json({ error: "Cannot apply for site duty on a date with an approved leave." });
+        return;
+      }
+
+      // Check for overlapping approved site duties (self check)
+      const existingDuty = await db.get(
+        "SELECT id FROM site_duty_applications WHERE userId = ? AND status = 'approved' AND startDate <= ? AND endDate >= ?",
+        [req.user?.id, endDate, startDate]
+      );
+      if (existingDuty) {
+        res.status(400).json({ error: "Cannot apply for site duty on a date with an already approved site duty." });
+        return;
+      }
+
       const id = `sd-${Date.now()}`;
       const timestamp = new Date().toISOString();
 
