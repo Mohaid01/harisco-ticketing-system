@@ -791,6 +791,45 @@ export const Attendance: React.FC<AttendanceProps> = ({
     }
   };
 
+  const handleMarkDayStatus = async (date: string, status: "Site Duty" | "On Leave") => {
+    if (currentUser.role !== "manager") return;
+
+    if (!window.confirm(`Are you sure you want to mark ${date} as ${status}?`)) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("harisco_token");
+      
+      const isSaturday = new Date(date).getDay() === 6;
+      const checkInTime = isSaturday ? "10:00" : "09:30";
+      const checkOutTime = isSaturday ? "16:00" : "18:00";
+
+      // Insert check-in punch
+      const resIn = await fetch("/api/attendance/manual", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ userId: selectedEmployee?.id, date, time: checkInTime, status }),
+      });
+
+      // Insert check-out punch
+      const resOut = await fetch("/api/attendance/manual", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ userId: selectedEmployee?.id, date, time: checkOutTime, status }),
+      });
+
+      if (resIn.ok && resOut.ok) {
+        fetchLogs(true);
+      } else {
+        alert("Failed to mark day completely.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error marking day status.");
+    }
+  };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
       {/* Header Panel */}
@@ -1760,6 +1799,32 @@ export const Attendance: React.FC<AttendanceProps> = ({
                               color: "var(--text-secondary)",
                             }}
                           >
+                            {log.firstIn === "--" && log.lastOut === "--" && isPastOrToday && currentUser.role === "manager" && (
+                              <div style={{ display: 'flex', gap: '4px', marginBottom: '4px' }}>
+                                <button
+                                  className="btn btn-secondary"
+                                  style={{ padding: '2px 4px', fontSize: '0.6rem', flex: 1, backgroundColor: 'var(--bg-primary)' }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleMarkDayStatus(log.date, "Site Duty");
+                                  }}
+                                  title="Mark Site Duty"
+                                >
+                                  Site Duty
+                                </button>
+                                <button
+                                  className="btn btn-secondary"
+                                  style={{ padding: '2px 4px', fontSize: '0.6rem', flex: 1, backgroundColor: 'var(--bg-primary)' }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleMarkDayStatus(log.date, "On Leave");
+                                  }}
+                                  title="Mark On Leave"
+                                >
+                                  Leave
+                                </button>
+                              </div>
+                            )}
                             <div
                               style={{
                                 display: "flex",
