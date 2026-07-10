@@ -239,7 +239,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
       const todayPunches = userLogs.filter(
         (log) => parseLogDate(log) === todayStr,
       );
-      let todayStatus: "Clocked In" | "Clocked Out" | "Absent" | "On Leave" =
+      let todayStatus: "Clocked In" | "Clocked Out" | "Absent" | "On Leave" | "Site Duty" =
         "Absent";
       let isLateToday = false;
 
@@ -269,7 +269,9 @@ export const Attendance: React.FC<AttendanceProps> = ({
         const lastPunch = sortedPunches[sortedPunches.length - 1];
         const lastStatus = (lastPunch.status || "").toLowerCase().replace(/[^a-z]/g, "");
         
-        if (lastStatus.includes("in")) {
+        if (lastPunch.status === "Site Duty") {
+          todayStatus = "Site Duty";
+        } else if (lastStatus.includes("in")) {
           todayStatus = "Clocked In";
         } else if (lastStatus.includes("out")) {
           todayStatus = "Clocked Out";
@@ -378,7 +380,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
       if (filterTodayStatus === "Late Arrival") {
         matchesTodayStatus = emp.isLateToday;
       } else if (filterTodayStatus === "Present") {
-        matchesTodayStatus = emp.todayStatus === "Clocked In" || emp.todayStatus === "Clocked Out";
+        matchesTodayStatus = emp.todayStatus === "Clocked In" || emp.todayStatus === "Clocked Out" || emp.todayStatus === "Site Duty";
       } else if (filterTodayStatus !== "All") {
         matchesTodayStatus = emp.todayStatus === filterTodayStatus;
       }
@@ -406,7 +408,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
 
     for (const emp of employeeSummaries) {
       const isPresent =
-        emp.todayStatus === "Clocked In" || emp.todayStatus === "Clocked Out";
+        emp.todayStatus === "Clocked In" || emp.todayStatus === "Clocked Out" || emp.todayStatus === "Site Duty";
       if (isPresent) {
         present++;
         const formattedCode = emp.formattedCode;
@@ -511,7 +513,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
         const lastOutTime = last ? parseLogPKT(last).time : "--";
 
         let hours = 0;
-        let status: "Present" | "Late Arrival" = "Present";
+        let status: "Present" | "Late Arrival" | "Site Duty" = "Present";
 
         // Dynamic hours calculation based on exact punch times
         const firstStr = parseLogPKT(first).timestamp;
@@ -557,6 +559,15 @@ export const Attendance: React.FC<AttendanceProps> = ({
             }
           }
         }
+        
+        let finalFirstIn = firstInTime;
+        let finalLastOut = lastOutTime;
+
+        if (first.status === "Site Duty") {
+          status = "Site Duty";
+          finalFirstIn = "N/A";
+          finalLastOut = "N/A";
+        }
 
         const checkOutPunch = sorted.find(
           (p) => p.status === PUNCH_STATUS.CHECK_OUT,
@@ -564,8 +575,8 @@ export const Attendance: React.FC<AttendanceProps> = ({
 
         list.push({
           date: dateStr,
-          firstIn: firstInTime,
-          lastOut: lastOutTime,
+          firstIn: finalFirstIn,
+          lastOut: finalLastOut,
           lastOutId: checkOutPunch ? checkOutPunch.id : undefined,
           hours: Math.round(hours * 100) / 100,
           status,
@@ -662,6 +673,12 @@ export const Attendance: React.FC<AttendanceProps> = ({
             <Calendar size={12} /> On Leave
           </span>
         );
+      case "Site Duty":
+        return (
+          <span className="badge badge-handover">
+            <Calendar size={12} /> Site Duty
+          </span>
+        );
       default:
         return (
           <span className="badge badge-it-app">
@@ -681,6 +698,8 @@ export const Attendance: React.FC<AttendanceProps> = ({
         return <span className="badge badge-m-app">Half Day</span>;
       case "On Leave":
         return <span className="badge badge-handover">On Leave</span>;
+      case "Site Duty":
+        return <span className="badge badge-handover">Site Duty</span>;
       case "Weekend":
         return <span className="badge badge-type">Weekend</span>;
       case "No Data":

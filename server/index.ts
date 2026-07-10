@@ -1511,6 +1511,172 @@ app.put(
   },
 );
 
+// --------------------- SITE DUTIES ROUTES ---------------------
+
+app.get(
+  "/api/site-duties",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    const userId = req.user?.id;
+    const userRole = req.user?.role;
+
+    try {
+      const db = getDb();
+      let query = "SELECT * FROM site_duty_applications ORDER BY appliedAt DESC";
+      const params: any[] = [];
+
+      if (userRole === "employee") {
+        query =
+          "SELECT * FROM site_duty_applications WHERE userId = ? ORDER BY appliedAt DESC";
+        params.push(userId);
+      }
+
+      const duties = await db.all(query, params);
+      res.json(duties);
+    } catch (error) {
+      console.error("Failed to fetch site duties:", error);
+      res.status(500).json({ error: "Failed to retrieve site duty applications." });
+    }
+  },
+);
+
+app.post(
+  "/api/site-duties",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    const { siteName, reason, startDate, endDate } = req.body;
+    if (!siteName || !reason || !startDate || !endDate) {
+      res.status(400).json({ error: "All fields are required." });
+      return;
+    }
+
+    try {
+      const db = getDb();
+      const id = `sd-${Date.now()}`;
+      const timestamp = new Date().toISOString();
+
+      await db.run(
+        `INSERT INTO site_duty_applications (
+          id, userId, userName, siteName, reason, startDate, endDate, status, appliedAt
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          id,
+          req.user?.id,
+          req.user?.name,
+          siteName,
+          reason,
+          startDate,
+          endDate,
+          "pending",
+          timestamp,
+        ],
+      );
+
+      res.status(201).json({ success: true, id });
+    } catch (error) {
+      console.error("Failed to submit site duty:", error);
+      res.status(500).json({ error: "Failed to submit site duty application." });
+    }
+  },
+);
+
+app.put(
+  "/api/site-duties/:id/status",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    if (req.user?.role === "employee") {
+      res
+        .status(403)
+        .json({
+          error: "Forbidden. Only managers or IT can update site duty status.",
+        });
+      return;
+    }
+
+    const { status } = req.body;
+    if (!status || !["approved", "rejected"].includes(status)) {
+      res
+        .status(400)
+        .json({ error: "Valid status (approved/rejected) is required." });
+      return;
+    }
+
+    try {
+      const db = getDb();
+      const sdId = req.params.id;
+
+      const duty = await db.get("SELECT * FROM site_duty_applications WHERE id = ?", [sdId]);
+      if (!duty) {
+        res.status(404).json({ error: "Site duty application not found." });
+        return;
+      }
+
+      await db.run(
+        "UPDATE site_duty_applications SET status = ? WHERE id = ?",
+        [status, sdId],
+      );
+
+      // Handle attendance logic if approved
+      if (status === "approved") {
+        const start = new Date(duty.startDate);
+        const end = new Date(duty.endDate);
+        
+        // Iterate through each day
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+          const dayOfWeek = d.getDay();
+          // Skip Sundays
+          if (dayOfWeek === 0) continue;
+
+          let checkInTime = "09:30:00";
+          let checkOutTime = "18:00:00";
+
+          // Saturday
+          if (dayOfWeek === 6) {
+            checkInTime = "10:00:00";
+            checkOutTime = "16:00:00";
+          }
+
+          const year = d.getFullYear();
+          const month = String(d.getMonth() + 1).padStart(2, "0");
+          const day = String(d.getDate()).padStart(2, "0");
+          
+          const getUtcTimestamp = (y: string, m: string, d: string, timeStr: string) => {
+            const pktDateStr = `${y}-${m}-${d}T${timeStr}+05:00`;
+            const pktDate = new Date(pktDateStr);
+            const uYear = pktDate.getUTCFullYear();
+            const uMonth = String(pktDate.getUTCMonth() + 1).padStart(2, "0");
+            const uDay = String(pktDate.getUTCDate()).padStart(2, "0");
+            const uHours = String(pktDate.getUTCHours()).padStart(2, "0");
+            const uMinutes = String(pktDate.getUTCMinutes()).padStart(2, "0");
+            const uSeconds = String(pktDate.getUTCSeconds()).padStart(2, "0");
+            return `${uYear}-${uMonth}-${uDay} ${uHours}:${uMinutes}:${uSeconds}`;
+          };
+          
+          const checkInTimestamp = getUtcTimestamp(String(year), month, day, checkInTime);
+          const checkOutTimestamp = getUtcTimestamp(String(year), month, day, checkOutTime);
+
+          // Insert check-in
+          await db.run(
+            "INSERT INTO attendance_logs (name, userId, ioTime, method, status, timestamp) VALUES (?, ?, ?, ?, ?, ?)",
+            [duty.userName, duty.userId, checkInTimestamp, "System", "Site Duty", checkInTimestamp]
+          );
+
+          // Insert check-out
+          await db.run(
+            "INSERT INTO attendance_logs (name, userId, ioTime, method, status, timestamp) VALUES (?, ?, ?, ?, ?, ?)",
+            [duty.userName, duty.userId, checkOutTimestamp, "System", "Site Duty", checkOutTimestamp]
+          );
+        }
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Failed to update site duty status:", error);
+      res.status(500).json({ error: "Failed to update site duty status." });
+    }
+  },
+);
+
 // Start Database and Server
 // Serve static frontend files in production
 app.use(express.static(path.join(__dirname, "../dist")));

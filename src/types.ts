@@ -55,7 +55,7 @@ export interface Ticket {
   }[];
 }
 
-export type ActiveTab = 'dashboard' | 'tickets' | 'users' | 'activity_log' | 'attendance' | 'leaves';
+export type ActiveTab = 'dashboard' | 'tickets' | 'users' | 'activity_log' | 'attendance' | 'leaves' | 'site_duties';
 
 export interface AttendanceLog {
   id: number;
@@ -82,3 +82,14 @@ export interface LeaveApplication {
   appliedAt: string;
 }
 
+export interface SiteDutyApplication {
+  id: string;
+  userId: string;
+  userName: string;
+  siteName: string;
+  reason: string;
+  startDate: string;
+  endDate: string;
+  status: LeaveStatus; // Reusing LeaveStatus as it has pending, approved, rejected
+  appliedAt: string;
+}

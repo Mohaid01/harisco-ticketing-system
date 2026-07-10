@@ -8,6 +8,7 @@ import { UserManagement } from "./components/UserManagement";
 import { ActivityLog } from "./components/ActivityLog";
 import { Attendance } from "./components/Attendance";
 import { LeaveManagement } from "./components/LeaveManagement";
+import { SiteDutyManagement } from "./components/SiteDutyManagement";
 import { Login } from "./components/Login";
 import { PasswordReset } from "./components/PasswordReset";
 import { ChangePasswordModal } from "./components/ChangePasswordModal";
@@ -652,6 +653,8 @@ function App() {
             <Attendance currentUser={currentUser} allUsers={users} />
           ) : activeTab === "leaves" ? (
             <LeaveManagement currentUser={currentUser} token={token!} />
+          ) : activeTab === "site_duties" ? (
+            <SiteDutyManagement currentUser={currentUser} token={token!} />
           ) : (
             <ActivityLog
               tickets={tickets}

@@ -168,6 +168,22 @@ export async function initDb() {
     )
   `);
 
+  // Create Site Duty Applications Table
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS site_duty_applications (
+      id TEXT PRIMARY KEY,
+      userId TEXT NOT NULL,
+      userName TEXT NOT NULL,
+      siteName TEXT NOT NULL,
+      reason TEXT NOT NULL,
+      startDate TEXT NOT NULL,
+      endDate TEXT NOT NULL,
+      status TEXT CHECK(status IN ('pending', 'approved', 'rejected')) NOT NULL,
+      appliedAt TEXT NOT NULL,
+      FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+
   // Seed initial admin user if table is empty
   const userCount = await db.get<{ count: number }>('SELECT COUNT(*) as count FROM users');
   if (userCount && userCount.count === 0) {
