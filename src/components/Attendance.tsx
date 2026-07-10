@@ -223,7 +223,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
       timeZone: "Asia/Karachi",
     }).format(new Date());
 
-    return allUsers.map((user) => {
+    return allUsers.filter(user => user.department !== "Executive").map((user) => {
       const uId = user.id;
       const formattedCode = formatEmployeeCode(user.username || user.id);
 

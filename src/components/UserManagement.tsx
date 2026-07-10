@@ -264,14 +264,22 @@ export const UserManagement: React.FC<UserManagementProps> = ({
               <label htmlFor="user-department-input" className="form-label">
                 Department (Optional)
               </label>
-              <input
+              <select
                 id="user-department-input"
-                type="text"
                 className="form-input"
-                placeholder="e.g. Operations"
+                style={{ backgroundColor: "var(--bg-primary)" }}
                 value={department}
                 onChange={(e) => setDepartment(e.target.value)}
-              />
+              >
+                <option value="">-- Select Department --</option>
+                <option value="Executive">Executive</option>
+                <option value="IT">IT</option>
+                <option value="Accounts">Accounts</option>
+                <option value="Admin">Admin</option>
+                <option value="Staff">Staff</option>
+                <option value="Civil">Civil</option>
+                <option value="Telecom">Telecom</option>
+              </select>
             </div>
 
             <div className="form-group">
@@ -494,14 +502,21 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                       >
                         <Building2 size={12} /> Department
                       </label>
-                      <input
-                        type="text"
+                      <select
                         className="form-input"
-                        style={inlineInputStyle}
+                        style={{ ...inlineInputStyle, backgroundColor: "var(--bg-primary)" }}
                         value={editDepartment}
                         onChange={(e) => setEditDepartment(e.target.value)}
-                        placeholder="e.g. Operations"
-                      />
+                      >
+                        <option value="">-- Select Department --</option>
+                        <option value="Executive">Executive</option>
+                        <option value="IT">IT</option>
+                        <option value="Accounts">Accounts</option>
+                        <option value="Admin">Admin</option>
+                        <option value="Staff">Staff</option>
+                        <option value="Civil">Civil</option>
+                        <option value="Telecom">Telecom</option>
+                      </select>
                     </div>
                     <div
                       className="form-group"
