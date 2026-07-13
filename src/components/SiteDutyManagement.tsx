@@ -15,8 +15,6 @@ export const SiteDutyManagement: React.FC<SiteDutyManagementProps> = ({
   const [duties, setDuties] = useState<SiteDutyApplication[]>([]);
   const [loading, setLoading] = useState(true);
 
-  console.log(duties);
-
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [siteName, setSiteName] = useState("");
   const [startDate, setStartDate] = useState("");
