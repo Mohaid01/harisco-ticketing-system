@@ -403,7 +403,7 @@ h1.page-title {
 /* Two columns panel grids */
 .dashboard-two-col {
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 24px;
   align-items: start;
 }
@@ -708,6 +708,20 @@ h1.page-title {
 .btn-success:hover {
   background-color: #10b981;
   color: white;
+}
+
+.btn-group {
+  display: flex;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 2px;
+}
+
+.btn-selector-grp {
+  display: flex;
+  flex-direction: column;
+  gap: "24px";
 }
 
 /* Modals overlays */
@@ -1072,18 +1086,110 @@ h1.page-title {
 
 @media screen and (max-width: 768px) {
   /* Reset layout lockouts on smaller device viewports */
+  /* 1. Global Document Space Constraints */
   body {
-    overflow: auto;
+    overflow-x: hidden; /* Prevents unwanted horizontal layout jitter */
+    overflow-y: auto;
     height: auto;
   }
 
-  #root,
-  .app-container {
+  #root {
+    display: flex;
     flex-direction: column;
     height: auto;
     min-height: 100vh;
-    overflow: auto;
     width: 100vw;
+  }
+
+  /* 2. Automated Smart Padding Wrapper Offset */
+  .app-container {
+    display: flex;
+    flex-direction: column;
+    width: 100vw;
+    height: auto;
+    min-height: 100vh;
+    overflow: auto;
+
+    /* Generate protective buffers matching the exact height metrics of your navigation layers */
+    padding-top: 95px; /* 60px Header + 50px Scrollable Tab Menu Bar */
+    padding-bottom: 80px; /* 60px Fixed Profile Navigation Footer */
+
+    /* Ensure padding is counted inside the 100vh viewport calculation */
+    box-sizing: border-box;
+  }
+
+  h1.page-title {
+    font-size: 1.25rem; /* Scales down from 1.6rem for mobile viewports */
+    font-weight: 700;
+    line-height: 1.3; /* Tightens text tracking for shorter multi-line blocks */
+    color: white;
+    margin-bottom: 2px; /* Pulls the subtitle or section details slightly closer */
+  }
+
+  .page-subtitle {
+    font-size: 0.8rem; /* Scales down from 0.88rem to maintain typography hierarchy */
+    line-height: 1.4; /* Adds slight breathing room for multi-line description text */
+    margin-bottom: 14px; /* Drops down from 24px to pull content up into view quicker */
+  }
+
+  .btn {
+    padding: 8px 14px; /* Reduces padding slightly from 10px 18px to save screen real estate */
+    font-size: 0.82rem; /* Scales font down from 0.88rem to look crisp on small screens */
+    gap: 6px; /* Tightens the spacing between icons and text */
+    min-height: 40px; /* Ensures buttons remain easily clickable for fingers */
+    box-sizing: border-box; /* Guarantees sizing dimensions calculate predictably */
+  }
+
+  /* Disable hover background color flashes on mobile to prevent sticky touch states */
+  @media (hover: none) {
+    .btn-primary:hover {
+      background-color: var(
+        --color-primary
+      ); /* Keeps color solid instead of locking into a hover state on tap */
+    }
+
+    /* Optional active state: provides instant visual feedback when a user presses down */
+    .btn-primary:active {
+      background-color: var(--color-primary-hover);
+    }
+  }
+
+  .btn-group {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap; /* Allows buttons to wrap to a new line instead of overflowing */
+    gap: 6px; /* Adds consistent breathing room horizontally and vertically */
+    background: transparent; /* Removes background to avoid weird shapes when wrapping */
+    border: none; /* Removes parent border since items are no longer an inline block */
+    padding: 0;
+    width: 100%;
+  }
+
+  .btn-group .btn {
+    /* Let buttons grow based on their text content, but shrink evenly if needed */
+    flex: 1 0 auto;
+    width: auto !important; /* Overrides any full-width desktop layout definitions */
+    white-space: nowrap; /* Keeps long text clean and on a single line */
+    padding: 8px 16px; /* Comfortable touch spacing for variable text sizes */
+    border: 1px solid var(--border-color); /* Move border to individual items for a clean card look */
+    border-radius: var(--radius-md);
+  }
+
+  /* UX Polish: If there are exactly 3 buttons, make the last button span across both columns */
+  .btn-group .btn:nth-child(3):last-child {
+    grid-column: span 2;
+  }
+
+  .btn-selector-grp {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    align-items: center;
+  }
+
+  .btn-selector-grp .btn {
+    width: 100%;
   }
 
   .table-wrapper {
@@ -1109,23 +1215,37 @@ h1.page-title {
     height: auto;
     border-right: none;
     border-bottom: 1px solid var(--border-color);
+
+    /* Pin the top portion (Header + Nav) firmly to the top of the screen */
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
   }
 
   .sidebar-header {
     padding: 16px;
+    display: flex;
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
+    border-bottom: 1px solid var(--border-color);
+    width: 100%;
   }
 
   /* Dynamic scroll layout for navigation items on mobile devices */
   .sidebar-menu {
+    display: flex;
     flex-direction: row;
     padding: 10px 16px;
     overflow-x: auto;
     overflow-y: hidden;
     gap: 8px;
     -webkit-overflow-scrolling: touch;
+    width: 100%;
+    border-bottom: 1px solid var(--border-color);
   }
 
   .sidebar-item {
@@ -1133,6 +1253,9 @@ h1.page-title {
     white-space: nowrap;
     font-size: 0.88rem;
     width: auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
   }
 
   .sidebar-item.active {
@@ -1140,8 +1263,53 @@ h1.page-title {
     border-bottom: 3px solid var(--color-primary);
   }
 
+  /* 3. Redesigned Profile Bar Pinned firmly to the Screen Bottom */
   .sidebar-footer {
-    display: none;
+    display: flex !important;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    z-index: 1000;
+    flex-direction: row !important; /* Force row layout over the inline-style column rule */
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px !important; /* Match inline profile gap metric constraints */
+    padding: 12px 16px;
+    width: 100%;
+    border-top: 1px solid var(--border-color);
+    background-color: rgba(0, 0, 0, 0.75);
+  }
+
+  /* Target the first interior profile details wrapper child */
+  .sidebar-footer > div:first-child {
+    flex: 1;
+    min-width: 0; /* Safeguards profile layout wrapping logic */
+  }
+
+  /* 4. Action Buttons converted to clean, uncluttered icon circles */
+  .sidebar-footer .btn {
+    width: 36px !important; /* Locks perfect square boundaries */
+    height: 36px !important;
+    padding: 0 !important; /* Flushes out text-padding offsets */
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50% !important; /* Forces a perfect circle shape */
+    flex-shrink: 0;
+
+    /* Elegant Hack: Shrink font size to zero to hide raw un-wrapped text nodes */
+    font-size: 0 !important;
+    color: transparent !important;
+    gap: 0 !important; /* Removes icon-to-text separation gaps */
+  }
+
+  /* Make sure the existing Lucide SVG icon remains fully visible and scalable */
+  .sidebar-footer .btn svg {
+    display: block !important;
+    margin: 0 !important;
+    width: 16px !important;
+    height: 16px !important;
+    color: white !important; /* Keeps your icon color fully visible */
   }
 
   /* Layout body adaptations */
@@ -1214,5 +1382,22 @@ h1.page-title {
   .login-card {
     max-width: 90vw;
     padding: 24px;
+  }
+
+  /* Prevent flex-box from squishing the employee avatar image */
+  .panel img[alt*="Logo"], /* Safely bypasses any header logos if needed */
+  .panel div[style*="width: 72px"], 
+  .panel img[style*="width: 72px"] {
+    flex-shrink: 0 !important; /* Forces the item to never shrink below 72px */
+    aspect-ratio: 1 / 1 !important; /* Locks a perfect square/circle ratio */
+  }
+
+  /* Optional UX Polish: Center the status badge elements on small phone screens */
+  .panel div[style*="align-items: flex-end"] {
+    @media (max-width: 480px) {
+      align-items: flex-start !important; /* Aligns badges cleanly on the left when wrapped */
+      width: 100%;
+      margin-top: 8px;
+    }
   }
 }
