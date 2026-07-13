@@ -19,6 +19,9 @@ import {
   ArrowLeft,
   ChevronRight,
   Trash2,
+  CalendarOff,
+  X,
+  Plus,
 } from "lucide-react";
 
 interface AttendanceProps {
@@ -97,6 +100,12 @@ export const Attendance: React.FC<AttendanceProps> = ({
   const [filterShift, setFilterShift] = useState<string>("All");
   const [filterTodayStatus, setFilterTodayStatus] = useState<string>("All");
 
+  // Holidays
+  const [holidays, setHolidays] = useState<{ date: string; name: string }[]>([]);
+  const [showHolidayModal, setShowHolidayModal] = useState(false);
+  const [holidayDate, setHolidayDate] = useState("");
+  const [holidayName, setHolidayName] = useState("");
+
   // Fetch Attendance Logs from Biometric API
   const fetchLogs = async (isSilent = false) => {
     if (!isSilent) setLoading(true);
@@ -116,6 +125,44 @@ export const Attendance: React.FC<AttendanceProps> = ({
       setLoading(false);
       setRefreshing(false);
     }
+  };
+
+  const fetchHolidays = async () => {
+    try {
+      const token = localStorage.getItem("harisco_token");
+      const res = await fetch("/api/holidays", { headers: { Authorization: `Bearer ${token}` } });
+      if (res.ok) setHolidays(await res.json());
+    } catch (err) {
+      console.error("Failed to fetch holidays:", err);
+    }
+  };
+
+  const handleAddHoliday = async () => {
+    if (!holidayDate || !holidayName.trim()) {
+      alert("Please provide both a date and a name.");
+      return;
+    }
+    const token = localStorage.getItem("harisco_token");
+    const res = await fetch("/api/holidays", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ date: holidayDate, name: holidayName.trim() }),
+    });
+    if (res.ok) {
+      setHolidayDate("");
+      setHolidayName("");
+      fetchHolidays();
+    } else {
+      const d = await res.json();
+      alert(d.error || "Failed to add holiday.");
+    }
+  };
+
+  const handleDeleteHoliday = async (date: string) => {
+    if (!window.confirm(`Remove holiday on ${date}?`)) return;
+    const token = localStorage.getItem("harisco_token");
+    await fetch(`/api/holidays/${date}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+    fetchHolidays();
   };
 
   const handleClearAttendance = async () => {
@@ -172,6 +219,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
 
   useEffect(() => {
     fetchLogs();
+    fetchHolidays();
 
     const token = localStorage.getItem("harisco_token");
     if (!token) return;
@@ -523,17 +571,19 @@ export const Attendance: React.FC<AttendanceProps> = ({
       const dateStr = `${sYear}-${String(sMonth).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
       const isWeekend = tempDate.getUTCDay() === 0; // Only Sunday is off
 
+      const isHoliday = holidays.find((h) => h.date === dateStr);
+
       const dayPunches = userLogs.filter(
         (log) => parseLogDate(log) === dateStr,
       );
 
-      if (isWeekend) {
+      if (isWeekend || isHoliday) {
         list.push({
           date: dateStr,
           firstIn: "--",
           lastOut: "--",
           hours: 0,
-          status: "Weekend" as const,
+          status: (isHoliday ? "Holiday" : "Weekend") as any,
         });
       } else if (dayPunches.length > 0) {
         const sorted = [...dayPunches].sort((a, b) => {
@@ -665,7 +715,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
     selectedEmployeePunchLogs.forEach((log) => {
       if (log.date > todayStr) return;
 
-      if (log.status !== "Weekend") {
+      if (log.status !== "Weekend" && log.status !== "Holiday") {
         // Only include today in the total count if the shift has started or the employee already has a punch
         if (log.date === todayStr && !shiftStarted && log.firstIn === "--") return;
         workDaysCounted++;
@@ -755,6 +805,8 @@ export const Attendance: React.FC<AttendanceProps> = ({
         return <span className="badge badge-handover">Site Duty</span>;
       case "Weekend":
         return <span className="badge badge-type">Weekend</span>;
+      case "Holiday":
+        return <span className="badge badge-type" style={{ borderColor: "var(--color-primary)", color: "var(--color-primary)" }}>Holiday</span>;
       case "No Data":
         return (
           <span
@@ -788,6 +840,12 @@ export const Attendance: React.FC<AttendanceProps> = ({
     type: "Check-In" | "Check-Out",
   ) => {
     if (!isAdminRole) return;
+
+    const dateHoliday = holidays.find(h => h.date === date);
+    if (dateHoliday) {
+      alert(`Cannot add manual punch on a gazetted holiday (${dateHoliday.name}).`);
+      return;
+    }
 
     const time = window.prompt(
       `Enter time for manual ${type} on ${date} (24-hour format HH:MM):`,
@@ -927,6 +985,16 @@ export const Attendance: React.FC<AttendanceProps> = ({
               </button>
             </div>
           )}
+          {isAdminRole && (
+            <button
+              className="btn btn-secondary"
+              style={{ display: "flex", alignItems: "center", gap: "8px", padding: "8px 14px" }}
+              onClick={() => setShowHolidayModal(true)}
+            >
+              <CalendarOff size={14} />
+              Holidays
+            </button>
+          )}
           <button
             className="btn btn-secondary"
             style={{
@@ -978,7 +1046,12 @@ export const Attendance: React.FC<AttendanceProps> = ({
       ) : (
         <>
           {/* ─────────────────── ALL EMPLOYEES SUMMARY VIEW ─────────────────── */}
-          {viewMode === "summary" && isAdminRole && isTodaySundayPKT() ? (
+          {(() => {
+            const todayDateStr = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Karachi", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+            const todayHoliday = holidays.find((h) => h.date === todayDateStr);
+            if (viewMode === "summary" && isAdminRole && (isTodaySundayPKT() || todayHoliday)) {
+              const isSunday = isTodaySundayPKT();
+              return (
             <div
               style={{
                 display: "flex",
@@ -1003,7 +1076,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
                   fontSize: "2rem",
                 }}
               >
-                🌿
+                🏖️
               </div>
               <h2
                 style={{
@@ -1013,7 +1086,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
                   margin: 0,
                 }}
               >
-                It&apos;s the Weekend!
+                {isSunday ? "It's the Weekend!" : `Gazetted Holiday — ${todayHoliday?.name}`}
               </h2>
               <p
                 style={{
@@ -1024,10 +1097,16 @@ export const Attendance: React.FC<AttendanceProps> = ({
                   lineHeight: 1.6,
                 }}
               >
-                Today is Sunday — a well-deserved day off. Attendance tracking resumes on Monday.
+                {isSunday
+                  ? "Today is Sunday — a well-deserved day off. Attendance tracking resumes on Monday."
+                  : "No attendance tracking for today. Enjoy your holiday!"}
               </p>
             </div>
-          ) : viewMode === "summary" && isAdminRole && (
+          );
+            }
+            return null;
+          })()}
+          {viewMode === "summary" && isAdminRole && !isTodaySundayPKT() && !holidays.find((h) => h.date === new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Karachi", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date())) && (
             <div
               style={{ display: "flex", flexDirection: "column", gap: "20px" }}
             >
@@ -1826,7 +1905,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
                   {/* Calendar Days */}
                   {selectedEmployeePunchLogs.map((log) => {
                     const dayNum = parseInt(log.date.split("-")[2], 10);
-                    const isWeekend = log.status === "Weekend";
+                    const isOffDay = log.status === "Weekend" || log.status === "Holiday";
                     const todayStr = new Intl.DateTimeFormat("en-CA", {
                       timeZone: "Asia/Karachi",
                     }).format(new Date());
@@ -1839,7 +1918,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
                           minHeight: "85px",
                           padding: "8px",
                           borderRadius: "8px",
-                          backgroundColor: isWeekend
+                          backgroundColor: isOffDay
                             ? "rgba(255,255,255,0.02)"
                             : "var(--bg-secondary)",
                           border: "1px solid var(--border-color)",
@@ -1859,7 +1938,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
                             style={{
                               fontSize: "0.85rem",
                               fontWeight: 600,
-                              color: isWeekend ? "var(--text-muted)" : "white",
+                              color: isOffDay ? "var(--text-muted)" : "white",
                             }}
                           >
                             {dayNum}
@@ -1874,7 +1953,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
                           </div>
                         </div>
 
-                        {log.status !== "Weekend" && (
+                        {log.status !== "Weekend" && log.status !== "Holiday" && (
                           <div
                             style={{
                               marginTop: "auto",
@@ -2433,6 +2512,75 @@ export const Attendance: React.FC<AttendanceProps> = ({
             </div>
           )}
         </>
+      )}
+
+      {showHolidayModal && (
+        <div className="modal-overlay" onClick={() => setShowHolidayModal(false)}>
+          <div
+            className="modal-content"
+            style={{ maxWidth: "520px" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="panel-header" style={{ padding: "20px 24px", borderBottom: "1px solid var(--border-color)", margin: 0 }}>
+              <h2 className="panel-title" style={{ fontSize: "1.1rem", display: "flex", alignItems: "center", gap: "8px" }}>
+                <CalendarOff size={18} style={{ color: "var(--color-primary)" }} />
+                Gazetted Holidays
+              </h2>
+              <button className="btn btn-secondary" style={{ width: "32px", height: "32px", padding: 0, borderRadius: "50%" }} onClick={() => setShowHolidayModal(false)}>
+                <X size={16} />
+              </button>
+            </div>
+            <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <input
+                  type="date"
+                  className="form-input"
+                  style={{ flex: "0 0 auto" }}
+                  value={holidayDate}
+                  onChange={(e) => setHolidayDate(e.target.value)}
+                />
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="Holiday name (e.g. Eid ul Fitr)"
+                  value={holidayName}
+                  onChange={(e) => setHolidayName(e.target.value)}
+                />
+                <button className="btn btn-primary" style={{ display: "flex", alignItems: "center", gap: "6px", whiteSpace: "nowrap" }} onClick={handleAddHoliday}>
+                  <Plus size={14} /> Add
+                </button>
+              </div>
+              <div style={{ maxHeight: "320px", overflowY: "auto" }}>
+                {holidays.length === 0 ? (
+                  <p style={{ color: "var(--text-secondary)", textAlign: "center", padding: "24px" }}>No holidays added yet.</p>
+                ) : (
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Date</th>
+                        <th>Name</th>
+                        <th style={{ width: "60px" }}></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {holidays.map((h) => (
+                        <tr key={h.date}>
+                          <td style={{ fontVariantNumeric: "tabular-nums" }}>{h.date}</td>
+                          <td>{h.name}</td>
+                          <td>
+                            <button className="btn btn-danger" style={{ padding: "2px 8px", fontSize: "0.75rem" }} onClick={() => handleDeleteHoliday(h.date)}>
+                              Remove
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       <style>{`

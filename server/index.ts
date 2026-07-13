@@ -104,6 +104,11 @@ interface DbUser {
   needsPasswordReset: number;
   isDepartmentHead: number;
   loginEnabled: number;
+  department?: string | null;
+  designation?: string | null;
+  casualLeaves?: number;
+  annualLeaves?: number;
+  medicalLeaves?: number;
 }
 
 interface DbTicket {
@@ -1288,6 +1293,14 @@ app.post(
 
     try {
       const db = getDb();
+
+      // Holiday check — reject manual punches on gazetted holidays
+      const holiday = await db.get("SELECT name FROM holidays WHERE date = ?", [date]);
+      if (holiday) {
+        res.status(400).json({ error: `Cannot mark attendance on a gazetted holiday: ${holiday.name}.` });
+        return;
+      }
+
       // Combine date and time to PKT timestamp, then convert to UTC for DB
       const pktDateStr = `${date}T${time}:00+05:00`;
       const pktDate = new Date(pktDateStr);
@@ -1412,6 +1425,63 @@ app.delete(
     } catch (error) {
       console.error("Failed to delete attendance log:", error);
       res.status(500).json({ error: "Failed to delete attendance log." });
+    }
+  },
+);
+
+// --------------------- HOLIDAYS ROUTES ---------------------
+
+app.get(
+  "/api/holidays",
+  authenticateToken,
+  async (_req: AuthRequest, res: Response) => {
+    try {
+      const db = getDb();
+      const holidays = await db.all("SELECT * FROM holidays ORDER BY date ASC");
+      res.json(holidays);
+    } catch {
+      res.status(500).json({ error: "Failed to fetch holidays." });
+    }
+  },
+);
+
+app.post(
+  "/api/holidays",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    if (req.user?.role !== "it" && req.user?.role !== "manager") {
+      res.status(403).json({ error: "Forbidden." });
+      return;
+    }
+    const { date, name } = req.body;
+    if (!date || !name) {
+      res.status(400).json({ error: "date and name are required." });
+      return;
+    }
+    try {
+      const db = getDb();
+      await db.run("INSERT OR REPLACE INTO holidays (date, name) VALUES (?, ?)", [date, name]);
+      res.status(201).json({ success: true });
+    } catch {
+      res.status(500).json({ error: "Failed to add holiday." });
+    }
+  },
+);
+
+app.delete(
+  "/api/holidays/:date",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    if (req.user?.role !== "it" && req.user?.role !== "manager") {
+      res.status(403).json({ error: "Forbidden." });
+      return;
+    }
+    try {
+      const db = getDb();
+      await db.run("DELETE FROM holidays WHERE date = ?", [req.params.date]);
+      res.json({ success: true });
+    } catch {
+      res.status(500).json({ error: "Failed to delete holiday." });
     }
   },
 );
@@ -2038,6 +2108,19 @@ async function startServer() {
 
                 try {
                   const db = getDb();
+
+                  // Holiday check — skip scan if day is a gazetted holiday
+                  const scanDateStr = punchTime.includes(" ")
+                    ? punchTime.split(" ")[0]
+                    : punchTime.includes("T")
+                      ? punchTime.split("T")[0]
+                      : punchTime;
+                  const holiday = await db.get("SELECT name FROM holidays WHERE date = ?", [scanDateStr]);
+                  if (holiday) {
+                    console.log(`🏖️ [HOLIDAY] Scan on '${holiday.name}' (${scanDateStr}) — ignored.`);
+                    return;
+                  }
+
                   const insertResult = await db.run(
                     "INSERT INTO attendance_logs (name, userId, ioTime, method, status) VALUES (?, ?, ?, ?, ?)",
                     [parsedName, userId, punchTime, scanMethod, status],
