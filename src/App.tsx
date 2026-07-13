@@ -642,7 +642,7 @@ function App() {
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
             />
-          ) : activeTab === "users" ? (
+          ) : activeTab === "users" && currentUser.role === "it" ? (
             <UserManagement
               users={users}
               currentUser={currentUser}

@@ -21,7 +21,7 @@ export const ActivityLog: React.FC<ActivityLogProps> = ({
       if (currentUser.role === 'employee') {
         return t.reporterId === currentUser.id;
       }
-      return true; // IT and Manager see all tickets
+      return true; // IT, Manager and Executive see all tickets
     });
 
     // Extract activity logs from visible tickets

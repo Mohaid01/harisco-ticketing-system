@@ -25,7 +25,8 @@ export const SiteDutyManagement: React.FC<SiteDutyManagementProps> = ({
 
   const todayStr = new Date().toISOString().split("T")[0];
 
-  const canManageDuties = currentUser.isDepartmentHead === 1;
+  const canManageDuties = currentUser.isDepartmentHead === 1 && currentUser.role !== "executive";
+  const canViewAll = canManageDuties || currentUser.role === "executive";
 
   const fetchSiteDuties = async () => {
     try {
@@ -165,16 +166,20 @@ export const SiteDutyManagement: React.FC<SiteDutyManagementProps> = ({
           <p className="page-subtitle">
             {canManageDuties
               ? "Review and approve employee site duty requests."
+              : currentUser.role === "executive"
+              ? "Review all employee site duty applications."
               : "Apply for site duties and track your application status."}
           </p>
         </div>
-        <button
-          className="btn btn-primary"
-          style={{ display: "flex", alignItems: "center", gap: "8px" }}
-          onClick={() => setShowApplyModal(true)}
-        >
-          <Plus size={16} /> Apply for Site Duty
-        </button>
+        {currentUser.role !== "executive" && (
+          <button
+            className="btn btn-primary"
+            style={{ display: "flex", alignItems: "center", gap: "8px" }}
+            onClick={() => setShowApplyModal(true)}
+          >
+            <Plus size={16} /> Apply for Site Duty
+          </button>
+        )}
       </div>
 
       {loading ? (
@@ -183,7 +188,7 @@ export const SiteDutyManagement: React.FC<SiteDutyManagementProps> = ({
         <div className="panel" style={{ padding: "20px" }}>
           <h2 className="panel-title" style={{ marginBottom: "16px" }}>
             <MapPin size={18} style={{ color: "var(--color-primary)" }} />
-            {canManageDuties
+            {canViewAll
               ? "All Site Duty Requests"
               : "Your Site Duty History"}
           </h2>
@@ -191,7 +196,7 @@ export const SiteDutyManagement: React.FC<SiteDutyManagementProps> = ({
             <table className="data-table">
               <thead>
                 <tr>
-                  {canManageDuties && <th>Employee</th>}
+                  {canViewAll && <th>Employee</th>}
                   <th>Site Name</th>
                   <th>Duration</th>
                   <th>Reason</th>
@@ -203,7 +208,7 @@ export const SiteDutyManagement: React.FC<SiteDutyManagementProps> = ({
               <tbody>
                 {duties.map((duty) => (
                   <tr key={duty.id}>
-                    {canManageDuties && (
+                    {canViewAll && (
                       <td style={{ fontWeight: 600 }}>
                         {duty.userName} <br />
                         <span

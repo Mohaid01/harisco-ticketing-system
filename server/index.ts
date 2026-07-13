@@ -209,7 +209,9 @@ app.post(
       }
 
       if (!user.loginEnabled) {
-        res.status(403).json({ error: "Your account has been disabled. Please contact IT." });
+        res.status(403).json({
+          error: "Your account has been disabled. Please contact IT.",
+        });
         return;
       }
 
@@ -459,6 +461,8 @@ app.post(
       const passwordHash = await bcrypt.hash(clearPassword, 10);
       const userId = `usr-${Date.now()}`;
 
+      console.log("CHECKPOINT 2");
+
       await db.run(
         "INSERT INTO users (id, name, email, username, role, avatar, passwordHash, needsPasswordReset, department, designation, isDepartmentHead, loginEnabled) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)",
         [
@@ -591,7 +595,15 @@ app.put(
     }
 
     const userId = req.params.id;
-    const { name, email, department, designation, avatar, isDepartmentHead, loginEnabled } = req.body;
+    const {
+      name,
+      email,
+      department,
+      designation,
+      avatar,
+      isDepartmentHead,
+      loginEnabled,
+    } = req.body;
 
     if (!name || !name.trim()) {
       res.status(400).json({ error: "Name is required." });
@@ -671,7 +683,7 @@ app.get(
       let ticketsQuery = "SELECT * FROM tickets";
       const queryParams: (string | undefined)[] = [];
 
-      // RBAC: Employee only sees tickets they raised. IT and Manager see all.
+      // RBAC: Employee only sees tickets they raised. IT, Manager and Executive see all.
       if (userRole === "employee") {
         ticketsQuery += " WHERE reporterId = ?";
         queryParams.push(userId);
@@ -1277,11 +1289,9 @@ app.post(
   authenticateToken,
   async (req: AuthRequest, res: Response) => {
     if (req.user?.role !== "it" && req.user?.role !== "manager") {
-      res
-        .status(403)
-        .json({
-          error: "Forbidden. Only managers or IT can add manual attendance.",
-        });
+      res.status(403).json({
+        error: "Forbidden. Only managers or IT can add manual attendance.",
+      });
       return;
     }
 
@@ -1295,9 +1305,13 @@ app.post(
       const db = getDb();
 
       // Holiday check — reject manual punches on gazetted holidays
-      const holiday = await db.get("SELECT name FROM holidays WHERE date = ?", [date]);
+      const holiday = await db.get("SELECT name FROM holidays WHERE date = ?", [
+        date,
+      ]);
       if (holiday) {
-        res.status(400).json({ error: `Cannot mark attendance on a gazetted holiday: ${holiday.name}.` });
+        res.status(400).json({
+          error: `Cannot mark attendance on a gazetted holiday: ${holiday.name}.`,
+        });
         return;
       }
 
@@ -1333,14 +1347,26 @@ app.post(
       );
 
       if (status === "On Leave" && (time === "09:30" || time === "10:00")) {
-        const u = await db.get("SELECT casualLeaves, annualLeaves, medicalLeaves FROM users WHERE id = ?", [userId]);
+        const u = await db.get(
+          "SELECT casualLeaves, annualLeaves, medicalLeaves FROM users WHERE id = ?",
+          [userId],
+        );
         if (u) {
           if (u.casualLeaves > 0) {
-            await db.run("UPDATE users SET casualLeaves = casualLeaves - 1 WHERE id = ?", [userId]);
+            await db.run(
+              "UPDATE users SET casualLeaves = casualLeaves - 1 WHERE id = ?",
+              [userId],
+            );
           } else if (u.annualLeaves > 0) {
-            await db.run("UPDATE users SET annualLeaves = annualLeaves - 1 WHERE id = ?", [userId]);
+            await db.run(
+              "UPDATE users SET annualLeaves = annualLeaves - 1 WHERE id = ?",
+              [userId],
+            );
           } else if (u.medicalLeaves > 0) {
-            await db.run("UPDATE users SET medicalLeaves = medicalLeaves - 1 WHERE id = ?", [userId]);
+            await db.run(
+              "UPDATE users SET medicalLeaves = medicalLeaves - 1 WHERE id = ?",
+              [userId],
+            );
           }
         }
       }
@@ -1359,11 +1385,9 @@ app.delete(
   authenticateToken,
   async (req: AuthRequest, res: Response) => {
     if (req.user?.role !== "it") {
-      res
-        .status(403)
-        .json({
-          error: "Forbidden. Clearing attendance logs requires IT role.",
-        });
+      res.status(403).json({
+        error: "Forbidden. Clearing attendance logs requires IT role.",
+      });
       return;
     }
     try {
@@ -1383,11 +1407,9 @@ app.delete(
   authenticateToken,
   async (req: AuthRequest, res: Response) => {
     if (req.user?.role !== "it") {
-      res
-        .status(403)
-        .json({
-          error: "Forbidden. Attendance log deletion requires IT role.",
-        });
+      res.status(403).json({
+        error: "Forbidden. Attendance log deletion requires IT role.",
+      });
       return;
     }
 
@@ -1460,7 +1482,10 @@ app.post(
     }
     try {
       const db = getDb();
-      await db.run("INSERT OR REPLACE INTO holidays (date, name) VALUES (?, ?)", [date, name]);
+      await db.run(
+        "INSERT OR REPLACE INTO holidays (date, name) VALUES (?, ?)",
+        [date, name],
+      );
       res.status(201).json({ success: true });
     } catch {
       res.status(500).json({ error: "Failed to add holiday." });
@@ -1515,11 +1540,20 @@ app.get(
 
     try {
       const db = getDb();
-      const currentUser = await db.get("SELECT role, department, isDepartmentHead FROM users WHERE id = ?", [userId]);
+      const currentUser = await db.get(
+        "SELECT role, department, isDepartmentHead FROM users WHERE id = ?",
+        [userId],
+      );
       let query = "SELECT * FROM leave_applications ORDER BY appliedAt DESC";
       const params: any[] = [];
 
-      if (currentUser?.isDepartmentHead) {
+      if (userRole === "executive") {
+        query = `
+          SELECT l.*, u.username AS userCode FROM leave_applications l
+          JOIN users u ON l.userId = u.id
+          ORDER BY l.appliedAt DESC
+        `;
+      } else if (currentUser?.isDepartmentHead) {
         query = `
           SELECT l.*, u.username AS userCode FROM leave_applications l
           JOIN users u ON l.userId = u.id
@@ -1562,20 +1596,25 @@ app.post(
       // Check for overlapping approved site duties
       const existingDuty = await db.get(
         "SELECT id FROM site_duty_applications WHERE userId = ? AND status = 'approved' AND startDate <= ? AND endDate >= ?",
-        [req.user?.id, endDate, startDate]
+        [req.user?.id, endDate, startDate],
       );
       if (existingDuty) {
-        res.status(400).json({ error: "Cannot apply for leave on a date with an approved site duty." });
+        res.status(400).json({
+          error: "Cannot apply for leave on a date with an approved site duty.",
+        });
         return;
       }
 
       // Check for overlapping approved leaves (self check)
       const existingLeave = await db.get(
         "SELECT id FROM leave_applications WHERE userId = ? AND status = 'approved' AND startDate <= ? AND endDate >= ?",
-        [req.user?.id, endDate, startDate]
+        [req.user?.id, endDate, startDate],
       );
       if (existingLeave) {
-        res.status(400).json({ error: "Cannot apply for leave on a date with an already approved leave." });
+        res.status(400).json({
+          error:
+            "Cannot apply for leave on a date with an already approved leave.",
+        });
         return;
       }
 
@@ -1613,17 +1652,33 @@ app.put(
   async (req: AuthRequest, res: Response) => {
     const db = getDb();
     const leaveId = req.params.id;
-    const leave = await db.get<{ userId: string }>("SELECT userId FROM leave_applications WHERE id = ?", [leaveId]);
+    const leave = await db.get<{ userId: string }>(
+      "SELECT userId FROM leave_applications WHERE id = ?",
+      [leaveId],
+    );
     if (!leave) {
       res.status(404).json({ error: "Leave application not found." });
       return;
     }
 
-    const applicant = await db.get<{ department: string | null }>("SELECT department FROM users WHERE id = ?", [leave.userId]);
-    const approver = await db.get<{ isDepartmentHead: number; department: string | null }>("SELECT isDepartmentHead, department FROM users WHERE id = ?", [req.user?.id]);
+    const applicant = await db.get<{ department: string | null }>(
+      "SELECT department FROM users WHERE id = ?",
+      [leave.userId],
+    );
+    const approver = await db.get<{
+      isDepartmentHead: number;
+      department: string | null;
+    }>("SELECT isDepartmentHead, department FROM users WHERE id = ?", [
+      req.user?.id,
+    ]);
 
-    if (!approver?.isDepartmentHead || approver.department !== applicant?.department) {
-      res.status(403).json({ error: "Forbidden. Only the department head can approve this leave." });
+    if (
+      !approver?.isDepartmentHead ||
+      approver.department !== applicant?.department
+    ) {
+      res.status(403).json({
+        error: "Forbidden. Only the department head can approve this leave.",
+      });
       return;
     }
 
@@ -1651,23 +1706,27 @@ app.put(
 
       // Handle attendance logic if approved
       if (status === "approved") {
-        const leave = await db.get("SELECT * FROM leave_applications WHERE id = ?", [leaveId]);
+        const leave = await db.get(
+          "SELECT * FROM leave_applications WHERE id = ?",
+          [leaveId],
+        );
         if (leave) {
           const start = new Date(leave.startDate);
           const end = new Date(leave.endDate);
-          
+
           let daysToDeduct = 0;
-          
+
           for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
             const dayOfWeek = d.getDay();
             if (dayOfWeek === 0) continue; // Skip Sundays
-            
+
             daysToDeduct++;
 
             let checkInTime = "09:30:00";
             let checkOutTime = "18:00:00";
 
-            if (dayOfWeek === 6) { // Saturday
+            if (dayOfWeek === 6) {
+              // Saturday
               checkInTime = "10:00:00";
               checkOutTime = "16:00:00";
             }
@@ -1675,8 +1734,13 @@ app.put(
             const year = d.getFullYear();
             const month = String(d.getMonth() + 1).padStart(2, "0");
             const day = String(d.getDate()).padStart(2, "0");
-            
-            const getUtcTimestamp = (y: string, m: string, d2: string, timeStr: string) => {
+
+            const getUtcTimestamp = (
+              y: string,
+              m: string,
+              d2: string,
+              timeStr: string,
+            ) => {
               const pktDateStr = `${y}-${m}-${d2}T${timeStr}+05:00`;
               const pktDate = new Date(pktDateStr);
               const uYear = pktDate.getUTCFullYear();
@@ -1687,29 +1751,54 @@ app.put(
               const uSeconds = String(pktDate.getUTCSeconds()).padStart(2, "0");
               return `${uYear}-${uMonth}-${uDay} ${uHours}:${uMinutes}:${uSeconds}`;
             };
-            
-            const checkInTimestamp = getUtcTimestamp(String(year), month, day, checkInTime);
-            const checkOutTimestamp = getUtcTimestamp(String(year), month, day, checkOutTime);
 
-            await db.run(
-              "INSERT INTO attendance_logs (name, userId, ioTime, method, status, timestamp) VALUES (?, ?, ?, ?, ?, ?)",
-              [leave.userName, leave.userId, checkInTimestamp, "System", "On Leave", checkInTimestamp]
+            const checkInTimestamp = getUtcTimestamp(
+              String(year),
+              month,
+              day,
+              checkInTime,
+            );
+            const checkOutTimestamp = getUtcTimestamp(
+              String(year),
+              month,
+              day,
+              checkOutTime,
             );
 
             await db.run(
               "INSERT INTO attendance_logs (name, userId, ioTime, method, status, timestamp) VALUES (?, ?, ?, ?, ?, ?)",
-              [leave.userName, leave.userId, checkOutTimestamp, "System", "On Leave", checkOutTimestamp]
+              [
+                leave.userName,
+                leave.userId,
+                checkInTimestamp,
+                "System",
+                "On Leave",
+                checkInTimestamp,
+              ],
+            );
+
+            await db.run(
+              "INSERT INTO attendance_logs (name, userId, ioTime, method, status, timestamp) VALUES (?, ?, ?, ?, ?, ?)",
+              [
+                leave.userName,
+                leave.userId,
+                checkOutTimestamp,
+                "System",
+                "On Leave",
+                checkOutTimestamp,
+              ],
             );
           }
 
           if (daysToDeduct > 0) {
-            let columnToUpdate = 'casualLeaves';
-            if (leave.category === 'annual') columnToUpdate = 'annualLeaves';
-            else if (leave.category === 'medical') columnToUpdate = 'medicalLeaves';
+            let columnToUpdate = "casualLeaves";
+            if (leave.category === "annual") columnToUpdate = "annualLeaves";
+            else if (leave.category === "medical")
+              columnToUpdate = "medicalLeaves";
 
             await db.run(
               `UPDATE users SET ${columnToUpdate} = MAX(0, ${columnToUpdate} - ?) WHERE id = ?`,
-              [daysToDeduct, leave.userId]
+              [daysToDeduct, leave.userId],
             );
           }
         }
@@ -1734,11 +1823,21 @@ app.get(
 
     try {
       const db = getDb();
-      const currentUser = await db.get("SELECT role, department, isDepartmentHead FROM users WHERE id = ?", [userId]);
-      let query = "SELECT * FROM site_duty_applications ORDER BY appliedAt DESC";
+      const currentUser = await db.get(
+        "SELECT role, department, isDepartmentHead FROM users WHERE id = ?",
+        [userId],
+      );
+      let query =
+        "SELECT * FROM site_duty_applications ORDER BY appliedAt DESC";
       const params: any[] = [];
 
-      if (currentUser?.isDepartmentHead) {
+      if (userRole === "executive") {
+        query = `
+          SELECT s.*, u.username AS userCode FROM site_duty_applications s
+          JOIN users u ON s.userId = u.id
+          ORDER BY s.appliedAt DESC
+        `;
+      } else if (currentUser?.isDepartmentHead) {
         query = `
           SELECT s.*, u.username AS userCode FROM site_duty_applications s
           JOIN users u ON s.userId = u.id
@@ -1760,7 +1859,9 @@ app.get(
       res.json(duties);
     } catch (error) {
       console.error("Failed to fetch site duties:", error);
-      res.status(500).json({ error: "Failed to retrieve site duty applications." });
+      res
+        .status(500)
+        .json({ error: "Failed to retrieve site duty applications." });
     }
   },
 );
@@ -1781,20 +1882,25 @@ app.post(
       // Check for overlapping approved leaves
       const existingLeave = await db.get(
         "SELECT id FROM leave_applications WHERE userId = ? AND status = 'approved' AND startDate <= ? AND endDate >= ?",
-        [req.user?.id, endDate, startDate]
+        [req.user?.id, endDate, startDate],
       );
       if (existingLeave) {
-        res.status(400).json({ error: "Cannot apply for site duty on a date with an approved leave." });
+        res.status(400).json({
+          error: "Cannot apply for site duty on a date with an approved leave.",
+        });
         return;
       }
 
       // Check for overlapping approved site duties (self check)
       const existingDuty = await db.get(
         "SELECT id FROM site_duty_applications WHERE userId = ? AND status = 'approved' AND startDate <= ? AND endDate >= ?",
-        [req.user?.id, endDate, startDate]
+        [req.user?.id, endDate, startDate],
       );
       if (existingDuty) {
-        res.status(400).json({ error: "Cannot apply for site duty on a date with an already approved site duty." });
+        res.status(400).json({
+          error:
+            "Cannot apply for site duty on a date with an already approved site duty.",
+        });
         return;
       }
 
@@ -1821,7 +1927,9 @@ app.post(
       res.status(201).json({ success: true, id });
     } catch (error) {
       console.error("Failed to submit site duty:", error);
-      res.status(500).json({ error: "Failed to submit site duty application." });
+      res
+        .status(500)
+        .json({ error: "Failed to submit site duty application." });
     }
   },
 );
@@ -1832,17 +1940,34 @@ app.put(
   async (req: AuthRequest, res: Response) => {
     const db = getDb();
     const sdId = req.params.id;
-    const duty = await db.get<{ userId: string }>("SELECT userId FROM site_duty_applications WHERE id = ?", [sdId]);
+    const duty = await db.get<{ userId: string }>(
+      "SELECT userId FROM site_duty_applications WHERE id = ?",
+      [sdId],
+    );
     if (!duty) {
       res.status(404).json({ error: "Site duty application not found." });
       return;
     }
 
-    const applicant = await db.get<{ department: string | null }>("SELECT department FROM users WHERE id = ?", [duty.userId]);
-    const approver = await db.get<{ isDepartmentHead: number; department: string | null }>("SELECT isDepartmentHead, department FROM users WHERE id = ?", [req.user?.id]);
+    const applicant = await db.get<{ department: string | null }>(
+      "SELECT department FROM users WHERE id = ?",
+      [duty.userId],
+    );
+    const approver = await db.get<{
+      isDepartmentHead: number;
+      department: string | null;
+    }>("SELECT isDepartmentHead, department FROM users WHERE id = ?", [
+      req.user?.id,
+    ]);
 
-    if (!approver?.isDepartmentHead || approver.department !== applicant?.department) {
-      res.status(403).json({ error: "Forbidden. Only the department head can approve this site duty." });
+    if (
+      !approver?.isDepartmentHead ||
+      approver.department !== applicant?.department
+    ) {
+      res.status(403).json({
+        error:
+          "Forbidden. Only the department head can approve this site duty.",
+      });
       return;
     }
 
@@ -1858,7 +1983,10 @@ app.put(
       const db = getDb();
       const sdId = req.params.id;
 
-      const duty = await db.get("SELECT * FROM site_duty_applications WHERE id = ?", [sdId]);
+      const duty = await db.get(
+        "SELECT * FROM site_duty_applications WHERE id = ?",
+        [sdId],
+      );
       if (!duty) {
         res.status(404).json({ error: "Site duty application not found." });
         return;
@@ -1873,7 +2001,7 @@ app.put(
       if (status === "approved") {
         const start = new Date(duty.startDate);
         const end = new Date(duty.endDate);
-        
+
         // Iterate through each day
         for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
           const dayOfWeek = d.getDay();
@@ -1892,8 +2020,13 @@ app.put(
           const year = d.getFullYear();
           const month = String(d.getMonth() + 1).padStart(2, "0");
           const day = String(d.getDate()).padStart(2, "0");
-          
-          const getUtcTimestamp = (y: string, m: string, d: string, timeStr: string) => {
+
+          const getUtcTimestamp = (
+            y: string,
+            m: string,
+            d: string,
+            timeStr: string,
+          ) => {
             const pktDateStr = `${y}-${m}-${d}T${timeStr}+05:00`;
             const pktDate = new Date(pktDateStr);
             const uYear = pktDate.getUTCFullYear();
@@ -1904,20 +2037,44 @@ app.put(
             const uSeconds = String(pktDate.getUTCSeconds()).padStart(2, "0");
             return `${uYear}-${uMonth}-${uDay} ${uHours}:${uMinutes}:${uSeconds}`;
           };
-          
-          const checkInTimestamp = getUtcTimestamp(String(year), month, day, checkInTime);
-          const checkOutTimestamp = getUtcTimestamp(String(year), month, day, checkOutTime);
+
+          const checkInTimestamp = getUtcTimestamp(
+            String(year),
+            month,
+            day,
+            checkInTime,
+          );
+          const checkOutTimestamp = getUtcTimestamp(
+            String(year),
+            month,
+            day,
+            checkOutTime,
+          );
 
           // Insert check-in
           await db.run(
             "INSERT INTO attendance_logs (name, userId, ioTime, method, status, timestamp) VALUES (?, ?, ?, ?, ?, ?)",
-            [duty.userName, duty.userId, checkInTimestamp, "System", "Site Duty", checkInTimestamp]
+            [
+              duty.userName,
+              duty.userId,
+              checkInTimestamp,
+              "System",
+              "Site Duty",
+              checkInTimestamp,
+            ],
           );
 
           // Insert check-out
           await db.run(
             "INSERT INTO attendance_logs (name, userId, ioTime, method, status, timestamp) VALUES (?, ?, ?, ?, ?, ?)",
-            [duty.userName, duty.userId, checkOutTimestamp, "System", "Site Duty", checkOutTimestamp]
+            [
+              duty.userName,
+              duty.userId,
+              checkOutTimestamp,
+              "System",
+              "Site Duty",
+              checkOutTimestamp,
+            ],
           );
         }
       }
@@ -2115,9 +2272,14 @@ async function startServer() {
                     : punchTime.includes("T")
                       ? punchTime.split("T")[0]
                       : punchTime;
-                  const holiday = await db.get("SELECT name FROM holidays WHERE date = ?", [scanDateStr]);
+                  const holiday = await db.get(
+                    "SELECT name FROM holidays WHERE date = ?",
+                    [scanDateStr],
+                  );
                   if (holiday) {
-                    console.log(`🏖️ [HOLIDAY] Scan on '${holiday.name}' (${scanDateStr}) — ignored.`);
+                    console.log(
+                      `🏖️ [HOLIDAY] Scan on '${holiday.name}' (${scanDateStr}) — ignored.`,
+                    );
                     return;
                   }
 

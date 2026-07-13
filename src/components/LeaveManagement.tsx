@@ -28,7 +28,8 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({
 
   const todayStr = new Date().toISOString().split("T")[0];
 
-  const canManageLeaves = currentUser.isDepartmentHead === 1;
+  const canManageLeaves = currentUser.isDepartmentHead === 1 && currentUser.role !== "executive";
+  const canViewAll = canManageLeaves || currentUser.role === "executive";
 
   const fetchLeaves = async () => {
     try {
@@ -161,16 +162,20 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({
           <p className="page-subtitle">
             {canManageLeaves
               ? "Review and approve employee leave requests."
+              : currentUser.role === "executive"
+              ? "Review all employee leave applications."
               : "Apply for leaves and track your application status."}
           </p>
         </div>
-        <button
-          className="btn btn-primary"
-          style={{ display: "flex", alignItems: "center", gap: "8px" }}
-          onClick={() => setShowApplyModal(true)}
-        >
-          <Plus size={16} /> Apply for Leave
-        </button>
+        {currentUser.role !== "executive" && (
+          <button
+            className="btn btn-primary"
+            style={{ display: "flex", alignItems: "center", gap: "8px" }}
+            onClick={() => setShowApplyModal(true)}
+          >
+            <Plus size={16} /> Apply for Leave
+          </button>
+        )}
       </div>
 
       {loading ? (
@@ -179,13 +184,13 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({
         <div className="panel" style={{ padding: "20px" }}>
           <h2 className="panel-title" style={{ marginBottom: "16px" }}>
             <Calendar size={18} style={{ color: "var(--color-primary)" }} />
-            {canManageLeaves ? "All Leave Requests" : "Your Leave History"}
+            {canViewAll ? "All Leave Requests" : "Your Leave History"}
           </h2>
           <div className="table-wrapper">
             <table className="data-table">
               <thead>
                 <tr>
-                  {canManageLeaves && <th>Employee</th>}
+                  {canViewAll && <th>Employee</th>}
                   <th>Category</th>
                   <th>Duration</th>
                   <th>Reason</th>
@@ -197,7 +202,7 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({
               <tbody>
                 {leaves.map((leave) => (
                   <tr key={leave.id}>
-                    {canManageLeaves && (
+                    {canViewAll && (
                       <td style={{ fontWeight: 600 }}>
                         {leave.userName} <br />
                         <span

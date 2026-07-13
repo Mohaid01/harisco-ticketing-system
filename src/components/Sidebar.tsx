@@ -36,13 +36,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       id: "dashboard" as ActiveTab,
       label: "Dashboard",
       icon: LayoutDashboard,
-      roles: ["it", "employee", "manager"],
+      roles: ["it", "employee", "manager", "executive"],
     },
     {
       id: "tickets" as ActiveTab,
       label: "Tickets",
       icon: Ticket,
-      roles: ["it", "employee", "manager"],
+      roles: ["it", "employee", "manager", "executive"],
     },
     {
       id: "users" as ActiveTab,
@@ -54,25 +54,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
       id: "attendance" as ActiveTab,
       label: "Attendance",
       icon: UserCheck,
-      roles: ["it", "employee", "manager"],
+      roles: ["it", "employee", "manager", "executive"],
     },
     {
       id: "leaves" as ActiveTab,
       label: "Leave Management",
       icon: Calendar,
-      roles: ["it", "employee", "manager"],
+      roles: ["it", "employee", "manager", "executive"],
     },
     {
       id: "site_duties" as ActiveTab,
       label: "Site Duties",
       icon: MapPin,
-      roles: ["it", "employee", "manager"],
+      roles: ["it", "employee", "manager", "executive"],
     },
     {
       id: "activity_log" as ActiveTab,
       label: "Activity Logs",
       icon: Activity,
-      roles: ["it", "employee", "manager"],
+      roles: ["it", "employee", "manager", "executive"],
     },
   ];
 

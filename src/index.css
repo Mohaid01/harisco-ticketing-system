@@ -48,6 +48,9 @@
   --role-employee: #3b82f6;
   --role-employee-bg: rgba(59, 130, 246, 0.1);
 
+  --role-executive: #10b981;
+  --role-executive-bg: rgba(16, 185, 129, 0.1);
+
   /* Fonts & Radius */
   --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
@@ -212,6 +215,7 @@ body {
 .role-badge-it { background-color: var(--role-it-bg); color: var(--role-it); border: 1px solid rgba(244, 63, 94, 0.2); }
 .role-badge-manager { background-color: var(--role-manager-bg); color: var(--role-manager); border: 1px solid rgba(168, 85, 247, 0.2); }
 .role-badge-employee { background-color: var(--role-employee-bg); color: var(--role-employee); border: 1px solid rgba(59, 130, 246, 0.2); }
+.role-badge-executive { background-color: var(--role-executive-bg); color: var(--role-executive); border: 1px solid rgba(16, 185, 129, 0.2); }
 
 /* Main layout contents */
 .main-content {

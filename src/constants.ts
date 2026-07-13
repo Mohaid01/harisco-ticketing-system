@@ -9,6 +9,7 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   it: 'IT Administrator',
   employee: 'Employee',
   manager: 'Manager',
+  executive: 'Executive',
 };
 
 export const TICKET_TYPE_LABELS: Record<TicketType, string> = {

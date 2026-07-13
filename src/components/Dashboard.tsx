@@ -29,7 +29,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     if (currentUser.role === "employee") {
       return t.reporterId === currentUser.id;
     }
-    return true; // IT and Manager see all tickets
+    return true; // IT, Manager, and Executive see all tickets
   });
 
   // Calculate statistics from the ROLE-filtered tickets (or all tickets? Let's use role-filtered for Employee, all for IT/Manager to make it feel specific)
@@ -332,6 +332,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <li>
                 <strong>Manager:</strong> Approve ticket escalations, view all
                 tickets, and track SLA statistics.
+              </li>
+              <li>
+                <strong>Executive:</strong> Full read access to all system records (except user management) without write permissions.
               </li>
             </ul>
           </div>

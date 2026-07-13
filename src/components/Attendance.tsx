@@ -64,8 +64,9 @@ export const Attendance: React.FC<AttendanceProps> = ({
   currentUser,
   allUsers,
 }) => {
-  const isAdminRole =
-    currentUser.role === "it" || currentUser.role === "manager";
+  const canViewAll =
+    currentUser.role === "it" || currentUser.role === "manager" || currentUser.role === "executive";
+  const canWrite = currentUser.role === "it" || currentUser.role === "manager";
 
   // State Management
   const [logs, setLogs] = useState<AttendanceLog[]>([]);
@@ -73,7 +74,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [clearing, setClearing] = useState<boolean>(false);
   const [viewMode, setViewMode] = useState<ViewMode>(
-    isAdminRole ? "summary" : "individual",
+    canViewAll ? "summary" : "individual",
   );
 
   // Live tick to force recalculation of dynamic ongoing hours
@@ -839,7 +840,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
     date: string,
     type: "Check-In" | "Check-Out",
   ) => {
-    if (!isAdminRole) return;
+    if (!canWrite) return;
 
     const dateHoliday = holidays.find(h => h.date === date);
     if (dateHoliday) {
@@ -940,13 +941,13 @@ export const Attendance: React.FC<AttendanceProps> = ({
         <div>
           <h1 className="page-title">Attendance</h1>
           <p className="page-subtitle">
-            {isAdminRole
+            {canViewAll
               ? "Monitor biometric records, review department-wise statistics, and inspect employee breakdowns."
               : "Review your clock-in timings, total hours worked, and monthly attendance overview."}
           </p>
         </div>
         <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-          {isAdminRole && (
+          {canViewAll && (
             <div
               className="btn-group"
               style={{
@@ -985,7 +986,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
               </button>
             </div>
           )}
-          {isAdminRole && (
+          {canWrite && (
             <button
               className="btn btn-secondary"
               style={{ display: "flex", alignItems: "center", gap: "8px", padding: "8px 14px" }}
@@ -1049,7 +1050,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
           {(() => {
             const todayDateStr = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Karachi", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
             const todayHoliday = holidays.find((h) => h.date === todayDateStr);
-            if (viewMode === "summary" && isAdminRole && (isTodaySundayPKT() || todayHoliday)) {
+            if (viewMode === "summary" && canViewAll && (isTodaySundayPKT() || todayHoliday)) {
               const isSunday = isTodaySundayPKT();
               return (
             <div
@@ -1106,7 +1107,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
             }
             return null;
           })()}
-          {viewMode === "summary" && isAdminRole && !isTodaySundayPKT() && !holidays.find((h) => h.date === new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Karachi", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date())) && (
+          {viewMode === "summary" && canViewAll && !isTodaySundayPKT() && !holidays.find((h) => h.date === new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Karachi", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date())) && (
             <div
               style={{ display: "flex", flexDirection: "column", gap: "20px" }}
             >
@@ -1553,8 +1554,8 @@ export const Attendance: React.FC<AttendanceProps> = ({
             <div
               style={{ display: "flex", flexDirection: "column", gap: "24px" }}
             >
-              {/* Back Navigation Bar for Managers/Admins */}
-              {isAdminRole && (
+              {/* Back Navigation Bar for Managers/Admins/Executives */}
+              {canViewAll && (
                 <div
                   style={{
                     display: "flex",
@@ -2012,7 +2013,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
                                     ? "-"
                                     : log.firstIn.substring(0, 5)}
                                 </span>
-                                {isAdminRole &&
+                                {canWrite &&
                                   log.firstIn === "--" &&
                                   isPastOrToday && (
                                     <button
@@ -2061,7 +2062,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
                                     ? "-"
                                     : log.lastOut.substring(0, 5)}
                                 </span>
-                                {isAdminRole &&
+                                {canWrite &&
                                   log.lastOut === "--" &&
                                   isPastOrToday && (
                                     <button

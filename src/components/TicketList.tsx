@@ -34,7 +34,7 @@ export const TicketList: React.FC<TicketListProps> = ({
   const filteredTickets = useMemo(() => {
     return tickets
       .filter((ticket) => {
-        // RBAC: Employee only sees own tickets, IT and Managers see all
+        // RBAC: Employee only sees own tickets, IT, Managers and Executives see all
         if (
           currentUser.role === "employee" &&
           ticket.reporterId !== currentUser.id

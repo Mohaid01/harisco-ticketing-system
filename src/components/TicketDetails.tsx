@@ -295,27 +295,29 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
               </div>
 
               {/* Add Comment */}
-              <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
-                <div className="comment-avatar" style={{ backgroundColor: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 700, color: 'white' }}>
-                  {currentUser.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)}
-                </div>
-                <form onSubmit={handleSubmitComment} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <textarea
-                    id="add-comment-textarea"
-                    className="form-input"
-                    style={{ minHeight: '80px', resize: 'vertical' }}
-                    placeholder="Enter an update or note..."
-                    value={commentText}
-                    onChange={(e) => setCommentText(e.target.value)}
-                  />
-                  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                    <button id="btn-submit-comment" type="submit" className="btn btn-primary" style={{ padding: '8px 16px' }}>
-                      <Send size={12} />
-                      Post Update
-                    </button>
+              {currentUser.role !== 'executive' && (
+                <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
+                  <div className="comment-avatar" style={{ backgroundColor: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 700, color: 'white' }}>
+                    {currentUser.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)}
                   </div>
-                </form>
-              </div>
+                  <form onSubmit={handleSubmitComment} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <textarea
+                      id="add-comment-textarea"
+                      className="form-input"
+                      style={{ minHeight: '80px', resize: 'vertical' }}
+                      placeholder="Enter an update or note..."
+                      value={commentText}
+                      onChange={(e) => setCommentText(e.target.value)}
+                    />
+                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                      <button id="btn-submit-comment" type="submit" className="btn btn-primary" style={{ padding: '8px 16px' }}>
+                        <Send size={12} />
+                        Post Update
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              )}
             </div>
           </div>
 
