@@ -298,6 +298,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                 <option value="Staff">Staff</option>
                 <option value="Civil">Civil</option>
                 <option value="Telecom">Telecom</option>
+                <option value="Projects">Projects</option>
               </select>
             </div>
 
@@ -400,21 +401,45 @@ export const UserManagement: React.FC<UserManagementProps> = ({
               </select>
             </div>
 
-            <div className="form-group" style={{ marginBottom: "24px", display: "flex", flexDirection: "column", gap: "10px" }}>
-              <label className="form-label" style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-                <input 
-                  type="checkbox" 
-                  checked={isDepartmentHead} 
-                  onChange={(e) => setIsDepartmentHead(e.target.checked)} 
+            <div
+              className="form-group"
+              style={{
+                marginBottom: "24px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "10px",
+              }}
+            >
+              <label
+                className="form-label"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  cursor: "pointer",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={isDepartmentHead}
+                  onChange={(e) => setIsDepartmentHead(e.target.checked)}
                 />
                 Department Head (can approve leaves/duties)
               </label>
-              
-              <label className="form-label" style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-                <input 
-                  type="checkbox" 
-                  checked={loginEnabled} 
-                  onChange={(e) => setLoginEnabled(e.target.checked)} 
+
+              <label
+                className="form-label"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  cursor: "pointer",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={loginEnabled}
+                  onChange={(e) => setLoginEnabled(e.target.checked)}
                 />
                 Enable Login
               </label>
@@ -563,6 +588,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                         <option value="Staff">Staff</option>
                         <option value="Civil">Civil</option>
                         <option value="Telecom">Telecom</option>
+                        <option value="Projects">Projects</option>
                       </select>
                     </div>
                     <div
@@ -590,22 +616,52 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                         required
                       />
                     </div>
-                    
-                    <div className="form-group" style={{ marginBottom: "12px", display: "flex", flexDirection: "column", gap: "8px" }}>
-                      <label className="form-label" style={{ ...inlineLabelStyle, display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
-                        <input 
-                          type="checkbox" 
-                          checked={editIsDepartmentHead} 
-                          onChange={(e) => setEditIsDepartmentHead(e.target.checked)} 
+
+                    <div
+                      className="form-group"
+                      style={{
+                        marginBottom: "12px",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "8px",
+                      }}
+                    >
+                      <label
+                        className="form-label"
+                        style={{
+                          ...inlineLabelStyle,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "6px",
+                          cursor: "pointer",
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={editIsDepartmentHead}
+                          onChange={(e) =>
+                            setEditIsDepartmentHead(e.target.checked)
+                          }
                         />
                         Department Head
                       </label>
-                      
-                      <label className="form-label" style={{ ...inlineLabelStyle, display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
-                        <input 
-                          type="checkbox" 
-                          checked={editLoginEnabled} 
-                          onChange={(e) => setEditLoginEnabled(e.target.checked)} 
+
+                      <label
+                        className="form-label"
+                        style={{
+                          ...inlineLabelStyle,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "6px",
+                          cursor: "pointer",
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={editLoginEnabled}
+                          onChange={(e) =>
+                            setEditLoginEnabled(e.target.checked)
+                          }
                         />
                         Enable Login
                       </label>
