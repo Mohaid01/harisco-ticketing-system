@@ -1,73 +1,96 @@
-# React + TypeScript + Vite
+# Internal Operations Portal (Ticketing, Attendance & Site-Duty)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A unified web application designed to streamline internal company operations, featuring a robust, role-based access control system for ticketing management, biometric-synced attendance tracking, and field application workflows.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 👥 Role-Based Access Control Matrix
 
-## React Compiler
+The platform strictly enforces the following permissions across four distinct user roles:
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 1. Executives
 
-## Expanding the ESLint configuration
+- **Ticketing:** View all system tickets + Raise new tickets.
+- **Attendance:** Exempt from biometric scanning. Access to view complete global company attendance records.
+- **Site-Duty:** Exempt from applying. Access to view all employee application data.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### 2. Managers
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- **Ticketing:** View own tickets + Raise new tickets.
+- **Attendance:** Manually edit team attendance records + Add gazetted holidays.
+- **Site-Duty:** Apply for own site-duty + Approve/Reject applications from team members.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+### 3. IT Staff
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+- **Ticketing:** Review, address, and manage all global tickets + Raise new tickets.
+- **Attendance:** View own personal attendance records only.
+- **Site-Duty:** Apply for own site-duty.
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### 4. Employees
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+- **Ticketing:** View own tickets + Raise new tickets.
+- **Attendance:** View own personal attendance records only.
+- **Site-Duty:** Apply for own site-duty.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+---
+
+## 🛠️ Core Module Specifications
+
+### 🎫 1. Ticketing System
+
+- **Actionable Workflows:** Employees and Managers raise operational requests, which are processed globally by the IT staff.
+- **Executive Oversight:** Executives maintain a high-level view of all issues without administrative bottlenecks.
+
+### 🕒 2. Biometric Attendance Integration
+
+- **Device Syncing:** Automatically fetches clock-in and clock-out timestamps from physical biometric devices.
+- **Exemption Logic:** The system intentionally excludes Executive profiles from the scan-in/out check protocols.
+- **Administrative Overrides:** Allows Managers to correct missing punches or add calendar holidays.
+
+### 🚗 3. Application & Site-Duty Workflows
+
+- **Approval Hierarchy:** Applications submitted by Employees or IT staff must be reviewed and approved by their relevant Department Head or Manager.
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- [Database Engine] (e.g., PostgreSQL >= 15 / MySQL >= 8)
+- [Runtime Environment] (e.g., Node.js >= 20 / Python >= 3.11)
+- Network connection to the Biometric Hardware Terminal API.
+
+### Installation & Local Setup
+
+1. **Clone the repository:**
+
+   ```bash
+   git clone https://github.com/Mohaid01/harisco-ticketing-system.git
+   cd harisco-ticketing-system
+   ```
+
+2. **Configure Environment Variables:**
+   Create a `.env` file in the root directory and add your configurations:
+
+   ```env
+   PORT=8080
+   DATABASE_URL=your_database_connection_string
+   ...
+   ```
+
+3. **Install Dependencies & Start:**
+
+   ```bash
+   # Install backend/frontend packages
+   npm install
+
+   # Start the development server
+   npm run dev
+   ```
+
+---
+
+## 🔒 Security & Implementation Note
+
+All endpoints check user session tokens against the matrix outlined above. Any unauthorized attempts to access cross-department tickets, alter attendance records outside of a manager role, or bypass application workflows will trigger a `403 Forbidden` log entry.
