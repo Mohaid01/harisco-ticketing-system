@@ -125,6 +125,24 @@ export async function initDb() {
     // Column might already exist, ignore error
   }
 
+  try {
+    await db.exec('ALTER TABLE users ADD COLUMN casualLeaves INTEGER DEFAULT 12');
+  } catch {
+    // Column might already exist, ignore error
+  }
+
+  try {
+    await db.exec('ALTER TABLE users ADD COLUMN annualLeaves INTEGER DEFAULT 14');
+  } catch {
+    // Column might already exist, ignore error
+  }
+
+  try {
+    await db.exec('ALTER TABLE users ADD COLUMN medicalLeaves INTEGER DEFAULT 8');
+  } catch {
+    // Column might already exist, ignore error
+  }
+
   // Create Comments Table
   await db.exec(`
     CREATE TABLE IF NOT EXISTS comments (

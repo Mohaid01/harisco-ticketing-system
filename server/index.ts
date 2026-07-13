@@ -373,7 +373,7 @@ app.get(
     try {
       const db = getDb();
       const users = await db.all(
-        "SELECT id, name, email, username, role, avatar, department, designation, isDepartmentHead, loginEnabled FROM users ORDER BY username ASC",
+        "SELECT id, name, email, username, role, avatar, department, designation, isDepartmentHead, loginEnabled, casualLeaves, annualLeaves, medicalLeaves FROM users ORDER BY username ASC",
       );
       res.json(users);
     } catch {
@@ -1313,6 +1313,19 @@ app.post(
         [user.name, userId, timestamp, "Manual", status, timestamp],
       );
 
+      if (status === "On Leave" && (time === "09:30" || time === "10:00")) {
+        const u = await db.get("SELECT casualLeaves, annualLeaves, medicalLeaves FROM users WHERE id = ?", [userId]);
+        if (u) {
+          if (u.casualLeaves > 0) {
+            await db.run("UPDATE users SET casualLeaves = casualLeaves - 1 WHERE id = ?", [userId]);
+          } else if (u.annualLeaves > 0) {
+            await db.run("UPDATE users SET annualLeaves = annualLeaves - 1 WHERE id = ?", [userId]);
+          } else if (u.medicalLeaves > 0) {
+            await db.run("UPDATE users SET medicalLeaves = medicalLeaves - 1 WHERE id = ?", [userId]);
+          }
+        }
+      }
+
       res.json({ success: true });
     } catch (error) {
       console.error("Failed to add manual attendance:", error);
@@ -1559,9 +1572,13 @@ app.put(
           const start = new Date(leave.startDate);
           const end = new Date(leave.endDate);
           
+          let daysToDeduct = 0;
+          
           for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
             const dayOfWeek = d.getDay();
             if (dayOfWeek === 0) continue; // Skip Sundays
+            
+            daysToDeduct++;
 
             let checkInTime = "09:30:00";
             let checkOutTime = "18:00:00";
@@ -1598,6 +1615,17 @@ app.put(
             await db.run(
               "INSERT INTO attendance_logs (name, userId, ioTime, method, status, timestamp) VALUES (?, ?, ?, ?, ?, ?)",
               [leave.userName, leave.userId, checkOutTimestamp, "System", "On Leave", checkOutTimestamp]
+            );
+          }
+
+          if (daysToDeduct > 0) {
+            let columnToUpdate = 'casualLeaves';
+            if (leave.category === 'annual') columnToUpdate = 'annualLeaves';
+            else if (leave.category === 'medical') columnToUpdate = 'medicalLeaves';
+
+            await db.run(
+              `UPDATE users SET ${columnToUpdate} = MAX(0, ${columnToUpdate} - ?) WHERE id = ?`,
+              [daysToDeduct, leave.userId]
             );
           }
         }

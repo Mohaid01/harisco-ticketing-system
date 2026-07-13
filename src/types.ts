@@ -12,6 +12,9 @@ export interface AppUser {
   avatar?: string | null;
   isDepartmentHead?: number;
   loginEnabled?: number;
+  casualLeaves?: number;
+  annualLeaves?: number;
+  medicalLeaves?: number;
 }
 
 export type TicketType = 'hardware' | 'software' | 'maintenance' | 'upgrade';

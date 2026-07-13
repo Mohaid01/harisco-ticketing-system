@@ -2362,7 +2362,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
                             color: "var(--text-primary)",
                           }}
                         >
-                          12
+                          {selectedEmployee.casualLeaves ?? 12}
                         </span>
                         <span
                           style={{
@@ -2388,7 +2388,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
                             color: "var(--color-primary)",
                           }}
                         >
-                          14
+                          {selectedEmployee.annualLeaves ?? 14}
                         </span>
                         <span
                           style={{
@@ -2414,7 +2414,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
                             color: "var(--status-handover)",
                           }}
                         >
-                          8
+                          {selectedEmployee.medicalLeaves ?? 8}
                         </span>
                         <span
                           style={{
