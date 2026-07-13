@@ -306,38 +306,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
               </li>
             </ol>
           </div>
-
-          <div className="panel">
-            <h2 className="panel-title" style={{ marginBottom: "12px" }}>
-              Role Specifications
-            </h2>
-            <ul
-              style={{
-                paddingLeft: "16px",
-                fontSize: "0.8rem",
-                display: "flex",
-                flexDirection: "column",
-                gap: "6px",
-                color: "var(--text-secondary)",
-              }}
-            >
-              <li>
-                <strong>Employee:</strong> Create issues, view own tickets, and
-                accept handover once issue resolved.
-              </li>
-              <li>
-                <strong>IT Admin:</strong> Add/remove users, audit all tickets,
-                assign support engineers, approve tasks, and close tickets.
-              </li>
-              <li>
-                <strong>Manager:</strong> Approve ticket escalations, view all
-                tickets, and track SLA statistics.
-              </li>
-              <li>
-                <strong>Executive:</strong> Full read access to all system records (except user management) without write permissions.
-              </li>
-            </ul>
-          </div>
         </div>
       </div>
     </div>
