@@ -28,7 +28,8 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({
 
   const todayStr = new Date().toISOString().split("T")[0];
 
-  const canManageLeaves = currentUser.isDepartmentHead === 1 && currentUser.role !== "executive";
+  const canManageLeaves =
+    currentUser.isDepartmentHead === 1 && currentUser.role !== "executive";
   const canViewAll = canManageLeaves || currentUser.role === "executive";
 
   const fetchLeaves = async () => {
@@ -163,8 +164,8 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({
             {canManageLeaves
               ? "Review and approve employee leave requests."
               : currentUser.role === "executive"
-              ? "Review all employee leave applications."
-              : "Apply for leaves and track your application status."}
+                ? "Review all employee leave applications."
+                : "Apply for leaves and track your application status."}
           </p>
         </div>
         {currentUser.role !== "executive" && (
@@ -229,7 +230,8 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({
                     <td>{getStatusBadge(leave.status)}</td>
                     {canManageLeaves && (
                       <td>
-                        {leave.status === "pending" && leave.userId !== currentUser.id ? (
+                        {leave.status === "pending" &&
+                        leave.userId !== currentUser.id ? (
                           <div
                             style={{ display: "flex", gap: "8px" }}
                             onClick={(e) => e.stopPropagation()}
@@ -292,26 +294,46 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({
       {/* Apply Leave Modal */}
       {showApplyModal && (
         <div className="modal-overlay" onClick={() => setShowApplyModal(false)}>
-          <div className="modal-content" style={{ maxWidth: "500px" }} onClick={(e) => e.stopPropagation()}>
-            <div className="panel-header" style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-color)', margin: 0 }}>
-              <h2 className="panel-title" style={{ fontSize: '1.15rem' }}>Apply for Leave</h2>
+          <div
+            className="modal-content"
+            style={{ maxWidth: "500px" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className="panel-header"
+              style={{
+                padding: "20px 24px",
+                borderBottom: "1px solid var(--border-color)",
+                margin: 0,
+              }}
+            >
+              <h2 className="panel-title" style={{ fontSize: "1.15rem" }}>
+                Apply for Leave
+              </h2>
               <button
                 className="btn btn-secondary"
-                style={{ width: '32px', height: '32px', padding: 0, borderRadius: '50%' }}
+                style={{
+                  width: "32px",
+                  height: "32px",
+                  padding: 0,
+                  borderRadius: "50%",
+                }}
                 onClick={() => setShowApplyModal(false)}
               >
                 <X size={16} />
               </button>
             </div>
             <form onSubmit={handleApply}>
-              <div style={{ padding: '24px' }}>
+              <div style={{ padding: "24px" }}>
                 <div className="form-group">
                   <label className="form-label">Leave Category</label>
                   <select
                     className="form-input"
                     style={{ backgroundColor: "var(--bg-primary)" }}
                     value={category}
-                    onChange={(e) => setCategory(e.target.value as LeaveCategory)}
+                    onChange={(e) =>
+                      setCategory(e.target.value as LeaveCategory)
+                    }
                     required
                   >
                     <option value="casual">Casual Leave</option>
@@ -326,6 +348,9 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({
                     <input
                       type="date"
                       className="form-input"
+                      style={{
+                        colorScheme: "dark",
+                      }}
                       value={startDate}
                       min={todayStr}
                       onChange={(e) => setStartDate(e.target.value)}
@@ -337,6 +362,9 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({
                     <input
                       type="date"
                       className="form-input"
+                      style={{
+                        colorScheme: "dark",
+                      }}
                       value={endDate}
                       min={startDate}
                       onChange={(e) => setEndDate(e.target.value)}
@@ -350,7 +378,7 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({
                   <textarea
                     className="form-input"
                     rows={3}
-                    style={{ minHeight: '100px', resize: 'vertical' }}
+                    style={{ minHeight: "100px", resize: "vertical" }}
                     value={reason}
                     onChange={(e) => setReason(e.target.value)}
                     placeholder="Please provide a brief reason for your leave..."
@@ -359,7 +387,15 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({
                 </div>
               </div>
 
-              <div style={{ padding: '16px 24px', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+              <div
+                style={{
+                  padding: "16px 24px",
+                  borderTop: "1px solid var(--border-color)",
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  gap: "12px",
+                }}
+              >
                 <button
                   type="button"
                   className="btn btn-secondary"
@@ -367,10 +403,7 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({
                 >
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  className="btn btn-primary"
-                >
+                <button type="submit" className="btn btn-primary">
                   Submit Application
                 </button>
               </div>

@@ -25,7 +25,8 @@ export const SiteDutyManagement: React.FC<SiteDutyManagementProps> = ({
 
   const todayStr = new Date().toISOString().split("T")[0];
 
-  const canManageDuties = currentUser.isDepartmentHead === 1 && currentUser.role !== "executive";
+  const canManageDuties =
+    currentUser.isDepartmentHead === 1 && currentUser.role !== "executive";
   const canViewAll = canManageDuties || currentUser.role === "executive";
 
   const fetchSiteDuties = async () => {
@@ -167,8 +168,8 @@ export const SiteDutyManagement: React.FC<SiteDutyManagementProps> = ({
             {canManageDuties
               ? "Review and approve employee site duty requests."
               : currentUser.role === "executive"
-              ? "Review all employee site duty applications."
-              : "Apply for site duties and track your application status."}
+                ? "Review all employee site duty applications."
+                : "Apply for site duties and track your application status."}
           </p>
         </div>
         {currentUser.role !== "executive" && (
@@ -188,9 +189,7 @@ export const SiteDutyManagement: React.FC<SiteDutyManagementProps> = ({
         <div className="panel" style={{ padding: "20px" }}>
           <h2 className="panel-title" style={{ marginBottom: "16px" }}>
             <MapPin size={18} style={{ color: "var(--color-primary)" }} />
-            {canViewAll
-              ? "All Site Duty Requests"
-              : "Your Site Duty History"}
+            {canViewAll ? "All Site Duty Requests" : "Your Site Duty History"}
           </h2>
           <div className="table-wrapper">
             <table className="data-table">
@@ -233,7 +232,8 @@ export const SiteDutyManagement: React.FC<SiteDutyManagementProps> = ({
                     <td>{getStatusBadge(duty.status)}</td>
                     {canManageDuties && (
                       <td>
-                        {duty.status === "pending" && duty.userId !== currentUser.id ? (
+                        {duty.status === "pending" &&
+                        duty.userId !== currentUser.id ? (
                           <div
                             style={{ display: "flex", gap: "8px" }}
                             onClick={(e) => e.stopPropagation()}
@@ -345,6 +345,9 @@ export const SiteDutyManagement: React.FC<SiteDutyManagementProps> = ({
                     <input
                       type="date"
                       className="form-input"
+                      style={{
+                        colorScheme: "dark",
+                      }}
                       value={startDate}
                       min={todayStr}
                       onChange={(e) => setStartDate(e.target.value)}
@@ -356,6 +359,9 @@ export const SiteDutyManagement: React.FC<SiteDutyManagementProps> = ({
                     <input
                       type="date"
                       className="form-input"
+                      style={{
+                        colorScheme: "dark",
+                      }}
                       value={endDate}
                       min={startDate}
                       onChange={(e) => setEndDate(e.target.value)}
