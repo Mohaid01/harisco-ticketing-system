@@ -194,7 +194,7 @@ app.post(
     try {
       const db = getDb();
       const user = await db.get<DbUser>(
-        "SELECT id, name, email, username, role, avatar, passwordHash, needsPasswordReset, isDepartmentHead, loginEnabled FROM users WHERE LOWER(username) = ?",
+        "SELECT id, name, email, username, role, avatar, passwordHash, needsPasswordReset, department, designation, isDepartmentHead, loginEnabled, casualLeaves, annualLeaves, medicalLeaves FROM users WHERE LOWER(username) = ?",
         [username.toLowerCase().trim()],
       );
 
@@ -225,12 +225,18 @@ app.post(
       };
       const token = jwt.sign(jwtPayload, JWT_SECRET, { expiresIn: "7d" });
 
-      // Return full user (including avatar) in response body only
       res.json({
         token,
         user: {
           ...jwtPayload,
           avatar: user.avatar,
+          department: user.department,
+          designation: user.designation,
+          isDepartmentHead: user.isDepartmentHead,
+          loginEnabled: user.loginEnabled,
+          casualLeaves: user.casualLeaves,
+          annualLeaves: user.annualLeaves,
+          medicalLeaves: user.medicalLeaves,
         },
       });
     } catch (error) {
@@ -249,7 +255,7 @@ app.get(
       const db = getDb();
       console.log("[ME] DB instance obtained");
       const user = await db.get<DbUser>(
-        "SELECT id, name, email, username, role, avatar, needsPasswordReset FROM users WHERE id = ?",
+        "SELECT id, name, email, username, role, avatar, needsPasswordReset, department, designation, isDepartmentHead, loginEnabled, casualLeaves, annualLeaves, medicalLeaves FROM users WHERE id = ?",
         [req.user?.id],
       );
       console.log("[ME] DB query done, user found:", !!user);
