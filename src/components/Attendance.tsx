@@ -2531,26 +2531,27 @@ export const Attendance: React.FC<AttendanceProps> = ({
               </button>
             </div>
             <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: "16px" }}>
-              <div style={{ display: "flex", gap: "8px" }}>
+              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                 <input
                   type="date"
                   className="form-input"
-                  style={{ flex: "0 0 auto" }}
+                  style={{ width: "160px", flex: "0 0 auto" }}
                   value={holidayDate}
                   onChange={(e) => setHolidayDate(e.target.value)}
                 />
                 <input
                   type="text"
                   className="form-input"
+                  style={{ flex: 1, minWidth: 0 }}
                   placeholder="Holiday name (e.g. Eid ul Fitr)"
                   value={holidayName}
                   onChange={(e) => setHolidayName(e.target.value)}
                 />
-                <button className="btn btn-primary" style={{ display: "flex", alignItems: "center", gap: "6px", whiteSpace: "nowrap" }} onClick={handleAddHoliday}>
+                <button className="btn btn-primary" style={{ flex: "0 0 auto", display: "flex", alignItems: "center", gap: "6px", whiteSpace: "nowrap" }} onClick={handleAddHoliday}>
                   <Plus size={14} /> Add
                 </button>
               </div>
-              <div style={{ maxHeight: "320px", overflowY: "auto" }}>
+              <div style={{ marginTop: "8px" }}>
                 {holidays.length === 0 ? (
                   <p style={{ color: "var(--text-secondary)", textAlign: "center", padding: "24px" }}>No holidays added yet.</p>
                 ) : (
