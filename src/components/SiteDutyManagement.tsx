@@ -25,8 +25,7 @@ export const SiteDutyManagement: React.FC<SiteDutyManagementProps> = ({
 
   const todayStr = new Date().toISOString().split("T")[0];
 
-  const isAdminOrManager =
-    currentUser.role === "it" || currentUser.role === "manager";
+  const canManageDuties = currentUser.isDepartmentHead === 1;
 
   const fetchSiteDuties = async () => {
     try {
@@ -164,7 +163,7 @@ export const SiteDutyManagement: React.FC<SiteDutyManagementProps> = ({
         <div>
           <h1 className="page-title">Site Duty Management</h1>
           <p className="page-subtitle">
-            {isAdminOrManager
+            {canManageDuties
               ? "Review and approve employee site duty requests."
               : "Apply for site duties and track your application status."}
           </p>
@@ -184,7 +183,7 @@ export const SiteDutyManagement: React.FC<SiteDutyManagementProps> = ({
         <div className="panel" style={{ padding: "20px" }}>
           <h2 className="panel-title" style={{ marginBottom: "16px" }}>
             <MapPin size={18} style={{ color: "var(--color-primary)" }} />
-            {isAdminOrManager
+            {canManageDuties
               ? "All Site Duty Requests"
               : "Your Site Duty History"}
           </h2>
@@ -192,19 +191,19 @@ export const SiteDutyManagement: React.FC<SiteDutyManagementProps> = ({
             <table className="data-table">
               <thead>
                 <tr>
-                  {isAdminOrManager && <th>Employee</th>}
+                  {canManageDuties && <th>Employee</th>}
                   <th>Site Name</th>
                   <th>Duration</th>
                   <th>Reason</th>
                   <th>Applied On</th>
                   <th>Status</th>
-                  {isAdminOrManager && <th>Actions</th>}
+                  {canManageDuties && <th>Actions</th>}
                 </tr>
               </thead>
               <tbody>
                 {duties.map((duty) => (
                   <tr key={duty.id}>
-                    {isAdminOrManager && (
+                    {canManageDuties && (
                       <td style={{ fontWeight: 600 }}>
                         {duty.userName} <br />
                         <span
@@ -227,9 +226,9 @@ export const SiteDutyManagement: React.FC<SiteDutyManagementProps> = ({
                       {new Date(duty.appliedAt).toLocaleDateString()}
                     </td>
                     <td>{getStatusBadge(duty.status)}</td>
-                    {isAdminOrManager && (
+                    {canManageDuties && (
                       <td>
-                        {duty.status === "pending" ? (
+                        {duty.status === "pending" && duty.userId !== currentUser.id ? (
                           <div
                             style={{ display: "flex", gap: "8px" }}
                             onClick={(e) => e.stopPropagation()}
@@ -276,7 +275,7 @@ export const SiteDutyManagement: React.FC<SiteDutyManagementProps> = ({
                 {duties.length === 0 && (
                   <tr>
                     <td
-                      colSpan={isAdminOrManager ? 7 : 5}
+                      colSpan={canManageDuties ? 7 : 5}
                       style={{ textAlign: "center", padding: "40px" }}
                     >
                       No site duty applications found.

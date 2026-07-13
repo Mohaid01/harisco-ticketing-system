@@ -28,8 +28,7 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({
 
   const todayStr = new Date().toISOString().split("T")[0];
 
-  const isAdminOrManager =
-    currentUser.role === "it" || currentUser.role === "manager";
+  const canManageLeaves = currentUser.isDepartmentHead === 1;
 
   const fetchLeaves = async () => {
     try {
@@ -160,7 +159,7 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({
         <div>
           <h1 className="page-title">Leave Management</h1>
           <p className="page-subtitle">
-            {isAdminOrManager
+            {canManageLeaves
               ? "Review and approve employee leave requests."
               : "Apply for leaves and track your application status."}
           </p>
@@ -180,25 +179,25 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({
         <div className="panel" style={{ padding: "20px" }}>
           <h2 className="panel-title" style={{ marginBottom: "16px" }}>
             <Calendar size={18} style={{ color: "var(--color-primary)" }} />
-            {isAdminOrManager ? "All Leave Requests" : "Your Leave History"}
+            {canManageLeaves ? "All Leave Requests" : "Your Leave History"}
           </h2>
           <div className="table-wrapper">
             <table className="data-table">
               <thead>
                 <tr>
-                  {isAdminOrManager && <th>Employee</th>}
+                  {canManageLeaves && <th>Employee</th>}
                   <th>Category</th>
                   <th>Duration</th>
                   <th>Reason</th>
                   <th>Applied On</th>
                   <th>Status</th>
-                  {isAdminOrManager && <th>Actions</th>}
+                  {canManageLeaves && <th>Actions</th>}
                 </tr>
               </thead>
               <tbody>
                 {leaves.map((leave) => (
                   <tr key={leave.id}>
-                    {isAdminOrManager && (
+                    {canManageLeaves && (
                       <td style={{ fontWeight: 600 }}>
                         {leave.userName} <br />
                         <span
@@ -223,9 +222,9 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({
                       {new Date(leave.appliedAt).toLocaleDateString()}
                     </td>
                     <td>{getStatusBadge(leave.status)}</td>
-                    {isAdminOrManager && (
+                    {canManageLeaves && (
                       <td>
-                        {leave.status === "pending" ? (
+                        {leave.status === "pending" && leave.userId !== currentUser.id ? (
                           <div
                             style={{ display: "flex", gap: "8px" }}
                             onClick={(e) => e.stopPropagation()}
@@ -272,7 +271,7 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({
                 {leaves.length === 0 && (
                   <tr>
                     <td
-                      colSpan={isAdminOrManager ? 7 : 5}
+                      colSpan={canManageLeaves ? 7 : 5}
                       style={{ textAlign: "center", padding: "40px" }}
                     >
                       No leave applications found.

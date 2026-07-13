@@ -1439,13 +1439,20 @@ app.get(
 
     try {
       const db = getDb();
+      const currentUser = await db.get("SELECT role, department, isDepartmentHead FROM users WHERE id = ?", [userId]);
       let query = "SELECT * FROM leave_applications ORDER BY appliedAt DESC";
       const params: any[] = [];
 
-      // Employees only see their own leaves
-      if (userRole === "employee") {
-        query =
-          "SELECT * FROM leave_applications WHERE userId = ? ORDER BY appliedAt DESC";
+      if (currentUser?.isDepartmentHead) {
+        query = `
+          SELECT l.* FROM leave_applications l
+          JOIN users u ON l.userId = u.id
+          WHERE l.userId = ? OR u.department = ?
+          ORDER BY l.appliedAt DESC
+        `;
+        params.push(userId, currentUser.department);
+      } else {
+        query = "SELECT * FROM leave_applications WHERE userId = ? ORDER BY appliedAt DESC";
         params.push(userId);
       }
 
@@ -1523,24 +1530,20 @@ app.put(
   "/api/leaves/:id/status",
   authenticateToken,
   async (req: AuthRequest, res: Response) => {
-    if (req.user?.role === "employee") {
-      res.status(403).json({ error: "Forbidden. Only managers or IT can update leave status." });
+    const db = getDb();
+    const leaveId = req.params.id;
+    const leave = await db.get<{ userId: string }>("SELECT userId FROM leave_applications WHERE id = ?", [leaveId]);
+    if (!leave) {
+      res.status(404).json({ error: "Leave application not found." });
       return;
     }
 
-    // Department head check: manager must be the head of the applicant's department
-    if (req.user?.role === "manager") {
-      const db = getDb();
-      const leaveId = req.params.id;
-      const leave = await db.get<{ userId: string }>("SELECT userId FROM leave_applications WHERE id = ?", [leaveId]);
-      if (leave) {
-        const applicant = await db.get<{ department: string | null }>("SELECT department FROM users WHERE id = ?", [leave.userId]);
-        const approver = await db.get<{ isDepartmentHead: number; department: string | null }>("SELECT isDepartmentHead, department FROM users WHERE id = ?", [req.user.id]);
-        if (!approver?.isDepartmentHead || approver.department !== applicant?.department) {
-          res.status(403).json({ error: "Forbidden. You are not the department head for this employee." });
-          return;
-        }
-      }
+    const applicant = await db.get<{ department: string | null }>("SELECT department FROM users WHERE id = ?", [leave.userId]);
+    const approver = await db.get<{ isDepartmentHead: number; department: string | null }>("SELECT isDepartmentHead, department FROM users WHERE id = ?", [req.user?.id]);
+
+    if (!approver?.isDepartmentHead || approver.department !== applicant?.department) {
+      res.status(403).json({ error: "Forbidden. Only the department head can approve this leave." });
+      return;
     }
 
     const { status } = req.body;
@@ -1650,12 +1653,20 @@ app.get(
 
     try {
       const db = getDb();
+      const currentUser = await db.get("SELECT role, department, isDepartmentHead FROM users WHERE id = ?", [userId]);
       let query = "SELECT * FROM site_duty_applications ORDER BY appliedAt DESC";
       const params: any[] = [];
 
-      if (userRole === "employee") {
-        query =
-          "SELECT * FROM site_duty_applications WHERE userId = ? ORDER BY appliedAt DESC";
+      if (currentUser?.isDepartmentHead) {
+        query = `
+          SELECT s.* FROM site_duty_applications s
+          JOIN users u ON s.userId = u.id
+          WHERE s.userId = ? OR u.department = ?
+          ORDER BY s.appliedAt DESC
+        `;
+        params.push(userId, currentUser.department);
+      } else {
+        query = "SELECT * FROM site_duty_applications WHERE userId = ? ORDER BY appliedAt DESC";
         params.push(userId);
       }
 
@@ -1733,24 +1744,20 @@ app.put(
   "/api/site-duties/:id/status",
   authenticateToken,
   async (req: AuthRequest, res: Response) => {
-    if (req.user?.role === "employee") {
-      res.status(403).json({ error: "Forbidden. Only managers or IT can update site duty status." });
+    const db = getDb();
+    const sdId = req.params.id;
+    const duty = await db.get<{ userId: string }>("SELECT userId FROM site_duty_applications WHERE id = ?", [sdId]);
+    if (!duty) {
+      res.status(404).json({ error: "Site duty application not found." });
       return;
     }
 
-    // Department head check: manager must be the head of the applicant's department
-    if (req.user?.role === "manager") {
-      const db = getDb();
-      const sdId = req.params.id;
-      const duty = await db.get<{ userId: string }>("SELECT userId FROM site_duty_applications WHERE id = ?", [sdId]);
-      if (duty) {
-        const applicant = await db.get<{ department: string | null }>("SELECT department FROM users WHERE id = ?", [duty.userId]);
-        const approver = await db.get<{ isDepartmentHead: number; department: string | null }>("SELECT isDepartmentHead, department FROM users WHERE id = ?", [req.user.id]);
-        if (!approver?.isDepartmentHead || approver.department !== applicant?.department) {
-          res.status(403).json({ error: "Forbidden. You are not the department head for this employee." });
-          return;
-        }
-      }
+    const applicant = await db.get<{ department: string | null }>("SELECT department FROM users WHERE id = ?", [duty.userId]);
+    const approver = await db.get<{ isDepartmentHead: number; department: string | null }>("SELECT isDepartmentHead, department FROM users WHERE id = ?", [req.user?.id]);
+
+    if (!approver?.isDepartmentHead || approver.department !== applicant?.department) {
+      res.status(403).json({ error: "Forbidden. Only the department head can approve this site duty." });
+      return;
     }
 
     const { status } = req.body;
