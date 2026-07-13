@@ -610,22 +610,6 @@ function App() {
               Harisco IT Support
             </span>
           </div>
-
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <span
-              style={{ fontSize: "0.82rem", color: "var(--text-secondary)" }}
-            >
-              Connected to SQLite Database
-            </span>
-            <span
-              style={{
-                width: "8px",
-                height: "8px",
-                borderRadius: "50%",
-                backgroundColor: "var(--status-closed)",
-              }}
-            ></span>
-          </div>
         </header>
 
         {/* Dynamic page container */}
