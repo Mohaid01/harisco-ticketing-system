@@ -213,7 +213,7 @@ export const SiteDutyManagement: React.FC<SiteDutyManagementProps> = ({
                             fontWeight: "normal",
                           }}
                         >
-                          {formatEmployeeCode(duty.userId)}
+                          {formatEmployeeCode(duty.userCode || duty.userId)}
                         </span>
                       </td>
                     )}

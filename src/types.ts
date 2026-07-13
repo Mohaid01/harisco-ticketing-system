@@ -78,6 +78,7 @@ export type LeaveStatus = 'pending' | 'approved' | 'rejected';
 export interface LeaveApplication {
   id: string;
   userId: string;
+  userCode?: string;
   userName: string;
   category: LeaveCategory;
   startDate: string;
@@ -90,6 +91,7 @@ export interface LeaveApplication {
 export interface SiteDutyApplication {
   id: string;
   userId: string;
+  userCode?: string;
   userName: string;
   siteName: string;
   reason: string;

@@ -216,6 +216,14 @@ export async function initDb() {
     )
   `);
 
+  // Create Holidays Table
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS holidays (
+      date TEXT PRIMARY KEY,
+      name TEXT NOT NULL
+    )
+  `);
+
   // Seed initial admin user if table is empty
   const userCount = await db.get<{ count: number }>('SELECT COUNT(*) as count FROM users');
   if (userCount && userCount.count === 0) {

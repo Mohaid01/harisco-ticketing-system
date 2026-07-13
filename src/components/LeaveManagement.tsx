@@ -207,7 +207,7 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({
                             fontWeight: "normal",
                           }}
                         >
-                          {formatEmployeeCode(leave.userId)}
+                          {formatEmployeeCode(leave.userCode || leave.userId)}
                         </span>
                       </td>
                     )}

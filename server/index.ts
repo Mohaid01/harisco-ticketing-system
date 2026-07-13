@@ -1451,14 +1451,19 @@ app.get(
 
       if (currentUser?.isDepartmentHead) {
         query = `
-          SELECT l.* FROM leave_applications l
+          SELECT l.*, u.username AS userCode FROM leave_applications l
           JOIN users u ON l.userId = u.id
           WHERE l.userId = ? OR u.department = ?
           ORDER BY l.appliedAt DESC
         `;
         params.push(userId, currentUser.department);
       } else {
-        query = "SELECT * FROM leave_applications WHERE userId = ? ORDER BY appliedAt DESC";
+        query = `
+          SELECT l.*, u.username AS userCode FROM leave_applications l
+          JOIN users u ON l.userId = u.id
+          WHERE l.userId = ? 
+          ORDER BY l.appliedAt DESC
+        `;
         params.push(userId);
       }
 
@@ -1665,14 +1670,19 @@ app.get(
 
       if (currentUser?.isDepartmentHead) {
         query = `
-          SELECT s.* FROM site_duty_applications s
+          SELECT s.*, u.username AS userCode FROM site_duty_applications s
           JOIN users u ON s.userId = u.id
           WHERE s.userId = ? OR u.department = ?
           ORDER BY s.appliedAt DESC
         `;
         params.push(userId, currentUser.department);
       } else {
-        query = "SELECT * FROM site_duty_applications WHERE userId = ? ORDER BY appliedAt DESC";
+        query = `
+          SELECT s.*, u.username AS userCode FROM site_duty_applications s
+          JOIN users u ON s.userId = u.id
+          WHERE s.userId = ? 
+          ORDER BY s.appliedAt DESC
+        `;
         params.push(userId);
       }
 
