@@ -102,6 +102,8 @@ interface DbUser {
   avatar: string;
   passwordHash: string;
   needsPasswordReset: number;
+  isDepartmentHead: number;
+  loginEnabled: number;
 }
 
 interface DbTicket {
@@ -192,12 +194,17 @@ app.post(
     try {
       const db = getDb();
       const user = await db.get<DbUser>(
-        "SELECT id, name, email, username, role, avatar, passwordHash, needsPasswordReset FROM users WHERE LOWER(username) = ?",
+        "SELECT id, name, email, username, role, avatar, passwordHash, needsPasswordReset, isDepartmentHead, loginEnabled FROM users WHERE LOWER(username) = ?",
         [username.toLowerCase().trim()],
       );
 
       if (!user) {
         res.status(401).json({ error: "Invalid username or password." });
+        return;
+      }
+
+      if (!user.loginEnabled) {
+        res.status(403).json({ error: "Your account has been disabled. Please contact IT." });
         return;
       }
 
@@ -366,7 +373,7 @@ app.get(
     try {
       const db = getDb();
       const users = await db.all(
-        "SELECT id, name, email, username, role, avatar, department, designation FROM users ORDER BY username ASC",
+        "SELECT id, name, email, username, role, avatar, department, designation, isDepartmentHead, loginEnabled FROM users ORDER BY username ASC",
       );
       res.json(users);
     } catch {
@@ -395,6 +402,8 @@ app.post(
       avatar,
       department,
       designation,
+      isDepartmentHead,
+      loginEnabled,
     } = req.body;
     if (!name || !username || !role) {
       res.status(400).json({ error: "Name, username, and role are required." });
@@ -440,7 +449,7 @@ app.post(
       const userId = `usr-${Date.now()}`;
 
       await db.run(
-        "INSERT INTO users (id, name, email, username, role, avatar, passwordHash, needsPasswordReset, department, designation) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?)",
+        "INSERT INTO users (id, name, email, username, role, avatar, passwordHash, needsPasswordReset, department, designation, isDepartmentHead, loginEnabled) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)",
         [
           userId,
           name,
@@ -451,6 +460,8 @@ app.post(
           passwordHash,
           department ? department.trim() : null,
           designation ? designation.trim() : null,
+          isDepartmentHead ? 1 : 0,
+          loginEnabled === false ? 0 : 1,
         ],
       );
 
@@ -463,6 +474,8 @@ app.post(
         avatar: avatar ? avatar.trim() : "",
         department: department ? department.trim() : null,
         designation: designation ? designation.trim() : null,
+        isDepartmentHead: isDepartmentHead ? 1 : 0,
+        loginEnabled: loginEnabled === false ? 0 : 1,
       });
     } catch (error) {
       console.error("Failed to create user:", error);
@@ -567,7 +580,7 @@ app.put(
     }
 
     const userId = req.params.id;
-    const { name, email, department, designation, avatar } = req.body;
+    const { name, email, department, designation, avatar, isDepartmentHead, loginEnabled } = req.body;
 
     if (!name || !name.trim()) {
       res.status(400).json({ error: "Name is required." });
@@ -599,13 +612,15 @@ app.put(
       }
 
       const result = await db.run(
-        "UPDATE users SET name = ?, email = ?, department = ?, designation = ?, avatar = ? WHERE id = ?",
+        "UPDATE users SET name = ?, email = ?, department = ?, designation = ?, avatar = ?, isDepartmentHead = ?, loginEnabled = ? WHERE id = ?",
         [
           name.trim(),
           finalEmail,
           finalDepartment,
           finalDesignation,
           avatar ? avatar.trim() : "",
+          isDepartmentHead ? 1 : 0,
+          loginEnabled === false ? 0 : 1,
           userId,
         ],
       );
@@ -622,6 +637,8 @@ app.put(
         department: finalDepartment,
         designation: finalDesignation,
         avatar: avatar ? avatar.trim() : "",
+        isDepartmentHead: isDepartmentHead ? 1 : 0,
+        loginEnabled: loginEnabled === false ? 0 : 1,
       });
     } catch (error) {
       console.error("Failed to update user:", error);
@@ -1494,12 +1511,23 @@ app.put(
   authenticateToken,
   async (req: AuthRequest, res: Response) => {
     if (req.user?.role === "employee") {
-      res
-        .status(403)
-        .json({
-          error: "Forbidden. Only managers or IT can update leave status.",
-        });
+      res.status(403).json({ error: "Forbidden. Only managers or IT can update leave status." });
       return;
+    }
+
+    // Department head check: manager must be the head of the applicant's department
+    if (req.user?.role === "manager") {
+      const db = getDb();
+      const leaveId = req.params.id;
+      const leave = await db.get<{ userId: string }>("SELECT userId FROM leave_applications WHERE id = ?", [leaveId]);
+      if (leave) {
+        const applicant = await db.get<{ department: string | null }>("SELECT department FROM users WHERE id = ?", [leave.userId]);
+        const approver = await db.get<{ isDepartmentHead: number; department: string | null }>("SELECT isDepartmentHead, department FROM users WHERE id = ?", [req.user.id]);
+        if (!approver?.isDepartmentHead || approver.department !== applicant?.department) {
+          res.status(403).json({ error: "Forbidden. You are not the department head for this employee." });
+          return;
+        }
+      }
     }
 
     const { status } = req.body;
@@ -1678,12 +1706,23 @@ app.put(
   authenticateToken,
   async (req: AuthRequest, res: Response) => {
     if (req.user?.role === "employee") {
-      res
-        .status(403)
-        .json({
-          error: "Forbidden. Only managers or IT can update site duty status.",
-        });
+      res.status(403).json({ error: "Forbidden. Only managers or IT can update site duty status." });
       return;
+    }
+
+    // Department head check: manager must be the head of the applicant's department
+    if (req.user?.role === "manager") {
+      const db = getDb();
+      const sdId = req.params.id;
+      const duty = await db.get<{ userId: string }>("SELECT userId FROM site_duty_applications WHERE id = ?", [sdId]);
+      if (duty) {
+        const applicant = await db.get<{ department: string | null }>("SELECT department FROM users WHERE id = ?", [duty.userId]);
+        const approver = await db.get<{ isDepartmentHead: number; department: string | null }>("SELECT isDepartmentHead, department FROM users WHERE id = ?", [req.user.id]);
+        if (!approver?.isDepartmentHead || approver.department !== applicant?.department) {
+          res.status(403).json({ error: "Forbidden. You are not the department head for this employee." });
+          return;
+        }
+      }
     }
 
     const { status } = req.body;

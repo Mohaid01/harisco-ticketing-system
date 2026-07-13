@@ -32,7 +32,9 @@ export async function initDb() {
       role TEXT CHECK(role IN ('it', 'employee', 'manager')) NOT NULL,
       avatar TEXT NOT NULL,
       passwordHash TEXT NOT NULL,
-      needsPasswordReset INTEGER DEFAULT 1
+      needsPasswordReset INTEGER DEFAULT 1,
+      isDepartmentHead INTEGER DEFAULT 0,
+      loginEnabled INTEGER DEFAULT 1
     )
   `);
 
@@ -107,6 +109,18 @@ export async function initDb() {
 
   try {
     await db.exec('ALTER TABLE users ADD COLUMN designation TEXT');
+  } catch {
+    // Column might already exist, ignore error
+  }
+
+  try {
+    await db.exec('ALTER TABLE users ADD COLUMN isDepartmentHead INTEGER DEFAULT 0');
+  } catch {
+    // Column might already exist, ignore error
+  }
+
+  try {
+    await db.exec('ALTER TABLE users ADD COLUMN loginEnabled INTEGER DEFAULT 1');
   } catch {
     // Column might already exist, ignore error
   }
@@ -192,7 +206,7 @@ export async function initDb() {
     const passwordHash = await bcrypt.hash(adminPassword, 10);
 
     await db.run(
-      'INSERT INTO users (id, name, email, username, role, avatar, passwordHash, needsPasswordReset) VALUES (?, ?, ?, ?, ?, ?, ?, 0)',
+      'INSERT INTO users (id, name, email, username, role, avatar, passwordHash, needsPasswordReset, isDepartmentHead, loginEnabled) VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, 1)',
       [
         'usr-1',
         'Mohid Bin Shahid',

@@ -420,6 +420,8 @@ function App() {
     avatar?: string;
     department?: string;
     designation?: string;
+    isDepartmentHead?: boolean;
+    loginEnabled?: boolean;
   }) => {
     if (!token || !currentUser) return;
     try {
@@ -479,7 +481,7 @@ function App() {
   // Handle updating users (IT only)
   const handleUpdateUser = async (
     userId: string,
-    data: { name: string; email: string | null; department?: string | null; designation?: string | null; avatar?: string | null },
+    data: { name: string; email: string | null; department?: string | null; designation?: string | null; avatar?: string | null; isDepartmentHead?: boolean; loginEnabled?: boolean },
   ) => {
     if (!token || !currentUser) return;
     try {
@@ -501,7 +503,7 @@ function App() {
       setUsers((prevUsers) =>
         prevUsers.map((u) =>
           u.id === userId
-            ? { ...u, name: updatedUser.name, email: updatedUser.email, department: updatedUser.department, designation: updatedUser.designation, avatar: updatedUser.avatar }
+            ? { ...u, name: updatedUser.name, email: updatedUser.email, department: updatedUser.department, designation: updatedUser.designation, avatar: updatedUser.avatar, isDepartmentHead: updatedUser.isDepartmentHead, loginEnabled: updatedUser.loginEnabled }
             : u,
         ),
       );

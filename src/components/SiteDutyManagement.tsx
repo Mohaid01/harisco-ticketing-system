@@ -15,6 +15,8 @@ export const SiteDutyManagement: React.FC<SiteDutyManagementProps> = ({
   const [duties, setDuties] = useState<SiteDutyApplication[]>([]);
   const [loading, setLoading] = useState(true);
 
+  console.log(duties);
+
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [siteName, setSiteName] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -23,7 +25,8 @@ export const SiteDutyManagement: React.FC<SiteDutyManagementProps> = ({
 
   const todayStr = new Date().toISOString().split("T")[0];
 
-  const isAdminOrManager = currentUser.role === "it" || currentUser.role === "manager";
+  const isAdminOrManager =
+    currentUser.role === "it" || currentUser.role === "manager";
 
   const fetchSiteDuties = async () => {
     try {
@@ -90,7 +93,12 @@ export const SiteDutyManagement: React.FC<SiteDutyManagementProps> = ({
   };
 
   const handleUpdateStatus = async (id: string, status: LeaveStatus) => {
-    if (!window.confirm(`Are you sure you want to mark this request as ${status}?`)) return;
+    if (
+      !window.confirm(
+        `Are you sure you want to mark this request as ${status}?`,
+      )
+    )
+      return;
 
     try {
       const res = await fetch(`/api/site-duties/${id}/status`, {
@@ -176,7 +184,9 @@ export const SiteDutyManagement: React.FC<SiteDutyManagementProps> = ({
         <div className="panel" style={{ padding: "20px" }}>
           <h2 className="panel-title" style={{ marginBottom: "16px" }}>
             <MapPin size={18} style={{ color: "var(--color-primary)" }} />
-            {isAdminOrManager ? "All Site Duty Requests" : "Your Site Duty History"}
+            {isAdminOrManager
+              ? "All Site Duty Requests"
+              : "Your Site Duty History"}
           </h2>
           <div className="table-wrapper">
             <table className="data-table">
@@ -226,7 +236,10 @@ export const SiteDutyManagement: React.FC<SiteDutyManagementProps> = ({
                           >
                             <button
                               className="btn btn-primary"
-                              style={{ padding: "4px 8px", fontSize: "0.75rem" }}
+                              style={{
+                                padding: "4px 8px",
+                                fontSize: "0.75rem",
+                              }}
                               onClick={() =>
                                 handleUpdateStatus(duty.id, "approved")
                               }
@@ -235,7 +248,10 @@ export const SiteDutyManagement: React.FC<SiteDutyManagementProps> = ({
                             </button>
                             <button
                               className="btn btn-danger"
-                              style={{ padding: "4px 8px", fontSize: "0.75rem" }}
+                              style={{
+                                padding: "4px 8px",
+                                fontSize: "0.75rem",
+                              }}
                               onClick={() =>
                                 handleUpdateStatus(duty.id, "rejected")
                               }
@@ -276,19 +292,37 @@ export const SiteDutyManagement: React.FC<SiteDutyManagementProps> = ({
       {/* Apply Site Duty Modal */}
       {showApplyModal && (
         <div className="modal-overlay" onClick={() => setShowApplyModal(false)}>
-          <div className="modal-content" style={{ maxWidth: "500px" }} onClick={(e) => e.stopPropagation()}>
-            <div className="panel-header" style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-color)', margin: 0 }}>
-              <h2 className="panel-title" style={{ fontSize: '1.15rem' }}>Apply for Site Duty</h2>
+          <div
+            className="modal-content"
+            style={{ maxWidth: "500px" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className="panel-header"
+              style={{
+                padding: "20px 24px",
+                borderBottom: "1px solid var(--border-color)",
+                margin: 0,
+              }}
+            >
+              <h2 className="panel-title" style={{ fontSize: "1.15rem" }}>
+                Apply for Site Duty
+              </h2>
               <button
                 className="btn btn-secondary"
-                style={{ width: '32px', height: '32px', padding: 0, borderRadius: '50%' }}
+                style={{
+                  width: "32px",
+                  height: "32px",
+                  padding: 0,
+                  borderRadius: "50%",
+                }}
                 onClick={() => setShowApplyModal(false)}
               >
                 <X size={16} />
               </button>
             </div>
             <form onSubmit={handleApply}>
-              <div style={{ padding: '24px' }}>
+              <div style={{ padding: "24px" }}>
                 <div className="form-group">
                   <label className="form-label">Site Name</label>
                   <input
@@ -331,7 +365,7 @@ export const SiteDutyManagement: React.FC<SiteDutyManagementProps> = ({
                   <textarea
                     className="form-input"
                     rows={3}
-                    style={{ minHeight: '100px', resize: 'vertical' }}
+                    style={{ minHeight: "100px", resize: "vertical" }}
                     value={reason}
                     onChange={(e) => setReason(e.target.value)}
                     placeholder="Please provide a brief reason for your visit..."
@@ -340,7 +374,15 @@ export const SiteDutyManagement: React.FC<SiteDutyManagementProps> = ({
                 </div>
               </div>
 
-              <div style={{ padding: '16px 24px', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+              <div
+                style={{
+                  padding: "16px 24px",
+                  borderTop: "1px solid var(--border-color)",
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  gap: "12px",
+                }}
+              >
                 <button
                   type="button"
                   className="btn btn-secondary"
@@ -348,10 +390,7 @@ export const SiteDutyManagement: React.FC<SiteDutyManagementProps> = ({
                 >
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  className="btn btn-primary"
-                >
+                <button type="submit" className="btn btn-primary">
                   Submit Application
                 </button>
               </div>

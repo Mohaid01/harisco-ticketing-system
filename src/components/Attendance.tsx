@@ -34,10 +34,28 @@ const PUNCH_STATUS = {
   IGNORED: "Ignored",
 } as const;
 
-// Shift Constants (9:30 AM to 6:00 PM)
+// Shift Constants (9:30 AM to 6:00 PM, Saturday 10:00 AM to 4:00 PM)
 const SHIFTS = {
   GENERAL: "General Shift (09:30 AM - 06:00 PM)",
 } as const;
+
+const SHIFT_START = { weekday: { h: 9, m: 30 }, saturday: { h: 10, m: 0 } };
+
+const hasShiftStartedPKT = (): boolean => {
+  const now = new Date();
+  const pktNow = new Date(now.getTime() + 5 * 60 * 60 * 1000);
+  const dayOfWeek = pktNow.getUTCDay(); // 0=Sun, 6=Sat
+  const currentH = pktNow.getUTCHours();
+  const currentM = pktNow.getUTCMinutes();
+  const start = dayOfWeek === 6 ? SHIFT_START.saturday : SHIFT_START.weekday;
+  return currentH > start.h || (currentH === start.h && currentM >= start.m);
+};
+
+const isTodaySundayPKT = (): boolean => {
+  const now = new Date();
+  const pktNow = new Date(now.getTime() + 5 * 60 * 60 * 1000);
+  return pktNow.getUTCDay() === 0;
+};
 
 export const Attendance: React.FC<AttendanceProps> = ({
   currentUser,
@@ -244,8 +262,11 @@ export const Attendance: React.FC<AttendanceProps> = ({
         | "Clocked Out"
         | "Absent"
         | "On Leave"
-        | "Site Duty" = "Absent";
+        | "Site Duty"
+        | "Pending" = "Pending";
       let isLateToday = false;
+
+      const shiftStarted = hasShiftStartedPKT();
 
       if (todayPunches.length > 0) {
         const sortedPunches = [...todayPunches].sort((a, b) => {
@@ -264,7 +285,8 @@ export const Attendance: React.FC<AttendanceProps> = ({
           if (parts.length >= 2) {
             const hour = parseInt(parts[0], 10);
             const min = parseInt(parts[1], 10);
-            const isSaturday = new Date().getDay() === 6;
+            const pktNow = new Date(new Date().getTime() + 5 * 60 * 60 * 1000);
+            const isSaturday = pktNow.getUTCDay() === 6;
 
             isLateToday = isSaturday
               ? hour > 10 || (hour === 10 && min >= 30)
@@ -286,11 +308,10 @@ export const Attendance: React.FC<AttendanceProps> = ({
         } else if (lastStatus.includes("out")) {
           todayStatus = "Clocked Out";
         } else {
-          // Fallback if they have punches but status string is weird
           todayStatus = "Clocked In";
         }
       } else {
-        todayStatus = "Absent";
+        todayStatus = shiftStarted ? "Absent" : "Pending";
       }
 
       // Calculate monthly stats for the current month up to today
@@ -353,7 +374,10 @@ export const Attendance: React.FC<AttendanceProps> = ({
               }
             }
           } else {
-            daysAbsent++;
+            // Only count today as absent if the shift has already started
+            if (dateStr !== todayStr || shiftStarted) {
+              daysAbsent++;
+            }
           }
         }
         tempDate.setDate(tempDate.getDate() - 1);
@@ -413,7 +437,8 @@ export const Attendance: React.FC<AttendanceProps> = ({
     const todayStr = new Intl.DateTimeFormat("en-CA", {
       timeZone: "Asia/Karachi",
     }).format(new Date());
-    const isSaturday = new Date().getDay() === 6;
+    const pktNow = new Date(new Date().getTime() + 5 * 60 * 60 * 1000);
+    const isSaturday = pktNow.getUTCDay() === 6;
 
     let present = 0;
     let absent = 0;
@@ -444,20 +469,16 @@ export const Attendance: React.FC<AttendanceProps> = ({
           if (parts.length >= 2) {
             const hour = parseInt(parts[0], 10);
             const min = parseInt(parts[1], 10);
-
-            // Grace periods:
-            // Saturday: 10:00 to 10:29
-            // Mon-Fri: 09:30 to 09:59
             const isLate = isSaturday
               ? hour > 10 || (hour === 10 && min >= 30)
               : hour >= 10;
-
             if (isLate) late++;
           }
         }
-      } else {
+      } else if (emp.todayStatus === "Absent") {
         absent++;
       }
+      // "Pending" is not counted as absent
     }
 
     return { present, absent, late };
@@ -639,11 +660,14 @@ export const Attendance: React.FC<AttendanceProps> = ({
       timeZone: "Asia/Karachi",
     }).format(new Date());
 
+    const shiftStarted = hasShiftStartedPKT();
+
     selectedEmployeePunchLogs.forEach((log) => {
-      // Don't count days after today
       if (log.date > todayStr) return;
 
       if (log.status !== "Weekend") {
+        // Only include today in the total count if the shift has started or the employee already has a punch
+        if (log.date === todayStr && !shiftStarted && log.firstIn === "--") return;
         workDaysCounted++;
         if (log.firstIn !== "--") {
           present++;
@@ -693,6 +717,19 @@ export const Attendance: React.FC<AttendanceProps> = ({
         return (
           <span className="badge badge-handover">
             <Calendar size={12} /> Site Duty
+          </span>
+        );
+      case "Pending":
+        return (
+          <span
+            className="badge badge-type"
+            style={{
+              borderColor: "rgba(251,191,36,0.3)",
+              color: "#fbbf24",
+              backgroundColor: "rgba(251,191,36,0.08)",
+            }}
+          >
+            <Clock size={12} /> Pending
           </span>
         );
       default:
@@ -941,7 +978,56 @@ export const Attendance: React.FC<AttendanceProps> = ({
       ) : (
         <>
           {/* ─────────────────── ALL EMPLOYEES SUMMARY VIEW ─────────────────── */}
-          {viewMode === "summary" && isAdminRole && (
+          {viewMode === "summary" && isAdminRole && isTodaySundayPKT() ? (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "80px 40px",
+                gap: "16px",
+                textAlign: "center",
+              }}
+            >
+              <div
+                style={{
+                  width: "72px",
+                  height: "72px",
+                  borderRadius: "50%",
+                  background: "rgba(99,102,241,0.12)",
+                  border: "1px solid rgba(99,102,241,0.2)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "2rem",
+                }}
+              >
+                🌿
+              </div>
+              <h2
+                style={{
+                  fontSize: "1.4rem",
+                  fontWeight: 700,
+                  color: "var(--text-primary)",
+                  margin: 0,
+                }}
+              >
+                It&apos;s the Weekend!
+              </h2>
+              <p
+                style={{
+                  fontSize: "0.95rem",
+                  color: "var(--text-secondary)",
+                  maxWidth: "380px",
+                  margin: 0,
+                  lineHeight: 1.6,
+                }}
+              >
+                Today is Sunday — a well-deserved day off. Attendance tracking resumes on Monday.
+              </p>
+            </div>
+          ) : viewMode === "summary" && isAdminRole && (
             <div
               style={{ display: "flex", flexDirection: "column", gap: "20px" }}
             >

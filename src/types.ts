@@ -10,6 +10,8 @@ export interface AppUser {
   department?: string | null;
   designation?: string | null;
   avatar?: string | null;
+  isDepartmentHead?: number;
+  loginEnabled?: number;
 }
 
 export type TicketType = 'hardware' | 'software' | 'maintenance' | 'upgrade';

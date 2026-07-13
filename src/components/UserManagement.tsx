@@ -18,6 +18,8 @@ interface UserManagementProps {
     avatar?: string;
     department?: string;
     designation?: string;
+    isDepartmentHead?: boolean;
+    loginEnabled?: boolean;
   }) => void;
   onDeleteUser: (userId: string) => void;
   onUpdateUser?: (
@@ -28,6 +30,8 @@ interface UserManagementProps {
       department?: string | null;
       designation?: string | null;
       avatar?: string | null;
+      isDepartmentHead?: boolean;
+      loginEnabled?: boolean;
     },
   ) => void;
 }
@@ -48,6 +52,8 @@ export const UserManagement: React.FC<UserManagementProps> = ({
   const [role, setRole] = useState<UserRole>("employee");
   const [department, setDepartment] = useState("");
   const [designation, setDesignation] = useState("");
+  const [isDepartmentHead, setIsDepartmentHead] = useState(false);
+  const [loginEnabled, setLoginEnabled] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const [resetPasswordTarget, setResetPasswordTarget] =
@@ -59,6 +65,8 @@ export const UserManagement: React.FC<UserManagementProps> = ({
   const [editDepartment, setEditDepartment] = useState("");
   const [editDesignation, setEditDesignation] = useState("");
   const [editAvatar, setEditAvatar] = useState("");
+  const [editIsDepartmentHead, setEditIsDepartmentHead] = useState(false);
+  const [editLoginEnabled, setEditLoginEnabled] = useState(true);
 
   const handleFileChange = (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -118,6 +126,8 @@ export const UserManagement: React.FC<UserManagementProps> = ({
       avatar: avatar || undefined,
       department: department.trim() || undefined,
       designation: designation.trim() || undefined,
+      isDepartmentHead,
+      loginEnabled,
     });
 
     setName("");
@@ -128,6 +138,8 @@ export const UserManagement: React.FC<UserManagementProps> = ({
     setRole("employee");
     setDepartment("");
     setDesignation("");
+    setIsDepartmentHead(false);
+    setLoginEnabled(true);
   };
 
   const handleSaveEdit = (userId: string) => {
@@ -142,6 +154,8 @@ export const UserManagement: React.FC<UserManagementProps> = ({
         department: editDepartment.trim() || null,
         designation: editDesignation.trim() || null,
         avatar: editAvatar || null,
+        isDepartmentHead: editIsDepartmentHead,
+        loginEnabled: editLoginEnabled,
       });
     }
     setEditingUserId(null);
@@ -154,6 +168,8 @@ export const UserManagement: React.FC<UserManagementProps> = ({
     setEditDepartment(user.department || "");
     setEditDesignation(user.designation || "");
     setEditAvatar(user.avatar || "");
+    setEditIsDepartmentHead(!!user.isDepartmentHead);
+    setEditLoginEnabled(user.loginEnabled !== 0);
   };
 
   const getRoleBadgeClass = (r: string) => `role-badge-pill role-badge-${r}`;
@@ -262,7 +278,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
 
             <div className="form-group">
               <label htmlFor="user-department-input" className="form-label">
-                Department (Optional)
+                Department
               </label>
               <select
                 id="user-department-input"
@@ -270,8 +286,11 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                 style={{ backgroundColor: "var(--bg-primary)" }}
                 value={department}
                 onChange={(e) => setDepartment(e.target.value)}
+                required
               >
-                <option value="">-- Select Department --</option>
+                <option value="" selected disabled>
+                  -- Select Department --
+                </option>
                 <option value="Executive">Executive</option>
                 <option value="IT">IT</option>
                 <option value="Accounts">Accounts</option>
@@ -284,7 +303,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
 
             <div className="form-group">
               <label htmlFor="user-designation-input" className="form-label">
-                Designation (Optional)
+                Designation
               </label>
               <input
                 id="user-designation-input"
@@ -293,6 +312,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                 placeholder="e.g. Senior Engineer"
                 value={designation}
                 onChange={(e) => setDesignation(e.target.value)}
+                required
               />
             </div>
 
@@ -377,6 +397,26 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                 <option value="it">IT Administrator</option>
                 <option value="manager">Manager</option>
               </select>
+            </div>
+
+            <div className="form-group" style={{ marginBottom: "24px", display: "flex", flexDirection: "column", gap: "10px" }}>
+              <label className="form-label" style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+                <input 
+                  type="checkbox" 
+                  checked={isDepartmentHead} 
+                  onChange={(e) => setIsDepartmentHead(e.target.checked)} 
+                />
+                Department Head (can approve leaves/duties)
+              </label>
+              
+              <label className="form-label" style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+                <input 
+                  type="checkbox" 
+                  checked={loginEnabled} 
+                  onChange={(e) => setLoginEnabled(e.target.checked)} 
+                />
+                Enable Login
+              </label>
             </div>
 
             <button
@@ -504,11 +544,17 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                       </label>
                       <select
                         className="form-input"
-                        style={{ ...inlineInputStyle, backgroundColor: "var(--bg-primary)" }}
+                        style={{
+                          ...inlineInputStyle,
+                          backgroundColor: "var(--bg-primary)",
+                        }}
                         value={editDepartment}
                         onChange={(e) => setEditDepartment(e.target.value)}
+                        required
                       >
-                        <option value="">-- Select Department --</option>
+                        <option value="" selected disabled>
+                          -- Select Department --
+                        </option>
                         <option value="Executive">Executive</option>
                         <option value="IT">IT</option>
                         <option value="Accounts">Accounts</option>
@@ -540,8 +586,30 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                         value={editDesignation}
                         onChange={(e) => setEditDesignation(e.target.value)}
                         placeholder="e.g. Senior Engineer"
+                        required
                       />
                     </div>
+                    
+                    <div className="form-group" style={{ marginBottom: "12px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                      <label className="form-label" style={{ ...inlineLabelStyle, display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
+                        <input 
+                          type="checkbox" 
+                          checked={editIsDepartmentHead} 
+                          onChange={(e) => setEditIsDepartmentHead(e.target.checked)} 
+                        />
+                        Department Head
+                      </label>
+                      
+                      <label className="form-label" style={{ ...inlineLabelStyle, display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
+                        <input 
+                          type="checkbox" 
+                          checked={editLoginEnabled} 
+                          onChange={(e) => setEditLoginEnabled(e.target.checked)} 
+                        />
+                        Enable Login
+                      </label>
+                    </div>
+
                     <div style={{ display: "flex", gap: "8px", width: "100%" }}>
                       <button
                         className="btn btn-secondary"
