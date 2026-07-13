@@ -2228,7 +2228,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
               </div>
 
               {/* Today's Shift Progress & KPI Cards split */}
-              <div className="dashboard-two-col">
+              <div className="attendance-two-col">
                 {/* Shift Progress Panel (Left) */}
                 <div className="panel" style={{ padding: "20px" }}>
                   <h3 className="panel-title" style={{ marginBottom: "16px" }}>

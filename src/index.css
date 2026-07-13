@@ -403,6 +403,13 @@ h1.page-title {
 /* Two columns panel grids */
 .dashboard-two-col {
   display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.attendance-two-col {
+  display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 24px;
   align-items: start;
@@ -1086,6 +1093,14 @@ h1.page-title {
 }
 
 @media screen and (max-width: 768px) {
+  .details-layout {
+    /* Collapse the 2fr 1fr columns into a single full-width column */
+    grid-template-columns: 1fr;
+
+    /* Slightly tighten the gap to maximize vertical screen real estate on mobile */
+    gap: 16px;
+  }
+
   .user-mgmt-grid {
     display: flex;
     flex-direction: column;
@@ -1334,7 +1349,8 @@ h1.page-title {
 
   /* Grid Layout Fallbacks */
   .dashboard-grid,
-  .dashboard-two-col {
+  .dashboard-two-col,
+  .attendance-two-col {
     grid-template-columns: 1fr;
     gap: 16px;
     width: 100%;
