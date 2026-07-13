@@ -74,7 +74,6 @@ export const Attendance: React.FC<AttendanceProps> = ({
   const [logs, setLogs] = useState<AttendanceLog[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
-  const [clearing, setClearing] = useState<boolean>(false);
   const [viewMode, setViewMode] = useState<ViewMode>(
     canViewAll ? "summary" : "individual",
   );
@@ -176,33 +175,6 @@ export const Attendance: React.FC<AttendanceProps> = ({
       headers: { Authorization: `Bearer ${token}` },
     });
     fetchHolidays();
-  };
-
-  const handleClearAttendance = async () => {
-    if (
-      !window.confirm(
-        "Are you sure you want to permanently delete ALL attendance logs? This action cannot be undone.",
-      )
-    )
-      return;
-    setClearing(true);
-    try {
-      const token = localStorage.getItem("harisco_token");
-      const res = await fetch("/api/attendance", {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        setLogs([]);
-      } else {
-        const data = await res.json();
-        alert(data.error || "Failed to clear attendance logs.");
-      }
-    } catch {
-      alert("Network error. Could not clear attendance logs.");
-    } finally {
-      setClearing(false);
-    }
   };
 
   const handleDeletePunchOut = async (logId: number, dateStr: string) => {
@@ -1000,16 +972,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
         </div>
         <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
           {canViewAll && (
-            <div
-              className="btn-group"
-              style={{
-                display: "flex",
-                background: "var(--bg-secondary)",
-                border: "1px solid var(--border-color)",
-                borderRadius: "var(--radius-md)",
-                padding: "2px",
-              }}
-            >
+            <div className="btn-group">
               <button
                 className={`btn ${viewMode === "summary" ? "btn-primary" : "btn-secondary"}`}
                 style={{
@@ -1038,7 +1001,22 @@ export const Attendance: React.FC<AttendanceProps> = ({
               </button>
             </div>
           )}
-          {canWrite && (
+          <div className="btn-group">
+            {canWrite && (
+              <button
+                className="btn btn-secondary"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  padding: "8px 14px",
+                }}
+                onClick={() => setShowHolidayModal(true)}
+              >
+                <CalendarOff size={14} />
+                Holidays
+              </button>
+            )}
             <button
               className="btn btn-secondary"
               style={{
@@ -1047,42 +1025,13 @@ export const Attendance: React.FC<AttendanceProps> = ({
                 gap: "8px",
                 padding: "8px 14px",
               }}
-              onClick={() => setShowHolidayModal(true)}
+              onClick={() => fetchLogs(true)}
+              disabled={refreshing}
             >
-              <CalendarOff size={14} />
-              Holidays
+              <RefreshCw size={14} className={refreshing ? "spin" : ""} />
+              Refresh
             </button>
-          )}
-          <button
-            className="btn btn-secondary"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              padding: "8px 14px",
-            }}
-            onClick={() => fetchLogs(true)}
-            disabled={refreshing}
-          >
-            <RefreshCw size={14} className={refreshing ? "spin" : ""} />
-            Refresh
-          </button>
-          {currentUser.role === "it" && (
-            <button
-              className="btn btn-danger"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                padding: "8px 14px",
-              }}
-              onClick={handleClearAttendance}
-              disabled={clearing}
-            >
-              <Trash2 size={14} />
-              {clearing ? "Clearing..." : "Clear Attendance"}
-            </button>
-          )}
+          </div>
         </div>
       </div>
 
@@ -1647,13 +1596,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
             >
               {/* Back Navigation Bar for Managers/Admins/Executives */}
               {canViewAll && (
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
-                >
+                <div className="btn-selector-grp">
                   <button
                     className="btn btn-secondary"
                     style={{
@@ -2285,10 +2228,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
               </div>
 
               {/* Today's Shift Progress & KPI Cards split */}
-              <div
-                className="dashboard-two-col"
-                style={{ gridTemplateColumns: "1fr 1fr", alignItems: "start" }}
-              >
+              <div className="dashboard-two-col">
                 {/* Shift Progress Panel (Left) */}
                 <div className="panel" style={{ padding: "20px" }}>
                   <h3 className="panel-title" style={{ marginBottom: "16px" }}>
