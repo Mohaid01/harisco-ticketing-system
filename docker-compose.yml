@@ -21,7 +21,7 @@ services:
     container_name: ticketing-system-cloudflared-tunnel
     command: tunnel run
     environment:
-      - TUNNEL_TOKEN=eyJhIjoiZGNiNTYxMDIxOWQ3OTAzNTdlZmUxMzJiNDg4ZTM2MzEiLCJ0IjoiYTQ0Y2Q5NGMtZDFiOS00MzhjLWFiMjEtNTJmNTA0YTkzMzFhIiwicyI6Ik1HWmxNbUkwWW1VdE1tRTNZaTAwWldZekxUaGpOall0TW1GbE1tWmtNekZpTVdWbCJ9
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN}
     restart: unless-stopped
     depends_on:
       - harisco-ticketing
