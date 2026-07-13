@@ -1896,15 +1896,26 @@ export const Attendance: React.FC<AttendanceProps> = ({
 
               {/* Monthly Calendar View (Top) */}
               <div className="panel" style={{ padding: "20px" }}>
+                {/* Header Section - Added flexWrap and gap for mobile layout */}
                 <div
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
                     marginBottom: "16px",
+                    flexWrap: "wrap",
+                    gap: "12px",
                   }}
                 >
-                  <h3 className="panel-title">
+                  <h3
+                    className="panel-title"
+                    style={{
+                      margin: 0,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                  >
                     <Calendar
                       size={16}
                       style={{ color: "var(--color-primary)" }}
@@ -1940,320 +1951,336 @@ export const Attendance: React.FC<AttendanceProps> = ({
                   </select>
                 </div>
 
+                {/* Scrollable wrapper container for mobile views */}
                 <div
                   style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(7, 1fr)",
-                    gap: "8px",
-                    marginTop: "12px",
+                    overflowX: "auto",
+                    width: "100%",
+                    WebkitOverflowScrolling: "touch",
                   }}
                 >
-                  {/* Calendar Header */}
-                  {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(
-                    (d) => (
-                      <div
-                        key={d}
-                        style={{
-                          textAlign: "center",
-                          fontWeight: 600,
-                          fontSize: "0.8rem",
-                          color: "var(--text-secondary)",
-                          paddingBottom: "8px",
-                        }}
-                      >
-                        {d}
-                      </div>
-                    ),
-                  )}
-
-                  {/* Pad initial blank days */}
-                  {(() => {
-                    const [sYear, sMonth] = selectedMonth
-                      .split("-")
-                      .map(Number);
-                    const firstDayObj = new Date(
-                      Date.UTC(sYear, sMonth - 1, 1),
-                    );
-                    let startDay = firstDayObj.getUTCDay(); // 0 = Sunday
-                    if (startDay === 0) startDay = 7;
-
-                    const paddingDays = [];
-                    for (let i = 1; i < startDay; i++) {
-                      paddingDays.push(
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(7, 1fr)",
+                      gap: "8px",
+                      marginTop: "12px",
+                      minWidth: "750px", // Prevents columns from shrinking below readable limits
+                    }}
+                  >
+                    {/* Calendar Header */}
+                    {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(
+                      (d) => (
                         <div
-                          key={`pad-${i}`}
+                          key={d}
                           style={{
-                            minHeight: "80px",
-                            borderRadius: "8px",
-                            backgroundColor: "var(--bg-secondary)",
-                            opacity: 0.3,
-                          }}
-                        />,
-                      );
-                    }
-                    return paddingDays;
-                  })()}
-
-                  {/* Calendar Days */}
-                  {selectedEmployeePunchLogs.map((log) => {
-                    const dayNum = parseInt(log.date.split("-")[2], 10);
-                    const isOffDay =
-                      log.status === "Weekend" || log.status === "Holiday";
-                    const todayStr = new Intl.DateTimeFormat("en-CA", {
-                      timeZone: "Asia/Karachi",
-                    }).format(new Date());
-                    const isPastOrToday = log.date <= todayStr;
-
-                    return (
-                      <div
-                        key={log.date}
-                        style={{
-                          minHeight: "85px",
-                          padding: "8px",
-                          borderRadius: "8px",
-                          backgroundColor: isOffDay
-                            ? "rgba(255,255,255,0.02)"
-                            : "var(--bg-secondary)",
-                          border: "1px solid var(--border-color)",
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: "4px",
-                        }}
-                      >
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
+                            textAlign: "center",
+                            fontWeight: 600,
+                            fontSize: "0.8rem",
+                            color: "var(--text-secondary)",
+                            paddingBottom: "8px",
                           }}
                         >
-                          <span
+                          {d}
+                        </div>
+                      ),
+                    )}
+
+                    {/* Pad initial blank days */}
+                    {(() => {
+                      const [sYear, sMonth] = selectedMonth
+                        .split("-")
+                        .map(Number);
+                      const firstDayObj = new Date(
+                        Date.UTC(sYear, sMonth - 1, 1),
+                      );
+                      let startDay = firstDayObj.getUTCDay(); // 0 = Sunday
+                      if (startDay === 0) startDay = 7;
+
+                      const paddingDays = [];
+                      for (let i = 1; i < startDay; i++) {
+                        paddingDays.push(
+                          <div
+                            key={`pad-${i}`}
                             style={{
-                              fontSize: "0.85rem",
-                              fontWeight: 600,
-                              color: isOffDay ? "var(--text-muted)" : "white",
+                              minHeight: "80px",
+                              borderRadius: "8px",
+                              backgroundColor: "var(--bg-secondary)",
+                              opacity: 0.3,
                             }}
-                          >
-                            {dayNum}
-                          </span>
+                          />,
+                        );
+                      }
+                      return paddingDays;
+                    })()}
+
+                    {/* Calendar Days */}
+                    {selectedEmployeePunchLogs.map((log) => {
+                      const dayNum = parseInt(log.date.split("-")[2], 10);
+                      const isOffDay =
+                        log.status === "Weekend" || log.status === "Holiday";
+                      const todayStr = new Intl.DateTimeFormat("en-CA", {
+                        timeZone: "Asia/Karachi",
+                      }).format(new Date());
+                      const isPastOrToday = log.date <= todayStr;
+
+                      return (
+                        <div
+                          key={log.date}
+                          style={{
+                            minHeight: "85px",
+                            padding: "8px",
+                            borderRadius: "8px",
+                            backgroundColor: isOffDay
+                              ? "rgba(255,255,255,0.02)"
+                              : "var(--bg-secondary)",
+                            border: "1px solid var(--border-color)",
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "4px",
+                          }}
+                        >
                           <div
                             style={{
-                              transform: "scale(0.85)",
-                              transformOrigin: "right top",
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
                             }}
                           >
-                            {getLogStatusBadge(log.status)}
-                          </div>
-                        </div>
-
-                        {log.status !== "Weekend" &&
-                          log.status !== "Holiday" && (
-                            <div
+                            <span
                               style={{
-                                marginTop: "auto",
-                                display: "flex",
-                                flexDirection: "column",
-                                gap: "2px",
-                                fontSize: "0.7rem",
-                                color: "var(--text-secondary)",
+                                fontSize: "0.85rem",
+                                fontWeight: 600,
+                                color: isOffDay ? "var(--text-muted)" : "white",
                               }}
                             >
-                              {log.firstIn === "--" &&
-                                log.lastOut === "--" &&
-                                isPastOrToday &&
-                                currentUser.role === "manager" && (
+                              {dayNum}
+                            </span>
+                            <div
+                              style={{
+                                transform: "scale(0.85)",
+                                transformOrigin: "right top",
+                              }}
+                            >
+                              {getLogStatusBadge(log.status)}
+                            </div>
+                          </div>
+
+                          {log.status !== "Weekend" &&
+                            log.status !== "Holiday" && (
+                              <div
+                                style={{
+                                  marginTop: "auto",
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  gap: "2px",
+                                  fontSize: "0.7rem",
+                                  color: "var(--text-secondary)",
+                                }}
+                              >
+                                {log.firstIn === "--" &&
+                                  log.lastOut === "--" &&
+                                  isPastOrToday &&
+                                  currentUser.role === "manager" && (
+                                    <div
+                                      style={{
+                                        display: "flex",
+                                        gap: "4px",
+                                        marginBottom: "4px",
+                                      }}
+                                    >
+                                      <button
+                                        className="btn btn-secondary"
+                                        style={{
+                                          padding: "2px 4px",
+                                          fontSize: "0.6rem",
+                                          flex: 1,
+                                          backgroundColor: "var(--bg-primary)",
+                                        }}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleMarkDayStatus(
+                                            log.date,
+                                            "Site Duty",
+                                          );
+                                        }}
+                                        title="Mark Site Duty"
+                                      >
+                                        Site Duty
+                                      </button>
+                                      <button
+                                        className="btn btn-secondary"
+                                        style={{
+                                          padding: "2px 4px",
+                                          fontSize: "0.6rem",
+                                          flex: 1,
+                                          backgroundColor: "var(--bg-primary)",
+                                        }}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleMarkDayStatus(
+                                            log.date,
+                                            "On Leave",
+                                          );
+                                        }}
+                                        title="Mark On Leave"
+                                      >
+                                        Leave
+                                      </button>
+                                    </div>
+                                  )}
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    alignItems: "center",
+                                  }}
+                                >
+                                  <span>In:</span>
                                   <div
                                     style={{
                                       display: "flex",
+                                      alignItems: "center",
                                       gap: "4px",
-                                      marginBottom: "4px",
                                     }}
                                   >
-                                    <button
-                                      className="btn btn-secondary"
+                                    <span
                                       style={{
-                                        padding: "2px 4px",
-                                        fontSize: "0.6rem",
-                                        flex: 1,
-                                        backgroundColor: "var(--bg-primary)",
+                                        color: "white",
+                                        fontWeight: 500,
                                       }}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleMarkDayStatus(
-                                          log.date,
-                                          "Site Duty",
-                                        );
-                                      }}
-                                      title="Mark Site Duty"
                                     >
-                                      Site Duty
-                                    </button>
-                                    <button
-                                      className="btn btn-secondary"
+                                      {log.firstIn === "--"
+                                        ? "-"
+                                        : log.firstIn.substring(0, 5)}
+                                    </span>
+                                    {canWrite &&
+                                      log.firstIn === "--" &&
+                                      isPastOrToday && (
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleAddManualPunch(
+                                              log.date,
+                                              "Check-In",
+                                            );
+                                          }}
+                                          style={{
+                                            background: "none",
+                                            border: "none",
+                                            color: "var(--color-primary)",
+                                            cursor: "pointer",
+                                            padding: "2px",
+                                            display: "flex",
+                                            fontWeight: "bold",
+                                          }}
+                                          title="Add Punch In"
+                                        >
+                                          +
+                                        </button>
+                                      )}
+                                  </div>
+                                </div>
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    alignItems: "center",
+                                  }}
+                                >
+                                  <span>Out:</span>
+                                  <div
+                                    style={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: "4px",
+                                    }}
+                                  >
+                                    <span
                                       style={{
-                                        padding: "2px 4px",
-                                        fontSize: "0.6rem",
-                                        flex: 1,
-                                        backgroundColor: "var(--bg-primary)",
+                                        color: "white",
+                                        fontWeight: 500,
                                       }}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleMarkDayStatus(
-                                          log.date,
-                                          "On Leave",
-                                        );
-                                      }}
-                                      title="Mark On Leave"
                                     >
-                                      Leave
-                                    </button>
+                                      {log.lastOut === "--"
+                                        ? "-"
+                                        : log.lastOut.substring(0, 5)}
+                                    </span>
+                                    {canWrite &&
+                                      log.lastOut === "--" &&
+                                      isPastOrToday && (
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleAddManualPunch(
+                                              log.date,
+                                              "Check-Out",
+                                            );
+                                          }}
+                                          style={{
+                                            background: "none",
+                                            border: "none",
+                                            color: "var(--color-primary)",
+                                            cursor: "pointer",
+                                            padding: "2px",
+                                            display: "flex",
+                                            fontWeight: "bold",
+                                          }}
+                                          title="Add Punch Out"
+                                        >
+                                          +
+                                        </button>
+                                      )}
+                                    {currentUser.role === "it" &&
+                                      log.lastOutId && (
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleDeletePunchOut(
+                                              log.lastOutId!,
+                                              log.date,
+                                            );
+                                          }}
+                                          style={{
+                                            background: "none",
+                                            border: "none",
+                                            color: "#f43f5e",
+                                            cursor: "pointer",
+                                            padding: "2px",
+                                            display: "inline-flex",
+                                            alignItems: "center",
+                                          }}
+                                          title="Delete Punch Out"
+                                        >
+                                          <Trash2 size={12} />
+                                        </button>
+                                      )}
+                                  </div>
+                                </div>
+                                {log.hours > 0 && (
+                                  <div
+                                    style={{
+                                      display: "flex",
+                                      justifyContent: "flex-end",
+                                      marginTop: "2px",
+                                    }}
+                                  >
+                                    <span
+                                      style={{
+                                        color: "var(--color-primary)",
+                                        fontWeight: 600,
+                                      }}
+                                    >
+                                      {formatHours(log.hours)}
+                                    </span>
                                   </div>
                                 )}
-                              <div
-                                style={{
-                                  display: "flex",
-                                  justifyContent: "space-between",
-                                  alignItems: "center",
-                                }}
-                              >
-                                <span>In:</span>
-                                <div
-                                  style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "4px",
-                                  }}
-                                >
-                                  <span
-                                    style={{ color: "white", fontWeight: 500 }}
-                                  >
-                                    {log.firstIn === "--"
-                                      ? "-"
-                                      : log.firstIn.substring(0, 5)}
-                                  </span>
-                                  {canWrite &&
-                                    log.firstIn === "--" &&
-                                    isPastOrToday && (
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleAddManualPunch(
-                                            log.date,
-                                            "Check-In",
-                                          );
-                                        }}
-                                        style={{
-                                          background: "none",
-                                          border: "none",
-                                          color: "var(--color-primary)",
-                                          cursor: "pointer",
-                                          padding: "2px",
-                                          display: "flex",
-                                          fontWeight: "bold",
-                                        }}
-                                        title="Add Punch In"
-                                      >
-                                        +
-                                      </button>
-                                    )}
-                                </div>
                               </div>
-                              <div
-                                style={{
-                                  display: "flex",
-                                  justifyContent: "space-between",
-                                  alignItems: "center",
-                                }}
-                              >
-                                <span>Out:</span>
-                                <div
-                                  style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "4px",
-                                  }}
-                                >
-                                  <span
-                                    style={{ color: "white", fontWeight: 500 }}
-                                  >
-                                    {log.lastOut === "--"
-                                      ? "-"
-                                      : log.lastOut.substring(0, 5)}
-                                  </span>
-                                  {canWrite &&
-                                    log.lastOut === "--" &&
-                                    isPastOrToday && (
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleAddManualPunch(
-                                            log.date,
-                                            "Check-Out",
-                                          );
-                                        }}
-                                        style={{
-                                          background: "none",
-                                          border: "none",
-                                          color: "var(--color-primary)",
-                                          cursor: "pointer",
-                                          padding: "2px",
-                                          display: "flex",
-                                          fontWeight: "bold",
-                                        }}
-                                        title="Add Punch Out"
-                                      >
-                                        +
-                                      </button>
-                                    )}
-                                  {currentUser.role === "it" &&
-                                    log.lastOutId && (
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleDeletePunchOut(
-                                            log.lastOutId!,
-                                            log.date,
-                                          );
-                                        }}
-                                        style={{
-                                          background: "none",
-                                          border: "none",
-                                          color: "#f43f5e",
-                                          cursor: "pointer",
-                                          padding: "2px",
-                                          display: "inline-flex",
-                                          alignItems: "center",
-                                        }}
-                                        title="Delete Punch Out"
-                                      >
-                                        <Trash2 size={12} />
-                                      </button>
-                                    )}
-                                </div>
-                              </div>
-                              {log.hours > 0 && (
-                                <div
-                                  style={{
-                                    display: "flex",
-                                    justifyContent: "flex-end",
-                                    marginTop: "2px",
-                                  }}
-                                >
-                                  <span
-                                    style={{
-                                      color: "var(--color-primary)",
-                                      fontWeight: 600,
-                                    }}
-                                  >
-                                    {formatHours(log.hours)}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                      </div>
-                    );
-                  })}
+                            )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 
