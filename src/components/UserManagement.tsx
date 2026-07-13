@@ -192,14 +192,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
         </p>
       </div>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 2fr",
-          gap: "24px",
-          alignItems: "start",
-        }}
-      >
+      <div className="user-mgmt-grid">
         {/* Left Column: Add User Form */}
         <div className="panel" style={{ padding: "24px" }}>
           <h2

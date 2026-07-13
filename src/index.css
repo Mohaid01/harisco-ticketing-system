@@ -1080,15 +1080,21 @@ h1.page-title {
   background-color: var(--role-employee-bg);
 }
 
-/* ==========================================================================
-   ADDED: Mobile & Responsive Adaptations (Breakpoints < 768px)
-   ========================================================================== */
+.user-mgmt-grid {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+}
 
 @media screen and (max-width: 768px) {
-  /* Reset layout lockouts on smaller device viewports */
+  .user-mgmt-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
   /* 1. Global Document Space Constraints */
   body {
-    overflow-x: hidden; /* Prevents unwanted horizontal layout jitter */
+    overflow-x: hidden;
     overflow-y: auto;
     height: auto;
   }
@@ -1109,46 +1115,38 @@ h1.page-title {
     height: auto;
     min-height: 100vh;
     overflow: auto;
-
-    /* Generate protective buffers matching the exact height metrics of your navigation layers */
-    padding-top: 95px; /* 60px Header + 50px Scrollable Tab Menu Bar */
-    padding-bottom: 80px; /* 60px Fixed Profile Navigation Footer */
-
-    /* Ensure padding is counted inside the 100vh viewport calculation */
+    padding-top: 90px; /* 50px Header + 40px Scrollable Tab Menu Bar */
+    padding-bottom: 80px; /* 80px Fixed Profile Navigation Footer */
     box-sizing: border-box;
   }
 
   h1.page-title {
-    font-size: 1.25rem; /* Scales down from 1.6rem for mobile viewports */
+    font-size: 1.25rem;
     font-weight: 700;
-    line-height: 1.3; /* Tightens text tracking for shorter multi-line blocks */
+    line-height: 1.3;
     color: white;
-    margin-bottom: 2px; /* Pulls the subtitle or section details slightly closer */
+    margin-bottom: 2px;
   }
 
   .page-subtitle {
-    font-size: 0.8rem; /* Scales down from 0.88rem to maintain typography hierarchy */
-    line-height: 1.4; /* Adds slight breathing room for multi-line description text */
-    margin-bottom: 14px; /* Drops down from 24px to pull content up into view quicker */
+    font-size: 0.8rem;
+    line-height: 1.4;
+    margin-bottom: 14px;
   }
 
   .btn {
-    padding: 8px 14px; /* Reduces padding slightly from 10px 18px to save screen real estate */
-    font-size: 0.82rem; /* Scales font down from 0.88rem to look crisp on small screens */
-    gap: 6px; /* Tightens the spacing between icons and text */
-    min-height: 40px; /* Ensures buttons remain easily clickable for fingers */
-    box-sizing: border-box; /* Guarantees sizing dimensions calculate predictably */
+    padding: 8px 14px;
+    font-size: 0.82rem;
+    gap: 6px;
+    min-height: 40px;
+    box-sizing: border-box;
   }
 
-  /* Disable hover background color flashes on mobile to prevent sticky touch states */
+  /* Hover optimizations */
   @media (hover: none) {
     .btn-primary:hover {
-      background-color: var(
-        --color-primary
-      ); /* Keeps color solid instead of locking into a hover state on tap */
+      background-color: var(--color-primary);
     }
-
-    /* Optional active state: provides instant visual feedback when a user presses down */
     .btn-primary:active {
       background-color: var(--color-primary-hover);
     }
@@ -1157,25 +1155,24 @@ h1.page-title {
   .btn-group {
     display: flex;
     flex-direction: row;
-    flex-wrap: wrap; /* Allows buttons to wrap to a new line instead of overflowing */
-    gap: 6px; /* Adds consistent breathing room horizontally and vertically */
-    background: transparent; /* Removes background to avoid weird shapes when wrapping */
-    border: none; /* Removes parent border since items are no longer an inline block */
+    flex-wrap: wrap;
+    gap: 6px;
+    background: transparent;
+    border: none;
     padding: 0;
     width: 100%;
   }
 
   .btn-group .btn {
-    /* Let buttons grow based on their text content, but shrink evenly if needed */
     flex: 1 0 auto;
-    width: auto !important; /* Overrides any full-width desktop layout definitions */
-    white-space: nowrap; /* Keeps long text clean and on a single line */
-    padding: 8px 16px; /* Comfortable touch spacing for variable text sizes */
-    border: 1px solid var(--border-color); /* Move border to individual items for a clean card look */
+    width: auto !important;
+    white-space: nowrap;
+    padding: 8px 16px;
+    border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
   }
 
-  /* UX Polish: If there are exactly 3 buttons, make the last button span across both columns */
+  /* UX Polish: If exactly 3 buttons, span the last button across */
   .btn-group .btn:nth-child(3):last-child {
     grid-column: span 2;
   }
@@ -1196,17 +1193,17 @@ h1.page-title {
     width: 100%;
     max-width: 100%;
     display: block;
-    -webkit-overflow-scrolling: touch; /* Enables smooth native scrolling on iOS */
+    -webkit-overflow-scrolling: touch;
   }
 
   .data-table {
-    min-width: 650px; /* Guarantees the columns won't squish into an unreadable mess */
+    min-width: 650px;
   }
 
   .data-table th,
   .data-table td {
-    white-space: nowrap; /* Prevents text from breaking awkward lines mid-cell */
-    padding: 10px 12px; /* Slightly optimized, compact padding for phone viewports */
+    white-space: nowrap;
+    padding: 10px 12px;
   }
 
   /* Structural Sidebar Adaptation */
@@ -1215,8 +1212,6 @@ h1.page-title {
     height: auto;
     border-right: none;
     border-bottom: 1px solid var(--border-color);
-
-    /* Pin the top portion (Header + Nav) firmly to the top of the screen */
     position: fixed;
     top: 0;
     left: 0;
@@ -1235,7 +1230,6 @@ h1.page-title {
     width: 100%;
   }
 
-  /* Dynamic scroll layout for navigation items on mobile devices */
   .sidebar-menu {
     display: flex;
     flex-direction: row;
@@ -1246,6 +1240,20 @@ h1.page-title {
     -webkit-overflow-scrolling: touch;
     width: 100%;
     border-bottom: 1px solid var(--border-color);
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+
+    /* Hide standard desktop scrollbars on modern mobile rendering engines */
+    scrollbar-width: none;
+
+    /* Create an elegant visual fade on the right side to indicate more items exist */
+    mask-image: linear-gradient(to right, black 85%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
+  }
+
+  /* Suppress scrollbar tracks on Webkit engines (Chrome, Safari, iOS) */
+  .sidebar-menu::-webkit-scrollbar {
+    display: none;
   }
 
   .sidebar-item {
@@ -1263,53 +1271,47 @@ h1.page-title {
     border-bottom: 3px solid var(--color-primary);
   }
 
-  /* 3. Redesigned Profile Bar Pinned firmly to the Screen Bottom */
   .sidebar-footer {
     display: flex !important;
     position: fixed;
     bottom: 0;
     left: 0;
     z-index: 1000;
-    flex-direction: row !important; /* Force row layout over the inline-style column rule */
+    flex-direction: row !important;
     align-items: center;
     justify-content: space-between;
-    gap: 12px !important; /* Match inline profile gap metric constraints */
+    gap: 12px !important;
     padding: 12px 16px;
     width: 100%;
     border-top: 1px solid var(--border-color);
     background-color: rgba(0, 0, 0, 0.75);
   }
 
-  /* Target the first interior profile details wrapper child */
   .sidebar-footer > div:first-child {
     flex: 1;
-    min-width: 0; /* Safeguards profile layout wrapping logic */
+    min-width: 0;
   }
 
-  /* 4. Action Buttons converted to clean, uncluttered icon circles */
   .sidebar-footer .btn {
-    width: 36px !important; /* Locks perfect square boundaries */
+    width: 36px !important;
     height: 36px !important;
-    padding: 0 !important; /* Flushes out text-padding offsets */
+    padding: 0 !important;
     display: inline-flex !important;
     align-items: center;
     justify-content: center;
-    border-radius: 50% !important; /* Forces a perfect circle shape */
+    border-radius: 50% !important;
     flex-shrink: 0;
-
-    /* Elegant Hack: Shrink font size to zero to hide raw un-wrapped text nodes */
     font-size: 0 !important;
     color: transparent !important;
-    gap: 0 !important; /* Removes icon-to-text separation gaps */
+    gap: 0 !important;
   }
 
-  /* Make sure the existing Lucide SVG icon remains fully visible and scalable */
   .sidebar-footer .btn svg {
     display: block !important;
     margin: 0 !important;
     width: 16px !important;
     height: 16px !important;
-    color: white !important; /* Keeps your icon color fully visible */
+    color: white !important;
   }
 
   /* Layout body adaptations */
@@ -1330,12 +1332,8 @@ h1.page-title {
     padding: 16px;
   }
 
-  /* Grid layouts columns collapsing */
-  .dashboard-grid {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-
+  /* Grid Layout Fallbacks */
+  .dashboard-grid,
   .dashboard-two-col {
     grid-template-columns: 1fr;
     gap: 16px;
@@ -1347,31 +1345,17 @@ h1.page-title {
     width: 100%;
   }
 
-  /* Components adjustments */
-  .comment-card {
+  .comment-card,
+  .timeline-item,
+  .comment-header,
+  .timeline-header {
     flex-direction: column;
     gap: 8px;
-  }
-
-  .comment-header {
-    flex-direction: column;
     align-items: flex-start;
-    gap: 4px;
-  }
-
-  .timeline-item {
-    flex-direction: column;
-    gap: 8px;
   }
 
   .timeline-item::after {
     display: none;
-  }
-
-  .timeline-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
   }
 
   .user-card-actions,
@@ -1384,20 +1368,117 @@ h1.page-title {
     padding: 24px;
   }
 
-  /* Prevent flex-box from squishing the employee avatar image */
-  .panel img[alt*="Logo"], /* Safely bypasses any header logos if needed */
-  .panel div[style*="width: 72px"], 
+  .panel img[alt*="Logo"],
+  .panel div[style*="width: 72px"],
   .panel img[style*="width: 72px"] {
-    flex-shrink: 0 !important; /* Forces the item to never shrink below 72px */
-    aspect-ratio: 1 / 1 !important; /* Locks a perfect square/circle ratio */
+    flex-shrink: 0 !important;
+    aspect-ratio: 1 / 1 !important;
+  }
+}
+
+@media screen and (min-width: 769px) and (max-width: 1024px) {
+  #root {
+    display: grid;
+    grid-template-columns: 260px 1fr; /* Full-width sidebar layout */
+    min-height: 100vh;
+    width: 100%;
   }
 
-  /* Optional UX Polish: Center the status badge elements on small phone screens */
-  .panel div[style*="align-items: flex-end"] {
-    @media (max-width: 480px) {
-      align-items: flex-start !important; /* Aligns badges cleanly on the left when wrapped */
-      width: 100%;
-      margin-top: 8px;
-    }
+  .app-container {
+    padding-top: 0;
+    padding-bottom: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+
+  .sidebar {
+    width: 260px;
+    height: 100vh;
+    border-right: 1px solid var(--border-color);
+    border-bottom: none;
+    position: sticky;
+    top: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sidebar-header {
+    padding: 24px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .sidebar-menu {
+    display: flex;
+    flex-direction: column;
+    padding: 24px 16px;
+    gap: 8px;
+    overflow-y: auto;
+    border-bottom: none;
+  }
+
+  .sidebar-item {
+    padding: 12px 16px;
+    font-size: 0.95rem;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-radius: var(--radius-md);
+    transition: all 0.2s ease;
+  }
+
+  .sidebar-item:hover {
+    background-color: var(--color-bg-hover);
+  }
+
+  .sidebar-item.active {
+    border-left: 4px solid var(--color-primary);
+    background-color: var(--color-primary-light);
+    font-weight: 600;
+  }
+
+  .sidebar-footer {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    border-top: 1px solid var(--border-color);
+    background-color: transparent;
+  }
+
+  /* Desktop Multi-Column Grid Distributions */
+  .dashboard-grid {
+    grid-template-columns: repeat(3, 1fr); /* Generous 3 column architecture */
+    gap: 24px;
+  }
+
+  .dashboard-two-col {
+    grid-template-columns: 2fr 1fr; /* Clean main section + auxiliary sidebar layout */
+    gap: 24px;
+  }
+
+  /* Standard Large Typography */
+  h1.page-title {
+    font-size: 1.75rem;
+    font-weight: 800;
+    line-height: 1.2;
+    margin-bottom: 4px;
+  }
+
+  .page-subtitle {
+    font-size: 0.95rem;
+    margin-bottom: 24px;
+  }
+
+  .btn {
+    padding: 10px 18px;
+    font-size: 0.9rem;
+    gap: 8px;
+    min-height: 44px;
   }
 }
