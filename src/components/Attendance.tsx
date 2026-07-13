@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import type { AppUser, AttendanceLog } from "../types";
-import { formatEmployeeCode } from "../utils";
+import { formatEmployeeCode, formatHours } from "../utils";
 import {
   RefreshCw,
   Search,
@@ -392,7 +392,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
         isLateToday,
         daysPresent,
         daysAbsent,
-        totalHours: Math.round(totalHours),
+        totalHours,
         totalWorkDays,
       };
     });
@@ -681,7 +681,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
     return {
       present,
       absent,
-      totalHours: Math.round(totalHours),
+      totalHours,
       workDaysCounted,
     };
   }, [selectedEmployeePunchLogs]);
@@ -1421,7 +1421,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
                                 size={13}
                                 style={{ color: "var(--text-muted)" }}
                               />
-                              <span>{emp.totalHours} hrs</span>
+                              <span>{formatHours(emp.totalHours)}</span>
                             </div>
                           </td>
                           <td
@@ -2046,7 +2046,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
                                     fontWeight: 600,
                                   }}
                                 >
-                                  {log.hours}h
+                                  {formatHours(log.hours)}
                                 </span>
                               </div>
                             )}
@@ -2098,8 +2098,8 @@ export const Attendance: React.FC<AttendanceProps> = ({
                           Shift Hours worked
                         </span>
                         <strong style={{ fontSize: "0.85rem" }}>
-                          {todayShiftProgress.hours} /{" "}
-                          {new Date().getDay() === 6 ? "6.0" : "8.0"} Hours
+                          {formatHours(todayShiftProgress.hours)} /{" "}
+                          {new Date().getDay() === 6 ? "6h 0m" : "8h 0m"}
                         </strong>
                       </div>
                       <div
@@ -2315,7 +2315,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
                       </div>
                     </div>
                     <span className="stat-value">
-                      {individualStats.totalHours} hrs
+                      {formatHours(individualStats.totalHours)}
                     </span>
                     <span className="stat-desc">
                       For selected month up to today
