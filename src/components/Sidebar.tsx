@@ -1,6 +1,6 @@
 import React from "react";
 import logoFull from "../assets/harisco-full-logo.png";
-import type { AppUser, ActiveTab } from "../types";
+import type { AppUser, ActiveTab, MenuItems } from "../types";
 import { ROLE_LABELS } from "../constants";
 import {
   LayoutDashboard,
@@ -31,7 +31,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onChangePasswordClick,
 }) => {
   // Define menu items
-  const menuItems = [
+  const menuItems: MenuItems[] = [
     {
       id: "dashboard" as ActiveTab,
       label: "Dashboard",
@@ -43,6 +43,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       label: "Tickets",
       icon: Ticket,
       roles: ["it", "employee", "manager", "executive"],
+      notAllowedDepartments: ["Staff"],
     },
     {
       id: "users" as ActiveTab,
@@ -67,18 +68,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
       label: "Site Duties",
       icon: MapPin,
       roles: ["it", "employee", "manager", "executive"],
+      notAllowedDepartments: ["Staff"],
     },
     {
       id: "activity_log" as ActiveTab,
       label: "Activity Logs",
       icon: Activity,
       roles: ["it", "employee", "manager", "executive"],
+      notAllowedDepartments: ["Staff"],
     },
   ];
 
   // Filter items by current user role
-  const visibleItems = menuItems.filter((item) =>
-    item.roles.includes(currentUser.role),
+  const visibleItems = menuItems.filter(
+    (item) =>
+      item.roles.includes(currentUser.role) &&
+      !(item.notAllowedDepartments ?? []).includes(
+        currentUser.department ?? "unknown",
+      ),
   );
 
   const getRoleBadgeClass = (role: string) => {

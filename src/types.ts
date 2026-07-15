@@ -1,4 +1,6 @@
-export type UserRole = 'it' | 'employee' | 'manager' | 'executive';
+import type { LucideIcon } from "lucide-react";
+
+export type UserRole = "it" | "employee" | "manager" | "executive";
 
 export interface AppUser {
   id: string;
@@ -17,14 +19,14 @@ export interface AppUser {
   medicalLeaves?: number;
 }
 
-export type TicketType = 'hardware' | 'software' | 'maintenance' | 'upgrade';
+export type TicketType = "hardware" | "software" | "maintenance" | "upgrade";
 
-export type TicketStatus = 
-  | 'open'
-  | 'awaiting_it_approval' 
-  | 'awaiting_manager_approval' 
-  | 'awaiting_handover' 
-  | 'closed';
+export type TicketStatus =
+  | "open"
+  | "awaiting_it_approval"
+  | "awaiting_manager_approval"
+  | "awaiting_handover"
+  | "closed";
 
 export interface TicketComment {
   id: string;
@@ -60,7 +62,14 @@ export interface Ticket {
   }[];
 }
 
-export type ActiveTab = 'dashboard' | 'tickets' | 'users' | 'activity_log' | 'attendance' | 'leaves' | 'site_duties';
+export type ActiveTab =
+  | "dashboard"
+  | "tickets"
+  | "users"
+  | "activity_log"
+  | "attendance"
+  | "leaves"
+  | "site_duties";
 
 export interface AttendanceLog {
   id: number;
@@ -72,8 +81,8 @@ export interface AttendanceLog {
   timestamp?: string;
 }
 
-export type LeaveCategory = 'annual' | 'casual' | 'medical';
-export type LeaveStatus = 'pending' | 'approved' | 'rejected';
+export type LeaveCategory = "annual" | "casual" | "medical";
+export type LeaveStatus = "pending" | "approved" | "rejected";
 
 export interface LeaveApplication {
   id: string;
@@ -99,4 +108,12 @@ export interface SiteDutyApplication {
   endDate: string;
   status: LeaveStatus; // Reusing LeaveStatus as it has pending, approved, rejected
   appliedAt: string;
+}
+
+export interface MenuItems {
+  id: ActiveTab;
+  label: string;
+  icon: LucideIcon;
+  roles: UserRole[];
+  notAllowedDepartments?: string[];
 }
