@@ -296,13 +296,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 Manager approves escalated tickets to initiate execution work.
               </li>
               <li>
-                <strong style={{ color: "white" }}>Handover:</strong> IT
-                resolves issue, triggering employee handover acceptance
-                checklist.
-              </li>
-              <li>
-                <strong style={{ color: "white" }}>Closure:</strong> Employee
-                accepts handover, then IT closes the ticket.
+                <strong style={{ color: "white" }}>IT Execution:</strong> IT
+                resolves issue, triggering ticket marking as resolved employee
+                handover acceptance checklist.
               </li>
             </ol>
           </div>
