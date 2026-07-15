@@ -369,7 +369,7 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
                     onClick={handleItResolve}
                   >
                     <CheckCircle2 size={16} />
-                    Resolve Ticket (In-House)
+                    Mark as Resolved
                   </button>
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '12px', borderTop: '1px solid var(--border-color)', paddingTop: '12px' }}>
