@@ -727,7 +727,8 @@ h1.page-title {
 
 .btn-selector-grp {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  justify-content: space-between;
   gap: "24px";
 }
 
@@ -1193,7 +1194,6 @@ h1.page-title {
   }
 
   .btn-selector-grp {
-    display: flex;
     flex-direction: column;
     justify-content: center;
     gap: 4px;
