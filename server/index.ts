@@ -1401,14 +1401,14 @@ app.delete(
   },
 );
 
-// Delete a single attendance log (IT only, Check-Out only)
+// Delete a single attendance log (Manager only)
 app.delete(
   "/api/attendance/:id",
   authenticateToken,
   async (req: AuthRequest, res: Response) => {
-    if (req.user?.role !== "it") {
+    if (req.user?.role !== "manager") {
       res.status(403).json({
-        error: "Forbidden. Attendance log deletion requires IT role.",
+        error: "Forbidden. Attendance log deletion requires Manager role.",
       });
       return;
     }
@@ -1427,12 +1427,6 @@ app.delete(
       );
       if (!log) {
         res.status(404).json({ error: "Attendance log not found." });
-        return;
-      }
-      if (log.status !== "Check-Out") {
-        res
-          .status(400)
-          .json({ error: "Only punch out (Check-Out) logs can be deleted." });
         return;
       }
 

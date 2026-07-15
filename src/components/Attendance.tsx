@@ -202,6 +202,31 @@ export const Attendance: React.FC<AttendanceProps> = ({
     }
   };
 
+  const handleDeletePunchIn = async (logId: number, dateStr: string) => {
+    if (
+      !window.confirm(
+        `Are you sure you want to delete the punch in (first punch) for ${dateStr}?`,
+      )
+    ) {
+      return;
+    }
+    try {
+      const token = localStorage.getItem("harisco_token");
+      const res = await fetch(`/api/attendance/${logId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        setLogs((prev) => prev.filter((log) => log.id !== logId));
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to delete punch in.");
+      }
+    } catch {
+      alert("Network error. Could not delete punch in.");
+    }
+  };
+
   useEffect(() => {
     fetchLogs();
     fetchHolidays();
@@ -651,9 +676,14 @@ export const Attendance: React.FC<AttendanceProps> = ({
           (p) => p.status === PUNCH_STATUS.CHECK_OUT,
         );
 
+        const checkInPunch = sorted.find(
+          (p) => p.status === PUNCH_STATUS.CHECK_IN,
+        );
+
         list.push({
           date: dateStr,
           firstIn: finalFirstIn,
+          firstInId: checkInPunch ? checkInPunch.id : undefined,
           lastOut: finalLastOut,
           lastOutId: checkOutPunch ? checkOutPunch.id : undefined,
           hours: Math.round(hours * 100) / 100,
@@ -2122,6 +2152,31 @@ export const Attendance: React.FC<AttendanceProps> = ({
                                           +
                                         </button>
                                       )}
+                                    {currentUser.role === "manager" &&
+                                      !log.lastOutId &&
+                                      log.firstInId && (
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleDeletePunchIn(
+                                              log.firstInId!,
+                                              log.date,
+                                            );
+                                          }}
+                                          style={{
+                                            background: "none",
+                                            border: "none",
+                                            color: "#f43f5e",
+                                            cursor: "pointer",
+                                            padding: "2px",
+                                            display: "inline-flex",
+                                            alignItems: "center",
+                                          }}
+                                          title="Delete Punch In"
+                                        >
+                                          <Trash2 size={12} />
+                                        </button>
+                                      )}
                                   </div>
                                 </div>
                                 <div
@@ -2150,6 +2205,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
                                         : log.lastOut.substring(0, 5)}
                                     </span>
                                     {canWrite &&
+                                      log.firstIn !== "--" &&
                                       log.lastOut === "--" &&
                                       isPastOrToday && (
                                         <button
@@ -2174,7 +2230,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
                                           +
                                         </button>
                                       )}
-                                    {currentUser.role === "it" &&
+                                    {currentUser.role === "manager" &&
                                       log.lastOutId && (
                                         <button
                                           onClick={(e) => {
