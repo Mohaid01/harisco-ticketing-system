@@ -740,14 +740,16 @@ export const Attendance: React.FC<AttendanceProps> = ({
         // Only include today in the total count if the shift has started or the employee already has a punch
         if (log.date === todayStr && !shiftStarted && log.firstIn === "--")
           return;
-        workDaysCounted++;
         if (log.firstIn !== "--") {
           present++;
           totalHours += log.hours;
         } else {
           absent++;
         }
+      } else {
+        present++;
       }
+      workDaysCounted++;
     });
 
     return {
