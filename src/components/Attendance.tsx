@@ -381,6 +381,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
         let daysAbsent = 0;
         let totalHours = 0;
         let totalWorkDays = 0;
+        let daysNotAvailable = 0;
 
         const now = new Date();
         // Ensure we use the current date in Pakistan timezone if possible, or just local
@@ -395,53 +396,64 @@ export const Attendance: React.FC<AttendanceProps> = ({
           }).format(tempDate);
           const isWeekend = tempDate.getDay() === 0; // Only Sunday is off
 
-          if (!isWeekend) {
-            totalWorkDays++;
-            const dayPunches = userLogs.filter(
-              (log) => parseLogDate(log) === dateStr,
-            );
-            if (dayPunches.length > 0) {
-              daysPresent++;
+          totalWorkDays++;
+          const dayPunches = userLogs.filter(
+            (log) => parseLogDate(log) === dateStr,
+          );
+
+          const sorted = [...dayPunches].sort((a, b) => {
+            const tA = parseLogPKT(a).timestamp;
+            const tB = parseLogPKT(b).timestamp;
+            return tA.localeCompare(tB);
+          });
+          const firstPunch = sorted[0];
+
+          if (
+            firstPunch &&
+            (firstPunch.status === "Site Duty" ||
+              firstPunch.status === "On Leave")
+          ) {
+            daysNotAvailable++;
+            continue;
+          }
+
+          if (isWeekend) {
+            daysPresent++;
+            continue;
+          }
+
+          if (sorted.length > 0) {
+            daysPresent++;
+            if (sorted.length > 2) {
               // Calculate hours from real punches
-              if (dayPunches.length >= 2) {
-                const sorted = [...dayPunches].sort((a, b) => {
-                  const tA = parseLogPKT(a).timestamp;
-                  const tB = parseLogPKT(b).timestamp;
-                  return tA.localeCompare(tB);
-                });
-                const firstStr = parseLogPKT(sorted[0]).timestamp;
-                const lastStr = parseLogPKT(
-                  sorted[sorted.length - 1],
-                ).timestamp;
+              const firstStr = parseLogPKT(sorted[0]).timestamp;
+              const lastStr = parseLogPKT(sorted[sorted.length - 1]).timestamp;
 
-                const fDate = new Date(firstStr.replace(" ", "T"));
-                const lDate = new Date(lastStr.replace(" ", "T"));
+              const fDate = new Date(firstStr.replace(" ", "T"));
+              const lDate = new Date(lastStr.replace(" ", "T"));
 
-                if (!isNaN(fDate.getTime()) && !isNaN(lDate.getTime())) {
-                  const diff =
-                    (lDate.getTime() - fDate.getTime()) / (1000 * 60 * 60);
-                  totalHours += diff;
-                }
-              } else {
-                // Single punch check-in, check if it's today and they haven't checked out yet
-                if (dateStr === todayStr) {
-                  const firstStr = parseLogPKT(dayPunches[0]).timestamp;
-                  const fDate = new Date(firstStr.replace(" ", "T"));
-                  const currDate = new Date();
-                  if (!isNaN(fDate.getTime())) {
-                    const diff = Math.max(
-                      0,
-                      (currDate.getTime() - fDate.getTime()) / (1000 * 60 * 60),
-                    );
-                    totalHours += diff;
-                  }
-                }
+              if (!isNaN(fDate.getTime()) && !isNaN(lDate.getTime())) {
+                const diff =
+                  (lDate.getTime() - fDate.getTime()) / (1000 * 60 * 60);
+                totalHours += diff;
               }
-            } else {
-              // Only count today as absent if the shift has already started
-              if (dateStr !== todayStr || shiftStarted) {
-                daysAbsent++;
+            } else if (dateStr === todayStr) {
+              // Single punch check-in, check if it's today and they haven't checked out yet
+              const firstStr = parseLogPKT(dayPunches[0]).timestamp;
+              const fDate = new Date(firstStr.replace(" ", "T"));
+              const currDate = new Date();
+              if (!isNaN(fDate.getTime())) {
+                const diff = Math.max(
+                  0,
+                  (currDate.getTime() - fDate.getTime()) / (1000 * 60 * 60),
+                );
+                totalHours += diff;
               }
+            }
+          } else {
+            // Only count today as absent if the shift has already started
+            if (dateStr !== todayStr || shiftStarted) {
+              daysAbsent++;
             }
           }
           tempDate.setDate(tempDate.getDate() - 1);
@@ -455,6 +467,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
           todayStatus,
           isLateToday,
           daysPresent,
+          daysNotAvailable,
           daysAbsent,
           totalHours,
           totalWorkDays,
@@ -670,6 +683,9 @@ export const Attendance: React.FC<AttendanceProps> = ({
           status = first.status;
           finalFirstIn = "N/A";
           finalLastOut = "N/A";
+          if (first.status === "On Leave") {
+            hours = 0;
+          }
         }
 
         const checkOutPunch = sorted.find(
@@ -742,7 +758,9 @@ export const Attendance: React.FC<AttendanceProps> = ({
           return;
         if (log.firstIn !== "--") {
           present++;
-          totalHours += log.hours;
+          if (log.status !== "On Leave") {
+            totalHours += log.hours;
+          }
         } else {
           absent++;
         }
@@ -1460,6 +1478,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
                           <th>Shift</th>
                           <th>Today's Status</th>
                           <th>Days Present</th>
+                          <th>Days N/A</th>
                           <th>Days Absent</th>
                           <th>Total Hours (Month)</th>
                           <th style={{ width: "120px", textAlign: "center" }}>
@@ -1549,17 +1568,33 @@ export const Attendance: React.FC<AttendanceProps> = ({
                             </td>
                             <td>{getTodayStatusBadge(emp.todayStatus)}</td>
                             <td style={{ fontWeight: 600 }}>
-                              {emp.daysPresent} / {emp.totalWorkDays}
+                              <span
+                                style={{
+                                  color:
+                                    emp.daysPresent > 0
+                                      ? "#5ef4a6 "
+                                      : "var(--text-secondary)",
+                                }}
+                              >
+                                {emp.daysPresent}
+                              </span>
+                              / {emp.totalWorkDays}
                             </td>
-                            <td
-                              style={{
-                                color:
-                                  emp.daysAbsent > 0
-                                    ? "#f43f5e"
-                                    : "var(--text-secondary)",
-                              }}
-                            >
-                              {emp.daysAbsent}
+                            <td style={{ fontWeight: 600 }}>
+                              {emp.daysNotAvailable} / {emp.totalWorkDays}
+                            </td>
+                            <td>
+                              <span
+                                style={{
+                                  color:
+                                    emp.daysAbsent > 0
+                                      ? "#f43f5e"
+                                      : "var(--text-secondary)",
+                                }}
+                              >
+                                {emp.daysAbsent}
+                              </span>{" "}
+                              / {emp.totalWorkDays}
                             </td>
                             <td>
                               <div
@@ -1796,7 +1831,9 @@ export const Attendance: React.FC<AttendanceProps> = ({
                               textTransform: "capitalize",
                             }}
                           >
-                            {selectedEmployee.role}
+                            {selectedEmployee.isDepartmentHead
+                              ? "Department Head"
+                              : selectedEmployee.role}
                           </strong>
                         </span>
                         <span>
