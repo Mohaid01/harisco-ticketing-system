@@ -1541,7 +1541,7 @@ app.get(
       let query = "SELECT * FROM leave_applications ORDER BY appliedAt DESC";
       const params: any[] = [];
 
-      if (userRole === "executive") {
+      if (userRole === "executive" || userRole === "manager") {
         query = `
           SELECT l.*, u.username AS userCode FROM leave_applications l
           JOIN users u ON l.userId = u.id
@@ -1716,14 +1716,8 @@ app.put(
 
             daysToDeduct++;
 
-            let checkInTime = "09:30:00";
-            let checkOutTime = "18:00:00";
-
-            if (dayOfWeek === 6) {
-              // Saturday
-              checkInTime = "10:00:00";
-              checkOutTime = "16:00:00";
-            }
+            const checkInTime = "--";
+            const checkOutTime = "--";
 
             const year = d.getFullYear();
             const month = String(d.getMonth() + 1).padStart(2, "0");
