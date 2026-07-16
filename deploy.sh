@@ -9,6 +9,12 @@ echo ""
 git pull
 
 echo ""
+echo "🛑 Stopping current services..."
+echo ""
+
+docker-compose down
+
+echo ""
 echo "⚡ Building and restarting services..."
 echo ""
 
