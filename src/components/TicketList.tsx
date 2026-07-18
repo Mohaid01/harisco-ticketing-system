@@ -5,7 +5,17 @@ import {
   TICKET_TYPE_OPTIONS,
   STATUS_OPTIONS,
 } from "../constants";
-import { Search, Plus, Filter, ArrowUpDown } from "lucide-react";
+import {
+  Search,
+  Clock,
+  CheckSquare,
+  Settings,
+  ShieldCheck,
+  UserCheck,
+  Plus,
+  Filter,
+  ArrowUpDown,
+} from "lucide-react";
 
 interface TicketListProps {
   tickets: Ticket[];
@@ -82,6 +92,19 @@ export const TicketList: React.FC<TicketListProps> = ({
       });
   }, [tickets, currentUser, searchQuery, typeFilter, statusFilter, sortBy]);
 
+  // Calculate statistics from the ROLE-filtered tickets (or all tickets? Let's use role-filtered for Employee, all for IT/Manager to make it feel specific)
+  const awaitingIt = filteredTickets.filter(
+    (t) => t.status === "awaiting_it_approval",
+  ).length;
+  const awaitingManager = filteredTickets.filter(
+    (t) => t.status === "awaiting_manager_approval",
+  ).length;
+  const open = filteredTickets.filter((t) => t.status === "open").length;
+  const awaitingHandover = filteredTickets.filter(
+    (t) => t.status === "awaiting_handover",
+  ).length;
+  const closed = filteredTickets.filter((t) => t.status === "closed").length;
+
   const getStatusBadge = (status: TicketStatus) => {
     switch (status) {
       case "open":
@@ -146,6 +169,64 @@ export const TicketList: React.FC<TicketListProps> = ({
           <Plus size={16} />
           Raise Issue Ticket
         </button>
+      </div>
+
+      {/* Metric Cards */}
+      <div className="dashboard-grid">
+        <div className="stat-card it-app">
+          <div className="stat-header">
+            <span className="stat-label">Awaiting IT</span>
+            <div className="stat-icon">
+              <Clock size={16} />
+            </div>
+          </div>
+          <span className="stat-value">{awaitingIt}</span>
+          <span className="stat-desc">Pending initial IT review</span>
+        </div>
+
+        <div className="stat-card m-app">
+          <div className="stat-header">
+            <span className="stat-label">Awaiting Manager</span>
+            <div className="stat-icon">
+              <ShieldCheck size={16} />
+            </div>
+          </div>
+          <span className="stat-value">{awaitingManager}</span>
+          <span className="stat-desc">Pending manager signoff</span>
+        </div>
+
+        <div className="stat-card prog">
+          <div className="stat-header">
+            <span className="stat-label">Open Tickets</span>
+            <div className="stat-icon">
+              <Settings size={16} />
+            </div>
+          </div>
+          <span className="stat-value">{open}</span>
+          <span className="stat-desc">Pending assignment or action</span>
+        </div>
+
+        <div className="stat-card handover">
+          <div className="stat-header">
+            <span className="stat-label">Handover</span>
+            <div className="stat-icon">
+              <UserCheck size={16} />
+            </div>
+          </div>
+          <span className="stat-value">{awaitingHandover}</span>
+          <span className="stat-desc">Awaiting employee acceptance</span>
+        </div>
+
+        <div className="stat-card done">
+          <div className="stat-header">
+            <span className="stat-label">Closed</span>
+            <div className="stat-icon">
+              <CheckSquare size={16} />
+            </div>
+          </div>
+          <span className="stat-value">{closed}</span>
+          <span className="stat-desc">Completed tickets</span>
+        </div>
       </div>
 
       {/* Filter and Search Bar */}
