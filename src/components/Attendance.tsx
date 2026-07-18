@@ -500,7 +500,8 @@ export const Attendance: React.FC<AttendanceProps> = ({
       }
 
       return matchesSearch && matchesDept && matchesShift && matchesTodayStatus;
-    });
+    })
+        .sort((a, b) => a.formattedCode.localeCompare(b.formattedCode, undefined, { numeric: true}));
   }, [
     employeeSummaries,
     searchQuery,
