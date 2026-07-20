@@ -3,7 +3,7 @@ import logoFull from "../assets/harisco-full-logo.png";
 import type { AppUser, ActiveTab, MenuItems } from "../types";
 import { ROLE_LABELS } from "../constants";
 import {
-  LayoutDashboard,
+  Bell,
   Ticket,
   Users,
   Activity,
@@ -33,9 +33,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   // Define menu items
   const menuItems: MenuItems[] = [
     {
-      id: "dashboard" as ActiveTab,
-      label: "Dashboard",
-      icon: LayoutDashboard,
+      id: "noticeboard" as ActiveTab,
+      label: "Noticeboard",
+      icon: Bell,
       roles: ["it", "employee", "manager", "executive"],
     },
     {
@@ -74,7 +74,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       id: "activity_log" as ActiveTab,
       label: "Activity Logs",
       icon: Activity,
-      roles: ["it", "employee", "manager", "executive"],
+      roles: ["it", "manager", "executive"],
       notAllowedDepartments: ["Staff"],
     },
   ];

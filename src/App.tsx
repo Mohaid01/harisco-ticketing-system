@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Sidebar } from "./components/Sidebar";
-import { Dashboard } from "./components/Dashboard";
+import { NoticeBoard } from "./components/NoticeBoard";
 import { TicketList } from "./components/TicketList";
 import { TicketDetails } from "./components/TicketDetails";
 import { NewTicketModal } from "./components/NewTicketModal";
@@ -20,16 +20,22 @@ import type {
   TicketType,
   ActiveTab,
   UserRole,
+  Notice,
 } from "./types";
+import { CreateNoticeModal } from "./components/CreateNoticeModal";
+import { EditNoticeModal } from "./components/EditNoticeModal";
 
 function App() {
   const [token, setToken] = useState<string | null>(
     localStorage.getItem("harisco_token"),
   );
+  const [notices, setNotices] = useState<Notice[]>([]);
+  const [isCreateNoticeOpen, setIsCreateNoticeOpen] = useState(false);
+  const [selectedNoticeId, setSelectedNoticeId] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<AppUser | null>(null);
   const [users, setUsers] = useState<AppUser[]>([]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
-  const [activeTab, setActiveTab] = useState<ActiveTab>("dashboard");
+  const [activeTab, setActiveTab] = useState<ActiveTab>("noticeboard");
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
@@ -41,6 +47,7 @@ function App() {
   useEffect(() => {
     const fetchSessionAndData = async () => {
       if (!token) {
+        setNotices([]);
         setCurrentUser(null);
         setTickets([]);
         setUsers([]);
@@ -64,6 +71,15 @@ function App() {
         if (user.needsPasswordReset === 1) {
           setLoading(false);
           return;
+        }
+
+        // Fetch Notices
+        const noticesRes = await fetch("/api/notices", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (noticesRes.ok) {
+          const noticesData = await noticesRes.json();
+          setNotices(noticesData);
         }
 
         // Fetch tickets
@@ -115,20 +131,6 @@ function App() {
             return prevTickets;
           });
         }
-
-        // Optionally poll users if needed, though users change less frequently
-        const usersRes = await fetch("/api/users", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (usersRes.ok) {
-          const usersData = await usersRes.json();
-          setUsers((prevUsers) => {
-            if (JSON.stringify(prevUsers) !== JSON.stringify(usersData)) {
-              return usersData;
-            }
-            return prevUsers;
-          });
-        }
       } catch {
         // Silent catch for background polling
       }
@@ -166,7 +168,7 @@ function App() {
     localStorage.setItem("harisco_token", newToken);
     setToken(newToken);
     setCurrentUser(user);
-    setActiveTab("dashboard");
+    setActiveTab("noticeboard");
   };
 
   const handlePasswordResetSuccess = (
@@ -176,7 +178,7 @@ function App() {
     localStorage.setItem("harisco_token", newToken);
     setToken(newToken);
     setCurrentUser(updatedUser);
-    setActiveTab("dashboard");
+    setActiveTab("noticeboard");
   };
 
   // Handle Logout
@@ -187,8 +189,92 @@ function App() {
     setTickets([]);
     setUsers([]);
     setSelectedTicketId(null);
-    setActiveTab("dashboard");
+    setActiveTab("noticeboard");
   };
+
+  // Noticeboard-releveant API calls
+
+  const fetchNotices = async () => {
+    if (!token || !currentUser) return;
+    try {
+      const response = await fetch("/api/notices", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) throw new Error("Failed to fetch notices");
+      const data = await response.json();
+      setNotices(data);
+    } catch (error) {
+      console.error("Notice fetch error:", error);
+    }
+  };
+
+  // Create a notice
+  const handleCreateNotice = async (
+    noticeData: Omit<Notice, "id" | "createdAt" | "authorName" | "authorRole">,
+  ) => {
+    if (!token || !currentUser) return;
+    const payload = {
+      ...noticeData,
+      authorName: currentUser.name,
+      authorRole: currentUser.role,
+      createdAt: new Date().toISOString(),
+    };
+
+    try {
+      const response = await fetch("/api/notices", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        fetchNotices(); // <-- ADD THIS LINE HERE to refresh the notice list instantly
+        setIsCreateNoticeOpen(false);
+      }
+    } catch (error) {
+      console.error("Failed to post notice:", error);
+    }
+  };
+
+  // Update a notice
+  const handleEditNotice = async (
+    noticeId: string,
+    noticeData: Omit<Notice, "id" | "createdAt" | "authorName" | "authorRole">,
+  ) => {
+    if (!token || !currentUser) return;
+    const payload = {
+      ...noticeData,
+      authorName: currentUser.name,
+      authorRole: currentUser.role,
+      createdAt: new Date().toISOString(),
+    };
+
+    try {
+      const response = await fetch(`/api/notices/${noticeId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        fetchNotices(); // <-- ADD THIS LINE HERE to refresh the notice list instantly
+        setSelectedNoticeId(null);
+      }
+    } catch (error) {
+      console.error("Failed to update notice:", error);
+    }
+  };
+
+  // Ticket-relevant API calls
 
   // Handle status updates
   const handleUpdateStatus = async (
@@ -411,6 +497,8 @@ function App() {
     }
   };
 
+  // User-relevant API calls
+
   const handleAddUser = async (data: {
     name: string;
     email: string;
@@ -626,13 +714,12 @@ function App() {
               onEditTicket={handleEditTicket}
               onDeleteTicket={handleDeleteTicket}
             />
-          ) : activeTab === "dashboard" ? (
-            <Dashboard
-              tickets={tickets}
+          ) : activeTab === "noticeboard" ? (
+            <NoticeBoard
+              notices={notices}
               currentUser={currentUser}
-              onSelectTicket={(id) => setSelectedTicketId(id)}
-              onCreateTicketClick={() => setIsCreateModalOpen(true)}
-              onViewAllTickets={() => setActiveTab("tickets")}
+              onCreateNoticeClick={() => setIsCreateNoticeOpen(true)}
+              onEditNoticeClick={(noticeId) => setSelectedNoticeId(noticeId)}
             />
           ) : activeTab === "tickets" ? (
             <TicketList
@@ -667,6 +754,24 @@ function App() {
           )}
         </section>
       </main>
+
+      {/* Noticeboard Modal Layers */}
+      {isCreateNoticeOpen && (
+        <CreateNoticeModal
+          isOpen={isCreateNoticeOpen}
+          onClose={() => setIsCreateNoticeOpen(false)}
+          onSubmit={handleCreateNotice}
+        />
+      )}
+
+      {selectedNoticeId && (
+        <EditNoticeModal
+          noticeId={selectedNoticeId}
+          notice={notices.find((n) => n.id === selectedNoticeId)}
+          onClose={() => setSelectedNoticeId(null)}
+          onUpdate={handleEditNotice}
+        />
+      )}
 
       {/* Creation Modal dialog */}
       <NewTicketModal

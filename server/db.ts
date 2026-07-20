@@ -23,6 +23,22 @@ export async function initDb() {
     driver: sqlite3.Database,
   });
 
+  // Create Notices Table
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS notices (
+      id TEXT PRIMARY KEY,
+      type TEXT NOT NULL,
+      authorName TEXT NOT NULL,
+      authorRole TEXT NOT NULL,
+      createdAt TEXT NOT NULL,
+      expiresAt TEXT,
+      enTitle TEXT NOT NULL,
+      enContent TEXT NOT NULL,
+      urTitle TEXT NOT NULL,
+      urContent TEXT NOT NULL
+    )
+  `);
+
   // Create Users Table
   await db.exec(`
     CREATE TABLE IF NOT EXISTS users (

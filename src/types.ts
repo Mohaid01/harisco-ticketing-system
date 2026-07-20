@@ -63,7 +63,7 @@ export interface Ticket {
 }
 
 export type ActiveTab =
-  | "dashboard"
+  | "noticeboard"
   | "tickets"
   | "users"
   | "activity_log"
@@ -116,4 +116,24 @@ export interface MenuItems {
   icon: LucideIcon;
   roles: UserRole[];
   notAllowedDepartments?: string[];
+}
+
+export type NoticeType = "outage" | "maintenance" | "policy" | "general";
+
+// Notice Interface with explicit language block payloads
+export interface Notice {
+  id: string;
+  type: NoticeType;
+  authorName: string;
+  authorRole: string;
+  createdAt: string;
+  expiresAt?: string;
+  en: {
+    title: string;
+    content: string;
+  };
+  ur: {
+    title: string;
+    content: string;
+  };
 }

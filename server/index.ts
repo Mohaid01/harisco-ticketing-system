@@ -81,13 +81,14 @@ app.use("/api", (req: Request, _res: Response, next: NextFunction) => {
   );
   next();
 });
+
 // Extend express Request interface for our middleware
 interface AuthRequest extends Request {
   user?: {
     id: string;
     name: string;
     email: string;
-    role: "it" | "employee" | "manager";
+    role: "it" | "employee" | "manager" | "executive";
     avatar?: string;
     needsPasswordReset?: number;
   };
@@ -98,7 +99,7 @@ interface DbUser {
   name: string;
   email: string;
   username: string;
-  role: "it" | "employee" | "manager";
+  role: "it" | "employee" | "manager" | "executive";
   avatar: string;
   passwordHash: string;
   needsPasswordReset: number;
@@ -374,6 +375,226 @@ app.post(
     } catch (error) {
       console.error("Change password error:", error);
       res.status(500).json({ error: "Failed to update password." });
+    }
+  },
+);
+
+// --- GET: Fetch all active or unexpired notices ---
+app.get(
+  "/api/notices",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const db = getDb();
+      const now = new Date().toISOString();
+      let notices;
+
+      if (req.user?.role === "employee") {
+        notices = await db.all(
+          `SELECT id, type, authorName, authorRole, createdAt, expiresAt,
+                  enTitle, enContent, urTitle, urContent
+           FROM notices 
+           WHERE expiresAt IS NULL OR expiresAt > ? 
+           ORDER BY createdAt DESC`,
+          [now],
+        );
+      } else {
+        notices = await db.all(
+          `SELECT id, type, authorName, authorRole, createdAt, expiresAt,
+                  enTitle, enContent, urTitle, urContent
+           FROM notices 
+           ORDER BY createdAt DESC`
+        );
+      }
+
+      // Structure the flat database rows back into your frontend bilingual objects
+      const structuredNotices = notices.map((row) => ({
+        id: row.id,
+        type: row.type,
+        authorName: row.authorName,
+        authorRole: row.authorRole,
+        createdAt: row.createdAt,
+        expiresAt: row.expiresAt,
+        en: {
+          title: row.enTitle,
+          content: row.enContent,
+        },
+        ur: {
+          title: row.urTitle,
+          content: row.urContent,
+        },
+      }));
+
+      res.json(structuredNotices);
+    } catch (error) {
+      console.error("Failed to fetch notices:", error);
+      res.status(500).json({ error: "Failed to fetch notices." });
+    }
+  },
+);
+
+// --- POST: Create a new notice (Restricted to IT or Management roles) ---
+app.post(
+  "/api/notices",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    // Restrict notice creation to specialized roles if needed (e.g., 'it' or 'management')
+    if (
+      req.user?.role !== "it" &&
+      req.user?.role !== "manager" &&
+      req.user?.role !== "executive"
+    ) {
+      res.status(403).json({
+        error: "Forbidden. Administrative privileges required to post notices.",
+      });
+      return;
+    }
+
+    const { type, en, ur, expiresAt } = req.body;
+
+    // Validation matching your frontend form constraints
+    if (!type || !en?.title || !en?.content || !ur?.title || !ur?.content) {
+      res.status(400).json({
+        error: "Category, English fields, and Urdu fields are all required.",
+      });
+      return;
+    }
+
+    try {
+      const db = getDb();
+      const noticeId = `ntc-${Date.now()}`;
+      const createdAt = new Date().toISOString();
+
+      await db.run(
+        `INSERT INTO notices (
+          id, type, authorName, authorRole, createdAt, expiresAt, 
+          enTitle, enContent, urTitle, urContent
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ? )`,
+        [
+          noticeId,
+          type,
+          req.user.name || "System",
+          req.user.role,
+          createdAt,
+          expiresAt || null,
+          en.title.trim(),
+          en.content.trim(),
+          ur.title.trim(),
+          ur.content.trim(),
+        ],
+      );
+
+      res.status(201).json({
+        id: noticeId,
+        type,
+        authorName: req.user.name || "System",
+        authorRole: req.user.role,
+        createdAt,
+        expiresAt: expiresAt || null,
+        en,
+        ur,
+      });
+    } catch (error) {
+      console.error("Failed to create notice:", error);
+      res.status(500).json({ error: "Failed to publish notice." });
+    }
+  },
+);
+
+// --- PUT: Update an existing notice ---
+app.put(
+  "/api/notices/:id",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    if (
+      req.user?.role !== "it" &&
+      req.user?.role !== "manager" &&
+      req.user?.role !== "executive"
+    ) {
+      res.status(403).json({
+        error: "Forbidden. Administrative privileges required to edit notices.",
+      });
+      return;
+    }
+
+    const noticeId = req.params.id;
+    const { type, en, ur, expiresAt } = req.body;
+
+    if (!type || !en?.title || !en?.content || !ur?.title || !ur?.content) {
+      res.status(400).json({ error: "Missing required update properties." });
+      return;
+    }
+
+    try {
+      const db = getDb();
+
+      const result = await db.run(
+        `UPDATE notices SET 
+          type = ?, 
+          expiresAt = ?, 
+          enTitle = ?, 
+          enContent = ?, 
+          urTitle = ?, 
+          urContent = ? 
+         WHERE id = ?`,
+        [
+          type,
+          expiresAt || null,
+          en.title.trim(),
+          en.content.trim(),
+          ur.title.trim(),
+          ur.content.trim(),
+          noticeId,
+        ],
+      );
+
+      if (result.changes === 0) {
+        res.status(404).json({ error: "Notice not found." });
+        return;
+      }
+
+      res.json({ message: "Notice updated successfully." });
+    } catch (error) {
+      console.error("Failed to update notice:", error);
+      res.status(500).json({ error: "Failed to update notice." });
+    }
+  },
+);
+
+// --- DELETE: Remove a notice entry ---
+app.delete(
+  "/api/notices/:id",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    if (
+      req.user?.role !== "it" &&
+      req.user?.role !== "manager" &&
+      req.user?.role !== "executive"
+    ) {
+      res.status(403).json({
+        error:
+          "Forbidden. Administrative privileges required to delete notices.",
+      });
+      return;
+    }
+
+    const noticeId = req.params.id;
+
+    try {
+      const db = getDb();
+      const result = await db.run("DELETE FROM notices WHERE id = ?", [
+        noticeId,
+      ]);
+
+      if (result.changes === 0) {
+        res.status(404).json({ error: "Notice not found." });
+        return;
+      }
+
+      res.json({ message: "Notice deleted successfully." });
+    } catch (error) {
+      console.error("Failed to delete notice:", error);
+      res.status(500).json({ error: "Failed to discard notice." });
     }
   },
 );
