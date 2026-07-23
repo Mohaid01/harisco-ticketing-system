@@ -14,6 +14,7 @@ import {
 interface NoticeBoardProps {
   notices: Notice[];
   currentUser: AppUser;
+  allUsers: AppUser[];
   onCreateNoticeClick: () => void;
   onEditNoticeClick?: (noticeId: string) => void;
 }
@@ -21,12 +22,18 @@ interface NoticeBoardProps {
 export const NoticeBoard: React.FC<NoticeBoardProps> = ({
   notices,
   currentUser,
+  allUsers,
   onCreateNoticeClick,
   onEditNoticeClick,
 }) => {
   const isAdmin = currentUser.role !== "employee";
   const [activeTab, setActiveTab] = useState<"active" | "archive">("active");
   const now = new Date();
+
+  const getUserByName = (name: string): AppUser | null => {
+    const employee = allUsers.find((emp) => emp.name === name);
+    return employee || null;
+  };
 
   // Partitioning Logic (Active vs. Expired)
   const activeNotices = notices.filter((notice) => {
@@ -107,7 +114,10 @@ export const NoticeBoard: React.FC<NoticeBoardProps> = ({
             <Megaphone size={28} className="text-primary" /> Operations Notice
             Board
           </h1>
-          <p className="page-subtitle" style={{ marginTop: "4px", marginBottom: 0 }}>
+          <p
+            className="page-subtitle"
+            style={{ marginTop: "4px", marginBottom: 0 }}
+          >
             Welcome back, <strong>{currentUser.name}</strong>. Stay updated with
             critical system alerts and internal announcements.
           </p>
@@ -170,6 +180,8 @@ export const NoticeBoard: React.FC<NoticeBoardProps> = ({
           const meta = getTagMeta(notice.type);
           const isExpired =
             notice.expiresAt && new Date(notice.expiresAt) <= now;
+
+          const authorUser = getUserByName(notice.authorName);
 
           return (
             <div
@@ -238,7 +250,9 @@ export const NoticeBoard: React.FC<NoticeBoardProps> = ({
               <div className="notice-content-area">
                 {/* 1. English Content Block */}
                 <div className="notice-lang-box ltr">
-                  <span className="notice-lang-header">English Announcement</span>
+                  <span className="notice-lang-header">
+                    English Announcement
+                  </span>
                   <h2
                     style={{
                       margin: "0 0 6px 0",
@@ -295,9 +309,57 @@ export const NoticeBoard: React.FC<NoticeBoardProps> = ({
 
               {/* Card Footer */}
               <div className="notice-footer">
-                <span>
-                  Posted by <strong>{notice.authorName}</strong> (
-                  {notice.authorRole})
+                <span
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "start",
+                    gap: "12px",
+                  }}
+                >
+                  Posted by
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      fontSize: "0.78rem",
+                      color: "var(--text-muted)",
+                    }}
+                  >
+                    {authorUser?.avatar ? (
+                      <img
+                        src={authorUser.avatar}
+                        alt={authorUser.name}
+                        style={{
+                          width: "64px",
+                          height: "64px",
+                          borderRadius: "50%",
+                          objectFit: "cover",
+                          border: "1px solid var(--border-color)",
+                        }}
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          width: "64px",
+                          height: "64px",
+                          borderRadius: "50%",
+                          backgroundColor: "var(--color-primary-glow)",
+                          border: "1px solid var(--border-color)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontWeight: 600,
+                          fontSize: "0.8rem",
+                          color: "white",
+                        }}
+                      />
+                    )}
+                    <strong>{authorUser?.name}</strong>
+                    {" | "}
+                    {authorUser?.department} - {authorUser?.designation}
+                  </div>
                 </span>
                 {isAdmin && onEditNoticeClick && (
                   <span

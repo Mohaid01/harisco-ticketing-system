@@ -718,6 +718,7 @@ function App() {
             <NoticeBoard
               notices={notices}
               currentUser={currentUser}
+              allUsers={users}
               onCreateNoticeClick={() => setIsCreateNoticeOpen(true)}
               onEditNoticeClick={(noticeId) => setSelectedNoticeId(noticeId)}
             />
