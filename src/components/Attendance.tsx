@@ -260,17 +260,48 @@ export const Attendance: React.FC<AttendanceProps> = ({
   const parseLogPKT = (
     log: AttendanceLog,
   ): { date: string; time: string; timestamp: string } => {
-    const ts = log.timestamp || log.ioTime;
+    // 1. Prioritize ioTime (Already PKT: YYYY-MM-DD-THH:MM:SSZ)
+    if (log.ioTime) {
+      // Standardize "-T" to just "T" and split the date portion from the time portion
+      const parts = log.ioTime.replace("-T", "T").split("T");
+
+      if (parts.length === 2) {
+        const dateParts = parts[0].split("-");
+        const timeParts = parts[1].replace("Z", "").split(":");
+
+        // Ensure we have exactly [year, month, day] and [hour, minute, second]
+        if (dateParts.length === 3 && timeParts.length === 3) {
+          const yyyy = dateParts[0];
+          // Force string conversion to safely call padStart in TypeScript
+          const MM = String(dateParts[1]).padStart(2, "0");
+          const dd = String(dateParts[2]).padStart(2, "0");
+          const hh = String(timeParts[0]).padStart(2, "0");
+          const mm = String(timeParts[1]).padStart(2, "0");
+          const ss = String(timeParts[2]).padStart(2, "0");
+
+          const dateStr = `${yyyy}-${MM}-${dd}`;
+          const timeStr = `${hh}:${mm}:${ss}`;
+
+          return {
+            date: dateStr,
+            time: timeStr,
+            timestamp: `${dateStr} ${timeStr}`,
+          };
+        }
+      }
+    }
+
+    // 2. Fallback to timestamp (UTC: YYYY-MM-DD HH:MM:SS)
+    const ts = log.timestamp;
     if (!ts) return { date: "", time: "--", timestamp: "" };
 
-    // Treat the device time as UTC
     const utcDate = new Date(ts.replace(" ", "T") + "Z");
     if (isNaN(utcDate.getTime())) {
       const parts = ts.split(" ");
       return { date: parts[0], time: parts[1] || "--", timestamp: ts };
     }
 
-    // Convert to PKT (UTC+5)
+    // Convert UTC to PKT (UTC+5)
     const pktDate = new Date(utcDate.getTime() + 5 * 60 * 60 * 1000);
     const yyyy = pktDate.getUTCFullYear();
     const MM = String(pktDate.getUTCMonth() + 1).padStart(2, "0");
@@ -281,6 +312,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
 
     const dateStr = `${yyyy}-${MM}-${dd}`;
     const timeStr = `${hh}:${mm}:${ss}`;
+
     return { date: dateStr, time: timeStr, timestamp: `${dateStr} ${timeStr}` };
   };
 
@@ -477,31 +509,38 @@ export const Attendance: React.FC<AttendanceProps> = ({
 
   // Filter summaries based on Search & Dropdowns
   const filteredSummaries = useMemo(() => {
-    return employeeSummaries.filter((emp) => {
-      const matchesSearch =
-        emp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        emp.formattedCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        emp.id.toLowerCase().includes(searchQuery.toLowerCase());
+    return employeeSummaries
+      .filter((emp) => {
+        const matchesSearch =
+          emp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          emp.formattedCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          emp.id.toLowerCase().includes(searchQuery.toLowerCase());
 
-      const matchesDept =
-        filterDepartment === "All" || emp.department === filterDepartment;
-      const matchesShift = filterShift === "All" || emp.shift === filterShift;
+        const matchesDept =
+          filterDepartment === "All" || emp.department === filterDepartment;
+        const matchesShift = filterShift === "All" || emp.shift === filterShift;
 
-      let matchesTodayStatus = true;
-      if (filterTodayStatus === "Late Arrival") {
-        matchesTodayStatus = emp.isLateToday;
-      } else if (filterTodayStatus === "Present") {
-        matchesTodayStatus =
-          emp.todayStatus === "Clocked In" ||
-          emp.todayStatus === "Clocked Out" ||
-          emp.todayStatus === "Site Duty";
-      } else if (filterTodayStatus !== "All") {
-        matchesTodayStatus = emp.todayStatus === filterTodayStatus;
-      }
+        let matchesTodayStatus = true;
+        if (filterTodayStatus === "Late Arrival") {
+          matchesTodayStatus = emp.isLateToday;
+        } else if (filterTodayStatus === "Present") {
+          matchesTodayStatus =
+            emp.todayStatus === "Clocked In" ||
+            emp.todayStatus === "Clocked Out" ||
+            emp.todayStatus === "Site Duty";
+        } else if (filterTodayStatus !== "All") {
+          matchesTodayStatus = emp.todayStatus === filterTodayStatus;
+        }
 
-      return matchesSearch && matchesDept && matchesShift && matchesTodayStatus;
-    })
-        .sort((a, b) => a.formattedCode.localeCompare(b.formattedCode, undefined, { numeric: true}));
+        return (
+          matchesSearch && matchesDept && matchesShift && matchesTodayStatus
+        );
+      })
+      .sort((a, b) =>
+        a.formattedCode.localeCompare(b.formattedCode, undefined, {
+          numeric: true,
+        }),
+      );
   }, [
     employeeSummaries,
     searchQuery,
