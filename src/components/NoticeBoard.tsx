@@ -14,7 +14,6 @@ import {
 interface NoticeBoardProps {
   notices: Notice[];
   currentUser: AppUser;
-  allUsers: AppUser[];
   onCreateNoticeClick: () => void;
   onEditNoticeClick?: (noticeId: string) => void;
 }
@@ -22,18 +21,12 @@ interface NoticeBoardProps {
 export const NoticeBoard: React.FC<NoticeBoardProps> = ({
   notices,
   currentUser,
-  allUsers,
   onCreateNoticeClick,
   onEditNoticeClick,
 }) => {
   const isAdmin = currentUser.role !== "employee";
   const [activeTab, setActiveTab] = useState<"active" | "archive">("active");
   const now = new Date();
-
-  const getUserByName = (name: string): AppUser | null => {
-    const employee = allUsers.find((emp) => emp.name === name);
-    return employee || null;
-  };
 
   // Partitioning Logic (Active vs. Expired)
   const activeNotices = notices.filter((notice) => {
@@ -181,8 +174,6 @@ export const NoticeBoard: React.FC<NoticeBoardProps> = ({
           const isExpired =
             notice.expiresAt && new Date(notice.expiresAt) <= now;
 
-          const authorUser = getUserByName(notice.authorName);
-
           return (
             <div
               key={notice.id}
@@ -327,10 +318,10 @@ export const NoticeBoard: React.FC<NoticeBoardProps> = ({
                       color: "var(--text-muted)",
                     }}
                   >
-                    {authorUser?.avatar ? (
+                    {notice?.authorAvatar ? (
                       <img
-                        src={authorUser.avatar}
-                        alt={authorUser.name}
+                        src={notice.authorAvatar}
+                        alt={notice.authorName}
                         style={{
                           width: "64px",
                           height: "64px",
@@ -356,9 +347,9 @@ export const NoticeBoard: React.FC<NoticeBoardProps> = ({
                         }}
                       />
                     )}
-                    <strong>{authorUser?.name}</strong>
+                    <strong>{notice.authorName}</strong>
                     {" | "}
-                    {authorUser?.department} - {authorUser?.designation}
+                    {notice.authorDepartment} - {notice.authorDesignation}
                   </div>
                 </span>
                 {isAdmin && onEditNoticeClick && (

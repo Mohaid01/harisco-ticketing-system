@@ -68,6 +68,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
     currentUser.role === "it" ||
     currentUser.role === "manager" ||
     currentUser.role === "executive";
+  const canViewDepartment = currentUser.isDepartmentHead;
   const canWrite = currentUser.role === "it" || currentUser.role === "manager";
 
   // State Management
@@ -1055,13 +1056,13 @@ export const Attendance: React.FC<AttendanceProps> = ({
         <div>
           <h1 className="page-title">Attendance</h1>
           <p className="page-subtitle">
-            {canViewAll
-              ? "Monitor biometric records, review department-wise statistics, and inspect employee breakdowns."
+            {canViewAll || canViewDepartment
+              ? `Monitor biometric records, review ${!canViewAll && canViewDepartment ? `${currentUser.department} department's` : `department-wise`} statistics, and inspect employee breakdowns.`
               : "Review your clock-in timings, total hours worked, and monthly attendance overview."}
           </p>
         </div>
         <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-          {canViewAll && (
+          {(canViewAll || canViewDepartment) && (
             <div className="btn-group">
               <button
                 className={`btn ${viewMode === "summary" ? "btn-primary" : "btn-secondary"}`}
@@ -1153,7 +1154,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
             const todayHoliday = holidays.find((h) => h.date === todayDateStr);
             if (
               viewMode === "summary" &&
-              canViewAll &&
+              (canViewAll || canViewDepartment) &&
               (isTodaySundayPKT() || todayHoliday)
             ) {
               const isSunday = isTodaySundayPKT();
@@ -1215,7 +1216,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
             return null;
           })()}
           {viewMode === "summary" &&
-            canViewAll &&
+            (canViewAll || canViewDepartment) &&
             !isTodaySundayPKT() &&
             !holidays.find(
               (h) =>
@@ -1702,7 +1703,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
               style={{ display: "flex", flexDirection: "column", gap: "24px" }}
             >
               {/* Back Navigation Bar for Managers/Admins/Executives */}
-              {canViewAll && (
+              {(canViewAll || canViewDepartment) && (
                 <div className="btn-selector-grp">
                   <button
                     className="btn btn-secondary"

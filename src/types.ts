@@ -126,6 +126,9 @@ export interface Notice {
   type: NoticeType;
   authorName: string;
   authorRole: string;
+  authorAvatar?: string;
+  authorDepartment?: string;
+  authorDesignation?: string;
   createdAt: string;
   expiresAt?: string;
   en: {

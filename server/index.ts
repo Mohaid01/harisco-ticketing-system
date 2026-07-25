@@ -91,6 +91,8 @@ interface AuthRequest extends Request {
     role: "it" | "employee" | "manager" | "executive";
     avatar?: string;
     needsPasswordReset?: number;
+    isDepartmentHead: number;
+    department: string;
   };
 }
 
@@ -105,8 +107,8 @@ interface DbUser {
   needsPasswordReset: number;
   isDepartmentHead: number;
   loginEnabled: number;
-  department?: string | null;
-  designation?: string | null;
+  department: string | null;
+  designation: string | null;
   casualLeaves?: number;
   annualLeaves?: number;
   medicalLeaves?: number;
@@ -178,9 +180,11 @@ function authenticateToken(
       id: string;
       name: string;
       email: string;
-      role: "it" | "employee" | "manager";
+      role: "it" | "employee" | "manager" | "executive";
       avatar: string;
       needsPasswordReset?: number;
+      department: string;
+      isDepartmentHead: number;
     };
     next();
   });
@@ -230,6 +234,8 @@ app.post(
         username: user.username,
         role: user.role,
         needsPasswordReset: user.needsPasswordReset,
+        department: user.department,
+        isDepartmentHead: user.isDepartmentHead,
       };
       const token = jwt.sign(jwtPayload, JWT_SECRET, { expiresIn: "7d" });
 
@@ -238,9 +244,7 @@ app.post(
         user: {
           ...jwtPayload,
           avatar: user.avatar,
-          department: user.department,
           designation: user.designation,
-          isDepartmentHead: user.isDepartmentHead,
           loginEnabled: user.loginEnabled,
           casualLeaves: user.casualLeaves,
           annualLeaves: user.annualLeaves,
@@ -389,30 +393,40 @@ app.get(
       const now = new Date().toISOString();
       let notices;
 
+      // 1. Employees only see active, unexpired notices
       if (req.user?.role === "employee") {
         notices = await db.all(
-          `SELECT id, type, authorName, authorRole, createdAt, expiresAt,
-                  enTitle, enContent, urTitle, urContent
-           FROM notices 
-           WHERE expiresAt IS NULL OR expiresAt > ? 
-           ORDER BY createdAt DESC`,
+          `SELECT n.id, n.type, n.authorName, n.authorRole, n.createdAt, n.expiresAt, 
+                  n.enTitle, n.enContent, n.urTitle, n.urContent, 
+                  u.avatar AS authorAvatar, u.department AS authorDepartment, u.designation AS authorDesignation
+           FROM notices n
+           LEFT JOIN users u ON n.authorName = u.name
+           WHERE n.expiresAt IS NULL OR n.expiresAt > ? 
+           ORDER BY n.createdAt DESC`,
           [now],
         );
-      } else {
+      }
+      // 2. Administrators, IT, and Managers see all notices
+      else {
         notices = await db.all(
-          `SELECT id, type, authorName, authorRole, createdAt, expiresAt,
-                  enTitle, enContent, urTitle, urContent
-           FROM notices 
-           ORDER BY createdAt DESC`
+          `SELECT n.id, n.type, n.authorName, n.authorRole, n.createdAt, n.expiresAt, 
+                  n.enTitle, n.enContent, n.urTitle, n.urContent, 
+                  u.avatar AS authorAvatar, u.department AS authorDepartment, u.designation AS authorDesignation
+           FROM notices n
+           LEFT JOIN users u ON n.authorName = u.name
+           ORDER BY n.createdAt DESC`,
         );
       }
 
-      // Structure the flat database rows back into your frontend bilingual objects
+      // 3. Map database records back to bilingual objects with user profile metadata
       const structuredNotices = notices.map((row) => ({
         id: row.id,
         type: row.type,
         authorName: row.authorName,
         authorRole: row.authorRole,
+        authorAvatar: row.authorAvatar || "",
+        authorDepartment: row.authorDepartment || "", // Added author department
+        authorDesignation: row.authorDesignation || "", // Added author designation
         createdAt: row.createdAt,
         expiresAt: row.expiresAt,
         en: {
@@ -425,10 +439,10 @@ app.get(
         },
       }));
 
-      res.json(structuredNotices);
+      return res.json(structuredNotices);
     } catch (error) {
       console.error("Failed to fetch notices:", error);
-      res.status(500).json({ error: "Failed to fetch notices." });
+      return res.status(500).json({ error: "Failed to fetch notices." });
     }
   },
 );
@@ -606,12 +620,51 @@ app.get(
   async (req: AuthRequest, res: Response) => {
     try {
       const db = getDb();
-      const users = await db.all(
-        "SELECT id, name, email, username, role, avatar, department, designation, isDepartmentHead, loginEnabled, casualLeaves, annualLeaves, medicalLeaves FROM users ORDER BY username ASC",
-      );
-      res.json(users);
-    } catch {
-      res.status(500).json({ error: "Failed to fetch users." });
+      const currentUser = req.user;
+
+      if (!currentUser) {
+        return res
+          .status(401)
+          .json({ error: "Unauthorized. User data missing." });
+      }
+
+      const selectFields =
+        "SELECT id, name, email, username, role, avatar, department, designation, isDepartmentHead, loginEnabled, casualLeaves, annualLeaves, medicalLeaves FROM users";
+
+      let query = "";
+      let params: any[] = [];
+
+      if (["executive", "manager", "it"].includes(currentUser.role)) {
+        query = `${selectFields} ORDER BY username ASC`;
+      }
+      // 2. Department Heads see everyone in their specific department
+      else if (currentUser.isDepartmentHead) {
+        query = `${selectFields} WHERE department = ? ORDER BY username ASC`;
+        params = [currentUser.department];
+      }
+      // 3. Regular users only see their own profile
+      else {
+        query = `${selectFields} WHERE id = ?`;
+        params = [currentUser.id];
+      }
+
+      // Execute the query safely
+      if (
+        ["executive", "manager", "it"].includes(currentUser.role) ||
+        currentUser.isDepartmentHead
+      ) {
+        const users = await db.all<DbUser[]>(query, params);
+        return res.json(users);
+      } else {
+        const user = await db.get<DbUser>(query, params);
+        if (!user) {
+          return res.status(404).json({ error: "User profile not found." });
+        }
+        return res.json([user]); // Wrapping in an array to keep the response structure consistent
+      }
+    } catch (error) {
+      console.error("Error fetching users data:", error);
+      return res.status(500).json({ error: "Failed to fetch users data." });
     }
   },
 );
@@ -681,8 +734,6 @@ app.post(
 
       const passwordHash = await bcrypt.hash(clearPassword, 10);
       const userId = `usr-${Date.now()}`;
-
-      console.log("CHECKPOINT 2");
 
       await db.run(
         "INSERT INTO users (id, name, email, username, role, avatar, passwordHash, needsPasswordReset, department, designation, isDepartmentHead, loginEnabled) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)",
@@ -898,26 +949,43 @@ app.get(
   async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id;
     const userRole = req.user?.role;
+    const isDepartmentHead = req.user?.isDepartmentHead;
+    const userDepartment = req.user?.department;
 
     try {
       const db = getDb();
       let ticketsQuery = "SELECT * FROM tickets";
-      const queryParams: (string | undefined)[] = [];
+      const queryParams: string[] = [];
 
-      // RBAC: Employee only sees tickets they raised. IT, Manager and Executive see all.
-      if (userRole === "employee") {
+      // 1. Executive, Manager, and IT see everything (no WHERE clause added)
+      if (["executive", "manager", "it"].includes(userRole || "")) {
+        // Do nothing, leaves query as "SELECT * FROM tickets"
+      }
+      // 2. Department Heads see tickets from all users in their department
+      else if (isDepartmentHead && userDepartment) {
+        ticketsQuery +=
+          " WHERE reporterId IN (SELECT id FROM users WHERE department = ?)";
+        queryParams.push(userDepartment);
+      }
+      // 3. Regular employees only see tickets they raised
+      else if (userRole === "employee" && userId) {
         ticketsQuery += " WHERE reporterId = ?";
         queryParams.push(userId);
       }
+      // 4. Fallback for unhandled edge cases (safely returns nothing)
+      else {
+        ticketsQuery += " WHERE 1 = 0";
+      }
+
+      ticketsQuery += " ORDER BY id DESC"; // Added for better scannability
 
       const tickets = await db.all<DbTicket[]>(ticketsQuery, queryParams);
 
       if (tickets.length === 0) {
-        res.json([]);
-        return;
+        return res.json([]);
       }
 
-      // Get all comments and logs to reconstruct full ticket shapes
+      // Reconstruct full ticket shapes with comments and logs
       const ticketIds = tickets.map((t) => t.id);
       const placeholders = ticketIds.map(() => "?").join(",");
 
@@ -940,10 +1008,12 @@ app.get(
         };
       });
 
-      res.json(ticketsMap);
+      return res.json(ticketsMap);
     } catch (error) {
       console.error("Failed to fetch tickets:", error);
-      res.status(500).json({ error: "Failed to retrieve support tickets." });
+      return res
+        .status(500)
+        .json({ error: "Failed to retrieve support tickets." });
     }
   },
 );
@@ -1493,10 +1563,50 @@ app.get(
   async (req: AuthRequest, res: Response) => {
     try {
       const db = getDb();
-      const logs = await db.all(
-        "SELECT * FROM attendance_logs ORDER BY timestamp DESC",
-      );
-      res.json(logs);
+      const currentUser = req.user;
+
+      if (!currentUser) {
+        return res
+          .status(401)
+          .json({ error: "Unauthorized. User data missing." });
+      }
+
+      let query = "";
+      let params: any[] = [];
+
+      // 1. Executive, Manager, or IT see all logs across the system
+      if (["executive", "manager", "it"].includes(currentUser.role)) {
+        query = `
+          SELECT id, name, userId, ioTime, method, status, timestamp 
+          FROM attendance_logs 
+          ORDER BY timestamp DESC
+        `;
+      }
+      // 2. Department Heads see logs for users belonging to their department via name matching
+      else if (currentUser.isDepartmentHead) {
+        query = `
+          SELECT l.id, l.name, l.userId, l.ioTime, l.method, l.status, l.timestamp 
+          FROM attendance_logs l
+          JOIN users u ON l.name = u.name
+          WHERE u.department = ?
+          ORDER BY l.timestamp DESC
+        `;
+        params = [currentUser.department];
+      }
+      // 3. Regular employees see logs matching their specific name string
+      else {
+        query = `
+          SELECT id, name, userId, ioTime, method, status, timestamp 
+          FROM attendance_logs 
+          WHERE name = ?
+          ORDER BY timestamp DESC
+        `;
+        params = [currentUser.name];
+      }
+
+      // Execute the parameterized query securely
+      const logs = await db.all(query, params);
+      return res.json(logs);
     } catch (error) {
       console.error("Failed to retrieve attendance logs:", error);
       res.status(500).json({ error: "Failed to retrieve attendance logs." });
@@ -2459,18 +2569,18 @@ async function startServer() {
                   status = attendStat === "DutyOff" ? "Check-Out" : "Check-In";
                 }
 
-                console.log(
-                  `\n======================================================`,
-                );
-                console.log(`✅ [NEW ATTENDANCE CAPTURED]`);
-                console.log(`👤 Name:   ${parsedName}`);
-                console.log(`🆔 ID:     ${userId}`);
-                console.log(`⏰ Time:   ${punchTime}`);
-                console.log(`🛡️ Method: ${scanMethod}`);
-                console.log(`🚦 Status: ${status}`);
-                console.log(
-                  `======================================================\n`,
-                );
+                // console.log(
+                //   `\n======================================================`,
+                // );
+                // console.log(`✅ [NEW ATTENDANCE CAPTURED]`);
+                // console.log(`👤 Name:   ${parsedName}`);
+                // console.log(`🆔 ID:     ${userId}`);
+                // console.log(`⏰ Time:   ${punchTime}`);
+                // console.log(`🛡️ Method: ${scanMethod}`);
+                // console.log(`🚦 Status: ${status}`);
+                // console.log(
+                //   `======================================================\n`,
+                // );
 
                 try {
                   const db = getDb();

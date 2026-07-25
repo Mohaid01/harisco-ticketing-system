@@ -216,6 +216,7 @@ function App() {
     noticeData: Omit<Notice, "id" | "createdAt" | "authorName" | "authorRole">,
   ) => {
     if (!token || !currentUser) return;
+
     const payload = {
       ...noticeData,
       authorName: currentUser.name,
@@ -234,7 +235,7 @@ function App() {
       });
 
       if (response.ok) {
-        fetchNotices(); // <-- ADD THIS LINE HERE to refresh the notice list instantly
+        fetchNotices();
         setIsCreateNoticeOpen(false);
       }
     } catch (error) {
@@ -718,7 +719,6 @@ function App() {
             <NoticeBoard
               notices={notices}
               currentUser={currentUser}
-              allUsers={users}
               onCreateNoticeClick={() => setIsCreateNoticeOpen(true)}
               onEditNoticeClick={(noticeId) => setSelectedNoticeId(noticeId)}
             />

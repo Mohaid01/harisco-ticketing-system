@@ -45,13 +45,6 @@ export const TicketList: React.FC<TicketListProps> = ({
     return tickets
       .filter((ticket) => {
         // RBAC: Employee only sees own tickets, IT, Managers and Executives see all
-        if (
-          currentUser.role === "employee" &&
-          ticket.reporterId !== currentUser.id
-        ) {
-          return false;
-        }
-
         // Search text filter
         const matchesSearch =
           ticket.description
@@ -90,7 +83,7 @@ export const TicketList: React.FC<TicketListProps> = ({
         }
         return 0;
       });
-  }, [tickets, currentUser, searchQuery, typeFilter, statusFilter, sortBy]);
+  }, [tickets, searchQuery, typeFilter, statusFilter, sortBy]);
 
   // Calculate statistics from the ROLE-filtered tickets (or all tickets? Let's use role-filtered for Employee, all for IT/Manager to make it feel specific)
   const awaitingIt = filteredTickets.filter(
@@ -156,9 +149,11 @@ export const TicketList: React.FC<TicketListProps> = ({
         <div>
           <h1 className="page-title">Support Tickets Queue</h1>
           <p className="page-subtitle">
-            {currentUser.role === "employee"
-              ? "View and manage your raised issues."
-              : "Review and transition team tickets."}
+            {currentUser.isDepartmentHead
+              ? "View and manage tickets for your department."
+              : currentUser.role === "employee"
+                ? "View and manage your raised issues."
+                : "Review and transition team tickets."}
           </p>
         </div>
         <button
