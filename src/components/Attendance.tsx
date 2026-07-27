@@ -1041,6 +1041,58 @@ export const Attendance: React.FC<AttendanceProps> = ({
     }
   };
 
+  // Add this helper function to handle CSV export in your React component
+  const exportToCSV = (summaries) => {
+    const headers = [
+      "Employee ID",
+      "Name",
+      "Department",
+      "Shift",
+      "Today's Status",
+      "Days Present",
+      "Days N/A",
+      "Days Absent",
+      "Total Hours (Month)",
+    ];
+
+    const rows = summaries.map((emp) => [
+      `"${emp.formattedCode || emp.id}"`,
+      `"${emp.name}"`,
+      `"${emp.department}"`,
+      `"${emp.shift.split(" (")[0]}"`,
+      `"${emp.todayStatus}"`,
+      emp.daysPresent,
+      emp.daysNotAvailable,
+      emp.daysAbsent,
+      `"${formatHours ? formatHours(emp.totalHours) : emp.totalHours}"`,
+    ]);
+
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
+      [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "employee_attendance_summary.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Add this useEffect inside your component to map it to a shortcut (e.g., Ctrl + Shift + E or Alt + E)
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      // Example: Alt + E or Ctrl + Shift + E
+      if (event.altKey && event.key.toLowerCase() === "e") {
+        event.preventDefault();
+        exportToCSV(filteredSummaries);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [filteredSummaries]);
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
       {/* Header Panel */}
