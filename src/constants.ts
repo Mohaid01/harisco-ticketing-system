@@ -1,4 +1,11 @@
-import type { TicketStatus, TicketType, UserRole, AppUser } from './types';
+import type {
+  TicketStatus,
+  TicketType,
+  UserRole,
+  AppUser,
+  AdminTicketCategory,
+  AdminTicketStatus,
+} from './types';
 
 // Brand Configuration
 export const PRIMARY_COLOR = '#0e529b';
@@ -24,6 +31,42 @@ export const TICKET_TYPE_OPTIONS = [
   { value: 'software' as TicketType, label: 'Software Issue' },
   { value: 'maintenance' as TicketType, label: 'Maintenance (Installation)' },
   { value: 'upgrade' as TicketType, label: 'System Upgrade' },
+];
+
+export const ADMIN_TICKET_CATEGORY_LABELS: Record<AdminTicketCategory, string> = {
+  staff_issue: 'Staff Issue',
+  security: 'Security',
+  maintenance: 'Maintenance',
+  cleaning_decoration: 'Cleaning/Decoration',
+  mess_canteen: 'Mess/Canteen',
+  travelling: 'Travelling',
+  stationery_courier: 'Stationery/Courier',
+};
+
+export const ADMIN_TICKET_CATEGORY_OPTIONS = [
+  { value: 'staff_issue' as AdminTicketCategory, label: 'Staff Issue' },
+  { value: 'security' as AdminTicketCategory, label: 'Security' },
+  { value: 'maintenance' as AdminTicketCategory, label: 'Maintenance' },
+  { value: 'cleaning_decoration' as AdminTicketCategory, label: 'Cleaning/Decoration' },
+  { value: 'mess_canteen' as AdminTicketCategory, label: 'Mess/Canteen' },
+  { value: 'travelling' as AdminTicketCategory, label: 'Travelling' },
+  { value: 'stationery_courier' as AdminTicketCategory, label: 'Stationery/Courier' },
+];
+
+export const ADMIN_TICKET_STATUS_LABELS: Record<AdminTicketStatus, string> = {
+  awaiting_admin_manager: 'Awaiting Admin Manager',
+  awaiting_materials: 'Awaiting Materials',
+  awaiting_technician: 'Awaiting Technician',
+  awaiting_executive: 'Awaiting Executive',
+  resolved: 'Resolved',
+};
+
+export const ADMIN_TICKET_STATUS_OPTIONS = [
+  { value: 'awaiting_admin_manager' as AdminTicketStatus, label: 'Awaiting Admin Manager', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.12)' },
+  { value: 'awaiting_materials' as AdminTicketStatus, label: 'Awaiting Materials', color: '#a855f7', bg: 'rgba(168, 85, 247, 0.12)' },
+  { value: 'awaiting_technician' as AdminTicketStatus, label: 'Awaiting Technician', color: '#06b6d4', bg: 'rgba(6, 182, 212, 0.12)' },
+  { value: 'awaiting_executive' as AdminTicketStatus, label: 'Awaiting Executive', color: '#ec4899', bg: 'rgba(236, 72, 153, 0.12)' },
+  { value: 'resolved' as AdminTicketStatus, label: 'Resolved', color: '#10b981', bg: 'rgba(16, 185, 129, 0.12)' },
 ];
 
 export const STATUS_LABELS: Record<TicketStatus, string> = {

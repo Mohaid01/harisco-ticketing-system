@@ -62,9 +62,58 @@ export interface Ticket {
   }[];
 }
 
+export type AdminTicketCategory =
+  | "staff_issue"
+  | "security"
+  | "maintenance"
+  | "cleaning_decoration"
+  | "mess_canteen"
+  | "travelling"
+  | "stationery_courier";
+
+export type AdminTicketStatus =
+  | "awaiting_admin_manager"
+  | "awaiting_materials"
+  | "awaiting_technician"
+  | "awaiting_executive"
+  | "resolved";
+
+export interface AdminTicketComment {
+  id: string;
+  ticketId: string;
+  authorId: string;
+  authorName: string;
+  authorRole: UserRole;
+  content: string;
+  createdAt: string;
+}
+
+export interface AdminTicket {
+  id: string;
+  description: string;
+  category: AdminTicketCategory;
+  status: AdminTicketStatus;
+  createdAt: string;
+  updatedAt: string;
+  reporterId: string;
+  reporterName: string;
+  reporterEmail: string;
+  executiveId?: string;
+  executiveName?: string;
+  comments: AdminTicketComment[];
+  activityLogs: {
+    id: string;
+    action: string;
+    timestamp: string;
+    performedByName: string;
+    performedByRole: UserRole;
+  }[];
+}
+
 export type ActiveTab =
   | "noticeboard"
   | "tickets"
+  | "admin_tickets"
   | "users"
   | "activity_log"
   | "attendance"

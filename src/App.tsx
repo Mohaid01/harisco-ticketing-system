@@ -12,6 +12,9 @@ import { SiteDutyManagement } from "./components/SiteDutyManagement";
 import { Login } from "./components/Login";
 import { PasswordReset } from "./components/PasswordReset";
 import { ChangePasswordModal } from "./components/ChangePasswordModal";
+import { AdminTicketList } from "./components/AdminTicketList";
+import { AdminTicketDetails } from "./components/AdminTicketDetails";
+import { NewAdminTicketModal } from "./components/NewAdminTicketModal";
 import { APP_TITLE, STATUS_LABELS } from "./constants";
 import type {
   Ticket,
@@ -21,6 +24,9 @@ import type {
   ActiveTab,
   UserRole,
   Notice,
+  AdminTicket,
+  AdminTicketStatus,
+  AdminTicketCategory,
 } from "./types";
 import { CreateNoticeModal } from "./components/CreateNoticeModal";
 import { EditNoticeModal } from "./components/EditNoticeModal";
@@ -42,6 +48,10 @@ function App() {
   const [isPasswordModalOpen, setIsPasswordModalOpen] =
     useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
+  const [adminTickets, setAdminTickets] = useState<AdminTicket[]>([]);
+  const [adminSearchQuery, setAdminSearchQuery] = useState<string>("");
+  const [selectedAdminTicketId, setSelectedAdminTicketId] = useState<string | null>(null);
+  const [isCreateAdminModalOpen, setIsCreateAdminModalOpen] = useState<boolean>(false);
 
   // Load session and data
   useEffect(() => {
@@ -51,6 +61,7 @@ function App() {
         setCurrentUser(null);
         setTickets([]);
         setUsers([]);
+        setAdminTickets([]);
         setLoading(false);
         return;
       }
@@ -89,6 +100,15 @@ function App() {
         if (ticketsRes.ok) {
           const ticketsData = await ticketsRes.json();
           setTickets(ticketsData);
+        }
+
+        // Fetch admin tickets
+        const adminTicketsRes = await fetch("/api/admin-tickets", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (adminTicketsRes.ok) {
+          const adminTicketsData = await adminTicketsRes.json();
+          setAdminTickets(adminTicketsData);
         }
 
         // Fetch users
@@ -139,8 +159,42 @@ function App() {
     return () => clearInterval(pollInterval);
   }, [token]);
 
+  // Polling mechanism for admin tickets real-time updates
+  useEffect(() => {
+    if (!token) return;
+
+    const pollInterval = setInterval(async () => {
+      try {
+        const adminTicketsRes = await fetch("/api/admin-tickets", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (adminTicketsRes.ok) {
+          const adminTicketsData = await adminTicketsRes.json();
+          setAdminTickets((prev) => {
+            if (JSON.stringify(prev) !== JSON.stringify(adminTicketsData)) {
+              return adminTicketsData;
+            }
+            return prev;
+          });
+        }
+      } catch {
+        // Silent catch for background polling
+      }
+    }, 5000); // 5 seconds
+
+    return () => clearInterval(pollInterval);
+  }, [token]);
+
   // Synchronize document title for SEO
   useEffect(() => {
+    if (selectedAdminTicketId) {
+      const ticket = adminTickets.find((t) => t.id === selectedAdminTicketId);
+      if (ticket) {
+        document.title = `${ticket.id} | ${APP_TITLE}`;
+        return;
+      }
+    }
+
     if (selectedTicketId) {
       const ticket = tickets.find((t) => t.id === selectedTicketId);
       if (ticket) {
@@ -154,11 +208,15 @@ function App() {
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
       .join(" ");
     document.title = `${tabName} | ${APP_TITLE}`;
-  }, [activeTab, selectedTicketId, tickets]);
+  }, [activeTab, selectedTicketId, selectedAdminTicketId, tickets, adminTickets]);
 
   // Find active ticket if viewing details
   const currentTicket = selectedTicketId
     ? tickets.find((t) => t.id === selectedTicketId) || null
+    : null;
+
+  const currentAdminTicket = selectedAdminTicketId
+    ? adminTickets.find((t) => t.id === selectedAdminTicketId) || null
     : null;
 
   // Filter IT users for assignees dropdown
@@ -188,7 +246,9 @@ function App() {
     setCurrentUser(null);
     setTickets([]);
     setUsers([]);
+    setAdminTickets([]);
     setSelectedTicketId(null);
+    setSelectedAdminTicketId(null);
     setActiveTab("noticeboard");
   };
 
@@ -498,6 +558,172 @@ function App() {
     }
   };
 
+  // Admin Ticket handlers
+
+  const handleUpdateAdminTicketStatus = async (
+    ticketId: string,
+    status: AdminTicketStatus,
+    actionMessage: string,
+    executiveId?: string,
+    executiveName?: string,
+  ) => {
+    if (!token || !currentUser) return;
+    try {
+      const res = await fetch(`/api/admin-tickets/${ticketId}/status`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status, actionMessage, executiveId, executiveName }),
+      });
+
+      if (!res.ok) throw new Error("Failed to update admin ticket status");
+      const result = await res.json();
+
+      setAdminTickets((prev) =>
+        prev.map((t) => {
+          if (t.id !== ticketId) return t;
+          return {
+            ...t,
+            status: result.status,
+            updatedAt: result.updatedAt,
+            executiveId: result.executiveId || t.executiveId,
+            executiveName: result.executiveName || t.executiveName,
+            activityLogs: [...t.activityLogs, result.newLog],
+          };
+        }),
+      );
+    } catch (err) {
+      console.error(err);
+      alert("Error updating admin ticket status. Please try again.");
+    }
+  };
+
+  const handleAddAdminComment = async (ticketId: string, content: string) => {
+    if (!token || !currentUser) return;
+    try {
+      const res = await fetch(`/api/admin-tickets/${ticketId}/comments`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ content }),
+      });
+
+      if (!res.ok) throw new Error("Failed to add comment");
+      const newComment = await res.json();
+
+      const newLog = {
+        id: `log-${Date.now()}`,
+        action: "Comment added",
+        timestamp: new Date().toISOString(),
+        performedByName: currentUser.name,
+        performedByRole: currentUser.role,
+      };
+
+      setAdminTickets((prev) =>
+        prev.map((t) => {
+          if (t.id !== ticketId) return t;
+          return {
+            ...t,
+            comments: [...t.comments, newComment],
+            updatedAt: newComment.createdAt,
+            activityLogs: [...t.activityLogs, newLog],
+          };
+        }),
+      );
+    } catch (err) {
+      console.error(err);
+      alert("Error posting comment. Please try again.");
+    }
+  };
+
+  const handleCreateAdminTicket = async (data: {
+    description: string;
+    category: AdminTicketCategory;
+  }) => {
+    if (!token || !currentUser) return;
+    try {
+      const res = await fetch("/api/admin-tickets", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!res.ok) throw new Error("Failed to raise admin ticket");
+      const newTicket = await res.json();
+
+      setAdminTickets((prev) => [newTicket, ...prev]);
+      setActiveTab("admin_tickets");
+      setSelectedAdminTicketId(newTicket.id);
+      setIsCreateAdminModalOpen(false);
+    } catch (err) {
+      console.error(err);
+      alert("Error raising admin ticket. Please try again.");
+    }
+  };
+
+  const handleEditAdminTicket = async (
+    ticketId: string,
+    data: { description: string; category: AdminTicketCategory },
+  ) => {
+    if (!token || !currentUser) return;
+    try {
+      const res = await fetch(`/api/admin-tickets/${ticketId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!res.ok) throw new Error("Failed to edit admin ticket");
+      const result = await res.json();
+
+      setAdminTickets((prev) =>
+        prev.map((t) => {
+          if (t.id !== ticketId) return t;
+          return {
+            ...t,
+            description: data.description,
+            category: data.category,
+            updatedAt: result.updatedAt,
+            activityLogs: [...t.activityLogs, result.newLog],
+          };
+        }),
+      );
+    } catch (err) {
+      console.error(err);
+      alert("Error editing admin ticket. Please try again.");
+    }
+  };
+
+  const handleDeleteAdminTicket = async (ticketId: string) => {
+    if (!token || !currentUser) return;
+    try {
+      const res = await fetch(`/api/admin-tickets/${ticketId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) throw new Error("Failed to delete admin ticket");
+
+      setAdminTickets((prev) => prev.filter((t) => t.id !== ticketId));
+      setSelectedAdminTicketId(null);
+    } catch (err) {
+      console.error(err);
+      alert("Error deleting admin ticket. Please try again.");
+    }
+  };
+
   // User-relevant API calls
 
   const handleAddUser = async (data: {
@@ -675,6 +901,7 @@ function App() {
         setActiveTab={(tab) => {
           setActiveTab(tab);
           setSelectedTicketId(null);
+          setSelectedAdminTicketId(null);
         }}
         onLogout={handleLogout}
         onChangePasswordClick={() => setIsPasswordModalOpen(true)}
@@ -746,6 +973,28 @@ function App() {
             <LeaveManagement currentUser={currentUser} token={token!} />
           ) : activeTab === "site_duties" ? (
             <SiteDutyManagement currentUser={currentUser} token={token!} />
+          ) : activeTab === "admin_tickets" ? (
+            currentAdminTicket ? (
+            <AdminTicketDetails
+              ticket={currentAdminTicket}
+              currentUser={currentUser}
+              allUsers={users}
+              onBack={() => setSelectedAdminTicketId(null)}
+              onUpdateStatus={handleUpdateAdminTicketStatus}
+              onAddComment={handleAddAdminComment}
+              onEditTicket={handleEditAdminTicket}
+              onDeleteTicket={handleDeleteAdminTicket}
+            />
+            ) : (
+              <AdminTicketList
+                tickets={adminTickets}
+                currentUser={currentUser}
+                onSelectTicket={(id) => setSelectedAdminTicketId(id)}
+                onCreateTicketClick={() => setIsCreateAdminModalOpen(true)}
+                searchQuery={adminSearchQuery}
+                setSearchQuery={setAdminSearchQuery}
+              />
+            )
           ) : (
             <ActivityLog
               tickets={tickets}
@@ -779,6 +1028,13 @@ function App() {
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onSubmit={handleCreateTicket}
+      />
+
+      {/* Admin Ticket Creation Modal dialog */}
+      <NewAdminTicketModal
+        isOpen={isCreateAdminModalOpen}
+        onClose={() => setIsCreateAdminModalOpen(false)}
+        onSubmit={handleCreateAdminTicket}
       />
 
       {/* Change Password Modal */}

@@ -1448,6 +1448,452 @@ app.post(
   },
 );
 
+// --------------------- ADMIN TICKETS ROUTES ---------------------
+
+app.get(
+  "/api/admin-tickets",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const db = getDb();
+      const currentUser = req.user;
+
+      if (!currentUser) {
+        return res.status(401).json({ error: "Unauthorized." });
+      }
+
+      // Managers see all admin tickets, employees see only their own
+      let query = "SELECT *, executiveId, executiveName FROM admin_tickets";
+      const params: any[] = [];
+
+      if (currentUser.role === "employee") {
+        query += " WHERE reporterId = ?";
+        params.push(currentUser.id);
+      }
+
+      query += " ORDER BY createdAt DESC";
+
+      const tickets = await db.all(query, params);
+
+      if (tickets.length === 0) {
+        return res.json([]);
+      }
+
+      const ticketIds = tickets.map((t) => t.id);
+      const placeholders = ticketIds.map(() => "?").join(",");
+
+      const comments = await db.all(
+        `SELECT * FROM admin_comments WHERE ticketId IN (${placeholders}) ORDER BY createdAt ASC`,
+        ticketIds,
+      );
+
+      const logs = await db.all(
+        `SELECT * FROM admin_activity_logs WHERE ticketId IN (${placeholders}) ORDER BY timestamp ASC`,
+        ticketIds,
+      );
+
+      const ticketsMap = tickets.map((ticket) => {
+        return {
+          ...ticket,
+          comments: comments.filter((c) => c.ticketId === ticket.id),
+          activityLogs: logs.filter((l) => l.ticketId === ticket.id),
+        };
+      });
+
+      return res.json(ticketsMap);
+    } catch (error) {
+      console.error("Failed to fetch admin tickets:", error);
+      return res
+        .status(500)
+        .json({ error: "Failed to retrieve admin tickets." });
+    }
+  },
+);
+
+app.post(
+  "/api/admin-tickets",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    const { description, category } = req.body;
+    if (!description || !category) {
+      res.status(400).json({ error: "Description and category are required." });
+      return;
+    }
+
+    try {
+      const db = getDb();
+
+      // Generate sequential admin ticket code
+      const allTickets = await db.all<{ id: string }[]>(
+        "SELECT id FROM admin_tickets",
+      );
+      let maxIndex = 0;
+      for (const t of allTickets) {
+        const match = t.id.match(/HCIT-ADM-(\d+)/);
+        if (match) {
+          const num = parseInt(match[1], 10);
+          if (num > maxIndex) {
+            maxIndex = num;
+          }
+        }
+      }
+      const index = maxIndex + 1;
+      const ticketId = `HCIT-ADM-${index}`;
+
+      const timestamp = new Date().toISOString();
+      const reporterId = req.user?.id || "";
+      const reporterName = req.user?.name || "";
+      const reporterEmail = req.user?.email || "";
+
+      await db.run(
+        `INSERT INTO admin_tickets (
+          id, description, category, status, createdAt, updatedAt,
+          reporterId, reporterName, reporterEmail
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          ticketId,
+          description,
+          category,
+          "awaiting_admin_manager",
+          timestamp,
+          timestamp,
+          reporterId,
+          reporterName,
+          reporterEmail,
+        ],
+      );
+
+      const logId = `log-${Date.now()}`;
+      await db.run(
+        `INSERT INTO admin_activity_logs (
+          id, ticketId, action, timestamp, performedByName, performedByRole
+        ) VALUES (?, ?, ?, ?, ?, ?)`,
+        [
+          logId,
+          ticketId,
+          "Ticket raised",
+          timestamp,
+          reporterName,
+          req.user?.role || "employee",
+        ],
+      );
+
+      res.status(201).json({
+        id: ticketId,
+        description,
+        category,
+        status: "awaiting_admin_manager",
+        createdAt: timestamp,
+        updatedAt: timestamp,
+        reporterId,
+        reporterName,
+        reporterEmail,
+        comments: [],
+        activityLogs: [
+          {
+            id: logId,
+            ticketId,
+            action: "Ticket raised",
+            timestamp,
+            performedByName: reporterName,
+            performedByRole: req.user?.role || "employee",
+          },
+        ],
+      });
+    } catch (error) {
+      console.error("Failed to create admin ticket:", error);
+      res.status(500).json({ error: "Failed to create admin ticket." });
+    }
+  },
+);
+
+app.post(
+  "/api/admin-tickets/:id/status",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    if (req.user?.role !== "manager") {
+      res.status(403).json({
+        error: "Forbidden. Only Admin Manager can update admin ticket status.",
+      });
+      return;
+    }
+
+    const ticketId = req.params.id;
+    const { status, actionMessage } = req.body;
+
+    if (!status || !actionMessage) {
+      res.status(400).json({
+        error: "Status and actionMessage are required.",
+      });
+      return;
+    }
+
+    try {
+      const db = getDb();
+
+      const ticket = await db.get("SELECT * FROM admin_tickets WHERE id = ?", [
+        ticketId,
+      ]);
+      if (!ticket) {
+        res.status(404).json({ error: "Admin ticket not found." });
+        return;
+      }
+
+      const timestamp = new Date().toISOString();
+
+      // If moving from awaiting_executive to awaiting_materials with executiveId
+      if (status === "awaiting_materials" && ticket.status === "awaiting_executive") {
+        const executiveId = req.body.executiveId;
+        const executiveName = req.body.executiveName;
+
+        if (!executiveId || !executiveName) {
+          res.status(400).json({
+            error: "executiveId and executiveName are required when transitioning from Awaiting Executive.",
+          });
+          return;
+        }
+
+        await db.run(
+          "UPDATE admin_tickets SET status = ?, updatedAt = ?, executiveId = ?, executiveName = ? WHERE id = ?",
+          [status, timestamp, executiveId, executiveName, ticketId],
+        );
+
+        const logId = `log-${Date.now()}`;
+        await db.run(
+          `INSERT INTO admin_activity_logs (
+            id, ticketId, action, timestamp, performedByName, performedByRole
+          ) VALUES (?, ?, ?, ?, ?, ?)`,
+          [
+            logId,
+            ticketId,
+            `Executive approved by ${executiveName} - Moved to Awaiting Materials`,
+            timestamp,
+            req.user?.name || "",
+            req.user?.role || "manager",
+          ],
+        );
+
+        res.json({
+          success: true,
+          status,
+          updatedAt: timestamp,
+          executiveId,
+          executiveName,
+          newLog: {
+            id: logId,
+            ticketId,
+            action: `Executive approved by ${executiveName} - Moved to Awaiting Materials`,
+            timestamp,
+            performedByName: req.user?.name || "",
+            performedByRole: req.user?.role || "manager",
+          },
+        });
+        return;
+      }
+
+      await db.run(
+        "UPDATE admin_tickets SET status = ?, updatedAt = ? WHERE id = ?",
+        [status, timestamp, ticketId],
+      );
+
+      const logId = `log-${Date.now()}`;
+      await db.run(
+        `INSERT INTO admin_activity_logs (
+          id, ticketId, action, timestamp, performedByName, performedByRole
+        ) VALUES (?, ?, ?, ?, ?, ?)`,
+        [
+          logId,
+          ticketId,
+          actionMessage,
+          timestamp,
+          req.user?.name || "",
+          req.user?.role || "manager",
+        ],
+      );
+
+      res.json({
+        success: true,
+        status,
+        updatedAt: timestamp,
+        newLog: {
+          id: logId,
+          ticketId,
+          action: actionMessage,
+          timestamp,
+          performedByName: req.user?.name || "",
+          performedByRole: req.user?.role || "manager",
+        },
+      });
+    } catch (error) {
+      console.error("Failed to update admin ticket status:", error);
+      res.status(500).json({ error: "Failed to update admin ticket status." });
+    }
+  },
+);
+
+app.post(
+  "/api/admin-tickets/:id/comments",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    const ticketId = req.params.id;
+    const { content } = req.body;
+
+    if (!content || !content.trim()) {
+      res.status(400).json({ error: "Comment content cannot be empty." });
+      return;
+    }
+
+    try {
+      const db = getDb();
+
+      const ticket = await db.get("SELECT id FROM admin_tickets WHERE id = ?", [
+        ticketId,
+      ]);
+      if (!ticket) {
+        res.status(404).json({ error: "Admin ticket not found." });
+        return;
+      }
+
+      const commentId = `c-${Date.now()}`;
+      const timestamp = new Date().toISOString();
+
+      await db.run(
+        `INSERT INTO admin_comments (
+          id, ticketId, authorId, authorName, authorRole, content, createdAt
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [
+          commentId,
+          ticketId,
+          req.user?.id || "",
+          req.user?.name || "",
+          req.user?.role || "employee",
+          content.trim(),
+          timestamp,
+        ],
+      );
+
+      await db.run("UPDATE admin_tickets SET updatedAt = ? WHERE id = ?", [
+        timestamp,
+        ticketId,
+      ]);
+
+      res.status(201).json({
+        id: commentId,
+        ticketId,
+        authorId: req.user?.id || "",
+        authorName: req.user?.name || "",
+        authorRole: req.user?.role || "employee",
+        content: content.trim(),
+        createdAt: timestamp,
+      });
+    } catch (error) {
+      console.error("Failed to add comment to admin ticket:", error);
+      res.status(500).json({ error: "Failed to add comment." });
+    }
+  },
+);
+
+app.delete(
+  "/api/admin-tickets/:id",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    const ticketId = req.params.id;
+
+    try {
+      const db = getDb();
+
+      const ticket = await db.get("SELECT id FROM admin_tickets WHERE id = ?", [
+        ticketId,
+      ]);
+      if (!ticket) {
+        res.status(404).json({ error: "Admin ticket not found." });
+        return;
+      }
+
+      await db.run("DELETE FROM admin_tickets WHERE id = ?", [ticketId]);
+
+      res.json({
+        success: true,
+        message: "Admin ticket deleted successfully.",
+      });
+    } catch (error) {
+      console.error("Failed to delete admin ticket:", error);
+      res.status(500).json({ error: "Failed to delete admin ticket." });
+    }
+  },
+);
+
+app.put(
+  "/api/admin-tickets/:id",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    if (req.user?.role !== "manager") {
+      res.status(403).json({
+        error: "Forbidden. Only Admin Manager can edit admin tickets.",
+      });
+      return;
+    }
+
+    const ticketId = req.params.id;
+    const { description, category } = req.body;
+
+    if (!description) {
+      res.status(400).json({ error: "Description is required." });
+      return;
+    }
+
+    try {
+      const db = getDb();
+
+      const ticket = await db.get("SELECT * FROM admin_tickets WHERE id = ?", [
+        ticketId,
+      ]);
+      if (!ticket) {
+        res.status(404).json({ error: "Admin ticket not found." });
+        return;
+      }
+
+      const timestamp = new Date().toISOString();
+
+      await db.run(
+        "UPDATE admin_tickets SET description = ?, category = ?, updatedAt = ? WHERE id = ?",
+        [description, category, timestamp, ticketId],
+      );
+
+      const logId = `log-${Date.now()}`;
+      await db.run(
+        `INSERT INTO admin_activity_logs (
+          id, ticketId, action, timestamp, performedByName, performedByRole
+        ) VALUES (?, ?, ?, ?, ?, ?)`,
+        [
+          logId,
+          ticketId,
+          "Ticket details updated by Admin Manager",
+          timestamp,
+          req.user?.name || "",
+          req.user?.role || "manager",
+        ],
+      );
+
+      res.json({
+        success: true,
+        updatedAt: timestamp,
+        newLog: {
+          id: logId,
+          ticketId,
+          action: "Ticket details updated by Admin Manager",
+          timestamp,
+          performedByName: req.user?.name || "",
+          performedByRole: req.user?.role || "manager",
+        },
+      });
+    } catch (error) {
+      console.error("Failed to edit admin ticket:", error);
+      res.status(500).json({ error: "Failed to edit admin ticket." });
+    }
+  },
+);
+
 // Add Comment
 app.post(
   "/api/tickets/:id/comments",
@@ -2418,7 +2864,7 @@ app.get(/.*/, (req, res) => {
 async function startServer() {
   try {
     await initDb();
-    const server = app.listen(PORT, () => {
+    const server = app.listen(PORT as number, "0.0.0.0", () => {
       console.log(`Backend server is running on http://localhost:${PORT}`);
     });
 

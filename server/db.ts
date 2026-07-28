@@ -225,6 +225,94 @@ export async function initDb() {
     // Column might already exist, ignore error
   }
 
+  // Create Admin Tickets Table
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS admin_tickets (
+      id TEXT PRIMARY KEY,
+      description TEXT NOT NULL,
+      category TEXT NOT NULL,
+      status TEXT CHECK(status IN ('awaiting_admin_manager', 'awaiting_materials', 'awaiting_technician', 'awaiting_executive', 'resolved')) NOT NULL,
+      createdAt TEXT NOT NULL,
+      updatedAt TEXT NOT NULL,
+      reporterId TEXT NOT NULL,
+      reporterName TEXT NOT NULL,
+      reporterEmail TEXT NOT NULL,
+      executiveId TEXT,
+      executiveName TEXT
+    )
+  `);
+
+  // Migrate admin_tickets to add executiveId/executiveName if missing
+  try {
+    const tableSchema = await db.get<{ sql: string }>(
+      "SELECT sql FROM sqlite_master WHERE type='table' AND name='admin_tickets'",
+    );
+    if (tableSchema && !tableSchema.sql.includes("executiveId")) {
+      console.log("Migrating admin_tickets table to add executive fields...");
+      await db.exec("ALTER TABLE admin_tickets RENAME TO admin_tickets_old");
+
+      await db.exec(`
+        CREATE TABLE admin_tickets (
+          id TEXT PRIMARY KEY,
+          description TEXT NOT NULL,
+          category TEXT NOT NULL,
+          status TEXT CHECK(status IN ('awaiting_admin_manager', 'awaiting_materials', 'awaiting_technician', 'awaiting_executive', 'resolved')) NOT NULL,
+          createdAt TEXT NOT NULL,
+          updatedAt TEXT NOT NULL,
+          reporterId TEXT NOT NULL,
+          reporterName TEXT NOT NULL,
+          reporterEmail TEXT NOT NULL,
+          executiveId TEXT,
+          executiveName TEXT
+        )
+      `);
+
+      await db.exec(`
+        INSERT INTO admin_tickets (id, description, category, status, createdAt, updatedAt, reporterId, reporterName, reporterEmail)
+        SELECT id, description, category, status, createdAt, updatedAt, reporterId, reporterName, reporterEmail FROM admin_tickets_old
+      `);
+
+      await db.exec("DROP TABLE admin_tickets_old");
+      console.log("admin_tickets executive fields migration completed successfully.");
+    }
+  } catch (err) {
+    console.error("admin_tickets migration check failed:", err);
+  }
+
+  // Create Admin Comments Table
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS admin_comments (
+      id TEXT PRIMARY KEY,
+      ticketId TEXT NOT NULL,
+      authorId TEXT NOT NULL,
+      authorName TEXT NOT NULL,
+      authorRole TEXT NOT NULL,
+      content TEXT NOT NULL,
+      createdAt TEXT NOT NULL,
+      FOREIGN KEY (ticketId) REFERENCES admin_tickets(id) ON DELETE CASCADE
+    )
+  `);
+
+  // Create Admin Activity Logs Table
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS admin_activity_logs (
+      id TEXT PRIMARY KEY,
+      ticketId TEXT NOT NULL,
+      action TEXT NOT NULL,
+      timestamp TEXT NOT NULL,
+      performedByName TEXT NOT NULL,
+      performedByRole TEXT NOT NULL,
+      FOREIGN KEY (ticketId) REFERENCES admin_tickets(id) ON DELETE CASCADE
+    )
+  `);
+
+  // Seed initial admin ticket numbering tracker
+  try {
+    await db.exec("ALTER TABLE admin_tickets ADD COLUMN sequence_num INTEGER DEFAULT 0");
+  } catch {
+    // Column might already exist, ignore error
+  }
+
   // Create Comments Table
   await db.exec(`
     CREATE TABLE IF NOT EXISTS comments (

@@ -12,6 +12,7 @@ import {
   UserCheck,
   Calendar,
   MapPin,
+  ClipboardList,
 } from "lucide-react";
 import { formatEmployeeCode } from "../utils";
 
@@ -40,10 +41,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
     {
       id: "tickets" as ActiveTab,
-      label: "Tickets",
+      label: "IT Tickets",
       icon: Ticket,
       roles: ["it", "employee", "manager", "executive"],
       notAllowedDepartments: ["Staff"],
+    },
+    {
+      id: "admin_tickets" as ActiveTab,
+      label: "Admin Tickets",
+      icon: ClipboardList,
+      roles: [],
     },
     {
       id: "users" as ActiveTab,
@@ -53,19 +60,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
     {
       id: "attendance" as ActiveTab,
-      label: "Attendance",
+      label: "HQ Attendance",
       icon: UserCheck,
       roles: ["it", "employee", "manager", "executive"],
     },
     {
       id: "leaves" as ActiveTab,
-      label: "Leave Management",
+      label: "HQ Leave Management",
       icon: Calendar,
       roles: ["it", "employee", "manager", "executive"],
     },
     {
       id: "site_duties" as ActiveTab,
-      label: "Site Duties",
+      label: "HQ Site Duties",
       icon: MapPin,
       roles: ["it", "employee", "manager", "executive"],
       notAllowedDepartments: ["Staff"],
