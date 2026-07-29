@@ -332,13 +332,16 @@ export const Attendance: React.FC<AttendanceProps> = ({
       timeZone: "Asia/Karachi",
     }).format(new Date());
 
+    const [sYear, sMonth] = selectedMonth.split("-").map(Number);
+    const daysInMonth = new Date(sYear, sMonth, 0).getDate();
+    const shiftStarted = hasShiftStartedPKT();
+
     return allUsers
       .filter((user) => user.department !== "Executive")
       .map((user) => {
         const uId = user.id;
         const formattedCode = formatEmployeeCode(user.username || user.id);
 
-        // Filter real biometric logs for this user
         const userLogs = logs.filter(
           (log) =>
             log.userId === uId ||
@@ -346,7 +349,6 @@ export const Attendance: React.FC<AttendanceProps> = ({
             formatEmployeeCode(log.userId) === formattedCode,
         );
 
-        // Find today's punches
         const todayPunches = userLogs.filter(
           (log) => parseLogDate(log) === todayStr,
         );
@@ -359,8 +361,6 @@ export const Attendance: React.FC<AttendanceProps> = ({
           | "Pending" = "Pending";
         let isLateToday = false;
 
-        const shiftStarted = hasShiftStartedPKT();
-
         if (todayPunches.length > 0) {
           const sortedPunches = [...todayPunches].sort((a, b) => {
             const tA = parseLogPKT(a).timestamp;
@@ -368,7 +368,6 @@ export const Attendance: React.FC<AttendanceProps> = ({
             return tA.localeCompare(tB);
           });
 
-          // Determine if they were late today based on first check-in
           const firstCheckIn = sortedPunches.find(
             (p) => p.status === PUNCH_STATUS.CHECK_IN,
           );
@@ -409,25 +408,17 @@ export const Attendance: React.FC<AttendanceProps> = ({
           todayStatus = shiftStarted ? "Absent" : "Pending";
         }
 
-        // Calculate monthly stats for the current month up to today
         let daysPresent = 0;
         let daysAbsent = 0;
         let totalHours = 0;
         let totalWorkDays = 0;
         let daysNotAvailable = 0;
 
-        const now = new Date();
-        // Ensure we use the current date in Pakistan timezone if possible, or just local
-        const currentYear = now.getFullYear();
-        const currentMonth = now.getMonth();
-        const currentDate = now.getDate();
-
-        for (let day = 1; day <= currentDate; day++) {
-          const tempDate = new Date(currentYear, currentMonth, day);
-          const dateStr = new Intl.DateTimeFormat("en-CA", {
-            timeZone: "Asia/Karachi",
-          }).format(tempDate);
-          const isWeekend = tempDate.getDay() === 0; // Only Sunday is off
+        for (let day = 1; day <= daysInMonth; day++) {
+          const tempDate = new Date(Date.UTC(sYear, sMonth - 1, day));
+          const dateStr = `${sYear}-${String(sMonth).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+          const isWeekend = tempDate.getUTCDay() === 0;
+          const isHoliday = holidays.find((h) => h.date === dateStr);
 
           totalWorkDays++;
           const dayPunches = userLogs.filter(
@@ -439,6 +430,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
             const tB = parseLogPKT(b).timestamp;
             return tA.localeCompare(tB);
           });
+
           const firstPunch = sorted[0];
 
           if (
@@ -447,49 +439,41 @@ export const Attendance: React.FC<AttendanceProps> = ({
               firstPunch.status === "On Leave")
           ) {
             daysNotAvailable++;
+            daysPresent++;
             continue;
           }
 
-          if (isWeekend) {
+          if (isWeekend || isHoliday) {
             daysPresent++;
             continue;
           }
 
           if (sorted.length > 0) {
             daysPresent++;
-            if (sorted.length > 2) {
-              // Calculate hours from real punches
-              const firstStr = parseLogPKT(sorted[0]).timestamp;
+            const firstStr = parseLogPKT(sorted[0]).timestamp;
+            const fDate = new Date(firstStr.replace(" ", "T"));
+
+            if (sorted.length > 1) {
               const lastStr = parseLogPKT(sorted[sorted.length - 1]).timestamp;
-
-              const fDate = new Date(firstStr.replace(" ", "T"));
               const lDate = new Date(lastStr.replace(" ", "T"));
-
               if (!isNaN(fDate.getTime()) && !isNaN(lDate.getTime())) {
-                const diff =
+                totalHours +=
                   (lDate.getTime() - fDate.getTime()) / (1000 * 60 * 60);
-                totalHours += diff;
               }
             } else if (dateStr === todayStr) {
-              // Single punch check-in, check if it's today and they haven't checked out yet
-              const firstStr = parseLogPKT(dayPunches[0]).timestamp;
-              const fDate = new Date(firstStr.replace(" ", "T"));
               const currDate = new Date();
               if (!isNaN(fDate.getTime())) {
-                const diff = Math.max(
+                totalHours += Math.max(
                   0,
                   (currDate.getTime() - fDate.getTime()) / (1000 * 60 * 60),
                 );
-                totalHours += diff;
               }
             }
           } else {
-            // Only count today as absent if the shift has already started
-            if (dateStr !== todayStr || shiftStarted) {
+            if (dateStr <= todayStr) {
               daysAbsent++;
             }
           }
-          tempDate.setDate(tempDate.getDate() - 1);
         }
 
         return {
@@ -506,7 +490,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
           totalWorkDays,
         };
       });
-  }, [allUsers, logs]);
+  }, [allUsers, logs, selectedMonth, holidays]);
 
   // Filter summaries based on Search & Dropdowns
   const filteredSummaries = useMemo(() => {
@@ -1042,30 +1026,144 @@ export const Attendance: React.FC<AttendanceProps> = ({
   };
 
   // Add this helper function to handle CSV export in your React component
-  const exportToCSV = (summaries) => {
-    const headers = [
-      "Employee ID",
-      "Name",
-      "Department",
-      "Shift",
-      "Today's Status",
-      "Days Present",
-      "Days N/A",
-      "Days Absent",
-      "Total Hours (Month)",
-    ];
+  const exportToCSV = (summaries: any[]) => {
+    const [sYear, sMonth] = selectedMonth.split("-").map(Number);
+    const currentYear = sYear;
+    const currentMonth = new Date(sYear, sMonth - 1).toLocaleString('default', { month: 'long' });
+    const daysInMonth = new Date(sYear, sMonth, 0).getDate();
 
-    const rows = summaries.map((emp) => [
-      `"${emp.formattedCode || emp.id}"`,
-      `"${emp.name}"`,
-      `"${emp.department}"`,
-      `"${emp.shift.split(" (")[0]}"`,
-      `"${emp.todayStatus}"`,
-      emp.daysPresent,
-      emp.daysNotAvailable,
-      emp.daysAbsent,
-      `"${formatHours ? formatHours(emp.totalHours) : emp.totalHours}"`,
-    ]);
+    let countSunday = 0;
+    let countSaturday = 0;
+    for (let day = 1; day <= daysInMonth; day++) {
+      const tempDate = new Date(Date.UTC(sYear, sMonth - 1, day));
+      const dayOfWeek = tempDate.getUTCDay();
+      if (dayOfWeek === 0) countSunday++;
+      else if (dayOfWeek === 6) countSaturday++;
+    }
+    const countWeekdays = daysInMonth - countSunday - countSaturday;
+    const expectedHours = countWeekdays * 8 + countSaturday * 6;
+
+    const fmt = (val: string) => `"${val.replace(/"/g, '""')}"`;
+
+    const employeePunchMaps = new Map<
+      string,
+      Map<string, { in: string; out: string }>
+    >();
+
+    for (const emp of summaries) {
+      const userLogs = logs.filter(
+        (log) =>
+          log.userId === emp.id ||
+          log.userId === emp.username ||
+          formatEmployeeCode(log.userId) ===
+            (emp.formattedCode || formatEmployeeCode(emp.username || emp.id)),
+      );
+
+      const dateMap = new Map<string, { in: string; out: string }>();
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const sDay = String(day).padStart(2, "0");
+        const dateStr = `${sYear}-${String(sMonth).padStart(2, "0")}-${sDay}`;
+
+        const dayPunches = userLogs.filter(
+          (log) => parseLogDate(log) === dateStr,
+        );
+
+        if (dayPunches.length === 0) {
+          dateMap.set(dateStr, { in: "-", out: "-" });
+          continue;
+        }
+
+        const sorted = [...dayPunches].sort((a, b) => {
+          const tA = parseLogPKT(a).timestamp;
+          const tB = parseLogPKT(b).timestamp;
+          return tA.localeCompare(tB);
+        });
+
+        const firstIn = parseLogPKT(sorted[0]).time.substring(0, 5);
+        const lastOut =
+          sorted.length > 1
+            ? parseLogPKT(sorted[sorted.length - 1]).time.substring(0, 5)
+            : "-";
+
+        dateMap.set(dateStr, { in: firstIn, out: lastOut });
+      }
+
+      employeePunchMaps.set(emp.id, dateMap);
+    }
+
+    const headers = ["S No", "ID", "Name"];
+    for (let day = 1; day <= daysInMonth; day++) {
+      headers.push(`${day}`);
+    }
+    headers.push(
+      "Total Working Hours",
+      "Actual Working Hours",
+      "Difference",
+      "Days Present",
+      "Leaves",
+      "Absents",
+    );
+
+    const rows = summaries.map((emp: any, index: number) => {
+      const row: string[] = [
+        fmt(String(index + 1)),
+        fmt(emp.formattedCode || ""),
+        fmt(emp.name || ""),
+      ];
+
+      const dateMap = employeePunchMaps.get(emp.id);
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const sDay = String(day).padStart(2, "0");
+        const dateStr = `${sYear}-${String(sMonth).padStart(2, "0")}-${sDay}`;
+        const punches = dateMap?.get(dateStr) || { in: "-", out: "-" };
+
+        const tempDate = new Date(Date.UTC(sYear, sMonth - 1, day));
+        const dayOfWeek = tempDate.getUTCDay();
+        const isSunday = dayOfWeek === 0;
+        const isSaturday = dayOfWeek === 6;
+        const isHoliday = holidays.some((h) => h.date === dateStr);
+
+        let expectedDayHours = 0;
+        if (!isSunday && !isHoliday) {
+          expectedDayHours = isSaturday ? 6 : 8;
+        }
+
+        let actualDayHours = 0;
+        if (punches.in !== "-" && punches.out !== "-") {
+          const [inH, inM] = punches.in.split(":").map(Number);
+          const [outH, outM] = punches.out.split(":").map(Number);
+          const inTotal = inH * 60 + inM;
+          const outTotal = outH * 60 + outM;
+          actualDayHours = Math.max(0, (outTotal - inTotal) / 60);
+        }
+
+        const otHours =
+          actualDayHours > expectedDayHours
+            ? actualDayHours - expectedDayHours
+            : 0;
+        const otText = otHours > 0 ? `${otHours.toFixed(1)}h` : "0";
+
+        const cell = `In: ${punches.in}\nOut: ${punches.out}\nOT: ${otText}`;
+        row.push(fmt(cell));
+      }
+
+      const rawHours = typeof emp.totalHours === "number" ? emp.totalHours : 0;
+      const formattedHours = formatHours(rawHours);
+      const difference = rawHours - expectedHours;
+
+      row.push(
+        fmt(String(expectedHours)),
+        fmt(formattedHours),
+        fmt(difference.toFixed(2)),
+        fmt(String(emp.daysPresent ?? 0)),
+        fmt(String(emp.daysNotAvailable ?? 0)),
+        fmt(String(emp.daysAbsent ?? 0)),
+      );
+
+      return row;
+    });
 
     const csvContent =
       "data:text/csv;charset=utf-8," +
@@ -1073,25 +1171,14 @@ export const Attendance: React.FC<AttendanceProps> = ({
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "employee_attendance_summary.csv");
+    link.setAttribute(
+      "download",
+      `HarisCo - HQ Attendance - ${currentMonth} ${currentYear}.csv`,
+    );
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
-
-  // Add this useEffect inside your component to map it to a shortcut (e.g., Ctrl + Shift + E or Alt + E)
-  useEffect(() => {
-    const handleKeyDown = (event) => {
-      // Example: Alt + E or Ctrl + Shift + E
-      if (event.altKey && event.key.toLowerCase() === "e") {
-        event.preventDefault();
-        exportToCSV(filteredSummaries);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [filteredSummaries]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
@@ -1417,6 +1504,23 @@ export const Attendance: React.FC<AttendanceProps> = ({
                       />
                       All-Employee Attendance Table ({filteredSummaries.length})
                     </h2>
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <button
+                        className="btn btn-secondary"
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "6px",
+                          padding: "6px 12px",
+                          fontSize: "0.75rem",
+                        }}
+                        onClick={() => exportToCSV(filteredSummaries)}
+                        title="Export attendance summary to CSV"
+                      >
+                        <FileText size={14} />
+                        Export CSV
+                      </button>
+                    </div>
                   </div>
 
                   {/* Today's Stats Row */}
