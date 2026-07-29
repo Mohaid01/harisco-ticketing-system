@@ -191,19 +191,19 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({
             <table className="data-table">
               <thead>
                 <tr>
-                  {canViewAll && <th>Employee</th>}
+                  {canViewAll ? <th>Employee</th> : <></>}
                   <th>Category</th>
                   <th>Duration</th>
                   <th>Reason</th>
                   <th>Applied On</th>
                   <th>Status</th>
-                  {canManageLeaves && <th>Actions</th>}
+                  {canManageLeaves ? <th>Actions</th> : <></>}
                 </tr>
               </thead>
               <tbody>
                 {leaves.map((leave) => (
                   <tr key={leave.id}>
-                    {canViewAll && (
+                    {canViewAll ? (
                       <td style={{ fontWeight: 600 }}>
                         {leave.userName} <br />
                         <span
@@ -216,6 +216,8 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({
                           {formatEmployeeCode(leave.userCode || leave.userId)}
                         </span>
                       </td>
+                    ) : (
+                      <></>
                     )}
                     <td style={{ textTransform: "capitalize" }}>
                       {leave.category}

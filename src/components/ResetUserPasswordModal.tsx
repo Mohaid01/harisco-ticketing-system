@@ -8,12 +8,14 @@ interface ResetUserPasswordModalProps {
   targetUser: AppUser;
   token: string;
   onClose: () => void;
+  apiPath?: string;
 }
 
 export const ResetUserPasswordModal: React.FC<ResetUserPasswordModalProps> = ({
   targetUser,
   token,
   onClose,
+  apiPath = "/api/users",
 }) => {
   const [newPassword, setNewPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -33,7 +35,7 @@ export const ResetUserPasswordModal: React.FC<ResetUserPasswordModalProps> = ({
 
     setLoading(true);
     try {
-      const res = await fetch(`/api/users/${targetUser.id}/reset-password`, {
+      const res = await fetch(`${apiPath}/${targetUser.id}/reset-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

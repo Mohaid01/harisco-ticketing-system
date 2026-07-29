@@ -27,6 +27,7 @@ import {
 interface AttendanceProps {
   currentUser: AppUser;
   allUsers: AppUser[];
+  mode?: "hq" | "factory";
 }
 
 type ViewMode = "summary" | "individual";
@@ -63,13 +64,24 @@ const isTodaySundayPKT = (): boolean => {
 export const Attendance: React.FC<AttendanceProps> = ({
   currentUser,
   allUsers,
+  mode = "hq",
 }) => {
-  const canViewAll =
-    currentUser.role === "it" ||
-    currentUser.role === "manager" ||
-    currentUser.role === "executive";
+  const isFactory = mode === "factory";
+
+  const canViewAll = isFactory
+    ? currentUser.role === "factory_it" ||
+      currentUser.role === "factory_manager" ||
+      currentUser.role === "it"
+    : currentUser.role === "it" ||
+      currentUser.role === "manager" ||
+      currentUser.role === "executive";
   const canViewDepartment = currentUser.isDepartmentHead;
-  const canWrite = currentUser.role === "it" || currentUser.role === "manager";
+  const canWrite = isFactory
+    ? currentUser.role === "factory_it" ||
+      currentUser.role === "factory_manager"
+    : currentUser.role === "it" || currentUser.role === "manager";
+
+  const apiBase = isFactory ? "/api/factory/attendance" : "/api/attendance";
 
   // State Management
   const [logs, setLogs] = useState<AttendanceLog[]>([]);
@@ -117,7 +129,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
     else setRefreshing(true);
     try {
       const token = localStorage.getItem("harisco_token");
-      const res = await fetch("/api/attendance", {
+      const res = await fetch(`${apiBase}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -188,7 +200,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
     }
     try {
       const token = localStorage.getItem("harisco_token");
-      const res = await fetch(`/api/attendance/${logId}`, {
+      const res = await fetch(`${apiBase}/${logId}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -213,7 +225,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
     }
     try {
       const token = localStorage.getItem("harisco_token");
-      const res = await fetch(`/api/attendance/${logId}`, {
+      const res = await fetch(`${apiBase}/${logId}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -236,9 +248,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
     if (!token) return;
 
     // Set up SSE Stream for Live Updates
-    const eventSource = new EventSource(
-      `/api/attendance/stream?token=${token}`,
-    );
+    const eventSource = new EventSource(`${apiBase}/stream?token=${token}`);
 
     eventSource.onmessage = (event) => {
       try {
@@ -939,7 +949,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
 
     try {
       const token = localStorage.getItem("harisco_token");
-      const res = await fetch("/api/attendance/manual", {
+      const res = await fetch(`${apiBase}/manual`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1029,7 +1039,9 @@ export const Attendance: React.FC<AttendanceProps> = ({
   const exportToCSV = (summaries: any[]) => {
     const [sYear, sMonth] = selectedMonth.split("-").map(Number);
     const currentYear = sYear;
-    const currentMonth = new Date(sYear, sMonth - 1).toLocaleString('default', { month: 'long' });
+    const currentMonth = new Date(sYear, sMonth - 1).toLocaleString("default", {
+      month: "long",
+    });
     const daysInMonth = new Date(sYear, sMonth, 0).getDate();
 
     let countSunday = 0;
@@ -1201,7 +1213,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
           </p>
         </div>
         <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-          {(canViewAll || canViewDepartment) && (
+          {canViewAll || canViewDepartment ? (
             <div className="btn-group">
               <button
                 className={`btn ${viewMode === "summary" ? "btn-primary" : "btn-secondary"}`}
@@ -1230,9 +1242,11 @@ export const Attendance: React.FC<AttendanceProps> = ({
                 Detailed Individual View
               </button>
             </div>
+          ) : (
+            <></>
           )}
           <div className="btn-group">
-            {canWrite && (
+            {canWrite ? (
               <button
                 className="btn btn-secondary"
                 style={{
@@ -1246,6 +1260,8 @@ export const Attendance: React.FC<AttendanceProps> = ({
                 <CalendarOff size={14} />
                 Holidays
               </button>
+            ) : (
+              <></>
             )}
             <button
               className="btn btn-secondary"
@@ -1352,506 +1368,505 @@ export const Attendance: React.FC<AttendanceProps> = ({
                 </div>
               );
             }
-            return null;
+            return <></>;
           })()}
           {viewMode === "summary" &&
-            (canViewAll || canViewDepartment) &&
-            !isTodaySundayPKT() &&
-            !holidays.find(
-              (h) =>
-                h.date ===
-                new Intl.DateTimeFormat("en-CA", {
-                  timeZone: "Asia/Karachi",
-                  year: "numeric",
-                  month: "2-digit",
-                  day: "2-digit",
-                }).format(new Date()),
-            ) && (
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "20px",
-                }}
-              >
-                {/* Search & Filter Bar */}
-                <div className="panel" style={{ padding: "16px 20px" }}>
+          (canViewAll || canViewDepartment) &&
+          !isTodaySundayPKT() &&
+          !holidays.find(
+            (h) =>
+              h.date ===
+              new Intl.DateTimeFormat("en-CA", {
+                timeZone: "Asia/Karachi",
+                year: "numeric",
+                month: "2-digit",
+                day: "2-digit",
+              }).format(new Date()),
+          ) ? (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "20px",
+              }}
+            >
+              {/* Search & Filter Bar */}
+              <div className="panel" style={{ padding: "16px 20px" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "16px",
+                    flexWrap: "wrap",
+                    alignItems: "center",
+                  }}
+                >
+                  <div
+                    style={{
+                      position: "relative",
+                      flex: 1,
+                      minWidth: "260px",
+                    }}
+                  >
+                    <input
+                      type="text"
+                      className="form-input"
+                      style={{ paddingLeft: "38px", width: "100%" }}
+                      placeholder="Search employee by Name, Code, or ID..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                    <Search
+                      size={16}
+                      style={{
+                        position: "absolute",
+                        left: "12px",
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        color: "var(--text-muted)",
+                      }}
+                    />
+                  </div>
+
+                  {/* Department Filter */}
                   <div
                     style={{
                       display: "flex",
-                      gap: "16px",
-                      flexWrap: "wrap",
                       alignItems: "center",
+                      gap: "8px",
                     }}
                   >
-                    <div
+                    <Filter size={14} style={{ color: "var(--text-muted)" }} />
+                    <select
+                      className="form-input"
                       style={{
-                        position: "relative",
-                        flex: 1,
-                        minWidth: "260px",
+                        width: "160px",
+                        backgroundColor: "var(--bg-primary)",
                       }}
+                      value={filterDepartment}
+                      onChange={(e) => setFilterDepartment(e.target.value)}
                     >
-                      <input
-                        type="text"
-                        className="form-input"
-                        style={{ paddingLeft: "38px", width: "100%" }}
-                        placeholder="Search employee by Name, Code, or ID..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                      />
-                      <Search
-                        size={16}
-                        style={{
-                          position: "absolute",
-                          left: "12px",
-                          top: "50%",
-                          transform: "translateY(-50%)",
-                          color: "var(--text-muted)",
-                        }}
-                      />
-                    </div>
-
-                    {/* Department Filter */}
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                      }}
-                    >
-                      <Filter
-                        size={14}
-                        style={{ color: "var(--text-muted)" }}
-                      />
-                      <select
-                        className="form-input"
-                        style={{
-                          width: "160px",
-                          backgroundColor: "var(--bg-primary)",
-                        }}
-                        value={filterDepartment}
-                        onChange={(e) => setFilterDepartment(e.target.value)}
-                      >
-                        <option value="All">All Departments</option>
-                        {departmentsList.map((d) => (
-                          <option key={d} value={d}>
-                            {d}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Shift Filter */}
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                      }}
-                    >
-                      <Briefcase
-                        size={14}
-                        style={{ color: "var(--text-muted)" }}
-                      />
-                      <select
-                        className="form-input"
-                        style={{
-                          width: "160px",
-                          backgroundColor: "var(--bg-primary)",
-                        }}
-                        value={filterShift}
-                        onChange={(e) => setFilterShift(e.target.value)}
-                      >
-                        <option value="All">All Shifts</option>
-                        <option value={SHIFTS.GENERAL}>General Shift</option>
-                      </select>
-                    </div>
-
-                    {/* Today's Status Filter */}
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                      }}
-                    >
-                      <Clock size={14} style={{ color: "var(--text-muted)" }} />
-                      <select
-                        className="form-input"
-                        style={{
-                          width: "160px",
-                          backgroundColor: "var(--bg-primary)",
-                        }}
-                        value={filterTodayStatus}
-                        onChange={(e) => setFilterTodayStatus(e.target.value)}
-                      >
-                        <option value="All">All Statuses</option>
-                        <option value="Present">Present</option>
-                        <option value="Late Arrival">Late Arrival</option>
-                        <option value="Absent">Absent</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Master Table Grid */}
-                <div className="panel" style={{ padding: "20px" }}>
-                  <div className="panel-header">
-                    <h2 className="panel-title">
-                      <Building
-                        size={18}
-                        style={{ color: "var(--color-primary)" }}
-                      />
-                      All-Employee Attendance Table ({filteredSummaries.length})
-                    </h2>
-                    <div style={{ display: "flex", gap: "8px" }}>
-                      <button
-                        className="btn btn-secondary"
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "6px",
-                          padding: "6px 12px",
-                          fontSize: "0.75rem",
-                        }}
-                        onClick={() => exportToCSV(filteredSummaries)}
-                        title="Export attendance summary to CSV"
-                      >
-                        <FileText size={14} />
-                        Export CSV
-                      </button>
-                    </div>
+                      <option value="All">All Departments</option>
+                      {departmentsList.map((d) => (
+                        <option key={d} value={d}>
+                          {d}
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
-                  {/* Today's Stats Row */}
+                  {/* Shift Filter */}
                   <div
                     style={{
-                      display: "grid",
-                      gridTemplateColumns: "repeat(3, 1fr)",
-                      gap: "12px",
-                      marginBottom: "20px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
                     }}
                   >
-                    <div
-                      onClick={() => setFilterTodayStatus("Present")}
+                    <Briefcase
+                      size={14}
+                      style={{ color: "var(--text-muted)" }}
+                    />
+                    <select
+                      className="form-input"
                       style={{
-                        padding: "14px 18px",
-                        borderRadius: "var(--radius-md)",
-                        background: "rgba(34, 197, 94, 0.08)",
-                        border:
-                          filterTodayStatus === "Present"
-                            ? "2px solid #22c55e"
-                            : "1px solid rgba(34, 197, 94, 0.2)",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "12px",
-                        cursor: "pointer",
-                        transition: "all 0.2s ease",
+                        width: "160px",
+                        backgroundColor: "var(--bg-primary)",
                       }}
+                      value={filterShift}
+                      onChange={(e) => setFilterShift(e.target.value)}
                     >
-                      <CheckCircle
-                        size={20}
-                        style={{ color: "#22c55e", flexShrink: 0 }}
-                      />
-                      <div>
-                        <div
-                          style={{
-                            fontSize: "1.4rem",
-                            fontWeight: 700,
-                            color: "#22c55e",
-                            lineHeight: 1,
-                          }}
-                        >
-                          {todayStats.present}
-                        </div>
-                        <div
-                          style={{
-                            fontSize: "0.75rem",
-                            color: "var(--text-secondary)",
-                            marginTop: "2px",
-                          }}
-                        >
-                          Present Today
-                        </div>
-                      </div>
-                    </div>
-
-                    <div
-                      onClick={() => setFilterTodayStatus("Absent")}
-                      style={{
-                        padding: "14px 18px",
-                        borderRadius: "var(--radius-md)",
-                        background: "rgba(244, 63, 94, 0.08)",
-                        border:
-                          filterTodayStatus === "Absent"
-                            ? "2px solid #f43f5e"
-                            : "1px solid rgba(244, 63, 94, 0.2)",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "12px",
-                        cursor: "pointer",
-                        transition: "all 0.2s ease",
-                      }}
-                    >
-                      <XCircle
-                        size={20}
-                        style={{ color: "#f43f5e", flexShrink: 0 }}
-                      />
-                      <div>
-                        <div
-                          style={{
-                            fontSize: "1.4rem",
-                            fontWeight: 700,
-                            color: "#f43f5e",
-                            lineHeight: 1,
-                          }}
-                        >
-                          {todayStats.absent}
-                        </div>
-                        <div
-                          style={{
-                            fontSize: "0.75rem",
-                            color: "var(--text-secondary)",
-                            marginTop: "2px",
-                          }}
-                        >
-                          Absent Today
-                        </div>
-                      </div>
-                    </div>
-
-                    <div
-                      onClick={() => setFilterTodayStatus("Late Arrival")}
-                      style={{
-                        padding: "14px 18px",
-                        borderRadius: "var(--radius-md)",
-                        background: "rgba(251, 191, 36, 0.08)",
-                        border:
-                          filterTodayStatus === "Late Arrival"
-                            ? "2px solid #fbbf24"
-                            : "1px solid rgba(251, 191, 36, 0.2)",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "12px",
-                        cursor: "pointer",
-                        transition: "all 0.2s ease",
-                      }}
-                    >
-                      <AlertCircle
-                        size={20}
-                        style={{ color: "#fbbf24", flexShrink: 0 }}
-                      />
-                      <div>
-                        <div
-                          style={{
-                            fontSize: "1.4rem",
-                            fontWeight: 700,
-                            color: "#fbbf24",
-                            lineHeight: 1,
-                          }}
-                        >
-                          {todayStats.late}
-                        </div>
-                        <div
-                          style={{
-                            fontSize: "0.75rem",
-                            color: "var(--text-secondary)",
-                            marginTop: "2px",
-                          }}
-                        >
-                          Late Arrivals
-                        </div>
-                      </div>
-                    </div>
+                      <option value="All">All Shifts</option>
+                      <option value={SHIFTS.GENERAL}>General Shift</option>
+                    </select>
                   </div>
 
-                  <div className="table-wrapper">
-                    <table className="data-table">
-                      <thead>
-                        <tr>
-                          <th>Employee ID</th>
-                          <th>Name</th>
-                          <th>Department</th>
-                          <th>Shift</th>
-                          <th>Today's Status</th>
-                          <th>Days Present</th>
-                          <th>Days N/A</th>
-                          <th>Days Absent</th>
-                          <th>Total Hours (Month)</th>
-                          <th style={{ width: "120px", textAlign: "center" }}>
-                            Action
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredSummaries.map((emp) => (
-                          <tr
-                            key={emp.id}
-                            onClick={() => {
-                              setSelectedUserId(emp.id);
-                              setViewMode("individual");
-                            }}
-                          >
-                            <td style={{ fontWeight: 700, color: "white" }}>
-                              {emp.formattedCode}
-                            </td>
-                            <td>
-                              <div
-                                style={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: "10px",
-                                }}
-                              >
-                                {emp.avatar ? (
-                                  <img
-                                    src={emp.avatar}
-                                    alt={emp.name}
-                                    style={{
-                                      width: "32px",
-                                      height: "32px",
-                                      borderRadius: "50%",
-                                      objectFit: "cover",
-                                      border: "1px solid var(--border-color)",
-                                    }}
-                                  />
-                                ) : (
-                                  <div
-                                    style={{
-                                      width: "32px",
-                                      height: "32px",
-                                      borderRadius: "50%",
-                                      backgroundColor:
-                                        "var(--color-primary-glow)",
-                                      border: "1px solid var(--border-color)",
-                                      display: "flex",
-                                      alignItems: "center",
-                                      justifyContent: "center",
-                                      fontWeight: 600,
-                                      fontSize: "0.8rem",
-                                      color: "white",
-                                    }}
-                                  >
-                                    {emp.name
-                                      .split(" ")
-                                      .map((n) => n[0])
-                                      .join("")
-                                      .toUpperCase()
-                                      .slice(0, 2)}
-                                  </div>
-                                )}
-                                <span style={{ fontWeight: 500 }}>
-                                  {emp.name}
-                                </span>
-                              </div>
-                            </td>
-                            <td>
-                              <span
-                                style={{
-                                  fontSize: "0.85rem",
-                                  color: "var(--text-secondary)",
-                                }}
-                              >
-                                {emp.department}
-                              </span>
-                            </td>
-                            <td
-                              style={{
-                                fontSize: "0.82rem",
-                                color: "var(--text-muted)",
-                              }}
-                            >
-                              {emp.shift.split(" (")[0]}
-                            </td>
-                            <td>{getTodayStatusBadge(emp.todayStatus)}</td>
-                            <td style={{ fontWeight: 600 }}>
-                              <span
-                                style={{
-                                  color:
-                                    emp.daysPresent > 0
-                                      ? "#5ef4a6 "
-                                      : "var(--text-secondary)",
-                                }}
-                              >
-                                {emp.daysPresent}
-                              </span>
-                              / {emp.totalWorkDays}
-                            </td>
-                            <td style={{ fontWeight: 600 }}>
-                              {emp.daysNotAvailable} / {emp.totalWorkDays}
-                            </td>
-                            <td>
-                              <span
-                                style={{
-                                  color:
-                                    emp.daysAbsent > 0
-                                      ? "#f43f5e"
-                                      : "var(--text-secondary)",
-                                }}
-                              >
-                                {emp.daysAbsent}
-                              </span>{" "}
-                              / {emp.totalWorkDays}
-                            </td>
-                            <td>
-                              <div
-                                style={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: "6px",
-                                }}
-                              >
-                                <Clock
-                                  size={13}
-                                  style={{ color: "var(--text-muted)" }}
-                                />
-                                <span>{formatHours(emp.totalHours)}</span>
-                              </div>
-                            </td>
-                            <td
-                              style={{ textAlign: "center" }}
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <button
-                                className="btn btn-secondary"
-                                style={{
-                                  padding: "4px 10px",
-                                  fontSize: "0.75rem",
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  gap: "4px",
-                                }}
-                                onClick={() => {
-                                  setSelectedUserId(emp.id);
-                                  setViewMode("individual");
-                                }}
-                              >
-                                View Detailed Logs
-                                <ChevronRight size={12} />
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                        {filteredSummaries.length === 0 && (
-                          <tr>
-                            <td
-                              colSpan={9}
-                              style={{
-                                textAlign: "center",
-                                padding: "40px",
-                                color: "var(--text-secondary)",
-                              }}
-                            >
-                              No employees match the search and filter criteria.
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
+                  {/* Today's Status Filter */}
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                  >
+                    <Clock size={14} style={{ color: "var(--text-muted)" }} />
+                    <select
+                      className="form-input"
+                      style={{
+                        width: "160px",
+                        backgroundColor: "var(--bg-primary)",
+                      }}
+                      value={filterTodayStatus}
+                      onChange={(e) => setFilterTodayStatus(e.target.value)}
+                    >
+                      <option value="All">All Statuses</option>
+                      <option value="Present">Present</option>
+                      <option value="Late Arrival">Late Arrival</option>
+                      <option value="Absent">Absent</option>
+                    </select>
                   </div>
                 </div>
               </div>
-            )}
+
+              {/* Master Table Grid */}
+              <div className="panel" style={{ padding: "20px" }}>
+                <div className="panel-header">
+                  <h2 className="panel-title">
+                    <Building
+                      size={18}
+                      style={{ color: "var(--color-primary)" }}
+                    />
+                    All-Employee Attendance Table ({filteredSummaries.length})
+                  </h2>
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <button
+                      className="btn btn-secondary"
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        padding: "6px 12px",
+                        fontSize: "0.75rem",
+                      }}
+                      onClick={() => exportToCSV(filteredSummaries)}
+                      title="Export attendance summary to CSV"
+                    >
+                      <FileText size={14} />
+                      Export CSV
+                    </button>
+                  </div>
+                </div>
+
+                {/* Today's Stats Row */}
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(3, 1fr)",
+                    gap: "12px",
+                    marginBottom: "20px",
+                  }}
+                >
+                  <div
+                    onClick={() => setFilterTodayStatus("Present")}
+                    style={{
+                      padding: "14px 18px",
+                      borderRadius: "var(--radius-md)",
+                      background: "rgba(34, 197, 94, 0.08)",
+                      border:
+                        filterTodayStatus === "Present"
+                          ? "2px solid #22c55e"
+                          : "1px solid rgba(34, 197, 94, 0.2)",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                      cursor: "pointer",
+                      transition: "all 0.2s ease",
+                    }}
+                  >
+                    <CheckCircle
+                      size={20}
+                      style={{ color: "#22c55e", flexShrink: 0 }}
+                    />
+                    <div>
+                      <div
+                        style={{
+                          fontSize: "1.4rem",
+                          fontWeight: 700,
+                          color: "#22c55e",
+                          lineHeight: 1,
+                        }}
+                      >
+                        {todayStats.present}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: "0.75rem",
+                          color: "var(--text-secondary)",
+                          marginTop: "2px",
+                        }}
+                      >
+                        Present Today
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
+                    onClick={() => setFilterTodayStatus("Absent")}
+                    style={{
+                      padding: "14px 18px",
+                      borderRadius: "var(--radius-md)",
+                      background: "rgba(244, 63, 94, 0.08)",
+                      border:
+                        filterTodayStatus === "Absent"
+                          ? "2px solid #f43f5e"
+                          : "1px solid rgba(244, 63, 94, 0.2)",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                      cursor: "pointer",
+                      transition: "all 0.2s ease",
+                    }}
+                  >
+                    <XCircle
+                      size={20}
+                      style={{ color: "#f43f5e", flexShrink: 0 }}
+                    />
+                    <div>
+                      <div
+                        style={{
+                          fontSize: "1.4rem",
+                          fontWeight: 700,
+                          color: "#f43f5e",
+                          lineHeight: 1,
+                        }}
+                      >
+                        {todayStats.absent}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: "0.75rem",
+                          color: "var(--text-secondary)",
+                          marginTop: "2px",
+                        }}
+                      >
+                        Absent Today
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
+                    onClick={() => setFilterTodayStatus("Late Arrival")}
+                    style={{
+                      padding: "14px 18px",
+                      borderRadius: "var(--radius-md)",
+                      background: "rgba(251, 191, 36, 0.08)",
+                      border:
+                        filterTodayStatus === "Late Arrival"
+                          ? "2px solid #fbbf24"
+                          : "1px solid rgba(251, 191, 36, 0.2)",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                      cursor: "pointer",
+                      transition: "all 0.2s ease",
+                    }}
+                  >
+                    <AlertCircle
+                      size={20}
+                      style={{ color: "#fbbf24", flexShrink: 0 }}
+                    />
+                    <div>
+                      <div
+                        style={{
+                          fontSize: "1.4rem",
+                          fontWeight: 700,
+                          color: "#fbbf24",
+                          lineHeight: 1,
+                        }}
+                      >
+                        {todayStats.late}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: "0.75rem",
+                          color: "var(--text-secondary)",
+                          marginTop: "2px",
+                        }}
+                      >
+                        Late Arrivals
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="table-wrapper">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Employee ID</th>
+                        <th>Name</th>
+                        <th>Department</th>
+                        <th>Shift</th>
+                        <th>Today's Status</th>
+                        <th>Days Present</th>
+                        <th>Days N/A</th>
+                        <th>Days Absent</th>
+                        <th>Total Hours (Month)</th>
+                        <th style={{ width: "120px", textAlign: "center" }}>
+                          Action
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredSummaries.map((emp) => (
+                        <tr
+                          key={emp.id}
+                          onClick={() => {
+                            setSelectedUserId(emp.id);
+                            setViewMode("individual");
+                          }}
+                        >
+                          <td style={{ fontWeight: 700, color: "white" }}>
+                            {emp.formattedCode}
+                          </td>
+                          <td>
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "10px",
+                              }}
+                            >
+                              {emp.avatar ? (
+                                <img
+                                  src={emp.avatar}
+                                  alt={emp.name}
+                                  style={{
+                                    width: "32px",
+                                    height: "32px",
+                                    borderRadius: "50%",
+                                    objectFit: "cover",
+                                    border: "1px solid var(--border-color)",
+                                  }}
+                                />
+                              ) : (
+                                <div
+                                  style={{
+                                    width: "32px",
+                                    height: "32px",
+                                    borderRadius: "50%",
+                                    backgroundColor:
+                                      "var(--color-primary-glow)",
+                                    border: "1px solid var(--border-color)",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    fontWeight: 600,
+                                    fontSize: "0.8rem",
+                                    color: "white",
+                                  }}
+                                >
+                                  {emp.name
+                                    .split(" ")
+                                    .map((n) => n[0])
+                                    .join("")
+                                    .toUpperCase()
+                                    .slice(0, 2)}
+                                </div>
+                              )}
+                              <span style={{ fontWeight: 500 }}>
+                                {emp.name}
+                              </span>
+                            </div>
+                          </td>
+                          <td>
+                            <span
+                              style={{
+                                fontSize: "0.85rem",
+                                color: "var(--text-secondary)",
+                              }}
+                            >
+                              {emp.department}
+                            </span>
+                          </td>
+                          <td
+                            style={{
+                              fontSize: "0.82rem",
+                              color: "var(--text-muted)",
+                            }}
+                          >
+                            {emp.shift.split(" (")[0]}
+                          </td>
+                          <td>{getTodayStatusBadge(emp.todayStatus)}</td>
+                          <td style={{ fontWeight: 600 }}>
+                            <span
+                              style={{
+                                color:
+                                  emp.daysPresent > 0
+                                    ? "#5ef4a6 "
+                                    : "var(--text-secondary)",
+                              }}
+                            >
+                              {emp.daysPresent}
+                            </span>
+                            / {emp.totalWorkDays}
+                          </td>
+                          <td style={{ fontWeight: 600 }}>
+                            {emp.daysNotAvailable} / {emp.totalWorkDays}
+                          </td>
+                          <td>
+                            <span
+                              style={{
+                                color:
+                                  emp.daysAbsent > 0
+                                    ? "#f43f5e"
+                                    : "var(--text-secondary)",
+                              }}
+                            >
+                              {emp.daysAbsent}
+                            </span>{" "}
+                            / {emp.totalWorkDays}
+                          </td>
+                          <td>
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "6px",
+                              }}
+                            >
+                              <Clock
+                                size={13}
+                                style={{ color: "var(--text-muted)" }}
+                              />
+                              <span>{formatHours(emp.totalHours)}</span>
+                            </div>
+                          </td>
+                          <td
+                            style={{ textAlign: "center" }}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <button
+                              className="btn btn-secondary"
+                              style={{
+                                padding: "4px 10px",
+                                fontSize: "0.75rem",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "4px",
+                              }}
+                              onClick={() => {
+                                setSelectedUserId(emp.id);
+                                setViewMode("individual");
+                              }}
+                            >
+                              View Detailed Logs
+                              <ChevronRight size={12} />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                      {filteredSummaries.length === 0 && (
+                        <tr>
+                          <td
+                            colSpan={9}
+                            style={{
+                              textAlign: "center",
+                              padding: "40px",
+                              color: "var(--text-secondary)",
+                            }}
+                          >
+                            No employees match the search and filter criteria.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <></>
+          )}
 
           {/* ─────────────────── DETAILED INDIVIDUAL VIEW ─────────────────── */}
           {viewMode === "individual" && selectedEmployee && (
@@ -2288,56 +2303,58 @@ export const Attendance: React.FC<AttendanceProps> = ({
                                 }}
                               >
                                 {log.firstIn === "--" &&
-                                  log.lastOut === "--" &&
-                                  isPastOrToday &&
-                                  currentUser.role === "manager" && (
-                                    <div
+                                log.lastOut === "--" &&
+                                isPastOrToday &&
+                                currentUser.role === "manager" ? (
+                                  <div
+                                    style={{
+                                      display: "flex",
+                                      gap: "4px",
+                                      marginBottom: "4px",
+                                    }}
+                                  >
+                                    <button
+                                      className="btn btn-secondary"
                                       style={{
-                                        display: "flex",
-                                        gap: "4px",
-                                        marginBottom: "4px",
+                                        padding: "2px 4px",
+                                        fontSize: "0.6rem",
+                                        flex: 1,
+                                        backgroundColor: "var(--bg-primary)",
                                       }}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleMarkDayStatus(
+                                          log.date,
+                                          "Site Duty",
+                                        );
+                                      }}
+                                      title="Mark Site Duty"
                                     >
-                                      <button
-                                        className="btn btn-secondary"
-                                        style={{
-                                          padding: "2px 4px",
-                                          fontSize: "0.6rem",
-                                          flex: 1,
-                                          backgroundColor: "var(--bg-primary)",
-                                        }}
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleMarkDayStatus(
-                                            log.date,
-                                            "Site Duty",
-                                          );
-                                        }}
-                                        title="Mark Site Duty"
-                                      >
-                                        Site Duty
-                                      </button>
-                                      <button
-                                        className="btn btn-secondary"
-                                        style={{
-                                          padding: "2px 4px",
-                                          fontSize: "0.6rem",
-                                          flex: 1,
-                                          backgroundColor: "var(--bg-primary)",
-                                        }}
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleMarkDayStatus(
-                                            log.date,
-                                            "On Leave",
-                                          );
-                                        }}
-                                        title="Mark On Leave"
-                                      >
-                                        Leave
-                                      </button>
-                                    </div>
-                                  )}
+                                      Site Duty
+                                    </button>
+                                    <button
+                                      className="btn btn-secondary"
+                                      style={{
+                                        padding: "2px 4px",
+                                        fontSize: "0.6rem",
+                                        flex: 1,
+                                        backgroundColor: "var(--bg-primary)",
+                                      }}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleMarkDayStatus(
+                                          log.date,
+                                          "On Leave",
+                                        );
+                                      }}
+                                      title="Mark On Leave"
+                                    >
+                                      Leave
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <></>
+                                )}
                                 <div
                                   style={{
                                     display: "flex",
@@ -2364,55 +2381,59 @@ export const Attendance: React.FC<AttendanceProps> = ({
                                         : log.firstIn.substring(0, 5)}
                                     </span>
                                     {canWrite &&
-                                      log.firstIn === "--" &&
-                                      isPastOrToday && (
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleAddManualPunch(
-                                              log.date,
-                                              "Check-In",
-                                            );
-                                          }}
-                                          style={{
-                                            background: "none",
-                                            border: "none",
-                                            color: "var(--color-primary)",
-                                            cursor: "pointer",
-                                            padding: "2px",
-                                            display: "flex",
-                                            fontWeight: "bold",
-                                          }}
-                                          title="Add Punch In"
-                                        >
-                                          +
-                                        </button>
-                                      )}
+                                    log.firstIn === "--" &&
+                                    isPastOrToday ? (
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleAddManualPunch(
+                                            log.date,
+                                            "Check-In",
+                                          );
+                                        }}
+                                        style={{
+                                          background: "none",
+                                          border: "none",
+                                          color: "var(--color-primary)",
+                                          cursor: "pointer",
+                                          padding: "2px",
+                                          display: "flex",
+                                          fontWeight: "bold",
+                                        }}
+                                        title="Add Punch In"
+                                      >
+                                        +
+                                      </button>
+                                    ) : (
+                                      <></>
+                                    )}
                                     {currentUser.role === "manager" &&
-                                      !log.lastOutId &&
-                                      log.firstInId && (
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleDeletePunchIn(
-                                              log.firstInId!,
-                                              log.date,
-                                            );
-                                          }}
-                                          style={{
-                                            background: "none",
-                                            border: "none",
-                                            color: "#f43f5e",
-                                            cursor: "pointer",
-                                            padding: "2px",
-                                            display: "inline-flex",
-                                            alignItems: "center",
-                                          }}
-                                          title="Delete Punch In"
-                                        >
-                                          <Trash2 size={12} />
-                                        </button>
-                                      )}
+                                    !log.lastOutId &&
+                                    log.firstInId ? (
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleDeletePunchIn(
+                                            log.firstInId!,
+                                            log.date,
+                                          );
+                                        }}
+                                        style={{
+                                          background: "none",
+                                          border: "none",
+                                          color: "#f43f5e",
+                                          cursor: "pointer",
+                                          padding: "2px",
+                                          display: "inline-flex",
+                                          alignItems: "center",
+                                        }}
+                                        title="Delete Punch In"
+                                      >
+                                        <Trash2 size={12} />
+                                      </button>
+                                    ) : (
+                                      <></>
+                                    )}
                                   </div>
                                 </div>
                                 <div
@@ -2441,58 +2462,62 @@ export const Attendance: React.FC<AttendanceProps> = ({
                                         : log.lastOut.substring(0, 5)}
                                     </span>
                                     {canWrite &&
-                                      log.firstIn !== "--" &&
-                                      log.lastOut === "--" &&
-                                      isPastOrToday && (
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleAddManualPunch(
-                                              log.date,
-                                              "Check-Out",
-                                            );
-                                          }}
-                                          style={{
-                                            background: "none",
-                                            border: "none",
-                                            color: "var(--color-primary)",
-                                            cursor: "pointer",
-                                            padding: "2px",
-                                            display: "flex",
-                                            fontWeight: "bold",
-                                          }}
-                                          title="Add Punch Out"
-                                        >
-                                          +
-                                        </button>
-                                      )}
+                                    log.firstIn !== "--" &&
+                                    log.lastOut === "--" &&
+                                    isPastOrToday ? (
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleAddManualPunch(
+                                            log.date,
+                                            "Check-Out",
+                                          );
+                                        }}
+                                        style={{
+                                          background: "none",
+                                          border: "none",
+                                          color: "var(--color-primary)",
+                                          cursor: "pointer",
+                                          padding: "2px",
+                                          display: "flex",
+                                          fontWeight: "bold",
+                                        }}
+                                        title="Add Punch Out"
+                                      >
+                                        +
+                                      </button>
+                                    ) : (
+                                      <></>
+                                    )}
                                     {currentUser.role === "manager" &&
-                                      log.lastOutId && (
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleDeletePunchOut(
-                                              log.lastOutId!,
-                                              log.date,
-                                            );
-                                          }}
-                                          style={{
-                                            background: "none",
-                                            border: "none",
-                                            color: "#f43f5e",
-                                            cursor: "pointer",
-                                            padding: "2px",
-                                            display: "inline-flex",
-                                            alignItems: "center",
-                                          }}
-                                          title="Delete Punch Out"
-                                        >
-                                          <Trash2 size={12} />
-                                        </button>
-                                      )}
+                                    log.lastOutId ? (
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleDeletePunchOut(
+                                            log.lastOutId!,
+                                            log.date,
+                                          );
+                                        }}
+                                        style={{
+                                          background: "none",
+                                          border: "none",
+                                          color: "#f43f5e",
+                                          cursor: "pointer",
+                                          padding: "2px",
+                                          display: "inline-flex",
+                                          alignItems: "center",
+                                        }}
+                                        title="Delete Punch Out"
+                                      >
+                                        <Trash2 size={12} />
+                                      </button>
+                                    ) : (
+                                      <></>
+                                    )}
                                   </div>
                                 </div>
-                                {log.hours > 0 && (
+                                {log.hours > 0 ? (
                                   <div
                                     style={{
                                       display: "flex",
@@ -2509,6 +2534,8 @@ export const Attendance: React.FC<AttendanceProps> = ({
                                       {formatHours(log.hours)}
                                     </span>
                                   </div>
+                                ) : (
+                                  <></>
                                 )}
                               </div>
                             )}
@@ -2893,7 +2920,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
         </>
       )}
 
-      {showHolidayModal && (
+      {showHolidayModal ? (
         <div
           className="modal-overlay"
           onClick={() => setShowHolidayModal(false)}
@@ -3031,6 +3058,8 @@ export const Attendance: React.FC<AttendanceProps> = ({
             </div>
           </div>
         </div>
+      ) : (
+        <></>
       )}
 
       <style>{`

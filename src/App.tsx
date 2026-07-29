@@ -5,6 +5,7 @@ import { TicketList } from "./components/TicketList";
 import { TicketDetails } from "./components/TicketDetails";
 import { NewTicketModal } from "./components/NewTicketModal";
 import { UserManagement } from "./components/UserManagement";
+import { FactoryUserManagement } from "./components/FactoryUserManagement";
 import { ActivityLog } from "./components/ActivityLog";
 import { Attendance } from "./components/Attendance";
 import { LeaveManagement } from "./components/LeaveManagement";
@@ -40,6 +41,7 @@ function App() {
   const [selectedNoticeId, setSelectedNoticeId] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<AppUser | null>(null);
   const [users, setUsers] = useState<AppUser[]>([]);
+  const [factoryUsers, setFactoryUsers] = useState<AppUser[]>([]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [activeTab, setActiveTab] = useState<ActiveTab>("noticeboard");
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
@@ -50,8 +52,11 @@ function App() {
   const [loading, setLoading] = useState<boolean>(true);
   const [adminTickets, setAdminTickets] = useState<AdminTicket[]>([]);
   const [adminSearchQuery, setAdminSearchQuery] = useState<string>("");
-  const [selectedAdminTicketId, setSelectedAdminTicketId] = useState<string | null>(null);
-  const [isCreateAdminModalOpen, setIsCreateAdminModalOpen] = useState<boolean>(false);
+  const [selectedAdminTicketId, setSelectedAdminTicketId] = useState<
+    string | null
+  >(null);
+  const [isCreateAdminModalOpen, setIsCreateAdminModalOpen] =
+    useState<boolean>(false);
 
   // Load session and data
   useEffect(() => {
@@ -61,6 +66,7 @@ function App() {
         setCurrentUser(null);
         setTickets([]);
         setUsers([]);
+        setFactoryUsers([]);
         setAdminTickets([]);
         setLoading(false);
         return;
@@ -119,6 +125,14 @@ function App() {
           const usersData = await usersRes.json();
           setUsers(usersData);
         }
+
+        const factoryUsersRes = await fetch("/api/factory/users", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (factoryUsersRes.ok) {
+          const factoryUsersData = await factoryUsersRes.json();
+          setFactoryUsers(factoryUsersData);
+        }
       } catch (err) {
         console.error("Session verification failed:", err);
         localStorage.removeItem("harisco_token");
@@ -134,7 +148,7 @@ function App() {
 
   // Polling mechanism for real-time updates
   useEffect(() => {
-    if (!token) return;
+    if (!token || activeTab !== "tickets") return;
 
     const pollInterval = setInterval(async () => {
       try {
@@ -157,11 +171,11 @@ function App() {
     }, 5000); // 5 seconds
 
     return () => clearInterval(pollInterval);
-  }, [token]);
+  }, [token, activeTab]);
 
   // Polling mechanism for admin tickets real-time updates
   useEffect(() => {
-    if (!token) return;
+    if (!token || activeTab !== "admin_tickets") return;
 
     const pollInterval = setInterval(async () => {
       try {
@@ -183,7 +197,7 @@ function App() {
     }, 5000); // 5 seconds
 
     return () => clearInterval(pollInterval);
-  }, [token]);
+  }, [token, activeTab]);
 
   // Synchronize document title for SEO
   useEffect(() => {
@@ -208,7 +222,13 @@ function App() {
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
       .join(" ");
     document.title = `${tabName} | ${APP_TITLE}`;
-  }, [activeTab, selectedTicketId, selectedAdminTicketId, tickets, adminTickets]);
+  }, [
+    activeTab,
+    selectedTicketId,
+    selectedAdminTicketId,
+    tickets,
+    adminTickets,
+  ]);
 
   // Find active ticket if viewing details
   const currentTicket = selectedTicketId
@@ -246,6 +266,7 @@ function App() {
     setCurrentUser(null);
     setTickets([]);
     setUsers([]);
+    setFactoryUsers([]);
     setAdminTickets([]);
     setSelectedTicketId(null);
     setSelectedAdminTicketId(null);
@@ -575,7 +596,12 @@ function App() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ status, actionMessage, executiveId, executiveName }),
+        body: JSON.stringify({
+          status,
+          actionMessage,
+          executiveId,
+          executiveName,
+        }),
       });
 
       if (!res.ok) throw new Error("Failed to update admin ticket status");
@@ -849,6 +875,129 @@ function App() {
     }
   };
 
+  // Factory User-relevant API calls
+
+  const handleAddFactoryUser = async (data: {
+    name: string;
+    email: string;
+    username: string;
+    role: UserRole;
+    password?: string;
+    avatar?: string;
+    department?: string;
+    designation?: string;
+    isDepartmentHead?: boolean;
+    loginEnabled?: boolean;
+  }) => {
+    if (!token || !currentUser) return;
+    try {
+      const res = await fetch("/api/factory/users", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || "Failed to add factory user");
+      }
+
+      const newUser = await res.json();
+      setFactoryUsers((prevUsers) => [...prevUsers, newUser]);
+    } catch (err) {
+      console.error(err);
+      const errMsg =
+        err instanceof Error
+          ? err.message
+          : "Error creating factory user. Please try again.";
+      alert(errMsg);
+    }
+  };
+
+  const handleDeleteFactoryUser = async (userId: string) => {
+    if (!token || !currentUser) return;
+    try {
+      const res = await fetch(`/api/factory/users/${userId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || "Failed to delete factory user");
+      }
+
+      setFactoryUsers((prevUsers) => prevUsers.filter((u) => u.id !== userId));
+    } catch (err) {
+      console.error(err);
+      const errMsg =
+        err instanceof Error
+          ? err.message
+          : "Error deleting factory user. Please try again.";
+      alert(errMsg);
+    }
+  };
+
+  const handleUpdateFactoryUser = async (
+    userId: string,
+    data: {
+      name: string;
+      email: string | null;
+      department?: string | null;
+      designation?: string | null;
+      avatar?: string | null;
+      isDepartmentHead?: boolean;
+      loginEnabled?: boolean;
+    },
+  ) => {
+    if (!token || !currentUser) return;
+    try {
+      const res = await fetch(`/api/factory/users/${userId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || "Failed to update factory user");
+      }
+
+      const updatedUser = await res.json();
+      setFactoryUsers((prevUsers) =>
+        prevUsers.map((u) =>
+          u.id === userId
+            ? {
+                ...u,
+                name: updatedUser.name,
+                email: updatedUser.email,
+                department: updatedUser.department,
+                designation: updatedUser.designation,
+                avatar: updatedUser.avatar,
+                isDepartmentHead: updatedUser.isDepartmentHead,
+                loginEnabled: updatedUser.loginEnabled,
+              }
+            : u,
+        ),
+      );
+    } catch (err) {
+      console.error(err);
+      const errMsg =
+        err instanceof Error
+          ? err.message
+          : "Error updating factory user. Please try again.";
+      alert(errMsg);
+    }
+  };
+
   // Loading state skeleton screen
   if (loading) {
     return (
@@ -967,24 +1116,40 @@ function App() {
               onDeleteUser={handleDeleteUser}
               onUpdateUser={handleUpdateUser}
             />
+          ) : activeTab === "factory_users" &&
+            (currentUser.role === "factory_it" || currentUser.role === "it") ? (
+            <FactoryUserManagement
+              users={factoryUsers}
+              currentUser={currentUser}
+              token={token}
+              onAddUser={handleAddFactoryUser}
+              onDeleteUser={handleDeleteFactoryUser}
+              onUpdateUser={handleUpdateFactoryUser}
+            />
           ) : activeTab === "attendance" ? (
-            <Attendance currentUser={currentUser} allUsers={users} />
+            <Attendance currentUser={currentUser} allUsers={users} mode="hq" />
+          ) : activeTab === "factory_attendance" ? (
+            <Attendance
+              currentUser={currentUser}
+              allUsers={factoryUsers}
+              mode="factory"
+            />
           ) : activeTab === "leaves" ? (
             <LeaveManagement currentUser={currentUser} token={token!} />
           ) : activeTab === "site_duties" ? (
             <SiteDutyManagement currentUser={currentUser} token={token!} />
           ) : activeTab === "admin_tickets" ? (
             currentAdminTicket ? (
-            <AdminTicketDetails
-              ticket={currentAdminTicket}
-              currentUser={currentUser}
-              allUsers={users}
-              onBack={() => setSelectedAdminTicketId(null)}
-              onUpdateStatus={handleUpdateAdminTicketStatus}
-              onAddComment={handleAddAdminComment}
-              onEditTicket={handleEditAdminTicket}
-              onDeleteTicket={handleDeleteAdminTicket}
-            />
+              <AdminTicketDetails
+                ticket={currentAdminTicket}
+                currentUser={currentUser}
+                allUsers={users}
+                onBack={() => setSelectedAdminTicketId(null)}
+                onUpdateStatus={handleUpdateAdminTicketStatus}
+                onAddComment={handleAddAdminComment}
+                onEditTicket={handleEditAdminTicket}
+                onDeleteTicket={handleDeleteAdminTicket}
+              />
             ) : (
               <AdminTicketList
                 tickets={adminTickets}

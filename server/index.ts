@@ -88,7 +88,14 @@ interface AuthRequest extends Request {
     id: string;
     name: string;
     email: string;
-    role: "it" | "employee" | "manager" | "executive";
+    role:
+      | "it"
+      | "employee"
+      | "manager"
+      | "executive"
+      | "factory_employee"
+      | "factory_it"
+      | "factory_manager";
     avatar?: string;
     needsPasswordReset?: number;
     isDepartmentHead: number;
@@ -101,7 +108,14 @@ interface DbUser {
   name: string;
   email: string;
   username: string;
-  role: "it" | "employee" | "manager" | "executive";
+  role:
+    | "it"
+    | "employee"
+    | "manager"
+    | "executive"
+    | "factory_employee"
+    | "factory_it"
+    | "factory_manager";
   avatar: string;
   passwordHash: string;
   needsPasswordReset: number;
@@ -203,10 +217,19 @@ app.post(
 
     try {
       const db = getDb();
-      const user = await db.get<DbUser>(
+      const normalizedUsername = username.toLowerCase().trim();
+
+      let user = await db.get<DbUser>(
         "SELECT id, name, email, username, role, avatar, passwordHash, needsPasswordReset, department, designation, isDepartmentHead, loginEnabled, casualLeaves, annualLeaves, medicalLeaves FROM users WHERE LOWER(username) = ?",
-        [username.toLowerCase().trim()],
+        [normalizedUsername],
       );
+
+      if (!user) {
+        user = await db.get<DbUser>(
+          "SELECT id, name, email, username, role, avatar, passwordHash, needsPasswordReset, department, designation, isDepartmentHead, loginEnabled, NULL as casualLeaves, NULL as annualLeaves, NULL as medicalLeaves FROM factory_users WHERE LOWER(username) = ?",
+          [normalizedUsername],
+        );
+      }
 
       if (!user) {
         res.status(401).json({ error: "Invalid username or password." });
@@ -266,11 +289,20 @@ app.get(
     try {
       const db = getDb();
       console.log("[ME] DB instance obtained");
-      const user = await db.get<DbUser>(
+      let user = await db.get<DbUser>(
         "SELECT id, name, email, username, role, avatar, needsPasswordReset, department, designation, isDepartmentHead, loginEnabled, casualLeaves, annualLeaves, medicalLeaves FROM users WHERE id = ?",
         [req.user?.id],
       );
       console.log("[ME] DB query done, user found:", !!user);
+
+      if (!user) {
+        user = await db.get<DbUser>(
+          "SELECT id, name, email, username, role, avatar, needsPasswordReset, department, designation, isDepartmentHead, loginEnabled, NULL as casualLeaves, NULL as annualLeaves, NULL as medicalLeaves FROM factory_users WHERE id = ?",
+          [req.user?.id],
+        );
+        console.log("[ME] factory_users query done, user found:", !!user);
+      }
+
       if (!user) {
         res.status(404).json({ error: "User not found." });
         return;
@@ -301,16 +333,27 @@ app.post(
       const passwordHash = await bcrypt.hash(password, 10);
       const userId = req.user?.id;
 
-      await db.run(
+      let result = await db.run(
         "UPDATE users SET passwordHash = ?, needsPasswordReset = 0 WHERE id = ?",
         [passwordHash, userId],
       );
 
-      // Fetch updated user to sign a new token
-      const user = await db.get<DbUser>(
+      let user = await db.get<DbUser>(
         "SELECT id, name, email, username, role, avatar, needsPasswordReset FROM users WHERE id = ?",
         [userId],
       );
+
+      if (!user || result.changes === 0) {
+        await db.run(
+          "UPDATE factory_users SET passwordHash = ?, needsPasswordReset = 0 WHERE id = ?",
+          [passwordHash, userId],
+        );
+        user = await db.get<DbUser>(
+          "SELECT id, name, email, username, role, avatar, needsPasswordReset FROM factory_users WHERE id = ?",
+          [userId],
+        );
+      }
+
       if (!user) {
         res.status(404).json({ error: "User not found." });
         return;
@@ -354,10 +397,18 @@ app.post(
       const userId = req.user?.id;
 
       // Fetch user to compare old password
-      const user = await db.get<DbUser>(
+      let user = await db.get<DbUser>(
         "SELECT passwordHash FROM users WHERE id = ?",
         [userId],
       );
+
+      if (!user) {
+        user = await db.get<DbUser>(
+          "SELECT passwordHash FROM factory_users WHERE id = ?",
+          [userId],
+        );
+      }
+
       if (!user) {
         res.status(404).json({ error: "User not found." });
         return;
@@ -370,10 +421,18 @@ app.post(
       }
 
       const newPasswordHash = await bcrypt.hash(newPassword, 10);
-      await db.run(
+
+      let result = await db.run(
         "UPDATE users SET passwordHash = ?, needsPasswordReset = 0 WHERE id = ?",
         [newPasswordHash, userId],
       );
+
+      if (result.changes === 0) {
+        await db.run(
+          "UPDATE factory_users SET passwordHash = ?, needsPasswordReset = 0 WHERE id = ?",
+          [newPasswordHash, userId],
+        );
+      }
 
       res.json({ message: "Password updated successfully." });
     } catch (error) {
@@ -938,6 +997,366 @@ app.put(
     } catch (error) {
       console.error("Failed to update user:", error);
       res.status(500).json({ error: "Failed to update user details." });
+    }
+  },
+);
+
+// Factory Users Routes (Factory IT / Factory Manager only)
+app.get(
+  "/api/factory/users",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const db = getDb();
+      const currentUser = req.user;
+
+      if (!currentUser) {
+        return res
+          .status(401)
+          .json({ error: "Unauthorized. User data missing." });
+      }
+
+      const selectFields =
+        "SELECT id, name, email, username, role, avatar, department, designation, isDepartmentHead, loginEnabled FROM factory_users";
+
+      let query = "";
+      let params: any[] = [];
+
+      if (["factory_manager", "factory_it", "it"].includes(currentUser.role)) {
+        query = `${selectFields} ORDER BY username ASC`;
+      } else if (currentUser.isDepartmentHead && currentUser.department) {
+        query = `${selectFields} WHERE department = ? ORDER BY username ASC`;
+        params = [currentUser.department];
+      } else {
+        query = `${selectFields} WHERE id = ?`;
+        params = [currentUser.id];
+      }
+
+      if (
+        ["factory_manager", "factory_it", "it"].includes(currentUser.role) ||
+        currentUser.isDepartmentHead
+      ) {
+        const users = await db.all<DbUser[]>(query, params);
+        return res.json(users);
+      } else {
+        const user = await db.get<DbUser>(query, params);
+        if (!user) {
+          return res.status(404).json({ error: "User profile not found." });
+        }
+        return res.json([user]);
+      }
+    } catch (error) {
+      console.error("Error fetching factory users data:", error);
+      return res
+        .status(500)
+        .json({ error: "Failed to fetch factory users data." });
+    }
+  },
+);
+
+app.post(
+  "/api/factory/users",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    if (
+      !req.user ||
+      (req.user.role !== "factory_it" &&
+        req.user.role !== "factory_manager" &&
+        req.user.role !== "it")
+    ) {
+      res.status(403).json({
+        error:
+          "Forbidden. Factory user administration requires Factory IT or Factory Manager role.",
+      });
+      return;
+    }
+
+    const {
+      name,
+      email,
+      username,
+      role,
+      password,
+      avatar,
+      department,
+      designation,
+      isDepartmentHead,
+      loginEnabled,
+    } = req.body;
+
+    if (!name || !username || !role) {
+      res.status(400).json({ error: "Name, username, and role are required." });
+      return;
+    }
+
+    const validFactoryRoles = [
+      "factory_employee",
+      "factory_it",
+      "factory_manager",
+    ];
+    if (!validFactoryRoles.includes(role)) {
+      res.status(400).json({ error: "Invalid factory role." });
+      return;
+    }
+
+    const finalEmail =
+      email && email.trim() ? email.trim().toLowerCase() : null;
+    const defaultPassword = process.env.VITE_DEFAULT_USER_PASSWORD;
+    if (!defaultPassword) throw new Error("DEFAULT_USER_PASSWORD required");
+    const clearPassword = password || defaultPassword;
+
+    try {
+      const db = getDb();
+
+      if (finalEmail) {
+        const existingEmail = await db.get(
+          "SELECT id FROM factory_users WHERE email = ?",
+          [finalEmail],
+        );
+        if (existingEmail) {
+          res
+            .status(400)
+            .json({ error: "User with this email already exists." });
+          return;
+        }
+      }
+
+      const existingUsername = await db.get(
+        "SELECT id FROM factory_users WHERE username = ?",
+        [username.toLowerCase().trim()],
+      );
+      if (existingUsername) {
+        res
+          .status(400)
+          .json({ error: "User with this username already exists." });
+        return;
+      }
+
+      const passwordHash = await bcrypt.hash(clearPassword, 10);
+      const userId = `usr-${Date.now()}`;
+
+      await db.run(
+        "INSERT INTO factory_users (id, name, email, username, role, avatar, passwordHash, needsPasswordReset, department, designation, isDepartmentHead, loginEnabled) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)",
+        [
+          userId,
+          name,
+          finalEmail,
+          username.toLowerCase().trim(),
+          role,
+          avatar ? avatar.trim() : "",
+          passwordHash,
+          department ? department.trim() : null,
+          designation ? designation.trim() : null,
+          isDepartmentHead ? 1 : 0,
+          loginEnabled === false ? 0 : 1,
+        ],
+      );
+
+      res.status(201).json({
+        id: userId,
+        name,
+        email: finalEmail,
+        username: username.toLowerCase().trim(),
+        role,
+        avatar: avatar ? avatar.trim() : "",
+        department: department ? department.trim() : null,
+        designation: designation ? designation.trim() : null,
+        isDepartmentHead: isDepartmentHead ? 1 : 0,
+        loginEnabled: loginEnabled === false ? 0 : 1,
+      });
+    } catch (error) {
+      console.error("Failed to create factory user:", error);
+      res.status(500).json({ error: "Failed to register new factory user." });
+    }
+  },
+);
+
+app.delete(
+  "/api/factory/users/:id",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    if (
+      !req.user ||
+      (req.user.role !== "factory_it" &&
+        req.user.role !== "factory_manager" &&
+        req.user.role !== "it")
+    ) {
+      res.status(403).json({
+        error:
+          "Forbidden. Factory user deletion requires Factory IT or Factory Manager role.",
+      });
+      return;
+    }
+
+    const userId = req.params.id;
+    if (userId === req.user?.id) {
+      res
+        .status(400)
+        .json({ error: "Cannot delete your own logged-in account." });
+      return;
+    }
+
+    try {
+      const db = getDb();
+      const result = await db.run("DELETE FROM factory_users WHERE id = ?", [
+        userId,
+      ]);
+
+      if (result.changes === 0) {
+        res.status(404).json({ error: "Factory user not found." });
+        return;
+      }
+
+      res.json({ message: "Factory user deleted successfully." });
+    } catch {
+      res.status(500).json({ error: "Failed to delete factory user." });
+    }
+  },
+);
+
+app.put(
+  "/api/factory/users/:id",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    if (
+      !req.user ||
+      (req.user.role !== "factory_it" &&
+        req.user.role !== "factory_manager" &&
+        req.user.role !== "it")
+    ) {
+      res.status(403).json({
+        error:
+          "Forbidden. Factory user modification requires Factory IT or Factory Manager role.",
+      });
+      return;
+    }
+
+    const userId = req.params.id;
+    const {
+      name,
+      email,
+      department,
+      designation,
+      avatar,
+      isDepartmentHead,
+      loginEnabled,
+    } = req.body;
+
+    if (!name || !name.trim()) {
+      res.status(400).json({ error: "Name is required." });
+      return;
+    }
+
+    const finalEmail =
+      email && email.trim() ? email.trim().toLowerCase() : null;
+    const finalDepartment =
+      department && department.trim() ? department.trim() : null;
+    const finalDesignation =
+      designation && designation.trim() ? designation.trim() : null;
+
+    try {
+      const db = getDb();
+
+      if (finalEmail) {
+        const existingEmail = await db.get(
+          "SELECT id FROM factory_users WHERE LOWER(email) = ? AND id != ?",
+          [finalEmail, userId],
+        );
+        if (existingEmail) {
+          res
+            .status(400)
+            .json({ error: "User with this email already exists." });
+          return;
+        }
+      }
+
+      const result = await db.run(
+        "UPDATE factory_users SET name = ?, email = ?, department = ?, designation = ?, avatar = ?, isDepartmentHead = ?, loginEnabled = ? WHERE id = ?",
+        [
+          name.trim(),
+          finalEmail,
+          finalDepartment,
+          finalDesignation,
+          avatar ? avatar.trim() : "",
+          isDepartmentHead ? 1 : 0,
+          loginEnabled === false ? 0 : 1,
+          userId,
+        ],
+      );
+
+      if (result.changes === 0) {
+        res.status(404).json({ error: "Factory user not found." });
+        return;
+      }
+
+      res.json({
+        id: userId,
+        name: name.trim(),
+        email: finalEmail,
+        department: finalDepartment,
+        designation: finalDesignation,
+        avatar: avatar ? avatar.trim() : "",
+        isDepartmentHead: isDepartmentHead ? 1 : 0,
+        loginEnabled: loginEnabled === false ? 0 : 1,
+      });
+    } catch (error) {
+      console.error("Failed to update factory user:", error);
+      res.status(500).json({ error: "Failed to update factory user details." });
+    }
+  },
+);
+
+app.post(
+  "/api/factory/users/:id/reset-password",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    if (
+      !req.user ||
+      (req.user.role !== "factory_it" &&
+        req.user.role !== "factory_manager" &&
+        req.user.role === "it")
+    ) {
+      res.status(403).json({
+        error:
+          "Forbidden. Factory password reset requires Factory IT or Factory Manager role.",
+      });
+      return;
+    }
+
+    const userId = req.params.id;
+    const { newPassword } = req.body;
+
+    if (!newPassword || newPassword.trim().length < 4) {
+      res
+        .status(400)
+        .json({ error: "Password must be at least 4 characters long." });
+      return;
+    }
+
+    try {
+      const db = getDb();
+      const user = await db.get<{ id: string }>(
+        "SELECT id FROM factory_users WHERE id = ?",
+        [userId],
+      );
+      if (!user) {
+        res.status(404).json({ error: "Factory user not found." });
+        return;
+      }
+
+      const passwordHash = await bcrypt.hash(newPassword.trim(), 10);
+      await db.run(
+        "UPDATE factory_users SET passwordHash = ?, needsPasswordReset = 1 WHERE id = ?",
+        [passwordHash, userId],
+      );
+
+      res.json({
+        message:
+          "Password reset successfully. User will be prompted to set a new password on next login.",
+      });
+    } catch (error) {
+      console.error("Failed to reset factory user password:", error);
+      res.status(500).json({ error: "Failed to reset factory user password." });
     }
   },
 );
@@ -2304,6 +2723,225 @@ app.get(
   },
 );
 
+// --------------------- FACTORY ATTENDANCE ROUTES ---------------------
+
+app.get(
+  "/api/factory/attendance",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const db = getDb();
+      const currentUser = req.user;
+
+      if (!currentUser) {
+        return res
+          .status(401)
+          .json({ error: "Unauthorized. User data missing." });
+      }
+
+      let query = "";
+      let params: any[] = [];
+
+      if (["factory_manager", "factory_it"].includes(currentUser.role)) {
+        query = `
+          SELECT id, name, userId, ioTime, method, status, timestamp 
+          FROM factory_attendance_logs 
+          ORDER BY timestamp DESC
+        `;
+      } else if (currentUser.isDepartmentHead && currentUser.department) {
+        query = `
+          SELECT l.id, l.name, l.userId, l.ioTime, l.method, l.status, l.timestamp 
+          FROM factory_attendance_logs l
+          JOIN factory_users u ON l.name = u.name
+          WHERE u.department = ?
+          ORDER BY l.timestamp DESC
+        `;
+        params = [currentUser.department];
+      } else {
+        query = `
+          SELECT id, name, userId, ioTime, method, status, timestamp 
+          FROM factory_attendance_logs 
+          WHERE name = ?
+          ORDER BY timestamp DESC
+        `;
+        params = [currentUser.name];
+      }
+
+      const logs = await db.all(query, params);
+      return res.json(logs);
+    } catch (error) {
+      console.error("Failed to retrieve factory attendance logs:", error);
+      res
+        .status(500)
+        .json({ error: "Failed to retrieve factory attendance logs." });
+    }
+  },
+);
+
+app.post(
+  "/api/factory/attendance/manual",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    if (
+      req.user?.role !== "factory_it" &&
+      req.user?.role !== "factory_manager"
+    ) {
+      res.status(403).json({
+        error:
+          "Forbidden. Only Factory IT or Factory Manager can add manual attendance.",
+      });
+      return;
+    }
+
+    const { userId, date, time, status } = req.body;
+    if (!userId || !date || !time || !status) {
+      res.status(400).json({ error: "Missing required fields." });
+      return;
+    }
+
+    try {
+      const db = getDb();
+
+      const holiday = await db.get("SELECT name FROM holidays WHERE date = ?", [
+        date,
+      ]);
+      if (holiday) {
+        res.status(400).json({
+          error: `Cannot mark attendance on a gazetted holiday: ${holiday.name}.`,
+        });
+        return;
+      }
+
+      const pktDateStr = `${date}T${time}:00+05:00`;
+      const pktDate = new Date(pktDateStr);
+
+      if (isNaN(pktDate.getTime())) {
+        res.status(400).json({ error: "Invalid date or time." });
+        return;
+      }
+
+      const year = pktDate.getUTCFullYear();
+      const month = String(pktDate.getUTCMonth() + 1).padStart(2, "0");
+      const day = String(pktDate.getUTCDate()).padStart(2, "0");
+      const hours = String(pktDate.getUTCHours()).padStart(2, "0");
+      const minutes = String(pktDate.getUTCMinutes()).padStart(2, "0");
+      const seconds = String(pktDate.getUTCSeconds()).padStart(2, "0");
+
+      const timestamp = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+
+      const user = await db.get("SELECT name FROM factory_users WHERE id = ?", [
+        userId,
+      ]);
+      if (!user) {
+        res.status(404).json({ error: "Factory employee not found." });
+        return;
+      }
+
+      await db.run(
+        "INSERT INTO factory_attendance_logs (name, userId, ioTime, method, status, timestamp) VALUES (?, ?, ?, ?, ?, ?)",
+        [user.name, userId, timestamp, "Manual", status, timestamp],
+      );
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Failed to add manual factory attendance:", error);
+      res
+        .status(500)
+        .json({ error: "Failed to add manual factory attendance." });
+    }
+  },
+);
+
+app.delete(
+  "/api/factory/attendance",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    if (
+      req.user?.role !== "factory_it" &&
+      req.user?.role !== "factory_manager"
+    ) {
+      res.status(403).json({
+        error:
+          "Forbidden. Clearing factory attendance logs requires Factory IT or Factory Manager role.",
+      });
+      return;
+    }
+    try {
+      const db = getDb();
+      await db.run("DELETE FROM factory_attendance_logs");
+      res.json({
+        success: true,
+        message: "All factory attendance logs cleared.",
+      });
+    } catch (error) {
+      console.error("Failed to clear factory attendance logs:", error);
+      res
+        .status(500)
+        .json({ error: "Failed to clear factory attendance logs." });
+    }
+  },
+);
+
+app.delete(
+  "/api/factory/attendance/:id",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    if (
+      req.user?.role !== "factory_it" &&
+      req.user?.role !== "factory_manager"
+    ) {
+      res.status(403).json({
+        error:
+          "Forbidden. Factory attendance log deletion requires Factory IT or Factory Manager role.",
+      });
+      return;
+    }
+
+    const logId = parseInt(req.params.id as string, 10);
+    if (isNaN(logId)) {
+      res.status(400).json({ error: "Invalid log ID." });
+      return;
+    }
+
+    try {
+      const db = getDb();
+      const log = await db.get(
+        "SELECT status FROM factory_attendance_logs WHERE id = ?",
+        [logId],
+      );
+      if (!log) {
+        res.status(404).json({ error: "Factory attendance log not found." });
+        return;
+      }
+
+      await db.run("DELETE FROM factory_attendance_logs WHERE id = ?", [logId]);
+      res.json({ success: true });
+    } catch {
+      res
+        .status(500)
+        .json({ error: "Failed to delete factory attendance log." });
+    }
+  },
+);
+
+// Factory Attendance SSE Stream endpoint for real-time updates
+app.get(
+  "/api/factory/attendance/stream",
+  authenticateToken,
+  (req: AuthRequest, res: Response) => {
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.flushHeaders();
+
+    sseClients.add(res);
+
+    req.on("close", () => {
+      sseClients.delete(res);
+    });
+  },
+);
+
 // --------------------- LEAVE MANAGEMENT ROUTES ---------------------
 
 app.get(
@@ -2856,6 +3494,68 @@ app.put(
   },
 );
 
+// PT-5000 HTTP Device Route
+app.post("/", async (req, res) => {
+  const requestCode = req.headers["request_code"] as string;
+  const devId = (req.headers["dev_id"] as string) || "UNKNOWN";
+  const transId = (req.headers["trans_id"] as string) || "ReceiveCommandAction";
+
+  // 1. Read raw stream into a Buffer
+  const buffers: Buffer[] = [];
+  for await (const chunk of req) {
+    buffers.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  }
+  const rawBuffer = Buffer.concat(buffers);
+  const rawString = rawBuffer.toString("utf8");
+
+  // 2. Extract clean JSON by locating the first '{' and last '}'
+  let payload: any = {};
+  try {
+    const jsonStart = rawString.indexOf("{");
+    const jsonEnd = rawString.lastIndexOf("}");
+    if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
+      payload = JSON.parse(rawString.substring(jsonStart, jsonEnd + 1));
+    }
+  } catch (err: any) {
+    console.error("❌ Failed to parse device payload JSON:", err.message);
+  }
+
+  // 3. Handle Heartbeat
+  if (requestCode === "receive_cmd") {
+    console.log(`💓 [HEARTBEAT] Factory Attendance Device is Online.)`);
+  }
+
+  // 4. Handle Attendance Punch
+  if (requestCode === "realtime_glog" || payload.user_id) {
+    const userId = payload.user_id;
+    const rawTime = payload.io_time; // e.g., "20000328104051"
+    const verifyMode = payload.verify_mode;
+    const ioMode = payload.io_mode; // 0 = Check-In, etc.
+
+    // Format timestamp: "20000328104051" -> "2000-03-28 10:40:51"
+    const formattedTime =
+      rawTime && rawTime.length >= 14
+        ? `${rawTime.substring(0, 4)}-${rawTime.substring(4, 6)}-${rawTime.substring(6, 8)} ${rawTime.substring(8, 10)}:${rawTime.substring(10, 12)}:${rawTime.substring(12, 14)}`
+        : new Date().toISOString();
+
+    const scanMethod = String(verifyMode ?? "Unknown");
+
+    if (userId) {
+      await processFactoryAttendancePunch({
+        userId: String(userId),
+        punchTime: formattedTime,
+        scanMethod,
+        deviceLabel: `PT-5000 Factory ${devId}`,
+      });
+    }
+  }
+
+  // Always acknowledge the device with required headers
+  res.setHeader("response_code", "OK");
+  res.setHeader("trans_id", transId);
+  return res.status(200).send("OK");
+});
+
 // Start Database and Server
 // Serve static frontend files in production
 app.use(express.static(path.join(__dirname, "../dist")));
@@ -2998,6 +3698,141 @@ async function processAttendancePunch(input: {
   }
 }
 
+// Shared factory attendance punch processor for PT-5000 device route
+const lastProcessedFactoryPunchMap = new Map<string, string>();
+
+async function processFactoryAttendancePunch(input: {
+  userId: string;
+  punchTime: string;
+  scanMethod: string;
+  attendStat?: string;
+  deviceLabel?: string;
+}) {
+  const {
+    userId,
+    punchTime,
+    scanMethod,
+    attendStat = "None",
+    deviceLabel = "Device",
+  } = input;
+
+  if (userId === "0" || userId === "00000000") {
+    console.log(
+      `⚠️ [SECURITY] Dropped a failed/unregistered factory scan attempt from ${deviceLabel}.`,
+    );
+    return;
+  }
+
+  const lastPunchTime = lastProcessedFactoryPunchMap.get(userId);
+
+  if (lastPunchTime === punchTime) {
+    return;
+  }
+
+  lastProcessedFactoryPunchMap.set(userId, punchTime);
+
+  let parsedName = `Factory Employee (ID: ${userId})`;
+  let status = "Check-In";
+
+  try {
+    const db = getDb();
+    const paddedId = String(userId).padStart(5, "0");
+    const targetUsername = `HC-${paddedId}`;
+
+    const userDoc = await db.get<{ name: string }>(
+      "SELECT name FROM factory_users WHERE LOWER(username) = ? OR id = ?",
+      [targetUsername.toLowerCase(), userId],
+    );
+    if (userDoc && userDoc.name) {
+      parsedName = userDoc.name;
+    }
+
+    const punchDate = punchTime.includes(" ")
+      ? punchTime.split(" ")[0]
+      : punchTime.includes("T")
+        ? punchTime.split("T")[0]
+        : punchTime;
+    const dayLogsCount = await db.get<{ count: number }>(
+      "SELECT COUNT(*) as count FROM factory_attendance_logs WHERE userId = ? AND ioTime LIKE ?",
+      [userId, `${punchDate}%`],
+    );
+    const count = dayLogsCount ? dayLogsCount.count : 0;
+
+    if (count === 0) {
+      const punchHourPKT = (() => {
+        try {
+          const dateStr = punchTime.includes("T")
+            ? punchTime
+            : punchTime.replace(" ", "T");
+          const d = new Date(dateStr + (dateStr.endsWith("Z") ? "" : "+05:00"));
+          return d.getHours();
+        } catch {
+          return 0;
+        }
+      })();
+      status = punchHourPKT >= 18 ? "Ignored" : "Check-In";
+    } else if (count === 1) {
+      status = "Check-Out";
+    } else {
+      status = "Ignored";
+    }
+  } catch (lookupError: any) {
+    console.error(
+      `⚠️ [DB FACTORY USER LOOKUP/STATUS ERROR] Falling back to default values from ${deviceLabel}:`,
+      lookupError.message,
+    );
+    status = attendStat === "DutyOff" ? "Check-Out" : "Check-In";
+  }
+
+  try {
+    const db = getDb();
+
+    const scanDateStr = punchTime.includes(" ")
+      ? punchTime.split(" ")[0]
+      : punchTime.includes("T")
+        ? punchTime.split("T")[0]
+        : punchTime;
+    const holiday = await db.get("SELECT name FROM holidays WHERE date = ?", [
+      scanDateStr,
+    ]);
+    if (holiday) {
+      console.log(
+        `🏖️ [HOLIDAY] Factory scan on '${holiday.name}' (${scanDateStr}) — ignored from ${deviceLabel}.`,
+      );
+      return;
+    }
+
+    const insertResult = await db.run(
+      "INSERT INTO factory_attendance_logs (name, userId, ioTime, method, status, timestamp) VALUES (?, ?, ?, ?, ?, ?)",
+      [parsedName, userId, punchTime, scanMethod, status, punchTime],
+    );
+    console.log(
+      `[DB] Saved factory log profile successfully from ${deviceLabel}.`,
+    );
+
+    // Broadcast the new log to all connected SSE clients
+    try {
+      const newLog = await db.get(
+        "SELECT * FROM factory_attendance_logs WHERE id = ?",
+        insertResult.lastID,
+      );
+      if (newLog) {
+        const message = `data: ${JSON.stringify(newLog)}\n\n`;
+        for (const client of sseClients) {
+          client.write(message);
+        }
+      }
+    } catch (e) {
+      console.error("Failed to broadcast new factory attendance log", e);
+    }
+  } catch (err: any) {
+    console.error(
+      `❌ [DB] Factory Database Storage Error from ${deviceLabel}:`,
+      err.message,
+    );
+  }
+}
+
 async function startServer() {
   try {
     await initDb();
@@ -3101,7 +3936,7 @@ async function startServer() {
           rawString.includes("<Request>Heartbeat</Request>") ||
           rawString.includes("Heartbeat")
         ) {
-          console.log("💓 [SOCKET HEARTBEAT] Device is online.");
+          console.log("💓 [SOCKET HEARTBEAT] HQ Attendance Device is online.");
           const xmlHeartbeatResponse = `<?xml version="1.0"?>\r\n<Message>\r\n<Response>Heartbeat</Response>\r\n<Result>OK</Result>\r\n</Message>`;
           return ws.send(xmlHeartbeatResponse);
         }

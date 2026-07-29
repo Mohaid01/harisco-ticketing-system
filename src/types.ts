@@ -1,6 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 
-export type UserRole = "it" | "employee" | "manager" | "executive";
+export type UserRole = "it" | "employee" | "manager" | "executive" | "factory_employee" | "factory_it" | "factory_manager";
 
 export interface AppUser {
   id: string;
@@ -115,8 +115,10 @@ export type ActiveTab =
   | "tickets"
   | "admin_tickets"
   | "users"
+  | "factory_users"
   | "activity_log"
   | "attendance"
+  | "factory_attendance"
   | "leaves"
   | "site_duties";
 

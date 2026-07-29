@@ -341,6 +341,37 @@ export async function initDb() {
     )
   `);
 
+  // Create Factory Users Table
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS factory_users (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      email TEXT UNIQUE,
+      username TEXT UNIQUE NOT NULL,
+      role TEXT CHECK(role IN ('factory_employee', 'factory_it', 'factory_manager')) NOT NULL,
+      avatar TEXT NOT NULL,
+      passwordHash TEXT NOT NULL,
+      needsPasswordReset INTEGER DEFAULT 1,
+      department TEXT,
+      designation TEXT,
+      isDepartmentHead INTEGER DEFAULT 0,
+      loginEnabled INTEGER DEFAULT 1
+    )
+  `);
+
+  // Create Factory Attendance Logs Table
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS factory_attendance_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      userId TEXT NOT NULL,
+      ioTime TEXT NOT NULL,
+      method TEXT NOT NULL,
+      status TEXT NOT NULL,
+      timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
   // Create Attendance Logs Table
   await db.exec(`
     CREATE TABLE IF NOT EXISTS attendance_logs (

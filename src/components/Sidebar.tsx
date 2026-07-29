@@ -54,7 +54,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
     {
       id: "users" as ActiveTab,
-      label: "User Management",
+      label: "HQ User Management",
       icon: Users,
       roles: ["it"],
     },
@@ -84,6 +84,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
       roles: ["it", "manager", "executive"],
       notAllowedDepartments: ["Staff"],
     },
+    {
+      id: "factory_users" as ActiveTab,
+      label: "Factory User Management",
+      icon: Users,
+      roles: ["it", "factory_it"],
+    },
+    {
+      id: "factory_attendance" as ActiveTab,
+      label: "Factory Attendance",
+      icon: UserCheck,
+      roles: ["it", "factory_it", "factory_manager", "factory_employee"],
+    },
   ];
 
   // Filter items by current user role
@@ -96,7 +108,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   );
 
   const getRoleBadgeClass = (role: string) => {
-    return `role-badge-pill role-badge-${role}`;
+    return `role-badge-pill role-badge-${role.replace("factory_", "")}`;
   };
 
   return (
