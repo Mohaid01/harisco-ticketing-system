@@ -25,7 +25,10 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ username: `${EMPLOYEE_ID_PREFIX}${employeeCode}`, password }),
+        body: JSON.stringify({
+          username: `${EMPLOYEE_ID_PREFIX}${employeeCode}`,
+          password,
+        }),
       });
 
       const data = await response.json();
@@ -38,7 +41,8 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
 
       onLoginSuccess(data.token, data.user);
     } catch (err) {
-      const errMsg = err instanceof Error ? err.message : "Server error. Please try again.";
+      console.error(err);
+      const errMsg = "Unable to connect to the server. Please try again later.";
       setError(errMsg);
     } finally {
       setLoading(false);
