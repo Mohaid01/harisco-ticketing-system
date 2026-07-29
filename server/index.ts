@@ -2323,7 +2323,11 @@ app.get(
       const params: any[] = [];
 
       if (userRole === "executive" || userRole === "manager") {
-        query = `SELECT * FROM leave_applications ORDER BY appliedAt DESC`;
+        query = `
+          SELECT l.*, u.username AS userCode FROM leave_applications l
+          JOIN users u ON l.userId = u.id
+          ORDER BY l.appliedAt DESC
+        `;
       } else if (currentUser?.isDepartmentHead) {
         query = `
           SELECT l.*, u.username AS userCode FROM leave_applications l
@@ -2596,7 +2600,7 @@ app.get(
         "SELECT * FROM site_duty_applications ORDER BY appliedAt DESC";
       const params: any[] = [];
 
-      if (userRole === "executive") {
+      if (userRole === "executive" || userRole === "manager") {
         query = `
           SELECT s.*, u.username AS userCode FROM site_duty_applications s
           JOIN users u ON s.userId = u.id
