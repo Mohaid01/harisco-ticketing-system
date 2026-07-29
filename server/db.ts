@@ -23,6 +23,10 @@ export async function initDb() {
     driver: sqlite3.Database,
   });
 
+  // Enable WAL mode for better concurrency (readers don't block writers, writers don't block readers)
+  await db.exec("PRAGMA journal_mode = WAL");
+  await db.exec("PRAGMA busy_timeout = 30000;");
+
   // Create Notices Table
   await db.exec(`
     CREATE TABLE IF NOT EXISTS notices (
@@ -273,7 +277,9 @@ export async function initDb() {
       `);
 
       await db.exec("DROP TABLE admin_tickets_old");
-      console.log("admin_tickets executive fields migration completed successfully.");
+      console.log(
+        "admin_tickets executive fields migration completed successfully.",
+      );
     }
   } catch (err) {
     console.error("admin_tickets migration check failed:", err);
@@ -308,7 +314,9 @@ export async function initDb() {
 
   // Seed initial admin ticket numbering tracker
   try {
-    await db.exec("ALTER TABLE admin_tickets ADD COLUMN sequence_num INTEGER DEFAULT 0");
+    await db.exec(
+      "ALTER TABLE admin_tickets ADD COLUMN sequence_num INTEGER DEFAULT 0",
+    );
   } catch {
     // Column might already exist, ignore error
   }
@@ -359,6 +367,17 @@ export async function initDb() {
     )
   `);
 
+  // Create indexes for factory_users table to improve query performance
+  await db.exec(
+    "CREATE INDEX IF NOT EXISTS idx_factory_users_username ON factory_users(username)",
+  );
+  await db.exec(
+    "CREATE INDEX IF NOT EXISTS idx_factory_users_role ON factory_users(role)",
+  );
+  await db.exec(
+    "CREATE INDEX IF NOT EXISTS idx_factory_users_email ON factory_users(email)",
+  );
+
   // Create Factory Attendance Logs Table
   await db.exec(`
     CREATE TABLE IF NOT EXISTS factory_attendance_logs (
@@ -384,6 +403,20 @@ export async function initDb() {
       timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
+
+  // Create indexes for attendance tables to improve query performance
+  await db.exec(
+    "CREATE INDEX IF NOT EXISTS idx_attendance_logs_user_id ON attendance_logs(userId)",
+  );
+  await db.exec(
+    "CREATE INDEX IF NOT EXISTS idx_attendance_logs_user_id_ioTime ON attendance_logs(userId, ioTime)",
+  );
+  await db.exec(
+    "CREATE INDEX IF NOT EXISTS idx_factory_attendance_logs_user_id ON factory_attendance_logs(userId)",
+  );
+  await db.exec(
+    "CREATE INDEX IF NOT EXISTS idx_factory_attendance_logs_user_id_ioTime ON factory_attendance_logs(userId, ioTime)",
+  );
 
   // Create Leave Applications Table
   await db.exec(`
