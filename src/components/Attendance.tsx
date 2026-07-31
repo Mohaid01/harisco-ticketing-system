@@ -274,7 +274,8 @@ export const Attendance: React.FC<AttendanceProps> = ({
     // 1. Prioritize ioTime (Already PKT: YYYY-MM-DD-THH:MM:SSZ)
     if (log.ioTime) {
       // Standardize "-T" to just "T" and split the date portion from the time portion
-      const parts = log.ioTime.replace("-T", "T").split("T");
+      const replacementCharacter = mode === "hq" ? "-T" : " ";
+      const parts = log.ioTime.replace(replacementCharacter, "T").split("T");
 
       if (parts.length === 2) {
         const dateParts = parts[0].split("-");

@@ -32,7 +32,7 @@ const app = express();
 app.use(helmet({ contentSecurityPolicy: false }));
 
 // Required: trust Cloudflare Tunnel proxy so express-rate-limit reads X-Forwarded-For correctly
-app.set("trust proxy", 1);
+app.set("trust proxy", true);
 
 // Strict CORS: allow Vite dev server locally, but restrict in production
 app.use(
@@ -48,6 +48,14 @@ app.use(express.json({ limit: "10mb" }));
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 20,
+
+  keyGenerator: (req: Request): string => {
+    // Key by the specific username or email submitted in the form body.
+    // Normalized to lowercase so 'User1' and 'user1' share the same bucket.
+    const identity = req.body?.username || req.body?.email || "anonymous-login";
+    return `login:${identity.trim().toLowerCase()}`;
+  },
+
   message: {
     error: "Too many login attempts, please try again after 15 minutes.",
   },
@@ -66,20 +74,44 @@ const globalLimiter = rateLimit({
       // Use the raw token as the key — unique per user session
       return auth.slice(7);
     }
-    return req.ip ?? "unknown";
+    return "unauthenticated-global-traffic";
   },
   message: { error: "Too many requests, please try again later." },
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+// Stricter per-user rate limiter for write operations (POST/PUT/DELETE/PATCH)
+// Prevents write storms from overwhelming SQLite under high concurrency
+const writeLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  keyGenerator: (req: Request): string => {
+    const auth = req.headers.authorization;
+    if (auth?.startsWith("Bearer ")) {
+      return `write:${auth.slice(7)}`;
+    }
+    return "write:unauthenticated-traffic";
+  },
+  message: { error: "Too many write requests, please try again later." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Loose global tracker applied to every endpoint under /api
 app.use("/api", globalLimiter);
 
-// Log every API request for diagnostics
-app.use("/api", (req: Request, _res: Response, next: NextFunction) => {
-  console.log(
-    `[REQ] ${req.method} ${req.path} | ip=${req.ip} | origin=${req.headers.origin || "none"}`,
-  );
-  next();
+// High-performance centralized wrapper for write operations
+app.use("/api", (req: Request, res: Response, next: NextFunction) => {
+  switch (req.method) {
+    case "POST":
+    case "PUT":
+    case "DELETE":
+    case "PATCH":
+      return writeLimiter(req, res, next);
+    default:
+      next(); // Instant bypass for GET requests with zero allocation overhead
+  }
 });
 
 // Extend express Request interface for our middleware
@@ -171,38 +203,76 @@ function authenticateToken(
   res: Response,
   next: NextFunction,
 ) {
-  console.log("[AUTH] authenticateToken called for:", req.path);
   const authHeader = req.headers["authorization"];
   const token =
     (authHeader && authHeader.split(" ")[1]) || (req.query.token as string);
 
   if (!token) {
-    console.log("[AUTH] No token found — returning 401");
     res.status(401).json({ error: "Authentication token required." });
     return;
   }
 
-  console.log("[AUTH] Token found, verifying with jwt.verify...");
   jwt.verify(token, JWT_SECRET, (err, decoded) => {
     if (err || !decoded || typeof decoded !== "object") {
       console.error("[AUTH] jwt.verify failed:", err?.message);
       res.status(403).json({ error: "Invalid or expired token." });
       return;
     }
-    console.log("[AUTH] Token valid, user id:", (decoded as any).id);
+
     req.user = decoded as {
       id: string;
       name: string;
       email: string;
-      role: "it" | "employee" | "manager" | "executive";
+      role:
+        | "it"
+        | "employee"
+        | "manager"
+        | "executive"
+        | "factory_employee"
+        | "factory_it"
+        | "factory_manager";
       avatar: string;
       needsPasswordReset?: number;
       department: string;
       isDepartmentHead: number;
     };
+
+    console.log(`[AUTH] Success: ${req.user.id} accessed ${req.path}`);
     next();
   });
 }
+
+app.get("/api/health", async (_req: Request, res: Response) => {
+  try {
+    // 1. Verify the SQLite file connection is alive and responding
+    // We run a trivial query that uses 0 disk overhead
+    const db = getDb();
+    await db.get("SELECT 1;");
+
+    // 2. Build the health metrics payload
+    const healthStatus = {
+      status: "healthy",
+      timestamp: new Date().toISOString(),
+      uptime: `${Math.floor(process.uptime())}s`,
+      memoryUsage: {
+        rss: `${Math.round(process.memoryUsage().rss / 1024 / 1024)}MB`,
+        heapUsed: `${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)}MB`,
+      },
+    };
+
+    // Return a standard 200 OK
+    res.status(200).json(healthStatus);
+  } catch (error: any) {
+    console.error("⚠️ [HEALTH CHECK FAILED]:", error.message);
+
+    // Return a 503 Service Unavailable if the database drops offline
+    res.status(503).json({
+      status: "unhealthy",
+      timestamp: new Date().toISOString(),
+      error: error.message || "Database connection dropped.",
+    });
+  }
+});
 
 // Auth Routes
 app.post(
@@ -285,22 +355,18 @@ app.get(
   "/api/auth/me",
   authenticateToken,
   async (req: AuthRequest, res: Response) => {
-    console.log("[ME] Handler reached, querying DB for user id:", req.user?.id);
     try {
       const db = getDb();
-      console.log("[ME] DB instance obtained");
       let user = await db.get<DbUser>(
         "SELECT id, name, email, username, role, avatar, needsPasswordReset, department, designation, isDepartmentHead, loginEnabled, casualLeaves, annualLeaves, medicalLeaves FROM users WHERE id = ?",
         [req.user?.id],
       );
-      console.log("[ME] DB query done, user found:", !!user);
 
       if (!user) {
         user = await db.get<DbUser>(
           "SELECT id, name, email, username, role, avatar, needsPasswordReset, department, designation, isDepartmentHead, loginEnabled, NULL as casualLeaves, NULL as annualLeaves, NULL as medicalLeaves FROM factory_users WHERE id = ?",
           [req.user?.id],
         );
-        console.log("[ME] factory_users query done, user found:", !!user);
       }
 
       if (!user) {
@@ -308,7 +374,6 @@ app.get(
         return;
       }
       res.json({ user });
-      console.log("[ME] Response sent successfully");
     } catch (err) {
       console.error("[ME] Error in /api/auth/me handler:", err);
       res.status(500).json({ error: "Failed to fetch current user." });
@@ -2422,8 +2487,72 @@ app.get(
   },
 );
 
-// Set to keep track of SSE clients for real-time attendance updates
-const sseClients = new Set<Response>();
+// SSE client manager with cap and heartbeat cleanup
+class SSEManager {
+  private clients = new Map<Response, { lastSeen: number }>();
+  private readonly maxClients = 200;
+  private readonly heartbeatMs = 15000;
+  private heartbeatInterval?: NodeJS.Timeout;
+
+  constructor() {
+    this.startHeartbeat();
+  }
+
+  private startHeartbeat() {
+    this.heartbeatInterval = setInterval(() => {
+      const now = Date.now();
+      for (const [client, meta] of this.clients) {
+        if (now - meta.lastSeen > this.heartbeatMs * 3) {
+          this.remove(client);
+        }
+      }
+    }, this.heartbeatMs);
+  }
+
+  add(res: Response) {
+    if (this.clients.size >= this.maxClients) {
+      res.write(`data: ${JSON.stringify({ error: "Server at capacity" })}\n\n`);
+      res.end();
+      return;
+    }
+    this.clients.set(res, { lastSeen: Date.now() });
+
+    res.on("close", () => this.remove(res));
+    res.on("error", () => this.remove(res));
+  }
+
+  remove(res: Response) {
+    this.clients.delete(res);
+    try {
+      res.end();
+    } catch {
+      // ignore
+    }
+  }
+
+  broadcast(message: string) {
+    const now = Date.now();
+    for (const [client, meta] of this.clients) {
+      meta.lastSeen = now;
+      try {
+        client.write(message);
+      } catch {
+        this.remove(client);
+      }
+    }
+  }
+
+  stop() {
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+    }
+    for (const client of this.clients.keys()) {
+      this.remove(client);
+    }
+  }
+}
+
+const sseClients = new SSEManager();
 
 // Attendance logs GET endpoint
 app.get(
@@ -2716,10 +2845,6 @@ app.get(
     res.flushHeaders();
 
     sseClients.add(res);
-
-    req.on("close", () => {
-      sseClients.delete(res);
-    });
   },
 );
 
@@ -2742,7 +2867,7 @@ app.get(
       let query = "";
       let params: any[] = [];
 
-      if (["factory_manager", "factory_it"].includes(currentUser.role)) {
+      if (["factory_manager", "factory_it", "it"].includes(currentUser.role)) {
         query = `
           SELECT id, name, userId, ioTime, method, status, timestamp 
           FROM factory_attendance_logs 
@@ -2935,10 +3060,6 @@ app.get(
     res.flushHeaders();
 
     sseClients.add(res);
-
-    req.on("close", () => {
-      sseClients.delete(res);
-    });
   },
 );
 
@@ -3530,13 +3651,19 @@ app.post("/", async (req, res) => {
     const userId = payload.user_id;
     const rawTime = payload.io_time; // e.g., "20000328104051"
     const verifyMode = payload.verify_mode;
-    const ioMode = payload.io_mode; // 0 = Check-In, etc.
 
     // Format timestamp: "20000328104051" -> "2000-03-28 10:40:51"
-    const formattedTime =
-      rawTime && rawTime.length >= 14
-        ? `${rawTime.substring(0, 4)}-${rawTime.substring(4, 6)}-${rawTime.substring(6, 8)} ${rawTime.substring(8, 10)}:${rawTime.substring(10, 12)}:${rawTime.substring(12, 14)}`
-        : new Date().toISOString();
+    let formattedTime = "";
+
+    if (rawTime && rawTime.length >= 14) {
+      formattedTime = `${rawTime.substring(0, 4)}-${rawTime.substring(4, 6)}-${rawTime.substring(6, 8)} ${rawTime.substring(8, 10)}:${rawTime.substring(10, 12)}:${rawTime.substring(12, 14)}`;
+    } else {
+      const options = { timeZone: "UTC", hour12: false };
+      const d = new Date();
+      const datePart = d.toLocaleDateString("en-CA", options); // outputs YYYY-MM-DD
+      const timePart = d.toLocaleTimeString("en-GB", options); // outputs HH:mm:ss
+      formattedTime = `${datePart} ${timePart}`;
+    }
 
     const scanMethod = String(verifyMode ?? "Unknown");
 
@@ -3683,9 +3810,7 @@ async function processAttendancePunch(input: {
       );
       if (newLog) {
         const message = `data: ${JSON.stringify(newLog)}\n\n`;
-        for (const client of sseClients) {
-          client.write(message);
-        }
+        sseClients.broadcast(message);
       }
     } catch (e) {
       console.error("Failed to broadcast new attendance log", e);
@@ -3761,11 +3886,16 @@ async function processFactoryAttendancePunch(input: {
     if (count === 0) {
       const punchHourPKT = (() => {
         try {
-          const dateStr = punchTime.includes("T")
-            ? punchTime
-            : punchTime.replace(" ", "T");
-          const d = new Date(dateStr + (dateStr.endsWith("Z") ? "" : "+05:00"));
-          return d.getHours();
+          const timePart = punchTime.includes(" ")
+            ? punchTime.split(" ")[1]
+            : punchTime.includes("T")
+              ? punchTime.split("T")[1]
+              : "";
+
+          if (!timePart) return 0;
+
+          // Extract the first two characters (the hour) and turn it into an integer
+          return parseInt(timePart.split(":")[0], 10);
         } catch {
           return 0;
         }
@@ -3803,7 +3933,9 @@ async function processFactoryAttendancePunch(input: {
     }
 
     const insertResult = await db.run(
-      "INSERT INTO factory_attendance_logs (name, userId, ioTime, method, status, timestamp) VALUES (?, ?, ?, ?, ?, ?)",
+      `INSERT INTO factory_attendance_logs 
+      (name, userId, ioTime, method, status, timestamp) 
+      VALUES (?, ?, strftime('%Y-%m-%d %H:%M:%S', ?), ?, ?, strftime('%Y-%m-%d %H:%M:%S', ?))`,
       [parsedName, userId, punchTime, scanMethod, status, punchTime],
     );
     console.log(
@@ -3818,9 +3950,7 @@ async function processFactoryAttendancePunch(input: {
       );
       if (newLog) {
         const message = `data: ${JSON.stringify(newLog)}\n\n`;
-        for (const client of sseClients) {
-          client.write(message);
-        }
+        sseClients.broadcast(message);
       }
     } catch (e) {
       console.error("Failed to broadcast new factory attendance log", e);
@@ -3838,6 +3968,12 @@ async function startServer() {
     await initDb();
     const server = app.listen(PORT as number, "0.0.0.0", () => {
       console.log(`Backend server is running on http://localhost:${PORT}`);
+    });
+
+    process.on("SIGINT", () => {
+      console.log("Shutting down gracefully...");
+      sseClients.stop();
+      server.close(() => process.exit(0));
     });
 
     // Integrated WebSocket Server for the biometric attendance device (Pioneer XML Bridge)
