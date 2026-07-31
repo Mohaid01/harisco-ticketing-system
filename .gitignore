@@ -7,15 +7,24 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-*.jsonc
+# Environment
 .env
+.env.local
+.env.*.local
+
+# Dependencies
 node_modules
+
+# Build output
 dist
 dist-ssr
 *.local
+
+# Database
+*.sqlite*
 database.sqlite
 
-# Editor directories and files
+# Editor directories
 .vscode/*
 !.vscode/extensions.json
 .idea
@@ -25,3 +34,14 @@ database.sqlite
 *.njsproj
 *.sln
 *.sw?
+
+# Runtime data
+data/
+scratch/
+
+# Kilo workspace files
+.kilo/
+
+# Temporary files
+*.tmp
+*.temp
