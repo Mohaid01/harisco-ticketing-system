@@ -3,3 +3,16 @@ dist
 data
 database.sqlite
 .git
+
+# Environment files
+.env*
+.env
+
+# IDE folders
+.vscode/
+.idea/
+
+# Scratch/temp files
+scratch/
+*.tmp
+*.temp
