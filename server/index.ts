@@ -15,6 +15,63 @@ const JWT_SECRET = process.env.JWT_SECRET as string;
 if (!JWT_SECRET) throw new Error("JWT_SECRET is required");
 const PORT = process.env.PORT || 8082;
 
+// Structured logger for debugging and security audit
+const log = {
+  format: (level: string, message: string, meta?: Record<string, unknown>) => {
+    const now = new Date();
+    return JSON.stringify({
+      level,
+      date: now.toISOString().split("T")[0], // "YYYY-MM-DD"
+      time: now.toTimeString().split(" ")[0], // "HH:MM:SS"
+      timestamp: now.toISOString(),
+      message,
+      ...meta,
+    });
+  },
+
+  info: (message: string, meta?: Record<string, unknown>) => {
+    console.log(log.format("info", message, meta));
+  },
+  warn: (message: string, meta?: Record<string, unknown>) => {
+    console.warn(log.format("warn", message, meta));
+  },
+  error: (message: string, meta?: Record<string, unknown>) => {
+    console.error(log.format("error", message, meta));
+  },
+  security: (message: string, meta?: Record<string, unknown>) => {
+    console.log(log.format("security", message, meta));
+  },
+};
+
+const app = express();
+
+// Request ID middleware for correlation
+app.use((req: Request, res: Response, next: NextFunction) => {
+  const requestId =
+    req.headers["x-request-id"]?.toString() ||
+    `req-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+  (req as any).requestId = requestId;
+  res.setHeader("x-request-id", requestId);
+  next();
+});
+
+// Performance timing middleware
+app.use((req: Request, res: Response, next: NextFunction) => {
+  const start = Date.now();
+  res.on("finish", () => {
+    const durationMs = Date.now() - start;
+    if (durationMs > 1000) {
+      log.warn("Slow request", {
+        path: req.path,
+        method: req.method,
+        durationMs,
+        statusCode: res.statusCode,
+      });
+    }
+  });
+  next();
+});
+
 // Global crash handlers — log the exact error before process exits
 process.on("uncaughtException", (err) => {
   console.error("[FATAL] uncaughtException:", err);
@@ -25,8 +82,6 @@ process.on("unhandledRejection", (reason) => {
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-const app = express();
 
 // Security Headers (CSP disabled to allow Vite inline scripts/styles)
 app.use(helmet({ contentSecurityPolicy: false }));
@@ -214,7 +269,11 @@ function authenticateToken(
 
   jwt.verify(token, JWT_SECRET, (err, decoded) => {
     if (err || !decoded || typeof decoded !== "object") {
-      console.error("[AUTH] jwt.verify failed:", err?.message);
+      log.security("Auth failed - invalid token", {
+        ip: req.ip,
+        userAgent: req.headers["user-agent"],
+        error: err?.message,
+      });
       res.status(403).json({ error: "Invalid or expired token." });
       return;
     }
@@ -237,7 +296,11 @@ function authenticateToken(
       isDepartmentHead: number;
     };
 
-    console.log(`[AUTH] Success: ${req.user.id} accessed ${req.path}`);
+    log.info("Authenticated request", {
+      userId: req.user.id,
+      path: req.path,
+      method: req.method,
+    });
     next();
   });
 }
@@ -302,11 +365,21 @@ app.post(
       }
 
       if (!user) {
+        log.security("Login failed - invalid credentials", {
+          username: normalizedUsername,
+          ip: req.ip,
+          userAgent: req.headers["user-agent"],
+        });
         res.status(401).json({ error: "Invalid username or password." });
         return;
       }
 
       if (!user.loginEnabled) {
+        log.security("Login blocked - account disabled", {
+          userId: user.id,
+          username: user.username,
+          ip: req.ip,
+        });
         res.status(403).json({
           error: "Your account has been disabled. Please contact IT.",
         });
@@ -332,6 +405,12 @@ app.post(
       };
       const token = jwt.sign(jwtPayload, JWT_SECRET, { expiresIn: "7d" });
 
+      log.info("Login successful", {
+        userId: user.id,
+        username: user.username,
+        role: user.role,
+        ip: req.ip,
+      });
       res.json({
         token,
         user: {
@@ -435,6 +514,7 @@ app.post(
       };
       const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "7d" });
 
+      log.info("Password reset successful", { userId: req.user?.id });
       res.json({
         token,
         user: payload,
@@ -3999,6 +4079,12 @@ async function startServer() {
         `📡 [DEVICE CONNECTED] Connection open from IP: ${req.socket.remoteAddress}`,
       );
 
+      log.info("Device connected", {
+        ip: req.socket.remoteAddress,
+        firmware:
+          (ws as any).upgrade?.request?.headers?.["x-device-firmware"] ||
+          "unknown",
+      });
       ws.on("message", async (message) => {
         const rawString = message.toString("utf8").trim();
 
