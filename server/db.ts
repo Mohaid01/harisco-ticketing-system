@@ -471,9 +471,9 @@ export async function initDb() {
       "INSERT INTO users (id, name, email, username, role, avatar, passwordHash, needsPasswordReset, isDepartmentHead, loginEnabled) VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, 1)",
       [
         "usr-1",
-        "Mohid Bin Shahid",
-        "mohid@harisco.com",
-        "HC-00653",
+        "Default User",
+        "it@harisco.com",
+        "HC-00001",
         "it",
         "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&h=100&q=80",
         passwordHash,
