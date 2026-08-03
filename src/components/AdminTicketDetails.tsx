@@ -18,6 +18,7 @@ import {
   Tag,
   ShieldAlert,
   CheckCircle2,
+  XCircleIcon,
 } from "lucide-react";
 
 interface AdminTicketDetailsProps {
@@ -778,13 +779,26 @@ export const AdminTicketDetails: React.FC<AdminTicketDetailsProps> = ({
                     borderRadius: "var(--radius-md)",
                   }}
                 >
-                  <CheckCircle2
-                    size={20}
-                    style={{
-                      color: "#10b981",
-                      marginBottom: "4px",
-                    }}
-                  />
+                  {ticket.status === "rejected" && (
+                    <XCircleIcon
+                      size={20}
+                      style={{
+                        color: "red",
+                        marginBottom: "4px",
+                      }}
+                    />
+                  )}
+
+                  {ticket.status === "resolved" && (
+                    <CheckCircle2
+                      size={20}
+                      style={{
+                        color: "#10b981",
+                        marginBottom: "4px",
+                      }}
+                    />
+                  )}
+
                   <p
                     style={{
                       fontSize: "0.78rem",
@@ -797,36 +811,35 @@ export const AdminTicketDetails: React.FC<AdminTicketDetailsProps> = ({
                 </div>
               )}
 
-              {!canManagerAction && (
-                <div
-                  style={{
-                    padding: "12px",
-                    textAlign: "center",
-                    backgroundColor: "var(--bg-primary)",
-                    border: "1px solid var(--border-color)",
-                    borderRadius: "var(--radius-md)",
-                  }}
-                >
-                  <ShieldAlert
-                    size={20}
+              {!canManagerAction &&
+                ticket.status !== "resolved" &&
+                ticket.status !== "rejected" && (
+                  <div
                     style={{
-                      color: "var(--text-muted)",
-                      marginBottom: "4px",
-                    }}
-                  />
-                  <p
-                    style={{
-                      fontSize: "0.78rem",
-                      color: "var(--text-secondary)",
+                      padding: "12px",
+                      textAlign: "center",
+                      backgroundColor: "var(--bg-primary)",
+                      border: "1px solid var(--border-color)",
+                      borderRadius: "var(--radius-md)",
                     }}
                   >
-                    {ticket.status === "resolved" ||
-                    ticket.status === "rejected"
-                      ? "This ticket is closed. No further workflow transitions are possible."
-                      : "Only Admin Manager can transition ticket statuses."}
-                  </p>
-                </div>
-              )}
+                    <ShieldAlert
+                      size={20}
+                      style={{
+                        color: "var(--text-muted)",
+                        marginBottom: "4px",
+                      }}
+                    />
+                    <p
+                      style={{
+                        fontSize: "0.78rem",
+                        color: "var(--text-secondary)",
+                      }}
+                    >
+                      Only Admin Manager can transition ticket statuses.
+                    </p>
+                  </div>
+                )}
             </div>
           </div>
 
