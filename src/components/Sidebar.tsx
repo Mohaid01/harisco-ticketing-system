@@ -50,7 +50,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       id: "admin_tickets" as ActiveTab,
       label: "Admin Tickets",
       icon: ClipboardList,
-      roles: [],
+      roles: ["it", "executive", "manager"],
     },
     {
       id: "users" as ActiveTab,
