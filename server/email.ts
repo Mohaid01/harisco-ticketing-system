@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import { logger } from "./utils/logger.ts";
 
 const host = process.env.SMTP_HOST;
 const port = process.env.SMTP_PORT
@@ -24,11 +25,11 @@ if (hasSmtpConfig) {
       pass,
     },
   });
-  console.log(
+  logger.info(
     `[Email Service] Real SMTP mailer configured via env (Host: ${host}:${port}, From: ${fromAddress})`,
   );
 } else {
-  console.log(
+  logger.warn(
     `[Email Service] SMTP environment variables not fully configured. Using simulation logger fallback.`,
   );
 }
@@ -43,7 +44,7 @@ export async function sendEmail(
   body: string,
 ): Promise<boolean> {
   if (!to) {
-    console.log(
+    logger.warn(
       `[Email Service] Skipped sending email: "to" address is empty. (Subject: "${subject}")`,
     );
     return false;
@@ -57,12 +58,12 @@ export async function sendEmail(
         subject,
         text: body,
       });
-      console.log(
+      logger.info(
         `[Email Service] Real email sent to ${to} (Subject: "${subject}")`,
       );
       return true;
     } catch (err) {
-      console.error(
+      logger.error(
         `[Email Service] Failed to send real email to ${to} via SMTP:`,
         err,
       );
@@ -70,16 +71,16 @@ export async function sendEmail(
   }
 
   // Fallback to console simulation
-  console.log(`
-=========================================
-📧 EMAIL SENT OUT (SIMULATION - SMTP NOT CONFIGURED)
-From:    ${fromAddress}
-To:      ${to}
-Subject: ${subject}
-Date:    ${new Date().toLocaleString()}
------------------------------------------
-${body}
-=========================================
+  logger.info(`
+    =========================================
+    📧 EMAIL SENT OUT (SIMULATION - SMTP NOT CONFIGURED)
+    From:    ${fromAddress}
+    To:      ${to}
+    Subject: ${subject}
+    Date:    ${new Date().toLocaleString()}
+    -----------------------------------------
+    ${body}
+    =========================================
   `);
   return true;
 }

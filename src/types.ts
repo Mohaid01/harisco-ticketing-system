@@ -1,6 +1,14 @@
 import type { LucideIcon } from "lucide-react";
 
-export type UserRole = "it" | "employee" | "manager" | "executive" | "factory_employee" | "factory_it" | "factory_manager";
+// User Types
+export type UserRole =
+  | "it"
+  | "employee"
+  | "manager"
+  | "executive"
+  | "factory_employee"
+  | "factory_it"
+  | "factory_manager";
 
 export interface AppUser {
   id: string;
@@ -19,6 +27,7 @@ export interface AppUser {
   medicalLeaves?: number;
 }
 
+// Ticket Types
 export type TicketType = "hardware" | "software" | "maintenance" | "upgrade";
 
 export type TicketStatus =
@@ -62,6 +71,7 @@ export interface Ticket {
   }[];
 }
 
+// Admin Ticket Types
 export type AdminTicketCategory =
   | "staff_issue"
   | "security"
@@ -110,6 +120,7 @@ export interface AdminTicket {
   }[];
 }
 
+// Sidebar Types
 export type ActiveTab =
   | "noticeboard"
   | "tickets"
@@ -122,6 +133,15 @@ export type ActiveTab =
   | "leaves"
   | "site_duties";
 
+export interface MenuItems {
+  id: ActiveTab;
+  label: string;
+  icon: LucideIcon;
+  roles: UserRole[];
+  notAllowedDepartments?: string[];
+}
+
+// Attendance Types
 export interface AttendanceLog {
   id: number;
   userId: string;
@@ -132,6 +152,7 @@ export interface AttendanceLog {
   timestamp?: string;
 }
 
+// Leave Types
 export type LeaveCategory = "annual" | "casual" | "medical";
 export type LeaveStatus = "pending" | "approved" | "rejected";
 
@@ -148,6 +169,7 @@ export interface LeaveApplication {
   appliedAt: string;
 }
 
+// Site Duty Types
 export interface SiteDutyApplication {
   id: string;
   userId: string;
@@ -161,14 +183,7 @@ export interface SiteDutyApplication {
   appliedAt: string;
 }
 
-export interface MenuItems {
-  id: ActiveTab;
-  label: string;
-  icon: LucideIcon;
-  roles: UserRole[];
-  notAllowedDepartments?: string[];
-}
-
+// Notice Types
 export type NoticeType = "outage" | "maintenance" | "policy" | "general";
 
 // Notice Interface with explicit language block payloads

@@ -42,7 +42,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
       onLoginSuccess(data.token, data.user);
     } catch (err) {
       console.error(err);
-      const errMsg = "Unable to connect to the server. Please try again later.";
+      const errMsg = (err as Error).message || "Unkown error.";
       setError(errMsg);
     } finally {
       setLoading(false);

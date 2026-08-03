@@ -7,7 +7,12 @@
     "strict": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "outDir": "./dist"
+    "outDir": "./dist",
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "paths": {
+      "@types": ["./types/index.ts"]
+    }
   },
   "include": ["**/*.ts"]
 }

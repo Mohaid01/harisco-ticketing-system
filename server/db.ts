@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import path from "path";
 
 import fs from "fs";
+import { logger } from "./utils/logger.ts";
 
 let db: Database<sqlite3.Database, sqlite3.Statement>;
 
@@ -64,9 +65,10 @@ export async function initDb() {
     const tableInfo = await db.all<{ name: string; notnull: number }[]>(
       "PRAGMA table_info(users)",
     );
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const emailCol = tableInfo.find((c: any) => c.name === "email");
     if (emailCol && emailCol.notnull === 1) {
-      console.log("Migrating users table to allow nullable email...");
+      logger.info("Migrating users table to allow nullable email...");
       await db.exec("ALTER TABLE users RENAME TO users_old");
       await db.exec(`
         CREATE TABLE users (
@@ -84,13 +86,13 @@ export async function initDb() {
         "INSERT INTO users SELECT id, name, email, username, role, avatar, passwordHash, needsPasswordReset FROM users_old",
       );
       await db.exec("DROP TABLE users_old");
-      console.log("Migration completed.");
+      logger.info("Migration completed.");
     }
     const tableSchema = await db.get<{ sql: string }>(
       "SELECT sql FROM sqlite_master WHERE type='table' AND name='users'",
     );
     if (tableSchema && !tableSchema.sql.includes("'executive'")) {
-      console.log("Migrating users table structure...");
+      logger.info("Migrating users table structure...");
       await db.exec("ALTER TABLE users RENAME TO users_old");
 
       // Re-create the table keeping ALL required columns intact
@@ -111,9 +113,11 @@ export async function initDb() {
 
       // Determine columns available in old table to prevent crash if they don't exist yet
       const hasDeptHead = tableInfo.some(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (c: any) => c.name === "isDepartmentHead",
       );
       const hasLoginEnabled = tableInfo.some(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (c: any) => c.name === "loginEnabled",
       );
 
@@ -137,10 +141,10 @@ export async function initDb() {
       `);
 
       await db.exec("DROP TABLE users_old");
-      console.log("Migration completed successfully.");
+      logger.info("Migration completed successfully.");
     }
   } catch (err) {
-    console.error("Migration check failed:", err);
+    logger.error("Migration check failed:", err);
   }
 
   // Create Tickets Table
@@ -252,7 +256,7 @@ export async function initDb() {
       "SELECT sql FROM sqlite_master WHERE type='table' AND name='admin_tickets'",
     );
     if (tableSchema && !tableSchema.sql.includes("executiveId")) {
-      console.log("Migrating admin_tickets table to add executive fields...");
+      logger.info("Migrating admin_tickets table to add executive fields...");
       await db.exec("ALTER TABLE admin_tickets RENAME TO admin_tickets_old");
 
       await db.exec(`
@@ -277,12 +281,12 @@ export async function initDb() {
       `);
 
       await db.exec("DROP TABLE admin_tickets_old");
-      console.log(
+      logger.info(
         "admin_tickets executive fields migration completed successfully.",
       );
     }
   } catch (err) {
-    console.error("admin_tickets migration check failed:", err);
+    logger.error("admin_tickets migration check failed:", err);
   }
 
   // Create Admin Comments Table
@@ -479,7 +483,7 @@ export async function initDb() {
         passwordHash,
       ],
     );
-    console.log("Seeded initial admin user.");
+    logger.info("Seeded initial admin user.");
   }
 
   // No seed tickets — tickets will be created by users through the application
