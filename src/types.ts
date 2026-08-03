@@ -86,7 +86,8 @@ export type AdminTicketStatus =
   | "awaiting_materials"
   | "awaiting_technician"
   | "awaiting_executive"
-  | "resolved";
+  | "resolved"
+  | "rejected";
 
 export interface AdminTicketComment {
   id: string;

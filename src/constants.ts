@@ -69,6 +69,7 @@ export const ADMIN_TICKET_STATUS_LABELS: Record<AdminTicketStatus, string> = {
   awaiting_technician: "Awaiting Technician",
   awaiting_executive: "Awaiting Executive",
   resolved: "Resolved",
+  rejected: "Rejected",
 };
 
 export const ADMIN_TICKET_STATUS_OPTIONS = [
@@ -101,6 +102,12 @@ export const ADMIN_TICKET_STATUS_OPTIONS = [
     label: "Resolved",
     color: "#10b981",
     bg: "rgba(16, 185, 129, 0.12)",
+  },
+  {
+    value: "rejected" as AdminTicketStatus,
+    label: "Rejected",
+    color: "#ef4444",
+    bg: "rgba(239, 68, 68, 0.12)",
   },
 ];
 

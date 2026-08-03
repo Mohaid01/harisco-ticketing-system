@@ -16,7 +16,11 @@ import { ChangePasswordModal } from "./components/ChangePasswordModal";
 import { AdminTicketList } from "./components/AdminTicketList";
 import { AdminTicketDetails } from "./components/AdminTicketDetails";
 import { NewAdminTicketModal } from "./components/NewAdminTicketModal";
-import { APP_TITLE, STATUS_LABELS } from "./constants";
+import {
+  ADMIN_TICKET_STATUS_LABELS,
+  APP_TITLE,
+  STATUS_LABELS,
+} from "./constants";
 import type {
   Ticket,
   AppUser,
@@ -366,6 +370,15 @@ function App() {
     quotation?: number,
   ) => {
     if (!token || !currentUser) return;
+
+    if (
+      !window.confirm(
+        `Update ticket ${ticketId} status to ${STATUS_LABELS[status]}?`,
+      )
+    ) {
+      return;
+    }
+
     try {
       const res = await fetch(`/api/tickets/${ticketId}/status`, {
         method: "POST",
@@ -589,6 +602,15 @@ function App() {
     executiveName?: string,
   ) => {
     if (!token || !currentUser) return;
+
+    if (
+      !window.confirm(
+        `Update ticket ${ticketId} status to ${ADMIN_TICKET_STATUS_LABELS[status]}?`,
+      )
+    ) {
+      return;
+    }
+
     try {
       const res = await fetch(`/api/admin-tickets/${ticketId}/status`, {
         method: "POST",

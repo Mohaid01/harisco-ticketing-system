@@ -239,7 +239,7 @@ export async function initDb() {
       id TEXT PRIMARY KEY,
       description TEXT NOT NULL,
       category TEXT NOT NULL,
-      status TEXT CHECK(status IN ('awaiting_admin_manager', 'awaiting_materials', 'awaiting_technician', 'awaiting_executive', 'resolved')) NOT NULL,
+      status TEXT CHECK(status IN ('awaiting_admin_manager', 'awaiting_materials', 'awaiting_technician', 'awaiting_executive', 'resolved', 'rejected')) NOT NULL,
       createdAt TEXT NOT NULL,
       updatedAt TEXT NOT NULL,
       reporterId TEXT NOT NULL,
@@ -250,13 +250,17 @@ export async function initDb() {
     )
   `);
 
-  // Migrate admin_tickets to add executiveId/executiveName if missing
+  // Migrate admin_tickets to add rejected status and executive fields if missing
   try {
     const tableSchema = await db.get<{ sql: string }>(
       "SELECT sql FROM sqlite_master WHERE type='table' AND name='admin_tickets'",
     );
-    if (tableSchema && !tableSchema.sql.includes("executiveId")) {
-      logger.info("Migrating admin_tickets table to add executive fields...");
+    if (
+      tableSchema &&
+      (!tableSchema.sql.includes("executiveId") ||
+        !tableSchema.sql.includes("'rejected'"))
+    ) {
+      logger.info("Migrating admin_tickets table to add rejected status...");
       await db.exec("ALTER TABLE admin_tickets RENAME TO admin_tickets_old");
 
       await db.exec(`
@@ -264,7 +268,7 @@ export async function initDb() {
           id TEXT PRIMARY KEY,
           description TEXT NOT NULL,
           category TEXT NOT NULL,
-          status TEXT CHECK(status IN ('awaiting_admin_manager', 'awaiting_materials', 'awaiting_technician', 'awaiting_executive', 'resolved')) NOT NULL,
+          status TEXT CHECK(status IN ('awaiting_admin_manager', 'awaiting_materials', 'awaiting_technician', 'awaiting_executive', 'resolved', 'rejected')) NOT NULL,
           createdAt TEXT NOT NULL,
           updatedAt TEXT NOT NULL,
           reporterId TEXT NOT NULL,
@@ -276,14 +280,12 @@ export async function initDb() {
       `);
 
       await db.exec(`
-        INSERT INTO admin_tickets (id, description, category, status, createdAt, updatedAt, reporterId, reporterName, reporterEmail)
-        SELECT id, description, category, status, createdAt, updatedAt, reporterId, reporterName, reporterEmail FROM admin_tickets_old
+        INSERT INTO admin_tickets (id, description, category, status, createdAt, updatedAt, reporterId, reporterName, reporterEmail, executiveId, executiveName)
+        SELECT id, description, category, status, createdAt, updatedAt, reporterId, reporterName, reporterEmail, executiveId, executiveName FROM admin_tickets_old
       `);
 
       await db.exec("DROP TABLE admin_tickets_old");
-      logger.info(
-        "admin_tickets executive fields migration completed successfully.",
-      );
+      logger.info("admin_tickets migration completed successfully.");
     }
   } catch (err) {
     logger.error("admin_tickets migration check failed:", err);

@@ -97,6 +97,9 @@ export const AdminTicketList: React.FC<AdminTicketListProps> = ({
   const resolved = filteredTickets.filter(
     (t) => t.status === "resolved",
   ).length;
+  const rejected = filteredTickets.filter(
+    (t) => t.status === "rejected",
+  ).length;
 
   const getStatusBadge = (status: AdminTicketStatus) => {
     switch (status) {
@@ -146,6 +149,18 @@ export const AdminTicketList: React.FC<AdminTicketListProps> = ({
             }}
           >
             Resolved
+          </span>
+        );
+      case "rejected":
+        return (
+          <span
+            className="badge"
+            style={{
+              backgroundColor: "rgba(239, 68, 68, 0.12)",
+              color: "#ef4444",
+            }}
+          >
+            Rejected
           </span>
         );
     }
@@ -265,6 +280,23 @@ export const AdminTicketList: React.FC<AdminTicketListProps> = ({
           </div>
           <span className="stat-value">{resolved}</span>
           <span className="stat-desc">Completed tickets</span>
+        </div>
+
+        <div
+          className="stat-card"
+          style={{
+            backgroundColor: "rgba(239, 68, 68, 0.08)",
+            borderLeft: "4px solid #ef4444",
+          }}
+        >
+          <div className="stat-header">
+            <span className="stat-label">Rejected</span>
+            <div className="stat-icon">
+              <ShieldAlert size={16} />
+            </div>
+          </div>
+          <span className="stat-value">{rejected}</span>
+          <span className="stat-desc">Rejected tickets</span>
         </div>
       </div>
 

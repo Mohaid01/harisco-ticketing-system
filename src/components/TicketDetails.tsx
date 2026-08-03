@@ -551,6 +551,13 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
                       placeholder="Enter an update or note..."
                       value={commentText}
                       onChange={(e) => setCommentText(e.target.value)}
+                      onKeyDown={(e) => {
+                        // Check for Ctrl + Enter or Cmd + Enter (for Mac users)
+                        if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                          e.preventDefault(); // Prevents a newline from being added
+                          handleSubmitComment(e); // Submits the form
+                        }
+                      }}
                     />
                     <div
                       style={{ display: "flex", justifyContent: "flex-end" }}

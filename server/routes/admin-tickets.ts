@@ -283,10 +283,19 @@ router.post(
         return;
       }
 
-      await db.run(
-        "UPDATE admin_tickets SET status = ?, updatedAt = ? WHERE id = ?",
-        [status, timestamp, ticketId],
-      );
+      let updateQuery =
+        "UPDATE admin_tickets SET status = ?, updatedAt = ?";
+      const updateParams: (string | undefined)[] = [status, timestamp];
+
+      if (executiveId && executiveName) {
+        updateQuery += ", executiveId = ?, executiveName = ?";
+        updateParams.push(executiveId, executiveName);
+      }
+
+      updateQuery += " WHERE id = ?";
+      updateParams.push(ticketId);
+
+      await db.run(updateQuery, updateParams);
 
       const logId = `log-${Date.now()}`;
       const newLog: DbAdminActivityLog = {
@@ -316,6 +325,8 @@ router.post(
         success: true,
         status,
         updatedAt: timestamp,
+        executiveId: executiveId || undefined,
+        executiveName: executiveName || undefined,
         newLog,
       };
 

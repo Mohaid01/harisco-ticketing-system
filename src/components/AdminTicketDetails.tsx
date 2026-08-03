@@ -129,6 +129,18 @@ export const AdminTicketDetails: React.FC<AdminTicketDetailsProps> = ({
             Resolved
           </span>
         );
+      case "rejected":
+        return (
+          <span
+            className="badge"
+            style={{
+              backgroundColor: "rgba(239, 68, 68, 0.12)",
+              color: "#ef4444",
+            }}
+          >
+            Rejected
+          </span>
+        );
     }
   };
 
@@ -469,6 +481,13 @@ export const AdminTicketDetails: React.FC<AdminTicketDetailsProps> = ({
                       placeholder="Enter an update or note..."
                       value={commentText}
                       onChange={(e) => setCommentText(e.target.value)}
+                      onKeyDown={(e) => {
+                        // Check for Ctrl + Enter or Cmd + Enter (for Mac users)
+                        if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                          e.preventDefault(); // Prevents a newline from being added
+                          handleSubmitComment(e); // Submits the form
+                        }
+                      }}
                     />
                     <div
                       style={{ display: "flex", justifyContent: "flex-end" }}
@@ -547,171 +566,209 @@ export const AdminTicketDetails: React.FC<AdminTicketDetailsProps> = ({
             <div
               style={{ display: "flex", flexDirection: "column", gap: "12px" }}
             >
-              {canManagerAction && ticket.status !== "resolved" && (
-                <>
-                  {ticket.status === "awaiting_admin_manager" && (
-                    <>
-                      <button
-                        id="btn-admin-mgr-to-materials"
-                        className="btn btn-success"
-                        style={{
-                          width: "100%",
-                          backgroundColor: "#a855f7",
-                          color: "white",
-                          border: "none",
-                        }}
-                        onClick={() =>
-                          onUpdateStatus(
-                            ticket.id,
-                            "awaiting_materials",
-                            "Forwarded to Materials Procurement",
-                          )
-                        }
-                      >
-                        <ShieldAlert size={16} />
-                        Acquire Materials
-                      </button>
-
-                      <button
-                        id="btn-admin-escalate-executive"
-                        className="btn btn-success"
-                        style={{
-                          width: "100%",
-                          backgroundColor: "#ec4899",
-                          color: "white",
-                          border: "none",
-                        }}
-                        onClick={() =>
-                          onUpdateStatus(
-                            ticket.id,
-                            "awaiting_executive",
-                            "Escalated to Executive",
-                          )
-                        }
-                      >
-                        <ShieldAlert size={16} />
-                        Escalate to Executive
-                      </button>
-                    </>
-                  )}
-
-                  {ticket.status === "awaiting_executive" && (
-                    <div
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "8px",
-                      }}
-                    >
-                      <label
-                        className="form-label"
-                        style={{
-                          fontSize: "0.8rem",
-                          marginBottom: 0,
-                        }}
-                      >
-                        Select Approving Executive
-                      </label>
-                      <select
-                        className="form-input"
-                        style={{
-                          backgroundColor: "var(--bg-primary)",
-                          height: "38px",
-                        }}
-                        value={selectedExecutiveId}
-                        onChange={(e) => {
-                          const selected = executives.find(
-                            (u) => u.id === e.target.value,
-                          );
-                          setSelectedExecutiveId(e.target.value);
-                          setSelectedExecutiveName(selected?.name || "");
-                        }}
-                      >
-                        <option value="" disabled>
-                          -- Select Executive --
-                        </option>
-                        {executives.map((user) => (
-                          <option key={user.id} value={user.id}>
-                            {user.name}
-                          </option>
-                        ))}
-                      </select>
-                      <button
-                        id="btn-executive-approve"
-                        className="btn btn-success"
-                        style={{
-                          width: "100%",
-                          backgroundColor: "#a855f7",
-                          color: "white",
-                          border: "none",
-                        }}
-                        disabled={!selectedExecutiveId}
-                        onClick={() => {
-                          if (!selectedExecutiveId || !selectedExecutiveName) {
-                            alert("Please select an executive.");
-                            return;
+              {canManagerAction &&
+                ticket.status !== "resolved" &&
+                ticket.status !== "rejected" && (
+                  <>
+                    {ticket.status === "awaiting_admin_manager" && (
+                      <>
+                        <button
+                          id="btn-admin-mgr-to-materials"
+                          className="btn btn-success"
+                          style={{
+                            width: "100%",
+                            backgroundColor: "#a855f7",
+                            color: "white",
+                            border: "none",
+                          }}
+                          onClick={() =>
+                            onUpdateStatus(
+                              ticket.id,
+                              "awaiting_materials",
+                              "Forwarded to Materials Procurement",
+                            )
                           }
-                          onUpdateStatus(
-                            ticket.id,
-                            "awaiting_materials",
-                            `Approved by Executive - Moved to Materials`,
-                            selectedExecutiveId,
-                            selectedExecutiveName,
-                          );
-                          setSelectedExecutiveId("");
-                          setSelectedExecutiveName("");
+                        >
+                          <ShieldAlert size={16} />
+                          Acquire Materials
+                        </button>
+
+                        <button
+                          id="btn-admin-escalate-executive"
+                          className="btn btn-success"
+                          style={{
+                            width: "100%",
+                            backgroundColor: "#ec4899",
+                            color: "white",
+                            border: "none",
+                          }}
+                          onClick={() =>
+                            onUpdateStatus(
+                              ticket.id,
+                              "awaiting_executive",
+                              "Escalated to Executive",
+                            )
+                          }
+                        >
+                          <ShieldAlert size={16} />
+                          Escalate to Executive
+                        </button>
+                      </>
+                    )}
+
+                    {ticket.status === "awaiting_executive" && (
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "8px",
                         }}
                       >
+                        <label
+                          className="form-label"
+                          style={{
+                            fontSize: "0.8rem",
+                            marginBottom: 0,
+                          }}
+                        >
+                          Select Executive
+                        </label>
+                        <select
+                          className="form-input"
+                          style={{
+                            backgroundColor: "var(--bg-primary)",
+                            height: "38px",
+                          }}
+                          value={selectedExecutiveId}
+                          onChange={(e) => {
+                            const selected = executives.find(
+                              (u) => u.id === e.target.value,
+                            );
+                            setSelectedExecutiveId(e.target.value);
+                            setSelectedExecutiveName(selected?.name || "");
+                          }}
+                        >
+                          <option value="" disabled>
+                            -- Select Executive --
+                          </option>
+                          {executives.map((user) => (
+                            <option key={user.id} value={user.id}>
+                              {user.name}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          id="btn-executive-approve"
+                          className="btn btn-success"
+                          style={{
+                            width: "100%",
+                            backgroundColor: "#a855f7",
+                            color: "white",
+                            border: "none",
+                          }}
+                          disabled={!selectedExecutiveId}
+                          onClick={() => {
+                            if (
+                              !selectedExecutiveId ||
+                              !selectedExecutiveName
+                            ) {
+                              alert("Please select an executive.");
+                              return;
+                            }
+                            onUpdateStatus(
+                              ticket.id,
+                              "awaiting_materials",
+                              `Approved by Executive - Moved to Materials`,
+                              selectedExecutiveId,
+                              selectedExecutiveName,
+                            );
+                            setSelectedExecutiveId("");
+                            setSelectedExecutiveName("");
+                          }}
+                        >
+                          <ShieldAlert size={16} />
+                          Approved by Executive
+                        </button>
+                        <button
+                          id="btn-executive-reject"
+                          className="btn btn-success"
+                          style={{
+                            width: "100%",
+                            backgroundColor: "#ef4444",
+                            color: "white",
+                            border: "none",
+                          }}
+                          disabled={!selectedExecutiveId}
+                          onClick={() => {
+                            if (
+                              !selectedExecutiveId ||
+                              !selectedExecutiveName
+                            ) {
+                              alert("Please select an executive.");
+                              return;
+                            }
+                            onUpdateStatus(
+                              ticket.id,
+                              "rejected",
+                              `Rejected by Executive - ${selectedExecutiveName}`,
+                              selectedExecutiveId,
+                              selectedExecutiveName,
+                            );
+                            setSelectedExecutiveId("");
+                            setSelectedExecutiveName("");
+                          }}
+                        >
+                          <ShieldAlert size={16} />
+                          Rejected by Executive
+                        </button>
+                      </div>
+                    )}
+
+                    {ticket.status === "awaiting_materials" && (
+                      <button
+                        id="btn-admin-mgr-to-technician"
+                        className="btn btn-success"
+                        style={{
+                          width: "100%",
+                          backgroundColor: "#06b6d4",
+                          color: "white",
+                          border: "none",
+                        }}
+                        onClick={() =>
+                          onUpdateStatus(
+                            ticket.id,
+                            "awaiting_technician",
+                            "Forwarded to Technician",
+                          )
+                        }
+                      >
                         <ShieldAlert size={16} />
-                        Confirm Executive Approval
+                        Forward to Technician
                       </button>
-                    </div>
-                  )}
+                    )}
 
-                  {ticket.status === "awaiting_materials" && (
-                    <button
-                      id="btn-admin-mgr-to-technician"
-                      className="btn btn-success"
-                      style={{
-                        width: "100%",
-                        backgroundColor: "#06b6d4",
-                        color: "white",
-                        border: "none",
-                      }}
-                      onClick={() =>
-                        onUpdateStatus(
-                          ticket.id,
-                          "awaiting_technician",
-                          "Forwarded to Technician",
-                        )
-                      }
-                    >
-                      <ShieldAlert size={16} />
-                      Forward to Technician
-                    </button>
-                  )}
+                    {ticket.status === "awaiting_technician" && (
+                      <button
+                        id="btn-admin-resolve"
+                        className="btn btn-success"
+                        style={{ width: "100%" }}
+                        onClick={() =>
+                          onUpdateStatus(
+                            ticket.id,
+                            "resolved",
+                            "Marked as Resolved by Admin Manager",
+                          )
+                        }
+                      >
+                        <CheckCircle2 size={16} />
+                        Mark As Resolved
+                      </button>
+                    )}
+                  </>
+                )}
 
-                  {ticket.status === "awaiting_technician" && (
-                    <button
-                      id="btn-admin-resolve"
-                      className="btn btn-success"
-                      style={{ width: "100%" }}
-                      onClick={() =>
-                        onUpdateStatus(
-                          ticket.id,
-                          "resolved",
-                          "Marked as Resolved by Admin Manager",
-                        )
-                      }
-                    >
-                      <CheckCircle2 size={16} />
-                      Mark As Resolved
-                    </button>
-                  )}
-                </>
-              )}
-
-              {ticket.status === "resolved" && (
+              {(ticket.status === "resolved" ||
+                ticket.status === "rejected") && (
                 <div
                   style={{
                     padding: "12px",
@@ -734,8 +791,8 @@ export const AdminTicketDetails: React.FC<AdminTicketDetailsProps> = ({
                       color: "var(--text-secondary)",
                     }}
                   >
-                    This ticket is resolved. No further workflow transitions are
-                    possible.
+                    This ticket is {ticket.status}. No further workflow
+                    transitions are possible.
                   </p>
                 </div>
               )}
@@ -763,8 +820,9 @@ export const AdminTicketDetails: React.FC<AdminTicketDetailsProps> = ({
                       color: "var(--text-secondary)",
                     }}
                   >
-                    {ticket.status === "resolved"
-                      ? "This ticket is resolved. No further workflow transitions are possible."
+                    {ticket.status === "resolved" ||
+                    ticket.status === "rejected"
+                      ? "This ticket is closed. No further workflow transitions are possible."
                       : "Only Admin Manager can transition ticket statuses."}
                   </p>
                 </div>
