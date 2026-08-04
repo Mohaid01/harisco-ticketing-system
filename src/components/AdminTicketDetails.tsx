@@ -719,7 +719,7 @@ export const AdminTicketDetails: React.FC<AdminTicketDetailsProps> = ({
                             setSelectedExecutiveName("");
                           }}
                         >
-                          <ShieldAlert size={16} />
+                          <XCircleIcon size={16} />
                           Rejected by Executive
                         </button>
                       </div>

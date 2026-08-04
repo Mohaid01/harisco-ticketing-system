@@ -19,6 +19,7 @@ import {
   Plus,
   Filter,
   ArrowUpDown,
+  XCircleIcon,
 } from "lucide-react";
 
 interface AdminTicketListProps {
@@ -292,7 +293,7 @@ export const AdminTicketList: React.FC<AdminTicketListProps> = ({
           <div className="stat-header">
             <span className="stat-label">Rejected</span>
             <div className="stat-icon">
-              <ShieldAlert size={16} />
+              <XCircleIcon size={16} />
             </div>
           </div>
           <span className="stat-value">{rejected}</span>
