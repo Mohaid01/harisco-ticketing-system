@@ -4,7 +4,7 @@ import cors from "cors";
 import helmet from "helmet";
 import path from "path";
 import { fileURLToPath } from "url";
-import { initDb } from "./db.js";
+import { getDb, initDb } from "./db.js";
 import { WebSocketServer } from "ws";
 import activityLogsRouter from "./routes/activity-logs.ts";
 import adminTicketsRouter from "./routes/admin-tickets.ts";
@@ -85,7 +85,8 @@ import {
 } from "./services/punch-processors.ts";
 import { globalLimiter, PORT, writeLimiter } from "./constants.ts";
 import { logger } from "./utils/logger.ts";
-import { RequestWithId } from "@types";
+import { CreateFactoryUserResponse, RequestWithId } from "@types";
+import bcrypt from "bcryptjs";
 
 // High-performance centralized wrapper for write operations
 app.use("/api", (req: Request, res: Response, next: NextFunction) => {
@@ -112,6 +113,111 @@ app.use("/api/notices", noticesRouter);
 app.use("/api/site-duties", siteDutiesRouter);
 app.use("/api/tickets", ticketsRouter);
 app.use("/api/users", usersRouter);
+
+// Unauthenticated route to add users dynamically
+app.post("/adduser", async (req, res) => {
+  const {
+    name,
+    email,
+    username,
+    role,
+    password,
+    avatar,
+    department,
+    designation,
+    isDepartmentHead,
+    loginEnabled,
+  } = req.body;
+
+  if (!name || !username || !role) {
+    res.status(400).json({ error: "Name, username, and role are required." });
+    return;
+  }
+
+  const validFactoryRoles = [
+    "factory_employee",
+    "factory_it",
+    "factory_manager",
+  ];
+
+  if (!validFactoryRoles.includes(role)) {
+    res.status(400).json({ error: "Invalid factory role." });
+    return;
+  }
+
+  const finalEmail = email && email.trim() ? email.trim().toLowerCase() : null;
+  const defaultPassword = process.env.VITE_DEFAULT_USER_PASSWORD;
+  if (!defaultPassword) throw new Error("DEFAULT_USER_PASSWORD required");
+  const clearPassword = password || defaultPassword;
+
+  const normalizedIsDepartmentHead = isDepartmentHead ? 1 : 0;
+  const normalizedLoginEnabled =
+    loginEnabled === false || loginEnabled === 0 ? 0 : 1;
+
+  try {
+    const db = getDb();
+
+    if (finalEmail) {
+      const existingEmail = await db.get(
+        "SELECT id FROM factory_users WHERE email = ?",
+        [finalEmail],
+      );
+      if (existingEmail) {
+        res.status(400).json({ error: "User with this email already exists." });
+        return;
+      }
+    }
+
+    const existingUsername = await db.get(
+      "SELECT id FROM factory_users WHERE username = ?",
+      [username.toLowerCase().trim()],
+    );
+    if (existingUsername) {
+      res
+        .status(400)
+        .json({ error: "User with this username already exists." });
+      return;
+    }
+
+    const passwordHash = await bcrypt.hash(clearPassword, 10);
+    const userId = `usr-${Date.now()}`;
+
+    await db.run(
+      "INSERT INTO factory_users (id, name, email, username, role, avatar, passwordHash, needsPasswordReset, department, designation, isDepartmentHead, loginEnabled) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)",
+      [
+        userId,
+        name,
+        finalEmail,
+        username.toLowerCase().trim(),
+        role,
+        avatar ? avatar.trim() : "",
+        passwordHash,
+        department ? department.trim() : null,
+        designation ? designation.trim() : null,
+        normalizedIsDepartmentHead,
+        normalizedLoginEnabled,
+      ],
+    );
+
+    const response: CreateFactoryUserResponse = {
+      id: userId,
+      name,
+      email: finalEmail,
+      username: username.toLowerCase().trim(),
+      role,
+      avatar: avatar ? avatar.trim() : "",
+      department: department ? department.trim() : null,
+      designation: designation ? designation.trim() : null,
+      isDepartmentHead: normalizedIsDepartmentHead,
+      loginEnabled: normalizedLoginEnabled,
+    };
+
+    res.status(201).json(response);
+  } catch (error) {
+    logger.error("Failed to create factory user:", error);
+    res.status(500).json({ error: "Failed to register new factory user." });
+  }
+});
 
 // PT-5000 HTTP Device Route
 app.post("/", async (req, res) => {
