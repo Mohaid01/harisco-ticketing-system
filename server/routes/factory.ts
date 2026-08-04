@@ -47,7 +47,11 @@ router.get(
       let query = "";
       const params: (string | undefined)[] = [];
 
-      if (["factory_manager", "factory_it", "it"].includes(currentUser.role)) {
+      if (
+        ["factory_manager", "factory_it", "it", "manager"].includes(
+          currentUser.role,
+        )
+      ) {
         query = `${selectFields} ORDER BY username ASC`;
       } else if (currentUser.isDepartmentHead && currentUser.department) {
         query = `${selectFields} WHERE department = ? ORDER BY username ASC`;
@@ -58,7 +62,9 @@ router.get(
       }
 
       if (
-        ["factory_manager", "factory_it", "it"].includes(currentUser.role) ||
+        ["factory_manager", "factory_it", "it", "manager"].includes(
+          currentUser.role,
+        ) ||
         currentUser.isDepartmentHead
       ) {
         const users = await db.all<DbUser[]>(query, params);
@@ -89,9 +95,7 @@ router.post(
   ) => {
     if (
       !req.user ||
-      (req.user.role !== "factory_it" &&
-        req.user.role !== "factory_manager" &&
-        req.user.role !== "it")
+      (req.user.role !== "factory_it" && req.user.role !== "it")
     ) {
       res.status(403).json({
         error:
@@ -213,9 +217,7 @@ router.delete(
   async (req: AuthRequest, res: ApiResponse<DeleteFactoryUserResponse>) => {
     if (
       !req.user ||
-      (req.user.role !== "factory_it" &&
-        req.user.role !== "factory_manager" &&
-        req.user.role !== "it")
+      (req.user.role !== "factory_it" && req.user.role !== "it")
     ) {
       res.status(403).json({
         error:
@@ -260,9 +262,7 @@ router.put(
   ) => {
     if (
       !req.user ||
-      (req.user.role !== "factory_it" &&
-        req.user.role !== "factory_manager" &&
-        req.user.role !== "it")
+      (req.user.role !== "factory_it" && req.user.role !== "it")
     ) {
       res.status(403).json({
         error:
@@ -362,9 +362,7 @@ router.post(
   ) => {
     if (
       !req.user ||
-      (req.user.role !== "factory_it" &&
-        req.user.role !== "factory_manager" &&
-        req.user.role !== "it")
+      (req.user.role !== "factory_it" && req.user.role !== "it")
     ) {
       res.status(403).json({
         error:
@@ -473,10 +471,7 @@ router.post(
     req: ApiAuthRequest<AddFactoryManualAttendanceRequestBody>,
     res: ApiResponse<AddFactoryManualAttendanceResponse>,
   ) => {
-    if (
-      req.user?.role !== "factory_it" &&
-      req.user?.role !== "factory_manager"
-    ) {
+    if (req.user?.role !== "factory_manager") {
       res.status(403).json({
         error:
           "Forbidden. Only Factory IT or Factory Manager can add manual attendance.",
@@ -551,10 +546,7 @@ router.delete(
     req: AuthRequest,
     res: ApiResponse<ClearFactoryAttendanceResponse>,
   ) => {
-    if (
-      req.user?.role !== "factory_it" &&
-      req.user?.role !== "factory_manager"
-    ) {
+    if (req.user?.role !== "factory_manager") {
       res.status(403).json({
         error:
           "Forbidden. Clearing factory attendance logs requires Factory IT or Factory Manager role.",
@@ -585,10 +577,7 @@ router.delete(
     req: AuthRequest,
     res: ApiResponse<DeleteFactoryAttendanceLogResponse>,
   ) => {
-    if (
-      req.user?.role !== "factory_it" &&
-      req.user?.role !== "factory_manager"
-    ) {
+    if (req.user?.role !== "factory_manager") {
       res.status(403).json({
         error:
           "Forbidden. Factory attendance log deletion requires Factory IT or Factory Manager role.",

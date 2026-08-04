@@ -94,7 +94,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       id: "factory_attendance" as ActiveTab,
       label: "Factory Attendance",
       icon: UserCheck,
-      roles: ["it", "factory_it", "factory_manager", "factory_employee"],
+      roles: [
+        "it",
+        "manager",
+        "factory_it",
+        "factory_manager",
+        "factory_employee",
+      ],
     },
   ];
 
