@@ -33,6 +33,9 @@ RUN npm install -g tsx
 # Create directory for SQLite database volume
 RUN mkdir -p /app/data
 
+# Run as non-root user
+USER node
+
 # Expose the application port
 EXPOSE 8082
 
