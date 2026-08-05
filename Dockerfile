@@ -18,17 +18,14 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Copy package files and install dependencies
+# Copy package files and install ONLY production dependencies
 COPY package*.json ./
-RUN npm install
+RUN npm ci --only=production
 
 # Copy backend files and built frontend
 COPY --from=builder /app/server ./server
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/tsconfig*.json ./
-
-# Install tsx globally to run the backend
-RUN npm install -g tsx
 
 # Create directory for SQLite database volume
 RUN mkdir -p /app/data
@@ -40,4 +37,4 @@ USER node
 EXPOSE 8082
 
 # Start the application
-CMD ["tsx", "server/index.ts"]
+CMD ["npx", "tsx", "server/index.ts"]
