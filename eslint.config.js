@@ -1,10 +1,11 @@
-import js from '@eslint/js'
-import globals from 'globals'
-import reactHooks from 'eslint-plugin-react-hooks'
-import reactRefresh from 'eslint-plugin-react-refresh'
-import security from 'eslint-plugin-security'
-import tseslint from 'typescript-eslint'
-import { defineConfig, globalIgnores } from 'eslint/config'
+import js from '@eslint/js';
+import perfectionist from 'eslint-plugin-perfectionist';
+import reactHooks from 'eslint-plugin-react-hooks';
+import reactRefresh from 'eslint-plugin-react-refresh';
+import security from 'eslint-plugin-security';
+import { defineConfig, globalIgnores } from 'eslint/config';
+import globals from 'globals';
+import tseslint from 'typescript-eslint';
 
 export default defineConfig([
   globalIgnores(['dist']),
@@ -17,6 +18,7 @@ export default defineConfig([
       reactRefresh.configs.vite,
     ],
     plugins: {
+      perfectionist,
       security,
     },
     languageOptions: {
@@ -28,6 +30,8 @@ export default defineConfig([
       'no-eval': 'error',
       'no-implied-eval': 'error',
       'no-new-func': 'error',
+      'perfectionist/sort-imports': 'error',
+      'perfectionist/sort-exports': 'error',
       'security/detect-object-injection': 'warn',
       'security/detect-non-literal-fs-filename': 'warn',
       'security/detect-non-literal-regexp': 'warn',
@@ -44,4 +48,4 @@ export default defineConfig([
       '@typescript-eslint/no-unused-vars': 'error',
     },
   },
-])
+]);
