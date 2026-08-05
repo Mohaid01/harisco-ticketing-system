@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import type { AppUser, AttendanceLog } from "../types";
 import { formatEmployeeCode, formatHours } from "../utils";
+import ExcelJS from "exceljs";
 import {
   RefreshCw,
   Search,
@@ -1038,13 +1039,16 @@ export const Attendance: React.FC<AttendanceProps> = ({
   };
 
   // Add this helper function to handle CSV export in your React component
-  const exportToCSV = (summaries: any[]) => {
+  const exportToCSV = async (summaries: any[]) => {
     const [sYear, sMonth] = selectedMonth.split("-").map(Number);
     const currentYear = sYear;
     const currentMonth = new Date(sYear, sMonth - 1).toLocaleString("default", {
       month: "long",
     });
     const daysInMonth = new Date(sYear, sMonth, 0).getDate();
+    const todayStr = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Karachi",
+    }).format(new Date());
 
     let countSunday = 0;
     let countSaturday = 0;
@@ -1057,11 +1061,9 @@ export const Attendance: React.FC<AttendanceProps> = ({
     const countWeekdays = daysInMonth - countSunday - countSaturday;
     const expectedHours = countWeekdays * 8 + countSaturday * 6;
 
-    const fmt = (val: string) => `"${val.replace(/"/g, '""')}"`;
-
     const employeePunchMaps = new Map<
       string,
-      Map<string, { in: string; out: string }>
+      Map<string, { in: string; out: string; status: string; isLate: boolean }>
     >();
 
     for (const emp of summaries) {
@@ -1073,7 +1075,10 @@ export const Attendance: React.FC<AttendanceProps> = ({
             (emp.formattedCode || formatEmployeeCode(emp.username || emp.id)),
       );
 
-      const dateMap = new Map<string, { in: string; out: string }>();
+      const dateMap = new Map<
+        string,
+        { in: string; out: string; status: string; isLate: boolean }
+      >();
 
       for (let day = 1; day <= daysInMonth; day++) {
         const sDay = String(day).padStart(2, "0");
@@ -1084,7 +1089,12 @@ export const Attendance: React.FC<AttendanceProps> = ({
         );
 
         if (dayPunches.length === 0) {
-          dateMap.set(dateStr, { in: "-", out: "-" });
+          dateMap.set(dateStr, {
+            in: "-",
+            out: "-",
+            status: "Absent",
+            isLate: false,
+          });
           continue;
         }
 
@@ -1094,21 +1104,52 @@ export const Attendance: React.FC<AttendanceProps> = ({
           return tA.localeCompare(tB);
         });
 
-        const firstIn = parseLogPKT(sorted[0]).time.substring(0, 5);
+        const first = sorted[0];
+        const firstIn = parseLogPKT(first).time.substring(0, 5);
         const lastOut =
           sorted.length > 1
             ? parseLogPKT(sorted[sorted.length - 1]).time.substring(0, 5)
             : "-";
 
-        dateMap.set(dateStr, { in: firstIn, out: lastOut });
+        let status = "Present";
+        if (first.status === "Site Duty" || first.status === "On Leave") {
+          status = first.status;
+        }
+
+        let isLate = false;
+        if (status === "Present") {
+          const tempDate = new Date(Date.UTC(sYear, sMonth - 1, day));
+          const isSaturday = tempDate.getUTCDay() === 6;
+          const timeParts = firstIn.split(":");
+          if (timeParts.length >= 2) {
+            const hour = parseInt(timeParts[0], 10);
+            const min = parseInt(timeParts[1], 10);
+            if (isSaturday) {
+              if (hour > 10 || (hour === 10 && min >= 30)) {
+                isLate = true;
+              }
+            } else {
+              if (hour >= 10) {
+                isLate = true;
+              }
+            }
+          }
+        }
+
+        dateMap.set(dateStr, { in: firstIn, out: lastOut, status, isLate });
       }
 
       employeePunchMaps.set(emp.id, dateMap);
     }
 
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet(`Attendance ${currentMonth}`);
+
     const headers = ["S No", "ID", "Name"];
     for (let day = 1; day <= daysInMonth; day++) {
-      headers.push(`${day}`);
+      const tempDate = new Date(Date.UTC(sYear, sMonth - 1, day));
+      const dayName = tempDate.toLocaleString("en-US", { weekday: "short" });
+      headers.push(`${day} (${dayName})`);
     }
     headers.push(
       "Total Working Hours",
@@ -1119,19 +1160,30 @@ export const Attendance: React.FC<AttendanceProps> = ({
       "Absents",
     );
 
-    const rows = summaries.map((emp: any, index: number) => {
-      const row: string[] = [
-        fmt(String(index + 1)),
-        fmt(emp.formattedCode || ""),
-        fmt(emp.name || ""),
+    worksheet.addRow(headers);
+
+    // Header formatting
+    worksheet.getRow(1).font = { bold: true };
+
+    summaries.forEach((emp: any, index: number) => {
+      const rowData: any[] = [
+        index + 1,
+        emp.formattedCode || "",
+        emp.name || "",
       ];
 
       const dateMap = employeePunchMaps.get(emp.id);
+      const cellFills: { colIndex: number; argb: string }[] = [];
 
       for (let day = 1; day <= daysInMonth; day++) {
         const sDay = String(day).padStart(2, "0");
         const dateStr = `${sYear}-${String(sMonth).padStart(2, "0")}-${sDay}`;
-        const punches = dateMap?.get(dateStr) || { in: "-", out: "-" };
+        const punches = dateMap?.get(dateStr) || {
+          in: "-",
+          out: "-",
+          status: "Absent",
+          isLate: false,
+        };
 
         const tempDate = new Date(Date.UTC(sYear, sMonth - 1, day));
         const dayOfWeek = tempDate.getUTCDay();
@@ -1145,7 +1197,11 @@ export const Attendance: React.FC<AttendanceProps> = ({
         }
 
         let actualDayHours = 0;
-        if (punches.in !== "-" && punches.out !== "-") {
+        if (
+          punches.in !== "-" &&
+          punches.out !== "-" &&
+          punches.status === "Present"
+        ) {
           const [inH, inM] = punches.in.split(":").map(Number);
           const [outH, outM] = punches.out.split(":").map(Number);
           const inTotal = inH * 60 + inM;
@@ -1159,39 +1215,82 @@ export const Attendance: React.FC<AttendanceProps> = ({
             : 0;
         const otText = otHours > 0 ? `${otHours.toFixed(1)}h` : "0";
 
-        const cell = `In: ${punches.in}\nOut: ${punches.out}\nOT: ${otText}`;
-        row.push(fmt(cell));
+        let cellValue = "-";
+        if (punches.status === "Site Duty" || punches.status === "On Leave") {
+          cellValue = punches.status;
+        } else if (punches.in !== "-") {
+          cellValue = `In: ${punches.in}\nOut: ${punches.out}\nOT: ${otText}`;
+        }
+
+        rowData.push(cellValue);
+
+        const colIndex = 3 + day; // 1, 2, 3 are S No, ID, Name
+
+        if (isSunday) {
+          cellFills.push({ colIndex, argb: "FF92D050" }); // Green
+        } else if (
+          punches.status === "Site Duty" ||
+          punches.status === "On Leave"
+        ) {
+          cellFills.push({ colIndex, argb: "FFB4A7D6" }); // Purple
+        } else if (punches.in !== "-") {
+          if (punches.out === "-") {
+            cellFills.push({ colIndex, argb: "FFF5B183" }); // Orange
+          } else if (punches.isLate) {
+            cellFills.push({ colIndex, argb: "FFFFFF00" }); // Yellow
+          }
+        } else if (dateStr <= todayStr && !isHoliday) {
+          cellFills.push({ colIndex, argb: "FFFF0000" }); // Red
+        }
       }
 
       const rawHours = typeof emp.totalHours === "number" ? emp.totalHours : 0;
       const formattedHours = formatHours(rawHours);
       const difference = rawHours - expectedHours;
 
-      row.push(
-        fmt(String(expectedHours)),
-        fmt(formattedHours),
-        fmt(difference.toFixed(2)),
-        fmt(String(emp.daysPresent ?? 0)),
-        fmt(String(emp.daysNotAvailable ?? 0)),
-        fmt(String(emp.daysAbsent ?? 0)),
+      rowData.push(
+        expectedHours,
+        formattedHours,
+        difference.toFixed(2),
+        emp.daysPresent ?? 0,
+        emp.daysNotAvailable ?? 0,
+        emp.daysAbsent ?? 0,
       );
 
-      return row;
+      const row = worksheet.addRow(rowData);
+
+      row.eachCell((cell) => {
+        cell.alignment = { wrapText: true, vertical: "middle" };
+      });
+
+      cellFills.forEach((fill) => {
+        row.getCell(fill.colIndex).fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: fill.argb },
+        };
+      });
     });
 
-    const csvContent =
-      "data:text/csv;charset=utf-8," +
-      [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
-    const encodedUri = encodeURI(csvContent);
+    worksheet.getColumn(1).width = 5;
+    worksheet.getColumn(2).width = 15;
+    worksheet.getColumn(3).width = 25;
+    for (let day = 1; day <= daysInMonth; day++) {
+      worksheet.getColumn(3 + day).width = 15;
+    }
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    const url = window.URL.createObjectURL(blob);
     const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute(
-      "download",
-      `HarisCo - HQ Attendance - ${currentMonth} ${currentYear}.csv`,
-    );
+    link.href = url;
+    link.download = `HarisCo - HQ Attendance - ${currentMonth} ${currentYear}.xlsx`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
   };
 
   return (
@@ -1533,7 +1632,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
                       title="Export attendance summary to CSV"
                     >
                       <FileText size={14} />
-                      Export CSV
+                      Export Excel Sheet
                     </button>
                   </div>
                 </div>
