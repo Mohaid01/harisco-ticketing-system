@@ -71,6 +71,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
   const canViewAll = isFactory
     ? currentUser.role === "factory_it" ||
       currentUser.role === "factory_manager" ||
+      currentUser.role === "manager" ||
       currentUser.role === "it"
     : currentUser.role === "it" ||
       currentUser.role === "manager" ||
