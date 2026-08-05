@@ -4,6 +4,7 @@ import express, { NextFunction, Request, Response } from 'express';
 import helmet from 'helmet';
 import path from 'path';
 import { fileURLToPath } from 'url';
+
 import { initDb } from './db.js';
 import { setupDeviceHandlers } from './devices/index.ts';
 import activityLogsRouter from './routes/activity-logs.ts';
@@ -96,9 +97,10 @@ app.use(express.json({ limit: '10mb' }));
 app.use('/api', globalLimiter);
 
 import { RequestWithId } from '@types';
+import { logger } from '@utils';
+
 import { globalLimiter, PORT, writeLimiter } from './constants.ts';
 import { sseClients } from './middleware/sse.ts';
-import { logger } from './utils/logger.ts';
 
 // High-performance centralized wrapper for write operations
 app.use('/api', (req: Request, res: Response, next: NextFunction) => {

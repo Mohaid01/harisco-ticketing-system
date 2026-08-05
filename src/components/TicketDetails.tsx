@@ -11,8 +11,10 @@ import {
   UserCheck,
 } from 'lucide-react';
 import React, { useState } from 'react';
-import { ROLE_LABELS, TICKET_TYPE_LABELS, TICKET_TYPE_OPTIONS } from '../constants';
+
 import type { AppUser, Ticket, TicketStatus, TicketType } from '../types';
+
+import { ROLE_LABELS, TICKET_TYPE_LABELS, TICKET_TYPE_OPTIONS } from '../constants';
 
 interface TicketDetailsProps {
   ticket: Ticket;

@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 type LogMeta = Record<string, unknown>;
 
 // Blacklist of keys that should never be written to logs in plain text
@@ -77,3 +78,5 @@ export const logger = {
     console.log(logger.format('security', message, meta));
   },
 };
+
+export default logger;

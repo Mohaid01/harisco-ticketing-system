@@ -1,7 +1,9 @@
 import { X } from 'lucide-react';
 import React, { useState } from 'react';
-import { TICKET_TYPE_OPTIONS } from '../constants';
+
 import type { TicketType } from '../types';
+
+import { TICKET_TYPE_OPTIONS } from '../constants';
 
 interface NewTicketModalProps {
   isOpen: boolean;

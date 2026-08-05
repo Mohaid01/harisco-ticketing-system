@@ -1,4 +1,18 @@
 import { useEffect, useState } from 'react';
+
+import type {
+  ActiveTab,
+  AdminTicket,
+  AdminTicketCategory,
+  AdminTicketStatus,
+  AppUser,
+  Notice,
+  Ticket,
+  TicketStatus,
+  TicketType,
+  UserRole,
+} from './types';
+
 import { ActivityLog } from './components/ActivityLog';
 import { AdminTicketDetails } from './components/AdminTicketDetails';
 import { AdminTicketList } from './components/AdminTicketList';
@@ -19,18 +33,6 @@ import { TicketDetails } from './components/TicketDetails';
 import { TicketList } from './components/TicketList';
 import { UserManagement } from './components/UserManagement';
 import { ADMIN_TICKET_STATUS_LABELS, APP_TITLE, STATUS_LABELS } from './constants';
-import type {
-  ActiveTab,
-  AdminTicket,
-  AdminTicketCategory,
-  AdminTicketStatus,
-  AppUser,
-  Notice,
-  Ticket,
-  TicketStatus,
-  TicketType,
-  UserRole,
-} from './types';
 
 function App() {
   const [token, setToken] = useState<string | null>(localStorage.getItem('harisco_token'));

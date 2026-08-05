@@ -1,8 +1,10 @@
 import { AlertCircle, ArrowRight, Lock } from 'lucide-react';
 import React, { useState } from 'react';
+
+import type { AppUser } from '../types';
+
 import logoFull from '../assets/harisco-full-logo.png';
 import { EMPLOYEE_ID_PREFIX } from '../constants';
-import type { AppUser } from '../types';
 
 interface LoginProps {
   onLoginSuccess: (token: string, user: AppUser) => void;

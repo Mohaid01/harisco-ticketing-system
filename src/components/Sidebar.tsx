@@ -1,8 +1,10 @@
 import { Activity, Bell, Calendar, ClipboardList, Key, LogOut, MapPin, Ticket, UserCheck, Users } from 'lucide-react';
 import React from 'react';
+
+import type { ActiveTab, AppUser, MenuItems } from '../types';
+
 import logoFull from '../assets/harisco-full-logo.png';
 import { ROLE_LABELS } from '../constants';
-import type { ActiveTab, AppUser, MenuItems } from '../types';
 import { formatEmployeeCode } from '../utils';
 
 interface SidebarProps {

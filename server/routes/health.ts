@@ -1,8 +1,11 @@
 import type { Request } from 'express';
+
+import { logger } from '@utils';
 import { Router } from 'express';
-import { getDb } from '../db.ts';
+
 import type { ApiResponse, HealthResponse } from '../types/index.ts';
-import { logger } from '../utils/logger.ts';
+
+import { getDb } from '../db.ts';
 
 const router = Router();
 

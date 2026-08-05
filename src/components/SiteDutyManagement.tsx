@@ -1,6 +1,8 @@
 import { CheckCircle, Clock, MapPin, Plus, X, XCircle } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
+
 import type { AppUser, LeaveStatus, SiteDutyApplication } from '../types';
+
 import { formatEmployeeCode } from '../utils';
 
 interface SiteDutyManagementProps {

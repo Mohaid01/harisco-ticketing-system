@@ -1,7 +1,9 @@
 import { AlertCircle, CheckCircle2, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import React, { useState } from 'react';
-import logoFull from '../assets/harisco-full-logo.png';
+
 import type { AppUser } from '../types';
+
+import logoFull from '../assets/harisco-full-logo.png';
 
 const MIN_PASSWORD_LENGTH = 8;
 

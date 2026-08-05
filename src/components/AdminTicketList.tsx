@@ -10,8 +10,10 @@ import {
   XCircleIcon,
 } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
-import { ADMIN_TICKET_CATEGORY_LABELS, ADMIN_TICKET_CATEGORY_OPTIONS, ADMIN_TICKET_STATUS_OPTIONS } from '../constants';
+
 import type { AdminTicket, AdminTicketCategory, AdminTicketStatus, AppUser } from '../types';
+
+import { ADMIN_TICKET_CATEGORY_LABELS, ADMIN_TICKET_CATEGORY_OPTIONS, ADMIN_TICKET_STATUS_OPTIONS } from '../constants';
 
 interface AdminTicketListProps {
   tickets: AdminTicket[];

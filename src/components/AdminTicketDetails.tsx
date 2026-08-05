@@ -1,7 +1,9 @@
 import { ArrowLeft, Calendar, CheckCircle2, Send, ShieldAlert, Tag, User, XCircleIcon } from 'lucide-react';
 import React, { useState } from 'react';
-import { ADMIN_TICKET_CATEGORY_LABELS, ADMIN_TICKET_CATEGORY_OPTIONS, ROLE_LABELS } from '../constants';
+
 import type { AdminTicket, AdminTicketCategory, AdminTicketStatus, AppUser } from '../types';
+
+import { ADMIN_TICKET_CATEGORY_LABELS, ADMIN_TICKET_CATEGORY_OPTIONS, ROLE_LABELS } from '../constants';
 
 interface AdminTicketDetailsProps {
   ticket: AdminTicket;

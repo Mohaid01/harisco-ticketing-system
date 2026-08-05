@@ -1,8 +1,8 @@
 import type { Response } from 'express';
+
+import { logger } from '@utils';
 import { Router } from 'express';
-import { getDb } from '../db.ts';
-import { authenticateToken } from '../middleware/auth.ts';
-import { sseClients } from '../middleware/sse.ts';
+
 import type {
   AddManualAttendanceRequestBody,
   AddManualAttendanceResponse,
@@ -13,7 +13,10 @@ import type {
   ClearAttendanceResponse,
   DeleteAttendanceLogResponse,
 } from '../types/index.ts';
-import { logger } from '../utils/logger.ts';
+
+import { getDb } from '../db.ts';
+import { authenticateToken } from '../middleware/auth.ts';
+import { sseClients } from '../middleware/sse.ts';
 
 const router = Router();
 

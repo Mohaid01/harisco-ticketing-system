@@ -1,5 +1,6 @@
 import { AlertTriangle, Archive, Clock, Eye, FileText, Info, Megaphone, Plus } from 'lucide-react';
 import React, { useState } from 'react';
+
 import type { AppUser, Notice, NoticeType } from '../types';
 
 interface NoticeBoardProps {

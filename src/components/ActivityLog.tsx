@@ -1,7 +1,9 @@
 import { Calendar, Play, Plus, ShieldCheck, Tag, UserCheck } from 'lucide-react';
 import React, { useMemo } from 'react';
-import { ROLE_LABELS, TICKET_TYPE_LABELS } from '../constants';
+
 import type { AppUser, Ticket } from '../types';
+
+import { ROLE_LABELS, TICKET_TYPE_LABELS } from '../constants';
 
 interface ActivityLogProps {
   tickets: Ticket[];

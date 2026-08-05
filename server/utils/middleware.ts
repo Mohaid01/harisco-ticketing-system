@@ -1,5 +1,7 @@
-import { RequestWithId } from '@types';
 import type { NextFunction, Request, Response } from 'express';
+
+import { RequestWithId } from '@types';
+
 import { logger } from './logger.ts';
 
 export const requestId = (req: Request, res: Response, next: NextFunction) => {

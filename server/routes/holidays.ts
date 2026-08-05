@@ -1,6 +1,5 @@
 import { Router } from 'express';
-import { getDb } from '../db.ts';
-import { authenticateToken } from '../middleware/auth.ts';
+
 import type {
   ApiAuthRequest,
   ApiResponse,
@@ -10,6 +9,9 @@ import type {
   DeleteHolidayResponse,
   HolidaysResponse,
 } from '../types/index.ts';
+
+import { getDb } from '../db.ts';
+import { authenticateToken } from '../middleware/auth.ts';
 
 const router = Router();
 

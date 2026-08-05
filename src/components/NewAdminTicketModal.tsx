@@ -1,7 +1,9 @@
 import { X } from 'lucide-react';
 import React, { useState } from 'react';
-import { ADMIN_TICKET_CATEGORY_OPTIONS } from '../constants';
+
 import type { AdminTicketCategory } from '../types';
+
+import { ADMIN_TICKET_CATEGORY_OPTIONS } from '../constants';
 
 interface NewAdminTicketModalProps {
   isOpen: boolean;

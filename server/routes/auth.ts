@@ -1,9 +1,8 @@
+import { logger } from '@utils';
 import bcrypt from 'bcryptjs';
 import { Router } from 'express';
 import jwt from 'jsonwebtoken';
-import { JWT_SECRET, loginLimiter } from '../constants.ts';
-import { getDb } from '../db.ts';
-import { authenticateToken } from '../middleware/auth.ts';
+
 import type {
   ApiAuthRequest,
   ApiRequest,
@@ -18,7 +17,10 @@ import type {
   ResetPasswordRequestBody,
   ResetPasswordResponse,
 } from '../types/index.ts';
-import { logger } from '../utils/logger.ts';
+
+import { JWT_SECRET, loginLimiter } from '../constants.ts';
+import { getDb } from '../db.ts';
+import { authenticateToken } from '../middleware/auth.ts';
 
 const router = Router();
 

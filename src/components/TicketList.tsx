@@ -1,7 +1,9 @@
 import { ArrowUpDown, CheckSquare, Clock, Filter, Plus, Search, Settings, ShieldCheck, UserCheck } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
-import { STATUS_OPTIONS, TICKET_TYPE_LABELS, TICKET_TYPE_OPTIONS } from '../constants';
+
 import type { AppUser, Ticket, TicketStatus, TicketType } from '../types';
+
+import { STATUS_OPTIONS, TICKET_TYPE_LABELS, TICKET_TYPE_OPTIONS } from '../constants';
 
 interface TicketListProps {
   tickets: Ticket[];

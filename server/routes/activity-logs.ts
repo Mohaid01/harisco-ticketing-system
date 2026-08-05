@@ -1,5 +1,7 @@
 import type { ActivityLogsResponse, ActivityLogWithTicket, ApiResponse, AuthRequest } from '@types';
+
 import { Router } from 'express';
+
 import { getDb } from '../db.ts';
 import { authenticateToken } from '../middleware/auth.ts';
 

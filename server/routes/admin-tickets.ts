@@ -1,6 +1,6 @@
+import { logger } from '@utils';
 import { Router } from 'express';
-import { getDb } from '../db.ts';
-import { authenticateToken } from '../middleware/auth.ts';
+
 import type {
   AddAdminCommentRequestBody,
   AddAdminCommentResponse,
@@ -20,7 +20,9 @@ import type {
   UpdateAdminTicketStatusRequestBody,
   UpdateAdminTicketStatusResponse,
 } from '../types/index.ts';
-import { logger } from '../utils/logger.ts';
+
+import { getDb } from '../db.ts';
+import { authenticateToken } from '../middleware/auth.ts';
 
 const router = Router();
 

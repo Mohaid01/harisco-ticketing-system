@@ -1,6 +1,7 @@
+import { logger } from '@utils';
+
 import { getDb } from '../db.ts';
 import { sseClients } from '../middleware/sse.ts';
-import { logger } from '../utils/logger.ts';
 
 // Shared attendance punch processor for both WebSocket and PT-5000 device routes
 const lastProcessedPunchMap = new Map<string, string>();

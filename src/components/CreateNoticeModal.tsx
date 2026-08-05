@@ -1,5 +1,6 @@
 import { X } from 'lucide-react';
 import React, { useState } from 'react';
+
 import type { NoticeType } from '../types';
 
 interface CreateNoticeModalProps {

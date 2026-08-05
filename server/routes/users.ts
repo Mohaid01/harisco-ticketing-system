@@ -1,7 +1,7 @@
+import { logger } from '@utils';
 import bcrypt from 'bcryptjs';
 import { Router } from 'express';
-import { getDb } from '../db.ts';
-import { authenticateToken } from '../middleware/auth.ts';
+
 import type {
   ApiAuthRequest,
   ApiResponse,
@@ -16,7 +16,9 @@ import type {
   UpdateUserResponse,
   UsersResponse,
 } from '../types/index.ts';
-import { logger } from '../utils/logger.ts';
+
+import { getDb } from '../db.ts';
+import { authenticateToken } from '../middleware/auth.ts';
 
 const router = Router();
 

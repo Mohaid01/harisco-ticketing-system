@@ -22,7 +22,9 @@ import {
   XCircle,
 } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
+
 import type { AppUser, AttendanceLog } from '../types';
+
 import { formatEmployeeCode, formatHours } from '../utils';
 
 interface AttendanceProps {
@@ -700,7 +702,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
   const individualStats = useMemo(() => {
     let present = 0;
     let absent = 0;
-    let totalHours = 0;
+    const totalHours = 0;
     let workDaysCounted = 0;
 
     const todayStr = new Intl.DateTimeFormat('en-CA', {

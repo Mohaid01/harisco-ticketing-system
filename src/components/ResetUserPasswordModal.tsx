@@ -1,5 +1,6 @@
 import { KeyRound, X } from 'lucide-react';
 import React, { useState } from 'react';
+
 import type { AppUser } from '../types';
 
 const MIN_PASSWORD_LENGTH = 4;

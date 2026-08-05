@@ -1,7 +1,6 @@
+import { logger } from '@utils';
 import { Router } from 'express';
-import { getDb } from '../db.ts';
-import { sendEmail } from '../email.ts';
-import { authenticateToken } from '../middleware/auth.ts';
+
 import type {
   AddTicketCommentRequestBody,
   AddTicketCommentResponse,
@@ -23,7 +22,10 @@ import type {
   UpdateTicketStatusRequestBody,
   UpdateTicketStatusResponse,
 } from '../types/index.ts';
-import { logger } from '../utils/logger.ts';
+
+import { getDb } from '../db.ts';
+import { sendEmail } from '../email.ts';
+import { authenticateToken } from '../middleware/auth.ts';
 
 const router = Router();
 

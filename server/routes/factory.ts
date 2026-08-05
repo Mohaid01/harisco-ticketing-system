@@ -1,8 +1,7 @@
+import { logger } from '@utils';
 import bcrypt from 'bcryptjs';
 import { Response, Router } from 'express';
-import { getDb } from '../db.ts';
-import { authenticateToken } from '../middleware/auth.ts';
-import { sseClients } from '../middleware/sse.ts';
+
 import type {
   AddFactoryManualAttendanceRequestBody,
   AddFactoryManualAttendanceResponse,
@@ -22,7 +21,10 @@ import type {
   UpdateFactoryUserRequestBody,
   UpdateFactoryUserResponse,
 } from '../types/index.ts';
-import { logger } from '../utils/logger.ts';
+
+import { getDb } from '../db.ts';
+import { authenticateToken } from '../middleware/auth.ts';
+import { sseClients } from '../middleware/sse.ts';
 
 const router = Router();
 

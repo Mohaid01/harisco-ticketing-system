@@ -1,6 +1,8 @@
 import { Calendar, CheckCircle, Clock, Plus, X, XCircle } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
+
 import type { AppUser, LeaveApplication, LeaveCategory, LeaveStatus } from '../types';
+
 import { formatEmployeeCode } from '../utils';
 
 interface LeaveManagementProps {

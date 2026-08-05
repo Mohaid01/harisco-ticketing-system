@@ -179,14 +179,14 @@ async function main() {
     });
   }
 
-  console.log('Seed data inserted successfully.');
-  console.log('HQ Users:', hqUsers.length);
-  console.log('Factory Users:', factoryUsers.length);
-  console.log('Holidays:', holidays.length);
+  logger.log('Seed data inserted successfully.');
+  logger.log('HQ Users:', hqUsers.length);
+  logger.log('Factory Users:', factoryUsers.length);
+  logger.log('Holidays:', holidays.length);
   db.close();
 }
 
 main().catch((err) => {
-  console.error('Failed to seed data:', err);
+  logger.error('Failed to seed data:', err);
   process.exit(1);
 });
