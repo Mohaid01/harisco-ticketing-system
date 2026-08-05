@@ -1,19 +1,19 @@
-import { Router } from "express";
-import type { Request } from "express";
-import type { ApiResponse, HealthResponse } from "../types/index.ts";
-import { getDb } from "../db.ts";
-import { logger } from "../utils/logger.ts";
+import type { Request } from 'express';
+import { Router } from 'express';
+import { getDb } from '../db.ts';
+import type { ApiResponse, HealthResponse } from '../types/index.ts';
+import { logger } from '../utils/logger.ts';
 
 const router = Router();
 
 // GET /api/health
-router.get("/", async (req: Request, res: ApiResponse<HealthResponse>) => {
+router.get('/', async (req: Request, res: ApiResponse<HealthResponse>) => {
   try {
     const db = getDb();
-    await db.get("SELECT 1;");
+    await db.get('SELECT 1;');
 
     const healthStatus: HealthResponse = {
-      status: "healthy",
+      status: 'healthy',
       timestamp: new Date().toISOString(),
       uptime: `${Math.floor(process.uptime())}s`,
       memoryUsage: {
@@ -24,12 +24,12 @@ router.get("/", async (req: Request, res: ApiResponse<HealthResponse>) => {
 
     res.status(200).json(healthStatus);
   } catch (error) {
-    logger.error("⚠️ [HEALTH CHECK FAILED]:", error);
+    logger.error('⚠️ [HEALTH CHECK FAILED]:', error);
 
     const errorResponse: HealthResponse = {
-      status: "unhealthy",
+      status: 'unhealthy',
       timestamp: new Date().toISOString(),
-      error: (error as Error)?.message || "Database connection dropped.",
+      error: (error as Error)?.message || 'Database connection dropped.',
     };
 
     res.status(503).json(errorResponse);

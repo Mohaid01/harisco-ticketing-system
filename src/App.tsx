@@ -1,45 +1,39 @@
-import { useState, useEffect } from "react";
-import { Sidebar } from "./components/Sidebar";
-import { NoticeBoard } from "./components/NoticeBoard";
-import { TicketList } from "./components/TicketList";
-import { TicketDetails } from "./components/TicketDetails";
-import { NewTicketModal } from "./components/NewTicketModal";
-import { UserManagement } from "./components/UserManagement";
-import { FactoryUserManagement } from "./components/FactoryUserManagement";
-import { ActivityLog } from "./components/ActivityLog";
-import { Attendance } from "./components/Attendance";
-import { LeaveManagement } from "./components/LeaveManagement";
-import { SiteDutyManagement } from "./components/SiteDutyManagement";
-import { Login } from "./components/Login";
-import { PasswordReset } from "./components/PasswordReset";
-import { ChangePasswordModal } from "./components/ChangePasswordModal";
-import { AdminTicketList } from "./components/AdminTicketList";
-import { AdminTicketDetails } from "./components/AdminTicketDetails";
-import { NewAdminTicketModal } from "./components/NewAdminTicketModal";
-import {
-  ADMIN_TICKET_STATUS_LABELS,
-  APP_TITLE,
-  STATUS_LABELS,
-} from "./constants";
+import { useEffect, useState } from 'react';
+import { ActivityLog } from './components/ActivityLog';
+import { AdminTicketDetails } from './components/AdminTicketDetails';
+import { AdminTicketList } from './components/AdminTicketList';
+import { Attendance } from './components/Attendance';
+import { ChangePasswordModal } from './components/ChangePasswordModal';
+import { CreateNoticeModal } from './components/CreateNoticeModal';
+import { EditNoticeModal } from './components/EditNoticeModal';
+import { FactoryUserManagement } from './components/FactoryUserManagement';
+import { LeaveManagement } from './components/LeaveManagement';
+import { Login } from './components/Login';
+import { NewAdminTicketModal } from './components/NewAdminTicketModal';
+import { NewTicketModal } from './components/NewTicketModal';
+import { NoticeBoard } from './components/NoticeBoard';
+import { PasswordReset } from './components/PasswordReset';
+import { Sidebar } from './components/Sidebar';
+import { SiteDutyManagement } from './components/SiteDutyManagement';
+import { TicketDetails } from './components/TicketDetails';
+import { TicketList } from './components/TicketList';
+import { UserManagement } from './components/UserManagement';
+import { ADMIN_TICKET_STATUS_LABELS, APP_TITLE, STATUS_LABELS } from './constants';
 import type {
-  Ticket,
+  ActiveTab,
+  AdminTicket,
+  AdminTicketCategory,
+  AdminTicketStatus,
   AppUser,
+  Notice,
+  Ticket,
   TicketStatus,
   TicketType,
-  ActiveTab,
   UserRole,
-  Notice,
-  AdminTicket,
-  AdminTicketStatus,
-  AdminTicketCategory,
-} from "./types";
-import { CreateNoticeModal } from "./components/CreateNoticeModal";
-import { EditNoticeModal } from "./components/EditNoticeModal";
+} from './types';
 
 function App() {
-  const [token, setToken] = useState<string | null>(
-    localStorage.getItem("harisco_token"),
-  );
+  const [token, setToken] = useState<string | null>(localStorage.getItem('harisco_token'));
   const [notices, setNotices] = useState<Notice[]>([]);
   const [isCreateNoticeOpen, setIsCreateNoticeOpen] = useState(false);
   const [selectedNoticeId, setSelectedNoticeId] = useState<string | null>(null);
@@ -47,20 +41,16 @@ function App() {
   const [users, setUsers] = useState<AppUser[]>([]);
   const [factoryUsers, setFactoryUsers] = useState<AppUser[]>([]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
-  const [activeTab, setActiveTab] = useState<ActiveTab>("noticeboard");
+  const [activeTab, setActiveTab] = useState<ActiveTab>('noticeboard');
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
-  const [isPasswordModalOpen, setIsPasswordModalOpen] =
-    useState<boolean>(false);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [adminTickets, setAdminTickets] = useState<AdminTicket[]>([]);
-  const [adminSearchQuery, setAdminSearchQuery] = useState<string>("");
-  const [selectedAdminTicketId, setSelectedAdminTicketId] = useState<
-    string | null
-  >(null);
-  const [isCreateAdminModalOpen, setIsCreateAdminModalOpen] =
-    useState<boolean>(false);
+  const [adminSearchQuery, setAdminSearchQuery] = useState<string>('');
+  const [selectedAdminTicketId, setSelectedAdminTicketId] = useState<string | null>(null);
+  const [isCreateAdminModalOpen, setIsCreateAdminModalOpen] = useState<boolean>(false);
 
   // Load session and data
   useEffect(() => {
@@ -77,12 +67,12 @@ function App() {
       }
 
       try {
-        const authRes = await fetch("/api/auth/me", {
+        const authRes = await fetch('/api/auth/me', {
           headers: { Authorization: `Bearer ${token}` },
         });
 
         if (!authRes.ok) {
-          throw new Error("Session expired");
+          throw new Error('Session expired');
         }
 
         const authData = await authRes.json();
@@ -95,7 +85,7 @@ function App() {
         }
 
         // Fetch Notices
-        const noticesRes = await fetch("/api/notices", {
+        const noticesRes = await fetch('/api/notices', {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (noticesRes.ok) {
@@ -104,7 +94,7 @@ function App() {
         }
 
         // Fetch tickets
-        const ticketsRes = await fetch("/api/tickets", {
+        const ticketsRes = await fetch('/api/tickets', {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (ticketsRes.ok) {
@@ -113,7 +103,7 @@ function App() {
         }
 
         // Fetch admin tickets
-        const adminTicketsRes = await fetch("/api/admin-tickets", {
+        const adminTicketsRes = await fetch('/api/admin-tickets', {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (adminTicketsRes.ok) {
@@ -122,7 +112,7 @@ function App() {
         }
 
         // Fetch users
-        const usersRes = await fetch("/api/users", {
+        const usersRes = await fetch('/api/users', {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (usersRes.ok) {
@@ -130,7 +120,7 @@ function App() {
           setUsers(usersData);
         }
 
-        const factoryUsersRes = await fetch("/api/factory/users", {
+        const factoryUsersRes = await fetch('/api/factory/users', {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (factoryUsersRes.ok) {
@@ -138,8 +128,8 @@ function App() {
           setFactoryUsers(factoryUsersData);
         }
       } catch (err) {
-        console.error("Session verification failed:", err);
-        localStorage.removeItem("harisco_token");
+        console.error('Session verification failed:', err);
+        localStorage.removeItem('harisco_token');
         setToken(null);
         setCurrentUser(null);
       } finally {
@@ -152,11 +142,11 @@ function App() {
 
   // Polling mechanism for real-time updates
   useEffect(() => {
-    if (!token || activeTab !== "tickets") return;
+    if (!token || activeTab !== 'tickets') return;
 
     const pollInterval = setInterval(async () => {
       try {
-        const ticketsRes = await fetch("/api/tickets", {
+        const ticketsRes = await fetch('/api/tickets', {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (ticketsRes.ok) {
@@ -179,11 +169,11 @@ function App() {
 
   // Polling mechanism for admin tickets real-time updates
   useEffect(() => {
-    if (!token || activeTab !== "admin_tickets") return;
+    if (!token || activeTab !== 'admin_tickets') return;
 
     const pollInterval = setInterval(async () => {
       try {
-        const adminTicketsRes = await fetch("/api/admin-tickets", {
+        const adminTicketsRes = await fetch('/api/admin-tickets', {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (adminTicketsRes.ok) {
@@ -222,50 +212,39 @@ function App() {
     }
 
     const tabName = activeTab
-      .split("_")
+      .split('_')
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ");
+      .join(' ');
     document.title = `${tabName} | ${APP_TITLE}`;
-  }, [
-    activeTab,
-    selectedTicketId,
-    selectedAdminTicketId,
-    tickets,
-    adminTickets,
-  ]);
+  }, [activeTab, selectedTicketId, selectedAdminTicketId, tickets, adminTickets]);
 
   // Find active ticket if viewing details
-  const currentTicket = selectedTicketId
-    ? tickets.find((t) => t.id === selectedTicketId) || null
-    : null;
+  const currentTicket = selectedTicketId ? tickets.find((t) => t.id === selectedTicketId) || null : null;
 
   const currentAdminTicket = selectedAdminTicketId
     ? adminTickets.find((t) => t.id === selectedAdminTicketId) || null
     : null;
 
   // Filter IT users for assignees dropdown
-  const itUsers = users.filter((u) => u.role === "it");
+  const itUsers = users.filter((u) => u.role === 'it');
 
   const handleLoginSuccess = (newToken: string, user: AppUser) => {
-    localStorage.setItem("harisco_token", newToken);
+    localStorage.setItem('harisco_token', newToken);
     setToken(newToken);
     setCurrentUser(user);
-    setActiveTab("noticeboard");
+    setActiveTab('noticeboard');
   };
 
-  const handlePasswordResetSuccess = (
-    newToken: string,
-    updatedUser: AppUser,
-  ) => {
-    localStorage.setItem("harisco_token", newToken);
+  const handlePasswordResetSuccess = (newToken: string, updatedUser: AppUser) => {
+    localStorage.setItem('harisco_token', newToken);
     setToken(newToken);
     setCurrentUser(updatedUser);
-    setActiveTab("noticeboard");
+    setActiveTab('noticeboard');
   };
 
   // Handle Logout
   const handleLogout = () => {
-    localStorage.removeItem("harisco_token");
+    localStorage.removeItem('harisco_token');
     setToken(null);
     setCurrentUser(null);
     setTickets([]);
@@ -274,7 +253,7 @@ function App() {
     setAdminTickets([]);
     setSelectedTicketId(null);
     setSelectedAdminTicketId(null);
-    setActiveTab("noticeboard");
+    setActiveTab('noticeboard');
   };
 
   // Noticeboard-releveant API calls
@@ -282,24 +261,22 @@ function App() {
   const fetchNotices = async () => {
     if (!token || !currentUser) return;
     try {
-      const response = await fetch("/api/notices", {
-        method: "GET",
+      const response = await fetch('/api/notices', {
+        method: 'GET',
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
-      if (!response.ok) throw new Error("Failed to fetch notices");
+      if (!response.ok) throw new Error('Failed to fetch notices');
       const data = await response.json();
       setNotices(data);
     } catch (error) {
-      console.error("Notice fetch error:", error);
+      console.error('Notice fetch error:', error);
     }
   };
 
   // Create a notice
-  const handleCreateNotice = async (
-    noticeData: Omit<Notice, "id" | "createdAt" | "authorName" | "authorRole">,
-  ) => {
+  const handleCreateNotice = async (noticeData: Omit<Notice, 'id' | 'createdAt' | 'authorName' | 'authorRole'>) => {
     if (!token || !currentUser) return;
 
     const payload = {
@@ -310,10 +287,10 @@ function App() {
     };
 
     try {
-      const response = await fetch("/api/notices", {
-        method: "POST",
+      const response = await fetch('/api/notices', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(payload),
@@ -324,14 +301,14 @@ function App() {
         setIsCreateNoticeOpen(false);
       }
     } catch (error) {
-      console.error("Failed to post notice:", error);
+      console.error('Failed to post notice:', error);
     }
   };
 
   // Update a notice
   const handleEditNotice = async (
     noticeId: string,
-    noticeData: Omit<Notice, "id" | "createdAt" | "authorName" | "authorRole">,
+    noticeData: Omit<Notice, 'id' | 'createdAt' | 'authorName' | 'authorRole'>
   ) => {
     if (!token || !currentUser) return;
     const payload = {
@@ -343,9 +320,9 @@ function App() {
 
     try {
       const response = await fetch(`/api/notices/${noticeId}`, {
-        method: "PUT",
+        method: 'PUT',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(payload),
@@ -356,7 +333,7 @@ function App() {
         setSelectedNoticeId(null);
       }
     } catch (error) {
-      console.error("Failed to update notice:", error);
+      console.error('Failed to update notice:', error);
     }
   };
 
@@ -367,40 +344,35 @@ function App() {
     ticketId: string,
     status: TicketStatus,
     actionMessage: string,
-    quotation?: number,
+    quotation?: number
   ) => {
     if (!token || !currentUser) return;
 
-    if (
-      !window.confirm(
-        `Update ticket ${ticketId} status to ${STATUS_LABELS[status]}?`,
-      )
-    ) {
+    if (!window.confirm(`Update ticket ${ticketId} status to ${STATUS_LABELS[status]}?`)) {
       return;
     }
 
     try {
       const res = await fetch(`/api/tickets/${ticketId}/status`, {
-        method: "POST",
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ status, actionMessage, quotation }),
       });
 
-      if (!res.ok) throw new Error("Failed to update status");
+      if (!res.ok) throw new Error('Failed to update status');
       const result = await res.json();
 
       // Add a system comment in the activity thread locally
       const newComment = {
         id: `c-sys-${Date.now()}`,
-        authorId: "system",
-        authorName: "System Log",
-        authorRole: "it" as UserRole,
-        avatar:
-          "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=100&h=100&q=80",
-        content: `Workflow updated to status: ${STATUS_LABELS[status]}.${quotation !== undefined ? ` Quotation added: Rs ${quotation}` : ""}`,
+        authorId: 'system',
+        authorName: 'System Log',
+        authorRole: 'it' as UserRole,
+        avatar: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=100&h=100&q=80',
+        content: `Workflow updated to status: ${STATUS_LABELS[status]}.${quotation !== undefined ? ` Quotation added: Rs ${quotation}` : ''}`,
         createdAt: new Date().toISOString(),
       };
 
@@ -411,37 +383,32 @@ function App() {
             ...t,
             status: result.status,
             updatedAt: result.updatedAt,
-            quotation:
-              result.quotation !== undefined ? result.quotation : t.quotation,
+            quotation: result.quotation !== undefined ? result.quotation : t.quotation,
             comments: [...t.comments, newComment],
             activityLogs: [...t.activityLogs, result.newLog],
           };
-        }),
+        })
       );
     } catch (err) {
       console.error(err);
-      alert("Error updating status. Please try again.");
+      alert('Error updating status. Please try again.');
     }
   };
 
   // Handle ticket assignment
-  const handleAssignTicket = async (
-    ticketId: string,
-    assigneeId: string,
-    assigneeName: string,
-  ) => {
+  const handleAssignTicket = async (ticketId: string, assigneeId: string, assigneeName: string) => {
     if (!token || !currentUser) return;
     try {
       const res = await fetch(`/api/tickets/${ticketId}/assign`, {
-        method: "POST",
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ assigneeId, assigneeName }),
       });
 
-      if (!res.ok) throw new Error("Failed to assign ticket");
+      if (!res.ok) throw new Error('Failed to assign ticket');
       const result = await res.json();
 
       setTickets((prevTickets) =>
@@ -455,31 +422,31 @@ function App() {
             updatedAt: result.updatedAt,
             activityLogs: [...t.activityLogs, result.newLog],
           };
-        }),
+        })
       );
     } catch (err) {
       console.error(err);
-      alert("Error assigning ticket. Please try again.");
+      alert('Error assigning ticket. Please try again.');
     }
   };
 
   // Handle edit ticket
   const handleEditTicket = async (
     ticketId: string,
-    data: { description: string; type: TicketType; justification: string },
+    data: { description: string; type: TicketType; justification: string }
   ) => {
     if (!token || !currentUser) return;
     try {
       const res = await fetch(`/api/tickets/${ticketId}`, {
-        method: "PUT",
+        method: 'PUT',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(data),
       });
 
-      if (!res.ok) throw new Error("Failed to edit ticket");
+      if (!res.ok) throw new Error('Failed to edit ticket');
       const result = await res.json();
 
       setTickets((prevTickets) =>
@@ -493,11 +460,11 @@ function App() {
             updatedAt: result.updatedAt,
             activityLogs: [...t.activityLogs, result.newLog],
           };
-        }),
+        })
       );
     } catch (err) {
       console.error(err);
-      alert("Error editing ticket. Please try again.");
+      alert('Error editing ticket. Please try again.');
     }
   };
 
@@ -506,19 +473,19 @@ function App() {
     if (!token || !currentUser) return;
     try {
       const res = await fetch(`/api/tickets/${ticketId}`, {
-        method: "DELETE",
+        method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
-      if (!res.ok) throw new Error("Failed to delete ticket");
+      if (!res.ok) throw new Error('Failed to delete ticket');
 
       setTickets((prevTickets) => prevTickets.filter((t) => t.id !== ticketId));
       setSelectedTicketId(null);
     } catch (err) {
       console.error(err);
-      alert("Error deleting ticket. Please try again.");
+      alert('Error deleting ticket. Please try again.');
     }
   };
 
@@ -527,20 +494,20 @@ function App() {
     if (!token || !currentUser) return;
     try {
       const res = await fetch(`/api/tickets/${ticketId}/comments`, {
-        method: "POST",
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ content }),
       });
 
-      if (!res.ok) throw new Error("Failed to add comment");
+      if (!res.ok) throw new Error('Failed to add comment');
       const newComment = await res.json();
 
       const newLog = {
         id: `log-${Date.now()}`,
-        action: "Comment added",
+        action: 'Comment added',
         timestamp: new Date().toISOString(),
         performedByName: currentUser.name,
         performedByRole: currentUser.role,
@@ -555,40 +522,36 @@ function App() {
             updatedAt: newComment.createdAt,
             activityLogs: [...t.activityLogs, newLog],
           };
-        }),
+        })
       );
     } catch (err) {
       console.error(err);
-      alert("Error posting comment. Please try again.");
+      alert('Error posting comment. Please try again.');
     }
   };
 
-  const handleCreateTicket = async (data: {
-    description: string;
-    justification: string;
-    type: TicketType;
-  }) => {
+  const handleCreateTicket = async (data: { description: string; justification: string; type: TicketType }) => {
     if (!token || !currentUser) return;
     try {
-      const res = await fetch("/api/tickets", {
-        method: "POST",
+      const res = await fetch('/api/tickets', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(data),
       });
 
-      if (!res.ok) throw new Error("Failed to raise ticket");
+      if (!res.ok) throw new Error('Failed to raise ticket');
       const newTicket = await res.json();
 
       setTickets((prevTickets) => [newTicket, ...prevTickets]);
-      setActiveTab("tickets");
+      setActiveTab('tickets');
       setSelectedTicketId(newTicket.id);
       setIsCreateModalOpen(false);
     } catch (err) {
       console.error(err);
-      alert("Error raising issue ticket. Please try again.");
+      alert('Error raising issue ticket. Please try again.');
     }
   };
 
@@ -599,23 +562,19 @@ function App() {
     status: AdminTicketStatus,
     actionMessage: string,
     executiveId?: string,
-    executiveName?: string,
+    executiveName?: string
   ) => {
     if (!token || !currentUser) return;
 
-    if (
-      !window.confirm(
-        `Update ticket ${ticketId} status to ${ADMIN_TICKET_STATUS_LABELS[status]}?`,
-      )
-    ) {
+    if (!window.confirm(`Update ticket ${ticketId} status to ${ADMIN_TICKET_STATUS_LABELS[status]}?`)) {
       return;
     }
 
     try {
       const res = await fetch(`/api/admin-tickets/${ticketId}/status`, {
-        method: "POST",
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
@@ -626,7 +585,7 @@ function App() {
         }),
       });
 
-      if (!res.ok) throw new Error("Failed to update admin ticket status");
+      if (!res.ok) throw new Error('Failed to update admin ticket status');
       const result = await res.json();
 
       setAdminTickets((prev) =>
@@ -640,11 +599,11 @@ function App() {
             executiveName: result.executiveName || t.executiveName,
             activityLogs: [...t.activityLogs, result.newLog],
           };
-        }),
+        })
       );
     } catch (err) {
       console.error(err);
-      alert("Error updating admin ticket status. Please try again.");
+      alert('Error updating admin ticket status. Please try again.');
     }
   };
 
@@ -652,20 +611,20 @@ function App() {
     if (!token || !currentUser) return;
     try {
       const res = await fetch(`/api/admin-tickets/${ticketId}/comments`, {
-        method: "POST",
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ content }),
       });
 
-      if (!res.ok) throw new Error("Failed to add comment");
+      if (!res.ok) throw new Error('Failed to add comment');
       const newComment = await res.json();
 
       const newLog = {
         id: `log-${Date.now()}`,
-        action: "Comment added",
+        action: 'Comment added',
         timestamp: new Date().toISOString(),
         performedByName: currentUser.name,
         performedByRole: currentUser.role,
@@ -680,58 +639,55 @@ function App() {
             updatedAt: newComment.createdAt,
             activityLogs: [...t.activityLogs, newLog],
           };
-        }),
+        })
       );
     } catch (err) {
       console.error(err);
-      alert("Error posting comment. Please try again.");
+      alert('Error posting comment. Please try again.');
     }
   };
 
-  const handleCreateAdminTicket = async (data: {
-    description: string;
-    category: AdminTicketCategory;
-  }) => {
+  const handleCreateAdminTicket = async (data: { description: string; category: AdminTicketCategory }) => {
     if (!token || !currentUser) return;
     try {
-      const res = await fetch("/api/admin-tickets", {
-        method: "POST",
+      const res = await fetch('/api/admin-tickets', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(data),
       });
 
-      if (!res.ok) throw new Error("Failed to raise admin ticket");
+      if (!res.ok) throw new Error('Failed to raise admin ticket');
       const newTicket = await res.json();
 
       setAdminTickets((prev) => [newTicket, ...prev]);
-      setActiveTab("admin_tickets");
+      setActiveTab('admin_tickets');
       setSelectedAdminTicketId(newTicket.id);
       setIsCreateAdminModalOpen(false);
     } catch (err) {
       console.error(err);
-      alert("Error raising admin ticket. Please try again.");
+      alert('Error raising admin ticket. Please try again.');
     }
   };
 
   const handleEditAdminTicket = async (
     ticketId: string,
-    data: { description: string; category: AdminTicketCategory },
+    data: { description: string; category: AdminTicketCategory }
   ) => {
     if (!token || !currentUser) return;
     try {
       const res = await fetch(`/api/admin-tickets/${ticketId}`, {
-        method: "PUT",
+        method: 'PUT',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(data),
       });
 
-      if (!res.ok) throw new Error("Failed to edit admin ticket");
+      if (!res.ok) throw new Error('Failed to edit admin ticket');
       const result = await res.json();
 
       setAdminTickets((prev) =>
@@ -744,11 +700,11 @@ function App() {
             updatedAt: result.updatedAt,
             activityLogs: [...t.activityLogs, result.newLog],
           };
-        }),
+        })
       );
     } catch (err) {
       console.error(err);
-      alert("Error editing admin ticket. Please try again.");
+      alert('Error editing admin ticket. Please try again.');
     }
   };
 
@@ -756,19 +712,19 @@ function App() {
     if (!token || !currentUser) return;
     try {
       const res = await fetch(`/api/admin-tickets/${ticketId}`, {
-        method: "DELETE",
+        method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
-      if (!res.ok) throw new Error("Failed to delete admin ticket");
+      if (!res.ok) throw new Error('Failed to delete admin ticket');
 
       setAdminTickets((prev) => prev.filter((t) => t.id !== ticketId));
       setSelectedAdminTicketId(null);
     } catch (err) {
       console.error(err);
-      alert("Error deleting admin ticket. Please try again.");
+      alert('Error deleting admin ticket. Please try again.');
     }
   };
 
@@ -788,10 +744,10 @@ function App() {
   }) => {
     if (!token || !currentUser) return;
     try {
-      const res = await fetch("/api/users", {
-        method: "POST",
+      const res = await fetch('/api/users', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(data),
@@ -799,17 +755,14 @@ function App() {
 
       if (!res.ok) {
         const errData = await res.json();
-        throw new Error(errData.error || "Failed to add user");
+        throw new Error(errData.error || 'Failed to add user');
       }
 
       const newUser = await res.json();
       setUsers((prevUsers) => [...prevUsers, newUser]);
     } catch (err) {
       console.error(err);
-      const errMsg =
-        err instanceof Error
-          ? err.message
-          : "Error creating user. Please try again.";
+      const errMsg = err instanceof Error ? err.message : 'Error creating user. Please try again.';
       alert(errMsg);
     }
   };
@@ -819,7 +772,7 @@ function App() {
     if (!token || !currentUser) return;
     try {
       const res = await fetch(`/api/users/${userId}`, {
-        method: "DELETE",
+        method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -827,16 +780,13 @@ function App() {
 
       if (!res.ok) {
         const errData = await res.json();
-        throw new Error(errData.error || "Failed to delete user");
+        throw new Error(errData.error || 'Failed to delete user');
       }
 
       setUsers((prevUsers) => prevUsers.filter((u) => u.id !== userId));
     } catch (err) {
       console.error(err);
-      const errMsg =
-        err instanceof Error
-          ? err.message
-          : "Error deleting user. Please try again.";
+      const errMsg = err instanceof Error ? err.message : 'Error deleting user. Please try again.';
       alert(errMsg);
     }
   };
@@ -852,14 +802,14 @@ function App() {
       avatar?: string | null;
       isDepartmentHead?: boolean;
       loginEnabled?: boolean;
-    },
+    }
   ) => {
     if (!token || !currentUser) return;
     try {
       const res = await fetch(`/api/users/${userId}`, {
-        method: "PUT",
+        method: 'PUT',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(data),
@@ -867,7 +817,7 @@ function App() {
 
       if (!res.ok) {
         const errData = await res.json();
-        throw new Error(errData.error || "Failed to update user");
+        throw new Error(errData.error || 'Failed to update user');
       }
 
       const updatedUser = await res.json();
@@ -884,15 +834,12 @@ function App() {
                 isDepartmentHead: updatedUser.isDepartmentHead,
                 loginEnabled: updatedUser.loginEnabled,
               }
-            : u,
-        ),
+            : u
+        )
       );
     } catch (err) {
       console.error(err);
-      const errMsg =
-        err instanceof Error
-          ? err.message
-          : "Error updating user. Please try again.";
+      const errMsg = err instanceof Error ? err.message : 'Error updating user. Please try again.';
       alert(errMsg);
     }
   };
@@ -913,10 +860,10 @@ function App() {
   }) => {
     if (!token || !currentUser) return;
     try {
-      const res = await fetch("/api/factory/users", {
-        method: "POST",
+      const res = await fetch('/api/factory/users', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(data),
@@ -924,17 +871,14 @@ function App() {
 
       if (!res.ok) {
         const errData = await res.json();
-        throw new Error(errData.error || "Failed to add factory user");
+        throw new Error(errData.error || 'Failed to add factory user');
       }
 
       const newUser = await res.json();
       setFactoryUsers((prevUsers) => [...prevUsers, newUser]);
     } catch (err) {
       console.error(err);
-      const errMsg =
-        err instanceof Error
-          ? err.message
-          : "Error creating factory user. Please try again.";
+      const errMsg = err instanceof Error ? err.message : 'Error creating factory user. Please try again.';
       alert(errMsg);
     }
   };
@@ -943,7 +887,7 @@ function App() {
     if (!token || !currentUser) return;
     try {
       const res = await fetch(`/api/factory/users/${userId}`, {
-        method: "DELETE",
+        method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -951,16 +895,13 @@ function App() {
 
       if (!res.ok) {
         const errData = await res.json();
-        throw new Error(errData.error || "Failed to delete factory user");
+        throw new Error(errData.error || 'Failed to delete factory user');
       }
 
       setFactoryUsers((prevUsers) => prevUsers.filter((u) => u.id !== userId));
     } catch (err) {
       console.error(err);
-      const errMsg =
-        err instanceof Error
-          ? err.message
-          : "Error deleting factory user. Please try again.";
+      const errMsg = err instanceof Error ? err.message : 'Error deleting factory user. Please try again.';
       alert(errMsg);
     }
   };
@@ -975,14 +916,14 @@ function App() {
       avatar?: string | null;
       isDepartmentHead?: boolean;
       loginEnabled?: boolean;
-    },
+    }
   ) => {
     if (!token || !currentUser) return;
     try {
       const res = await fetch(`/api/factory/users/${userId}`, {
-        method: "PUT",
+        method: 'PUT',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(data),
@@ -990,7 +931,7 @@ function App() {
 
       if (!res.ok) {
         const errData = await res.json();
-        throw new Error(errData.error || "Failed to update factory user");
+        throw new Error(errData.error || 'Failed to update factory user');
       }
 
       const updatedUser = await res.json();
@@ -1007,15 +948,12 @@ function App() {
                 isDepartmentHead: updatedUser.isDepartmentHead,
                 loginEnabled: updatedUser.loginEnabled,
               }
-            : u,
-        ),
+            : u
+        )
       );
     } catch (err) {
       console.error(err);
-      const errMsg =
-        err instanceof Error
-          ? err.message
-          : "Error updating factory user. Please try again.";
+      const errMsg = err instanceof Error ? err.message : 'Error updating factory user. Please try again.';
       alert(errMsg);
     }
   };
@@ -1023,23 +961,18 @@ function App() {
   // Loading state skeleton screen
   if (loading) {
     return (
-      <div
-        className="login-page"
-        style={{ flexDirection: "column", gap: "20px" }}
-      >
+      <div className="login-page" style={{ flexDirection: 'column', gap: '20px' }}>
         <div
           style={{
-            width: "40px",
-            height: "40px",
-            border: "3px solid var(--border-color)",
-            borderTopColor: "var(--color-primary)",
-            borderRadius: "50%",
-            animation: "spin 1s linear infinite",
+            width: '40px',
+            height: '40px',
+            border: '3px solid var(--border-color)',
+            borderTopColor: 'var(--color-primary)',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
           }}
         ></div>
-        <span style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>
-          Initializing support desk session...
-        </span>
+        <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Initializing support desk session...</span>
         <style>{`
           @keyframes spin {
             to { transform: rotate(360deg); }
@@ -1054,13 +987,7 @@ function App() {
   }
 
   if (currentUser.needsPasswordReset === 1) {
-    return (
-      <PasswordReset
-        token={token}
-        currentUser={currentUser}
-        onResetSuccess={handlePasswordResetSuccess}
-      />
-    );
+    return <PasswordReset token={token} currentUser={currentUser} onResetSuccess={handlePasswordResetSuccess} />;
   }
 
   return (
@@ -1081,16 +1008,13 @@ function App() {
       {/* Main Section */}
       <main className="main-content">
         {/* Global header bar */}
-        <header
-          className="app-header"
-          style={{ justifyContent: "space-between" }}
-        >
+        <header className="app-header" style={{ justifyContent: 'space-between' }}>
           {/* Header title or context */}
-          <div style={{ display: "flex", alignItems: "center" }}>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
             <span
               style={{
-                fontSize: "0.9rem",
-                color: "var(--text-muted)",
+                fontSize: '0.9rem',
+                color: 'var(--text-muted)',
                 fontWeight: 500,
               }}
             >
@@ -1113,14 +1037,14 @@ function App() {
               onEditTicket={handleEditTicket}
               onDeleteTicket={handleDeleteTicket}
             />
-          ) : activeTab === "noticeboard" ? (
+          ) : activeTab === 'noticeboard' ? (
             <NoticeBoard
               notices={notices}
               currentUser={currentUser}
               onCreateNoticeClick={() => setIsCreateNoticeOpen(true)}
               onEditNoticeClick={(noticeId) => setSelectedNoticeId(noticeId)}
             />
-          ) : activeTab === "tickets" ? (
+          ) : activeTab === 'tickets' ? (
             <TicketList
               tickets={tickets}
               currentUser={currentUser}
@@ -1129,7 +1053,7 @@ function App() {
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
             />
-          ) : activeTab === "users" && currentUser.role === "it" ? (
+          ) : activeTab === 'users' && currentUser.role === 'it' ? (
             <UserManagement
               users={users}
               currentUser={currentUser}
@@ -1138,8 +1062,7 @@ function App() {
               onDeleteUser={handleDeleteUser}
               onUpdateUser={handleUpdateUser}
             />
-          ) : activeTab === "factory_users" &&
-            (currentUser.role === "factory_it" || currentUser.role === "it") ? (
+          ) : activeTab === 'factory_users' && (currentUser.role === 'factory_it' || currentUser.role === 'it') ? (
             <FactoryUserManagement
               users={factoryUsers}
               currentUser={currentUser}
@@ -1148,19 +1071,15 @@ function App() {
               onDeleteUser={handleDeleteFactoryUser}
               onUpdateUser={handleUpdateFactoryUser}
             />
-          ) : activeTab === "attendance" ? (
+          ) : activeTab === 'attendance' ? (
             <Attendance currentUser={currentUser} allUsers={users} mode="hq" />
-          ) : activeTab === "factory_attendance" ? (
-            <Attendance
-              currentUser={currentUser}
-              allUsers={factoryUsers}
-              mode="factory"
-            />
-          ) : activeTab === "leaves" ? (
+          ) : activeTab === 'factory_attendance' ? (
+            <Attendance currentUser={currentUser} allUsers={factoryUsers} mode="factory" />
+          ) : activeTab === 'leaves' ? (
             <LeaveManagement currentUser={currentUser} token={token!} />
-          ) : activeTab === "site_duties" ? (
+          ) : activeTab === 'site_duties' ? (
             <SiteDutyManagement currentUser={currentUser} token={token!} />
-          ) : activeTab === "admin_tickets" ? (
+          ) : activeTab === 'admin_tickets' ? (
             currentAdminTicket ? (
               <AdminTicketDetails
                 ticket={currentAdminTicket}
@@ -1183,11 +1102,7 @@ function App() {
               />
             )
           ) : (
-            <ActivityLog
-              tickets={tickets}
-              currentUser={currentUser}
-              onSelectTicket={(id) => setSelectedTicketId(id)}
-            />
+            <ActivityLog tickets={tickets} currentUser={currentUser} onSelectTicket={(id) => setSelectedTicketId(id)} />
           )}
         </section>
       </main>
@@ -1226,11 +1141,7 @@ function App() {
 
       {/* Change Password Modal */}
       {token && (
-        <ChangePasswordModal
-          isOpen={isPasswordModalOpen}
-          onClose={() => setIsPasswordModalOpen(false)}
-          token={token}
-        />
+        <ChangePasswordModal isOpen={isPasswordModalOpen} onClose={() => setIsPasswordModalOpen(false)} token={token} />
       )}
     </div>
   );

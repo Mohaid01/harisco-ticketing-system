@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
-import { X } from "lucide-react";
-import type { Notice, NoticeType } from "../types";
+import { X } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import type { Notice, NoticeType } from '../types';
 
 interface EditNoticeModalProps {
   noticeId: string;
@@ -13,22 +13,17 @@ interface EditNoticeModalProps {
       en: { title: string; content: string };
       ur: { title: string; content: string };
       expiresAt?: string;
-    },
+    }
   ) => void;
 }
 
-export const EditNoticeModal: React.FC<EditNoticeModalProps> = ({
-  noticeId,
-  notice,
-  onClose,
-  onUpdate,
-}) => {
-  const [type, setType] = useState<NoticeType>("general");
-  const [enTitle, setEnTitle] = useState("");
-  const [enContent, setEnContent] = useState("");
-  const [urTitle, setUrTitle] = useState("");
-  const [urContent, setUrContent] = useState("");
-  const [expiresAt, setExpiresAt] = useState("");
+export const EditNoticeModal: React.FC<EditNoticeModalProps> = ({ noticeId, notice, onClose, onUpdate }) => {
+  const [type, setType] = useState<NoticeType>('general');
+  const [enTitle, setEnTitle] = useState('');
+  const [enContent, setEnContent] = useState('');
+  const [urTitle, setUrTitle] = useState('');
+  const [urContent, setUrContent] = useState('');
+  const [expiresAt, setExpiresAt] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Load existing notice data when modal mounts or updates
@@ -39,7 +34,7 @@ export const EditNoticeModal: React.FC<EditNoticeModalProps> = ({
       setEnContent(notice.en.content);
       setUrTitle(notice.ur.title);
       setUrContent(notice.ur.content);
-      setExpiresAt(notice.expiresAt ? notice.expiresAt.split("T")[0] : "");
+      setExpiresAt(notice.expiresAt ? notice.expiresAt.split('T')[0] : '');
     }
   }, [notice]);
 
@@ -54,12 +49,12 @@ export const EditNoticeModal: React.FC<EditNoticeModalProps> = ({
     const finalUrContent = urContent.trim();
 
     if (!finalEnTitle || !finalEnContent) {
-      setErrorMsg("English Title and Content are required.");
+      setErrorMsg('English Title and Content are required.');
       return;
     }
 
     if (!finalUrTitle || !finalUrContent) {
-      setErrorMsg("Urdu Title and Content are required.");
+      setErrorMsg('Urdu Title and Content are required.');
       return;
     }
 
@@ -76,30 +71,26 @@ export const EditNoticeModal: React.FC<EditNoticeModalProps> = ({
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div
-        className="modal-content"
-        onClick={(e) => e.stopPropagation()}
-        style={{ maxWidth: "600px" }}
-      >
+      <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
         <div
           className="panel-header"
           style={{
-            padding: "20px 24px",
-            borderBottom: "1px solid var(--border-color)",
+            padding: '20px 24px',
+            borderBottom: '1px solid var(--border-color)',
             margin: 0,
           }}
         >
-          <h2 className="panel-title" style={{ fontSize: "1.15rem" }}>
+          <h2 className="panel-title" style={{ fontSize: '1.15rem' }}>
             Edit Announcement
           </h2>
           <button
             id="btn-edit-notice-close"
             className="btn btn-secondary"
             style={{
-              width: "32px",
-              height: "32px",
+              width: '32px',
+              height: '32px',
               padding: 0,
-              borderRadius: "50%",
+              borderRadius: '50%',
             }}
             onClick={onClose}
           >
@@ -108,19 +99,17 @@ export const EditNoticeModal: React.FC<EditNoticeModalProps> = ({
         </div>
 
         <form onSubmit={handleSubmit}>
-          <div
-            style={{ padding: "24px", maxHeight: "70vh", overflowY: "auto" }}
-          >
+          <div style={{ padding: '24px', maxHeight: '70vh', overflowY: 'auto' }}>
             {errorMsg && (
               <div
                 style={{
-                  backgroundColor: "rgba(244, 63, 94, 0.15)",
-                  border: "1px solid rgba(244, 63, 94, 0.3)",
-                  color: "#f43f5e",
-                  padding: "10px 14px",
-                  borderRadius: "var(--radius-md)",
-                  marginBottom: "16px",
-                  fontSize: "0.85rem",
+                  backgroundColor: 'rgba(244, 63, 94, 0.15)',
+                  border: '1px solid rgba(244, 63, 94, 0.3)',
+                  color: '#f43f5e',
+                  padding: '10px 14px',
+                  borderRadius: 'var(--radius-md)',
+                  marginBottom: '16px',
+                  fontSize: '0.85rem',
                 }}
               >
                 {errorMsg}
@@ -130,10 +119,10 @@ export const EditNoticeModal: React.FC<EditNoticeModalProps> = ({
             {/* Notice Category & Expiry Row */}
             <div
               style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "16px",
-                marginBottom: "16px",
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: '16px',
+                marginBottom: '16px',
               }}
             >
               <div className="form-group" style={{ marginBottom: 0 }}>
@@ -143,7 +132,7 @@ export const EditNoticeModal: React.FC<EditNoticeModalProps> = ({
                 <select
                   id="edit-notice-type"
                   className="form-input"
-                  style={{ backgroundColor: "var(--bg-primary)" }}
+                  style={{ backgroundColor: 'var(--bg-primary)' }}
                   value={type}
                   onChange={(e) => setType(e.target.value as NoticeType)}
                 >
@@ -162,7 +151,7 @@ export const EditNoticeModal: React.FC<EditNoticeModalProps> = ({
                   id="edit-notice-expiry"
                   type="date"
                   className="form-input"
-                  style={{ backgroundColor: "var(--bg-primary)" }}
+                  style={{ backgroundColor: 'var(--bg-primary)' }}
                   value={expiresAt}
                   onChange={(e) => setExpiresAt(e.target.value)}
                 />
@@ -171,19 +160,19 @@ export const EditNoticeModal: React.FC<EditNoticeModalProps> = ({
 
             <hr
               style={{
-                border: "0",
-                borderTop: "1px dashed var(--border-color)",
-                margin: "20px 0",
+                border: '0',
+                borderTop: '1px dashed var(--border-color)',
+                margin: '20px 0',
               }}
             />
 
             {/* English Fields */}
             <h3
               style={{
-                fontSize: "0.95rem",
+                fontSize: '0.95rem',
                 fontWeight: 600,
-                marginBottom: "12px",
-                color: "var(--text-secondary)",
+                marginBottom: '12px',
+                color: 'var(--text-secondary)',
               }}
             >
               English Version
@@ -210,7 +199,7 @@ export const EditNoticeModal: React.FC<EditNoticeModalProps> = ({
               <textarea
                 id="edit-notice-en-content"
                 className="form-input"
-                style={{ minHeight: "90px", resize: "vertical" }}
+                style={{ minHeight: '90px', resize: 'vertical' }}
                 value={enContent}
                 onChange={(e) => setEnContent(e.target.value)}
                 required
@@ -219,19 +208,19 @@ export const EditNoticeModal: React.FC<EditNoticeModalProps> = ({
 
             <hr
               style={{
-                border: "0",
-                borderTop: "1px dashed var(--border-color)",
-                margin: "20px 0",
+                border: '0',
+                borderTop: '1px dashed var(--border-color)',
+                margin: '20px 0',
               }}
             />
 
             {/* Urdu Fields */}
             <h3
               style={{
-                fontSize: "0.95rem",
+                fontSize: '0.95rem',
                 fontWeight: 600,
-                marginBottom: "12px",
-                color: "var(--text-secondary)",
+                marginBottom: '12px',
+                color: 'var(--text-secondary)',
               }}
             >
               Urdu Version (اردو)
@@ -241,7 +230,7 @@ export const EditNoticeModal: React.FC<EditNoticeModalProps> = ({
               <label
                 htmlFor="edit-notice-ur-title"
                 className="form-label"
-                style={{ textAlign: "right", display: "block" }}
+                style={{ textAlign: 'right', display: 'block' }}
               >
                 اعلان کا عنوان (UR)
               </label>
@@ -249,7 +238,7 @@ export const EditNoticeModal: React.FC<EditNoticeModalProps> = ({
                 id="edit-notice-ur-title"
                 type="text"
                 className="form-input"
-                style={{ textAlign: "right" }}
+                style={{ textAlign: 'right' }}
                 value={urTitle}
                 onChange={(e) => setUrTitle(e.target.value)}
                 required
@@ -260,7 +249,7 @@ export const EditNoticeModal: React.FC<EditNoticeModalProps> = ({
               <label
                 htmlFor="edit-notice-ur-content"
                 className="form-label"
-                style={{ textAlign: "right", display: "block" }}
+                style={{ textAlign: 'right', display: 'block' }}
               >
                 تفصیلات (UR)
               </label>
@@ -268,9 +257,9 @@ export const EditNoticeModal: React.FC<EditNoticeModalProps> = ({
                 id="edit-notice-ur-content"
                 className="form-input"
                 style={{
-                  minHeight: "90px",
-                  resize: "vertical",
-                  textAlign: "right",
+                  minHeight: '90px',
+                  resize: 'vertical',
+                  textAlign: 'right',
                 }}
                 value={urContent}
                 onChange={(e) => setUrContent(e.target.value)}
@@ -281,26 +270,17 @@ export const EditNoticeModal: React.FC<EditNoticeModalProps> = ({
 
           <div
             style={{
-              padding: "16px 24px",
-              borderTop: "1px solid var(--border-color)",
-              display: "flex",
-              justifyContent: "flex-end",
-              gap: "12px",
+              padding: '16px 24px',
+              borderTop: '1px solid var(--border-color)',
+              display: 'flex',
+              justifyContent: 'flex-end',
+              gap: '12px',
             }}
           >
-            <button
-              id="btn-edit-notice-cancel"
-              type="button"
-              className="btn btn-secondary"
-              onClick={onClose}
-            >
+            <button id="btn-edit-notice-cancel" type="button" className="btn btn-secondary" onClick={onClose}>
               Cancel
             </button>
-            <button
-              id="btn-edit-notice-submit"
-              type="submit"
-              className="btn btn-primary"
-            >
+            <button id="btn-edit-notice-submit" type="submit" className="btn btn-primary">
               Save Changes
             </button>
           </div>

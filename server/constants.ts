@@ -1,8 +1,8 @@
-import rateLimit from "express-rate-limit";
-import { Request } from "express";
+import { Request } from 'express';
+import rateLimit from 'express-rate-limit';
 
 export const JWT_SECRET = process.env.JWT_SECRET as string;
-if (!JWT_SECRET) throw new Error("JWT_SECRET is required");
+if (!JWT_SECRET) throw new Error('JWT_SECRET is required');
 
 export const PORT = process.env.PORT || 8082;
 
@@ -10,11 +10,11 @@ export const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 20,
   keyGenerator: (req: Request): string => {
-    const identity = req.body?.username || req.body?.email || "anonymous-login";
+    const identity = req.body?.username || req.body?.email || 'anonymous-login';
     return `login:${identity.trim().toLowerCase()}`;
   },
   message: {
-    error: "Too many login attempts, please try again after 15 minutes.",
+    error: 'Too many login attempts, please try again after 15 minutes.',
   },
   standardHeaders: true,
   legacyHeaders: false,
@@ -27,13 +27,13 @@ export const globalLimiter = rateLimit({
   max: 2000,
   keyGenerator: (req: Request): string => {
     const auth = req.headers.authorization;
-    if (auth?.startsWith("Bearer ")) {
+    if (auth?.startsWith('Bearer ')) {
       // Use the raw token as the key — unique per user session
       return auth.slice(7);
     }
-    return "unauthenticated-global-traffic";
+    return 'unauthenticated-global-traffic';
   },
-  message: { error: "Too many requests, please try again later." },
+  message: { error: 'Too many requests, please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -45,12 +45,12 @@ export const writeLimiter = rateLimit({
   max: 100,
   keyGenerator: (req: Request): string => {
     const auth = req.headers.authorization;
-    if (auth?.startsWith("Bearer ")) {
+    if (auth?.startsWith('Bearer ')) {
       return `write:${auth.slice(7)}`;
     }
-    return "write:unauthenticated-traffic";
+    return 'write:unauthenticated-traffic';
   },
-  message: { error: "Too many write requests, please try again later." },
+  message: { error: 'Too many write requests, please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
 });

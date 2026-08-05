@@ -1,7 +1,7 @@
+import { Calendar, Play, Plus, ShieldCheck, Tag, UserCheck } from 'lucide-react';
 import React, { useMemo } from 'react';
-import type { Ticket, AppUser } from '../types';
 import { ROLE_LABELS, TICKET_TYPE_LABELS } from '../constants';
-import { Calendar, Tag, ShieldCheck, UserCheck, Play, Plus } from 'lucide-react';
+import type { AppUser, Ticket } from '../types';
 
 interface ActivityLogProps {
   tickets: Ticket[];
@@ -9,11 +9,7 @@ interface ActivityLogProps {
   onSelectTicket: (ticketId: string) => void;
 }
 
-export const ActivityLog: React.FC<ActivityLogProps> = ({
-  tickets,
-  currentUser,
-  onSelectTicket,
-}) => {
+export const ActivityLog: React.FC<ActivityLogProps> = ({ tickets, currentUser, onSelectTicket }) => {
   // Aggregate and sort activity logs across all tickets visible to the current user
   const visibleLogs = useMemo(() => {
     // Filter tickets by RBAC permission first
@@ -84,28 +80,43 @@ export const ActivityLog: React.FC<ActivityLogProps> = ({
       <div className="panel" style={{ padding: '24px' }}>
         <div className="timeline">
           {visibleLogs.map((log) => (
-            <div className="timeline-item" key={log.id} style={{ cursor: 'pointer' }} onClick={() => onSelectTicket(log.ticketId)}>
-              <div className="timeline-icon-box">
-                {getLogIcon(log.action)}
-              </div>
+            <div
+              className="timeline-item"
+              key={log.id}
+              style={{ cursor: 'pointer' }}
+              onClick={() => onSelectTicket(log.ticketId)}
+            >
+              <div className="timeline-icon-box">{getLogIcon(log.action)}</div>
               <div className="timeline-details" style={{ transition: 'background-color var(--transition-fast)' }}>
                 <div className="timeline-header">
                   <span className="timeline-action">
                     {log.action} for{' '}
-                    <span style={{ color: 'var(--color-primary-solid)', fontWeight: 'bold' }}>
-                      {log.ticketId}
-                    </span>
+                    <span style={{ color: 'var(--color-primary-solid)', fontWeight: 'bold' }}>{log.ticketId}</span>
                   </span>
                   <span className="timeline-time">{formatDate(log.timestamp)}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px' }}>
+                <div
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px' }}
+                >
                   <div className="timeline-actor">
                     Performed by: <strong>{log.performedByName}</strong>
-                    <span className={`role-badge-pill role-badge-${log.performedByRole}`} style={{ fontSize: '0.58rem', padding: '1px 5px', marginLeft: '6px' }}>
+                    <span
+                      className={`role-badge-pill role-badge-${log.performedByRole}`}
+                      style={{ fontSize: '0.58rem', padding: '1px 5px', marginLeft: '6px' }}
+                    >
                       {getRoleLabel(log.performedByRole)}
                     </span>
                   </div>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', maxWidth: '300px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  <span
+                    style={{
+                      fontSize: '0.8rem',
+                      color: 'var(--text-secondary)',
+                      maxWidth: '300px',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
                     "{log.ticketTitle}"
                   </span>
                 </div>

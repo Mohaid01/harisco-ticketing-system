@@ -1,43 +1,42 @@
-import "dotenv/config";
-import express, { Request, Response, NextFunction } from "express";
-import cors from "cors";
-import helmet from "helmet";
-import path from "path";
-import { fileURLToPath } from "url";
-import { initDb } from "./db.js";
-import activityLogsRouter from "./routes/activity-logs.ts";
-import adminTicketsRouter from "./routes/admin-tickets.ts";
-import attendanceRouter from "./routes/attendance.ts";
-import authRouter from "./routes/auth.ts";
-import factoryRouter from "./routes/factory.ts";
-import healthRouter from "./routes/health.ts";
-import holidaysRouter from "./routes/holidays.ts";
-import leavesRouter from "./routes/leaves.ts";
-import noticesRouter from "./routes/notices.ts";
-import siteDutiesRouter from "./routes/site-duties.ts";
-import ticketsRouter from "./routes/tickets.ts";
-import usersRouter from "./routes/users.ts";
-import { setupDeviceHandlers } from "./devices/index.ts";
+import cors from 'cors';
+import 'dotenv/config';
+import express, { NextFunction, Request, Response } from 'express';
+import helmet from 'helmet';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { initDb } from './db.js';
+import { setupDeviceHandlers } from './devices/index.ts';
+import activityLogsRouter from './routes/activity-logs.ts';
+import adminTicketsRouter from './routes/admin-tickets.ts';
+import attendanceRouter from './routes/attendance.ts';
+import authRouter from './routes/auth.ts';
+import factoryRouter from './routes/factory.ts';
+import healthRouter from './routes/health.ts';
+import holidaysRouter from './routes/holidays.ts';
+import leavesRouter from './routes/leaves.ts';
+import noticesRouter from './routes/notices.ts';
+import siteDutiesRouter from './routes/site-duties.ts';
+import ticketsRouter from './routes/tickets.ts';
+import usersRouter from './routes/users.ts';
 
 const app = express();
 
 // Request ID middleware for correlation
 app.use((req: Request, res: Response, next: NextFunction) => {
   const requestId =
-    req.headers["x-request-id"]?.toString() ||
-    `req-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    req.headers['x-request-id']?.toString() || `req-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
   (req as RequestWithId).requestId = requestId;
-  res.setHeader("x-request-id", requestId);
+  res.setHeader('x-request-id', requestId);
   next();
 });
 
 // Performance timing middleware
 app.use((req: Request, res: Response, next: NextFunction) => {
   const start = Date.now();
-  res.on("finish", () => {
+  res.on('finish', () => {
     const durationMs = Date.now() - start;
     if (durationMs > 1000) {
-      logger.warn("Slow request", {
+      logger.warn('Slow request', {
         path: req.path,
         method: req.method,
         durationMs,
@@ -49,11 +48,11 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 // Global crash handlers — log the exact error before process exits
-process.on("uncaughtException", (err) => {
-  logger.error("[FATAL] uncaughtException:", err);
+process.on('uncaughtException', (err) => {
+  logger.error('[FATAL] uncaughtException:', err);
 });
-process.on("unhandledRejection", (reason) => {
-  logger.error("[FATAL] unhandledRejection:", reason);
+process.on('unhandledRejection', (reason) => {
+  logger.error('[FATAL] unhandledRejection:', reason);
 });
 
 const __filename = fileURLToPath(import.meta.url);
@@ -63,14 +62,14 @@ const __dirname = path.dirname(__filename);
 app.use(
   helmet({
     contentSecurityPolicy:
-      process.env.NODE_ENV === "production"
+      process.env.NODE_ENV === 'production'
         ? {
             directives: {
               defaultSrc: ["'self'"],
               scriptSrc: ["'self'"],
               styleSrc: ["'self'", "'unsafe-inline'"],
-              imgSrc: ["'self'", "data:", "https:"],
-              connectSrc: ["'self'", "ws:", "wss:"],
+              imgSrc: ["'self'", 'data:', 'https:'],
+              connectSrc: ["'self'", 'ws:', 'wss:'],
               fontSrc: ["'self'"],
               objectSrc: ["'none'"],
               mediaSrc: ["'self'"],
@@ -78,81 +77,80 @@ app.use(
             },
           }
         : false,
-  }),
+  })
 );
 
 // Required: trust Cloudflare Tunnel proxy so express-rate-limit reads X-Forwarded-For correctly
-app.set("trust proxy", true);
+app.set('trust proxy', true);
 
 // Strict CORS: allow Vite dev server locally, but restrict in production
 app.use(
   cors({
-    origin:
-      process.env.NODE_ENV === "production" ? false : "http://localhost:5173",
-  }),
+    origin: process.env.NODE_ENV === 'production' ? false : 'http://localhost:5173',
+  })
 );
 
-app.use(express.json({ limit: "10mb" }));
+app.use(express.json({ limit: '10mb' }));
 
 // Loose global tracker applied to every endpoint under /api
-app.use("/api", globalLimiter);
+app.use('/api', globalLimiter);
 
-import { sseClients } from "./middleware/sse.ts";
-import { globalLimiter, PORT, writeLimiter } from "./constants.ts";
-import { logger } from "./utils/logger.ts";
-import { RequestWithId } from "@types";
+import { RequestWithId } from '@types';
+import { globalLimiter, PORT, writeLimiter } from './constants.ts';
+import { sseClients } from './middleware/sse.ts';
+import { logger } from './utils/logger.ts';
 
 // High-performance centralized wrapper for write operations
-app.use("/api", (req: Request, res: Response, next: NextFunction) => {
+app.use('/api', (req: Request, res: Response, next: NextFunction) => {
   switch (req.method) {
-    case "POST":
-    case "PUT":
-    case "DELETE":
-    case "PATCH":
+    case 'POST':
+    case 'PUT':
+    case 'DELETE':
+    case 'PATCH':
       return writeLimiter(req, res, next);
     default:
       next(); // Instant bypass for GET requests with zero allocation overhead
   }
 });
 
-app.use("/api/activity-logs", activityLogsRouter);
-app.use("/api/admin-tickets", adminTicketsRouter);
-app.use("/api/attendance", attendanceRouter);
-app.use("/api/auth", authRouter);
-app.use("/api/factory", factoryRouter);
-app.use("/api/health", healthRouter);
-app.use("/api/holidays", holidaysRouter);
-app.use("/api/leaves", leavesRouter);
-app.use("/api/notices", noticesRouter);
-app.use("/api/site-duties", siteDutiesRouter);
-app.use("/api/tickets", ticketsRouter);
-app.use("/api/users", usersRouter);
+app.use('/api/activity-logs', activityLogsRouter);
+app.use('/api/admin-tickets', adminTicketsRouter);
+app.use('/api/attendance', attendanceRouter);
+app.use('/api/auth', authRouter);
+app.use('/api/factory', factoryRouter);
+app.use('/api/health', healthRouter);
+app.use('/api/holidays', holidaysRouter);
+app.use('/api/leaves', leavesRouter);
+app.use('/api/notices', noticesRouter);
+app.use('/api/site-duties', siteDutiesRouter);
+app.use('/api/tickets', ticketsRouter);
+app.use('/api/users', usersRouter);
 
 // Start Database and Server
 // Serve static frontend files in production
-app.use(express.static(path.join(__dirname, "../dist")));
+app.use(express.static(path.join(__dirname, '../dist')));
 
 // Fallback all non-API routes to index.html (SPA routing)
 app.get(/.*/, (_, res) => {
-  res.sendFile(path.join(__dirname, "../dist/index.html"));
+  res.sendFile(path.join(__dirname, '../dist/index.html'));
 });
 
 async function startServer() {
   try {
     await initDb();
-    const server = app.listen(PORT as number, "0.0.0.0", () => {
+    const server = app.listen(PORT as number, '0.0.0.0', () => {
       logger.info(`Backend server is running on http://localhost:${PORT}`);
     });
 
-    process.on("SIGINT", () => {
-      logger.info("Shutting down gracefully...");
+    process.on('SIGINT', () => {
+      logger.info('Shutting down gracefully...');
       sseClients.stop();
       server.close(() => process.exit(0));
     });
 
     setupDeviceHandlers(app, server);
   } catch (err) {
-    logger.error("Failed to start database/server:", err);
+    logger.error('Failed to start database/server:', err);
     process.exit(1);
   }
 }

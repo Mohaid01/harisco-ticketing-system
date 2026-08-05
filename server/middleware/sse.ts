@@ -1,4 +1,4 @@
-import { Response } from "express";
+import { Response } from 'express';
 
 class SSEManager {
   private clients = new Map<Response, { lastSeen: number }>();
@@ -23,14 +23,14 @@ class SSEManager {
 
   add(res: Response) {
     if (this.clients.size >= this.maxClients) {
-      res.write(`data: ${JSON.stringify({ error: "Server at capacity" })}\n\n`);
+      res.write(`data: ${JSON.stringify({ error: 'Server at capacity' })}\n\n`);
       res.end();
       return;
     }
     this.clients.set(res, { lastSeen: Date.now() });
 
-    res.on("close", () => this.remove(res));
-    res.on("error", () => this.remove(res));
+    res.on('close', () => this.remove(res));
+    res.on('error', () => this.remove(res));
   }
 
   remove(res: Response) {

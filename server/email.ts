@@ -1,10 +1,8 @@
-import nodemailer from "nodemailer";
-import { logger } from "./utils/logger.ts";
+import nodemailer from 'nodemailer';
+import { logger } from './utils/logger.ts';
 
 const host = process.env.SMTP_HOST;
-const port = process.env.SMTP_PORT
-  ? parseInt(process.env.SMTP_PORT, 10)
-  : undefined;
+const port = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : undefined;
 const user = process.env.SMTP_USER;
 const pass = process.env.SMTP_PASS;
 const secure = process.env.SMTP_SECURE || false;
@@ -12,41 +10,30 @@ const fromAddress = process.env.SMTP_FROM;
 
 let transporter: nodemailer.Transporter | null = null;
 
-const hasSmtpConfig =
-  !!process.env.SMTP_HOST && !!process.env.SMTP_USER && !!process.env.SMTP_PASS;
+const hasSmtpConfig = !!process.env.SMTP_HOST && !!process.env.SMTP_USER && !!process.env.SMTP_PASS;
 
 if (hasSmtpConfig) {
   transporter = nodemailer.createTransport({
     host,
     port,
-    secure: typeof secure === "string" ? secure === "true" : secure,
+    secure: typeof secure === 'string' ? secure === 'true' : secure,
     auth: {
       user,
       pass,
     },
   });
-  logger.info(
-    `[Email Service] Real SMTP mailer configured via env (Host: ${host}:${port}, From: ${fromAddress})`,
-  );
+  logger.info(`[Email Service] Real SMTP mailer configured via env (Host: ${host}:${port}, From: ${fromAddress})`);
 } else {
-  logger.warn(
-    `[Email Service] SMTP environment variables not fully configured. Using simulation logger fallback.`,
-  );
+  logger.warn(`[Email Service] SMTP environment variables not fully configured. Using simulation logger fallback.`);
 }
 
 /**
  * Sends an email notification.
  * Uses nodemailer if SMTP env variables are provided; otherwise falls back to console logging.
  */
-export async function sendEmail(
-  to: string,
-  subject: string,
-  body: string,
-): Promise<boolean> {
+export async function sendEmail(to: string, subject: string, body: string): Promise<boolean> {
   if (!to) {
-    logger.warn(
-      `[Email Service] Skipped sending email: "to" address is empty. (Subject: "${subject}")`,
-    );
+    logger.warn(`[Email Service] Skipped sending email: "to" address is empty. (Subject: "${subject}")`);
     return false;
   }
 
@@ -58,15 +45,10 @@ export async function sendEmail(
         subject,
         text: body,
       });
-      logger.info(
-        `[Email Service] Real email sent to ${to} (Subject: "${subject}")`,
-      );
+      logger.info(`[Email Service] Real email sent to ${to} (Subject: "${subject}")`);
       return true;
     } catch (err) {
-      logger.error(
-        `[Email Service] Failed to send real email to ${to} via SMTP:`,
-        err,
-      );
+      logger.error(`[Email Service] Failed to send real email to ${to} via SMTP:`, err);
     }
   }
 

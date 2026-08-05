@@ -1,9 +1,9 @@
-import React, { useState } from "react";
-import type { AppUser, UserRole } from "../types";
-import { ROLE_LABELS } from "../constants";
-import { UserPlus, Trash2, Building2, Briefcase, KeyRound } from "lucide-react";
-import { formatEmployeeCode } from "../utils";
-import { ResetUserPasswordModal } from "./ResetUserPasswordModal";
+import { Briefcase, Building2, KeyRound, Trash2, UserPlus } from 'lucide-react';
+import React, { useState } from 'react';
+import { ROLE_LABELS } from '../constants';
+import type { AppUser, UserRole } from '../types';
+import { formatEmployeeCode } from '../utils';
+import { ResetUserPasswordModal } from './ResetUserPasswordModal';
 
 interface UserManagementProps {
   users: AppUser[];
@@ -32,7 +32,7 @@ interface UserManagementProps {
       avatar?: string | null;
       isDepartmentHead?: boolean;
       loginEnabled?: boolean;
-    },
+    }
   ) => void;
 }
 
@@ -44,44 +44,40 @@ export const UserManagement: React.FC<UserManagementProps> = ({
   onDeleteUser,
   onUpdateUser,
 }) => {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [avatar, setAvatar] = useState("");
-  const [role, setRole] = useState<UserRole>("employee");
-  const [department, setDepartment] = useState("");
-  const [designation, setDesignation] = useState("");
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [avatar, setAvatar] = useState('');
+  const [role, setRole] = useState<UserRole>('employee');
+  const [department, setDepartment] = useState('');
+  const [designation, setDesignation] = useState('');
   const [isDepartmentHead, setIsDepartmentHead] = useState(false);
   const [loginEnabled, setLoginEnabled] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const [resetPasswordTarget, setResetPasswordTarget] =
-    useState<AppUser | null>(null);
+  const [resetPasswordTarget, setResetPasswordTarget] = useState<AppUser | null>(null);
 
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
-  const [editName, setEditName] = useState("");
-  const [editEmail, setEditEmail] = useState("");
-  const [editDepartment, setEditDepartment] = useState("");
-  const [editDesignation, setEditDesignation] = useState("");
-  const [editAvatar, setEditAvatar] = useState("");
+  const [editName, setEditName] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [editDepartment, setEditDepartment] = useState('');
+  const [editDesignation, setEditDesignation] = useState('');
+  const [editAvatar, setEditAvatar] = useState('');
   const [editIsDepartmentHead, setEditIsDepartmentHead] = useState(false);
   const [editLoginEnabled, setEditLoginEnabled] = useState(true);
 
-  const handleFileChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-    isEdit: boolean,
-  ) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, isEdit: boolean) => {
     const file = e.target.files?.[0];
     if (file) {
       // Validate file type
-      if (!file.type.startsWith("image/")) {
-        alert("Please upload an image file.");
+      if (!file.type.startsWith('image/')) {
+        alert('Please upload an image file.');
         return;
       }
       // Validate file size (e.g. limit to 1MB to avoid database bloat)
       if (file.size > 1024 * 1024) {
-        alert("Image size must be less than 1MB.");
+        alert('Image size must be less than 1MB.');
         return;
       }
 
@@ -102,18 +98,14 @@ export const UserManagement: React.FC<UserManagementProps> = ({
     setErrorMsg(null);
 
     if (!name.trim() || !username.trim()) {
-      setErrorMsg("Please supply a name and employee code.");
+      setErrorMsg('Please supply a name and employee code.');
       return;
     }
 
     const formattedCode = formatEmployeeCode(username.trim());
 
-    if (
-      users.some(
-        (u) => u.username?.toLowerCase() === formattedCode.toLowerCase(),
-      )
-    ) {
-      setErrorMsg("A user with this employee code already exists.");
+    if (users.some((u) => u.username?.toLowerCase() === formattedCode.toLowerCase())) {
+      setErrorMsg('A user with this employee code already exists.');
       return;
     }
 
@@ -130,21 +122,21 @@ export const UserManagement: React.FC<UserManagementProps> = ({
       loginEnabled,
     });
 
-    setName("");
-    setEmail("");
-    setUsername("");
-    setPassword("");
-    setAvatar("");
-    setRole("employee");
-    setDepartment("");
-    setDesignation("");
+    setName('');
+    setEmail('');
+    setUsername('');
+    setPassword('');
+    setAvatar('');
+    setRole('employee');
+    setDepartment('');
+    setDesignation('');
     setIsDepartmentHead(false);
     setLoginEnabled(true);
   };
 
   const handleSaveEdit = (userId: string) => {
     if (!editName.trim()) {
-      alert("Name is required.");
+      alert('Name is required.');
       return;
     }
     if (onUpdateUser) {
@@ -164,10 +156,10 @@ export const UserManagement: React.FC<UserManagementProps> = ({
   const startEdit = (user: AppUser) => {
     setEditingUserId(user.id);
     setEditName(user.name);
-    setEditEmail(user.email || "");
-    setEditDepartment(user.department || "");
-    setEditDesignation(user.designation || "");
-    setEditAvatar(user.avatar || "");
+    setEditEmail(user.email || '');
+    setEditDepartment(user.department || '');
+    setEditDesignation(user.designation || '');
+    setEditAvatar(user.avatar || '');
     setEditIsDepartmentHead(!!user.isDepartmentHead);
     setEditLoginEnabled(user.loginEnabled !== 0);
   };
@@ -175,33 +167,31 @@ export const UserManagement: React.FC<UserManagementProps> = ({
   const getRoleBadgeClass = (r: string) => `role-badge-pill role-badge-${r}`;
 
   const inlineInputStyle: React.CSSProperties = {
-    fontSize: "0.85rem",
-    padding: "6px 10px",
+    fontSize: '0.85rem',
+    padding: '6px 10px',
   };
   const inlineLabelStyle: React.CSSProperties = {
-    fontSize: "0.75rem",
-    marginBottom: "4px",
+    fontSize: '0.75rem',
+    marginBottom: '4px',
   };
 
   return (
     <div>
-      <div style={{ marginBottom: "24px" }}>
+      <div style={{ marginBottom: '24px' }}>
         <h1 className="page-title">User Management</h1>
-        <p className="page-subtitle">
-          Add and delete user accounts. Manage role authorizations.
-        </p>
+        <p className="page-subtitle">Add and delete user accounts. Manage role authorizations.</p>
       </div>
 
       <div className="user-mgmt-grid">
         {/* Left Column: Add User Form */}
-        <div className="panel" style={{ padding: "24px" }}>
+        <div className="panel" style={{ padding: '24px' }}>
           <h2
             className="panel-title"
             style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              marginBottom: "20px",
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              marginBottom: '20px',
             }}
           >
             <UserPlus size={18} className="status-progress" />
@@ -211,13 +201,13 @@ export const UserManagement: React.FC<UserManagementProps> = ({
           {errorMsg && (
             <div
               style={{
-                backgroundColor: "rgba(244, 63, 94, 0.15)",
-                border: "1px solid rgba(244, 63, 94, 0.3)",
-                color: "#f43f5e",
-                padding: "10px 12px",
-                borderRadius: "var(--radius-md)",
-                marginBottom: "16px",
-                fontSize: "0.85rem",
+                backgroundColor: 'rgba(244, 63, 94, 0.15)',
+                border: '1px solid rgba(244, 63, 94, 0.3)',
+                color: '#f43f5e',
+                padding: '10px 12px',
+                borderRadius: 'var(--radius-md)',
+                marginBottom: '16px',
+                fontSize: '0.85rem',
               }}
             >
               {errorMsg}
@@ -276,7 +266,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
               <select
                 id="user-department-input"
                 className="form-input"
-                style={{ backgroundColor: "var(--bg-primary)" }}
+                style={{ backgroundColor: 'var(--bg-primary)' }}
                 value={department}
                 onChange={(e) => setDepartment(e.target.value)}
                 required
@@ -315,9 +305,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
               <label htmlFor="user-avatar-upload" className="form-label">
                 Upload Profile Picture (Optional)
               </label>
-              <div
-                style={{ display: "flex", gap: "10px", alignItems: "center" }}
-              >
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                 <input
                   id="user-avatar-upload"
                   type="file"
@@ -329,31 +317,31 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                 {avatar && (
                   <div
                     style={{
-                      display: "flex",
-                      gap: "8px",
-                      alignItems: "center",
+                      display: 'flex',
+                      gap: '8px',
+                      alignItems: 'center',
                     }}
                   >
                     <img
                       src={avatar}
                       alt="Preview"
                       style={{
-                        width: "38px",
-                        height: "38px",
-                        borderRadius: "50%",
-                        objectFit: "cover",
-                        border: "1px solid var(--border-color)",
+                        width: '38px',
+                        height: '38px',
+                        borderRadius: '50%',
+                        objectFit: 'cover',
+                        border: '1px solid var(--border-color)',
                       }}
                     />
                     <button
                       type="button"
                       className="btn btn-secondary"
                       style={{
-                        padding: "6px 10px",
-                        fontSize: "0.75rem",
-                        minWidth: "unset",
+                        padding: '6px 10px',
+                        fontSize: '0.75rem',
+                        minWidth: 'unset',
                       }}
-                      onClick={() => setAvatar("")}
+                      onClick={() => setAvatar('')}
                     >
                       Clear
                     </button>
@@ -376,14 +364,14 @@ export const UserManagement: React.FC<UserManagementProps> = ({
               />
             </div>
 
-            <div className="form-group" style={{ marginBottom: "24px" }}>
+            <div className="form-group" style={{ marginBottom: '24px' }}>
               <label htmlFor="user-role-select" className="form-label">
                 System Role
               </label>
               <select
                 id="user-role-select"
                 className="form-input"
-                style={{ backgroundColor: "var(--bg-primary)" }}
+                style={{ backgroundColor: 'var(--bg-primary)' }}
                 value={role}
                 onChange={(e) => setRole(e.target.value as UserRole)}
               >
@@ -397,19 +385,19 @@ export const UserManagement: React.FC<UserManagementProps> = ({
             <div
               className="form-group"
               style={{
-                marginBottom: "24px",
-                display: "flex",
-                flexDirection: "column",
-                gap: "10px",
+                marginBottom: '24px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '10px',
               }}
             >
               <label
                 className="form-label"
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  cursor: "pointer",
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  cursor: 'pointer',
                 }}
               >
                 <input
@@ -423,35 +411,26 @@ export const UserManagement: React.FC<UserManagementProps> = ({
               <label
                 className="form-label"
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  cursor: "pointer",
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  cursor: 'pointer',
                 }}
               >
-                <input
-                  type="checkbox"
-                  checked={loginEnabled}
-                  onChange={(e) => setLoginEnabled(e.target.checked)}
-                />
+                <input type="checkbox" checked={loginEnabled} onChange={(e) => setLoginEnabled(e.target.checked)} />
                 Enable Login
               </label>
             </div>
 
-            <button
-              id="btn-add-user-submit"
-              type="submit"
-              className="btn btn-primary"
-              style={{ width: "100%" }}
-            >
+            <button id="btn-add-user-submit" type="submit" className="btn btn-primary" style={{ width: '100%' }}>
               Create Account
             </button>
           </form>
         </div>
 
         {/* Right Column: Users List Grid */}
-        <div className="panel" style={{ padding: "24px" }}>
-          <h2 className="panel-title" style={{ marginBottom: "20px" }}>
+        <div className="panel" style={{ padding: '24px' }}>
+          <h2 className="panel-title" style={{ marginBottom: '20px' }}>
             Active User Roster ({users.length})
           </h2>
 
@@ -461,13 +440,13 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                 {editingUserId === user.id ? (
                   <div
                     style={{
-                      width: "100%",
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "10px",
+                      width: '100%',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '10px',
                     }}
                   >
-                    <div className="form-group" style={{ marginBottom: "0" }}>
+                    <div className="form-group" style={{ marginBottom: '0' }}>
                       <label className="form-label" style={inlineLabelStyle}>
                         Full Name
                       </label>
@@ -480,7 +459,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                         required
                       />
                     </div>
-                    <div className="form-group" style={{ marginBottom: "0" }}>
+                    <div className="form-group" style={{ marginBottom: '0' }}>
                       <label className="form-label" style={inlineLabelStyle}>
                         Email Address
                       </label>
@@ -495,15 +474,15 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                     </div>
 
                     {/* Edit Profile Picture Upload Field */}
-                    <div className="form-group" style={{ marginBottom: "0" }}>
+                    <div className="form-group" style={{ marginBottom: '0' }}>
                       <label className="form-label" style={inlineLabelStyle}>
                         Upload Profile Picture
                       </label>
                       <div
                         style={{
-                          display: "flex",
-                          gap: "8px",
-                          alignItems: "center",
+                          display: 'flex',
+                          gap: '8px',
+                          alignItems: 'center',
                         }}
                       >
                         <input
@@ -516,31 +495,31 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                         {editAvatar && (
                           <div
                             style={{
-                              display: "flex",
-                              gap: "4px",
-                              alignItems: "center",
+                              display: 'flex',
+                              gap: '4px',
+                              alignItems: 'center',
                             }}
                           >
                             <img
                               src={editAvatar}
                               alt="Edit Preview"
                               style={{
-                                width: "30px",
-                                height: "30px",
-                                borderRadius: "50%",
-                                objectFit: "cover",
-                                border: "1px solid var(--border-color)",
+                                width: '30px',
+                                height: '30px',
+                                borderRadius: '50%',
+                                objectFit: 'cover',
+                                border: '1px solid var(--border-color)',
                               }}
                             />
                             <button
                               type="button"
                               className="btn btn-secondary"
                               style={{
-                                padding: "4px 8px",
-                                fontSize: "0.75rem",
-                                minWidth: "unset",
+                                padding: '4px 8px',
+                                fontSize: '0.75rem',
+                                minWidth: 'unset',
                               }}
-                              onClick={() => setEditAvatar("")}
+                              onClick={() => setEditAvatar('')}
                             >
                               Clear
                             </button>
@@ -549,14 +528,14 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                       </div>
                     </div>
 
-                    <div className="form-group" style={{ marginBottom: "0" }}>
+                    <div className="form-group" style={{ marginBottom: '0' }}>
                       <label
                         className="form-label"
                         style={{
                           ...inlineLabelStyle,
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "4px",
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
                         }}
                       >
                         <Building2 size={12} /> Department
@@ -565,7 +544,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                         className="form-input"
                         style={{
                           ...inlineInputStyle,
-                          backgroundColor: "var(--bg-primary)",
+                          backgroundColor: 'var(--bg-primary)',
                         }}
                         value={editDepartment}
                         onChange={(e) => setEditDepartment(e.target.value)}
@@ -584,17 +563,14 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                         <option value="Projects">Projects</option>
                       </select>
                     </div>
-                    <div
-                      className="form-group"
-                      style={{ marginBottom: "12px" }}
-                    >
+                    <div className="form-group" style={{ marginBottom: '12px' }}>
                       <label
                         className="form-label"
                         style={{
                           ...inlineLabelStyle,
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "4px",
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
                         }}
                       >
                         <Briefcase size={12} /> Designation
@@ -613,28 +589,26 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                     <div
                       className="form-group"
                       style={{
-                        marginBottom: "12px",
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "8px",
+                        marginBottom: '12px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '8px',
                       }}
                     >
                       <label
                         className="form-label"
                         style={{
                           ...inlineLabelStyle,
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "6px",
-                          cursor: "pointer",
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          cursor: 'pointer',
                         }}
                       >
                         <input
                           type="checkbox"
                           checked={editIsDepartmentHead}
-                          onChange={(e) =>
-                            setEditIsDepartmentHead(e.target.checked)
-                          }
+                          onChange={(e) => setEditIsDepartmentHead(e.target.checked)}
                         />
                         Department Head
                       </label>
@@ -643,30 +617,28 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                         className="form-label"
                         style={{
                           ...inlineLabelStyle,
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "6px",
-                          cursor: "pointer",
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          cursor: 'pointer',
                         }}
                       >
                         <input
                           type="checkbox"
                           checked={editLoginEnabled}
-                          onChange={(e) =>
-                            setEditLoginEnabled(e.target.checked)
-                          }
+                          onChange={(e) => setEditLoginEnabled(e.target.checked)}
                         />
                         Enable Login
                       </label>
                     </div>
 
-                    <div style={{ display: "flex", gap: "8px", width: "100%" }}>
+                    <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
                       <button
                         className="btn btn-secondary"
                         style={{
                           flex: 1,
-                          padding: "6px 10px",
-                          fontSize: "0.75rem",
+                          padding: '6px 10px',
+                          fontSize: '0.75rem',
                         }}
                         onClick={() => setEditingUserId(null)}
                       >
@@ -676,8 +648,8 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                         className="btn btn-primary"
                         style={{
                           flex: 1,
-                          padding: "6px 10px",
-                          fontSize: "0.75rem",
+                          padding: '6px 10px',
+                          fontSize: '0.75rem',
                         }}
                         onClick={() => handleSaveEdit(user.id)}
                       >
@@ -692,25 +664,25 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                         src={user.avatar}
                         alt={user.name}
                         className="user-card-avatar"
-                        style={{ objectFit: "cover" }}
+                        style={{ objectFit: 'cover' }}
                       />
                     ) : (
                       <div
                         className="user-card-avatar"
                         style={{
-                          backgroundColor: "var(--color-primary)",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontSize: "1.2rem",
+                          backgroundColor: 'var(--color-primary)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '1.2rem',
                           fontWeight: 700,
-                          color: "white",
+                          color: 'white',
                         }}
                       >
                         {user.name
-                          .split(" ")
+                          .split(' ')
                           .map((n) => n[0])
-                          .join("")
+                          .join('')
                           .toUpperCase()
                           .slice(0, 2)}
                       </div>
@@ -720,22 +692,20 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                     <span
                       className="user-card-email"
                       style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "2px",
-                        alignItems: "center",
-                        fontSize: "0.78rem",
-                        color: "var(--text-secondary)",
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '2px',
+                        alignItems: 'center',
+                        fontSize: '0.78rem',
+                        color: 'var(--text-secondary)',
                       }}
                     >
-                      <span>
-                        Code: {formatEmployeeCode(user.username || user.id)}
-                      </span>
+                      <span>Code: {formatEmployeeCode(user.username || user.id)}</span>
                       {user.email ? (
                         <span
                           style={{
-                            color: "var(--color-primary-solid)",
-                            wordBreak: "break-all",
+                            color: 'var(--color-primary-solid)',
+                            wordBreak: 'break-all',
                           }}
                         >
                           {user.email}
@@ -743,8 +713,8 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                       ) : (
                         <span
                           style={{
-                            fontStyle: "italic",
-                            color: "var(--text-muted)",
+                            fontStyle: 'italic',
+                            color: 'var(--text-muted)',
                           }}
                         >
                           No Email Address
@@ -755,72 +725,64 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                     {(user.designation || user.department) && (
                       <div
                         style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: "2px",
-                          alignItems: "center",
-                          marginBottom: "4px",
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '2px',
+                          alignItems: 'center',
+                          marginBottom: '4px',
                         }}
                       >
                         {user.designation && (
                           <span
                             style={{
-                              fontSize: "0.75rem",
-                              color: "var(--text-primary)",
+                              fontSize: '0.75rem',
+                              color: 'var(--text-primary)',
                               fontWeight: 500,
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "4px",
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px',
                             }}
                           >
-                            <Briefcase
-                              size={11}
-                              style={{ color: "var(--text-muted)" }}
-                            />
+                            <Briefcase size={11} style={{ color: 'var(--text-muted)' }} />
                             {user.designation}
                           </span>
                         )}
                         {user.department && (
                           <span
                             style={{
-                              fontSize: "0.72rem",
-                              color: "var(--text-secondary)",
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "4px",
+                              fontSize: '0.72rem',
+                              color: 'var(--text-secondary)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px',
                             }}
                           >
-                            <Building2
-                              size={11}
-                              style={{ color: "var(--text-muted)" }}
-                            />
+                            <Building2 size={11} style={{ color: 'var(--text-muted)' }} />
                             {user.department}
                           </span>
                         )}
                       </div>
                     )}
 
-                    <div style={{ marginBottom: "16px" }}>
-                      <span className={getRoleBadgeClass(user.role)}>
-                        {ROLE_LABELS[user.role]}
-                      </span>
+                    <div style={{ marginBottom: '16px' }}>
+                      <span className={getRoleBadgeClass(user.role)}>{ROLE_LABELS[user.role]}</span>
                     </div>
 
                     <div
                       className="user-card-actions"
                       style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "6px",
-                        width: "100%",
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '6px',
+                        width: '100%',
                       }}
                     >
                       <button
                         className="btn btn-secondary"
                         style={{
-                          width: "100%",
-                          padding: "6px 12px",
-                          fontSize: "0.8rem",
+                          width: '100%',
+                          padding: '6px 12px',
+                          fontSize: '0.8rem',
                         }}
                         onClick={() => startEdit(user)}
                       >
@@ -832,13 +794,13 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                             id={`btn-reset-password-${user.id}`}
                             className="btn btn-secondary"
                             style={{
-                              width: "100%",
-                              padding: "6px 12px",
-                              fontSize: "0.8rem",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              gap: "6px",
+                              width: '100%',
+                              padding: '6px 12px',
+                              fontSize: '0.8rem',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '6px',
                             }}
                             onClick={() => setResetPasswordTarget(user)}
                           >
@@ -849,9 +811,9 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                             id={`btn-delete-user-${user.id}`}
                             className="btn btn-danger"
                             style={{
-                              width: "100%",
-                              padding: "6px 12px",
-                              fontSize: "0.8rem",
+                              width: '100%',
+                              padding: '6px 12px',
+                              fontSize: '0.8rem',
                             }}
                             onClick={() => onDeleteUser(user.id)}
                           >

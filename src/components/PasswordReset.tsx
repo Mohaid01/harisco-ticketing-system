@@ -1,6 +1,6 @@
+import { AlertCircle, CheckCircle2, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import React, { useState } from 'react';
 import logoFull from '../assets/harisco-full-logo.png';
-import { ShieldCheck, Eye, EyeOff, AlertCircle, CheckCircle2 } from 'lucide-react';
 import type { AppUser } from '../types';
 
 const MIN_PASSWORD_LENGTH = 8;
@@ -95,7 +95,6 @@ export const PasswordReset: React.FC<PasswordResetProps> = ({ token, currentUser
     }
   };
 
-
   return (
     <div className="login-page">
       <div className="login-card">
@@ -163,11 +162,7 @@ export const PasswordReset: React.FC<PasswordResetProps> = ({ token, currentUser
                   gap: '4px',
                 }}
               >
-                {passwordLongEnough ? (
-                  <CheckCircle2 size={12} />
-                ) : (
-                  <AlertCircle size={12} />
-                )}
+                {passwordLongEnough ? <CheckCircle2 size={12} /> : <AlertCircle size={12} />}
                 {passwordLongEnough ? 'Length requirement met' : `At least ${MIN_PASSWORD_LENGTH} characters required`}
               </p>
             )}
@@ -206,11 +201,7 @@ export const PasswordReset: React.FC<PasswordResetProps> = ({ token, currentUser
                   gap: '4px',
                 }}
               >
-                {passwordsMatch ? (
-                  <CheckCircle2 size={12} />
-                ) : (
-                  <AlertCircle size={12} />
-                )}
+                {passwordsMatch ? <CheckCircle2 size={12} /> : <AlertCircle size={12} />}
                 {passwordsMatch ? 'Passwords match' : 'Passwords do not match'}
               </p>
             )}

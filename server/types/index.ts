@@ -1,20 +1,13 @@
-import type { Request, Response } from "express";
-import { IncomingMessage } from "http";
+import type { Request, Response } from 'express';
+import { IncomingMessage } from 'http';
 
-type UserRoles =
-  | "it"
-  | "employee"
-  | "manager"
-  | "executive"
-  | "factory_employee"
-  | "factory_it"
-  | "factory_manager";
+type UserRoles = 'it' | 'employee' | 'manager' | 'executive' | 'factory_employee' | 'factory_it' | 'factory_manager';
 
-type TicketTypes = "hardware" | "software" | "maintenance" | "upgrade";
+type TicketTypes = 'hardware' | 'software' | 'maintenance' | 'upgrade';
 
-type LeaveCategories = "annual" | "casual" | "medical";
+type LeaveCategories = 'annual' | 'casual' | 'medical';
 
-type ApplicationStatus = "pending" | "approved" | "rejected";
+type ApplicationStatus = 'pending' | 'approved' | 'rejected';
 
 export interface DbUser {
   id: string;
@@ -377,7 +370,7 @@ export interface HealthMemoryUsage {
 }
 
 export interface HealthResponse {
-  status: "healthy" | "unhealthy";
+  status: 'healthy' | 'unhealthy';
   timestamp: string;
   uptime?: string;
   memoryUsage?: HealthMemoryUsage;

@@ -1,14 +1,8 @@
-import type { LucideIcon } from "lucide-react";
+import type { LucideIcon } from 'lucide-react';
 
 // User Types
 export type UserRole =
-  | "it"
-  | "employee"
-  | "manager"
-  | "executive"
-  | "factory_employee"
-  | "factory_it"
-  | "factory_manager";
+  'it' | 'employee' | 'manager' | 'executive' | 'factory_employee' | 'factory_it' | 'factory_manager';
 
 export interface AppUser {
   id: string;
@@ -28,14 +22,10 @@ export interface AppUser {
 }
 
 // Ticket Types
-export type TicketType = "hardware" | "software" | "maintenance" | "upgrade";
+export type TicketType = 'hardware' | 'software' | 'maintenance' | 'upgrade';
 
 export type TicketStatus =
-  | "open"
-  | "awaiting_it_approval"
-  | "awaiting_manager_approval"
-  | "awaiting_handover"
-  | "closed";
+  'open' | 'awaiting_it_approval' | 'awaiting_manager_approval' | 'awaiting_handover' | 'closed';
 
 export interface TicketComment {
   id: string;
@@ -73,21 +63,21 @@ export interface Ticket {
 
 // Admin Ticket Types
 export type AdminTicketCategory =
-  | "staff_issue"
-  | "security"
-  | "maintenance"
-  | "cleaning_decoration"
-  | "mess_canteen"
-  | "travelling"
-  | "stationery_courier";
+  | 'staff_issue'
+  | 'security'
+  | 'maintenance'
+  | 'cleaning_decoration'
+  | 'mess_canteen'
+  | 'travelling'
+  | 'stationery_courier';
 
 export type AdminTicketStatus =
-  | "awaiting_admin_manager"
-  | "awaiting_materials"
-  | "awaiting_technician"
-  | "awaiting_executive"
-  | "resolved"
-  | "rejected";
+  | 'awaiting_admin_manager'
+  | 'awaiting_materials'
+  | 'awaiting_technician'
+  | 'awaiting_executive'
+  | 'resolved'
+  | 'rejected';
 
 export interface AdminTicketComment {
   id: string;
@@ -123,16 +113,16 @@ export interface AdminTicket {
 
 // Sidebar Types
 export type ActiveTab =
-  | "noticeboard"
-  | "tickets"
-  | "admin_tickets"
-  | "users"
-  | "factory_users"
-  | "activity_log"
-  | "attendance"
-  | "factory_attendance"
-  | "leaves"
-  | "site_duties";
+  | 'noticeboard'
+  | 'tickets'
+  | 'admin_tickets'
+  | 'users'
+  | 'factory_users'
+  | 'activity_log'
+  | 'attendance'
+  | 'factory_attendance'
+  | 'leaves'
+  | 'site_duties';
 
 export interface MenuItems {
   id: ActiveTab;
@@ -154,8 +144,8 @@ export interface AttendanceLog {
 }
 
 // Leave Types
-export type LeaveCategory = "annual" | "casual" | "medical";
-export type LeaveStatus = "pending" | "approved" | "rejected";
+export type LeaveCategory = 'annual' | 'casual' | 'medical';
+export type LeaveStatus = 'pending' | 'approved' | 'rejected';
 
 export interface LeaveApplication {
   id: string;
@@ -185,7 +175,7 @@ export interface SiteDutyApplication {
 }
 
 // Notice Types
-export type NoticeType = "outage" | "maintenance" | "policy" | "general";
+export type NoticeType = 'outage' | 'maintenance' | 'policy' | 'general';
 
 // Notice Interface with explicit language block payloads
 export interface Notice {

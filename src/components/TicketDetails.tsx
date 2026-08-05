@@ -1,44 +1,28 @@
-import React, { useState } from "react";
-import type { Ticket, AppUser, TicketStatus, TicketType } from "../types";
-import {
-  TICKET_TYPE_LABELS,
-  ROLE_LABELS,
-  TICKET_TYPE_OPTIONS,
-} from "../constants";
 import {
   ArrowLeft,
-  Send,
-  Calendar,
-  User,
-  Tag,
-  ShieldAlert,
   Award,
-  FileText,
+  Calendar,
   CheckCircle2,
+  FileText,
+  Send,
+  ShieldAlert,
+  Tag,
+  User,
   UserCheck,
-} from "lucide-react";
+} from 'lucide-react';
+import React, { useState } from 'react';
+import { ROLE_LABELS, TICKET_TYPE_LABELS, TICKET_TYPE_OPTIONS } from '../constants';
+import type { AppUser, Ticket, TicketStatus, TicketType } from '../types';
 
 interface TicketDetailsProps {
   ticket: Ticket;
   currentUser: AppUser;
   itUsers: AppUser[];
   onBack: () => void;
-  onUpdateStatus: (
-    ticketId: string,
-    status: TicketStatus,
-    actionMessage: string,
-    quotation?: number,
-  ) => void;
-  onAssignTicket: (
-    ticketId: string,
-    assigneeId: string,
-    assigneeName: string,
-  ) => void;
+  onUpdateStatus: (ticketId: string, status: TicketStatus, actionMessage: string, quotation?: number) => void;
+  onAssignTicket: (ticketId: string, assigneeId: string, assigneeName: string) => void;
   onAddComment: (ticketId: string, content: string) => void;
-  onEditTicket?: (
-    ticketId: string,
-    data: { description: string; type: TicketType; justification: string },
-  ) => void;
+  onEditTicket?: (ticketId: string, data: { description: string; type: TicketType; justification: string }) => void;
   onDeleteTicket?: (ticketId: string) => void;
 }
 
@@ -53,14 +37,12 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
   onEditTicket,
   onDeleteTicket,
 }) => {
-  const [commentText, setCommentText] = useState("");
-  const [quotationAmount, setQuotationAmount] = useState<string>("");
+  const [commentText, setCommentText] = useState('');
+  const [quotationAmount, setQuotationAmount] = useState<string>('');
 
   const [isEditing, setIsEditing] = useState(false);
   const [editDescription, setEditDescription] = useState(ticket.description);
-  const [editJustification, setEditJustification] = useState(
-    ticket.justification,
-  );
+  const [editJustification, setEditJustification] = useState(ticket.justification);
   const [editType, setEditType] = useState(ticket.type);
 
   // Submit comment
@@ -68,30 +50,30 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
     e.preventDefault();
     if (!commentText.trim()) return;
     onAddComment(ticket.id, commentText);
-    setCommentText("");
+    setCommentText('');
   };
 
   const getStatusBadge = (status: TicketStatus) => {
     switch (status) {
-      case "open":
+      case 'open':
         return (
           <span
             className="badge badge-progress"
             style={{
-              backgroundColor: "rgba(14, 82, 155, 0.12)",
-              color: "#0e529b",
+              backgroundColor: 'rgba(14, 82, 155, 0.12)',
+              color: '#0e529b',
             }}
           >
             Open / Unassigned
           </span>
         );
-      case "awaiting_it_approval":
+      case 'awaiting_it_approval':
         return <span className="badge badge-it-app">Awaiting IT</span>;
-      case "awaiting_manager_approval":
+      case 'awaiting_manager_approval':
         return <span className="badge badge-m-app">Awaiting Manager</span>;
-      case "awaiting_handover":
+      case 'awaiting_handover':
         return <span className="badge badge-handover">Handover Ready</span>;
-      case "closed":
+      case 'closed':
         return <span className="badge badge-closed">Closed</span>;
     }
   };
@@ -101,50 +83,42 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      weekday: "short",
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
+    return new Date(dateString).toLocaleDateString('en-US', {
+      weekday: 'short',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     });
   };
 
   // RBAC Action checks
-  const canItApprove =
-    currentUser.role === "it" && ticket.status === "awaiting_it_approval";
+  const canItApprove = currentUser.role === 'it' && ticket.status === 'awaiting_it_approval';
 
-  const canManagerApprove =
-    currentUser.role === "manager" &&
-    ticket.status === "awaiting_manager_approval";
+  const canManagerApprove = currentUser.role === 'manager' && ticket.status === 'awaiting_manager_approval';
 
-  const canItClose =
-    currentUser.role === "it" && ticket.status === "awaiting_it_approval";
+  const canItClose = currentUser.role === 'it' && ticket.status === 'awaiting_it_approval';
 
   const handleItResolve = () => {
-    onUpdateStatus(ticket.id, "closed", "Resolved by IT in-house");
+    onUpdateStatus(ticket.id, 'closed', 'Resolved by IT in-house');
   };
 
   const handleItEscalateWithQuotation = () => {
     if (!quotationAmount) {
-      alert("Please provide a quotation amount before escalating.");
+      alert('Please provide a quotation amount before escalating.');
       return;
     }
     onUpdateStatus(
       ticket.id,
-      "awaiting_manager_approval",
+      'awaiting_manager_approval',
       `Approved by IT - Escalated to Manager with Quotation: Rs ${quotationAmount}`,
-      Number(quotationAmount),
+      Number(quotationAmount)
     );
   };
 
   const handleManagerApprove = () => {
-    onUpdateStatus(
-      ticket.id,
-      "awaiting_it_approval",
-      "Approved by Manager - Awaiting IT Closure",
-    );
+    onUpdateStatus(ticket.id, 'awaiting_it_approval', 'Approved by Manager - Awaiting IT Closure');
   };
 
   const handleSaveEdit = () => {
@@ -161,7 +135,7 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
   const handleDeleteClick = () => {
     if (onDeleteTicket) {
       const confirmed = window.confirm(
-        `WARNING: You are about to permanently delete ticket ${ticket.id}.\n\nAre you sure you want to proceed?`,
+        `WARNING: You are about to permanently delete ticket ${ticket.id}.\n\nAre you sure you want to proceed?`
       );
       if (confirmed) {
         onDeleteTicket(ticket.id);
@@ -174,20 +148,20 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
       {/* Detail Header / Back navigation */}
       <div
         style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "16px",
-          marginBottom: "24px",
+          display: 'flex',
+          alignItems: 'center',
+          gap: '16px',
+          marginBottom: '24px',
         }}
       >
         <button
           id="btn-details-back"
           className="btn btn-secondary"
           style={{
-            width: "42px",
-            height: "42px",
+            width: '42px',
+            height: '42px',
             padding: 0,
-            borderRadius: "50%",
+            borderRadius: '50%',
           }}
           onClick={onBack}
           aria-label="Back to ticket queue"
@@ -197,28 +171,25 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
         <div>
           <div
             style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              marginBottom: "4px",
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              marginBottom: '4px',
             }}
           >
             <span
               style={{
-                fontSize: "0.82rem",
-                fontFamily: "var(--font-mono)",
-                color: "var(--color-primary-solid)",
-                fontWeight: "bold",
+                fontSize: '0.82rem',
+                fontFamily: 'var(--font-mono)',
+                color: 'var(--color-primary-solid)',
+                fontWeight: 'bold',
               }}
             >
               {ticket.id}
             </span>
             {getStatusBadge(ticket.status)}
           </div>
-          <h1
-            className="page-title"
-            style={{ fontSize: "1.4rem", marginBottom: 0 }}
-          >
+          <h1 className="page-title" style={{ fontSize: '1.4rem', marginBottom: 0 }}>
             {TICKET_TYPE_LABELS[ticket.type]}
           </h1>
         </div>
@@ -228,32 +199,26 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
       <div className="details-layout">
         {/* Left Column: Description, Justification, Comments */}
         <div>
-          <div
-            className="panel"
-            style={{ padding: "24px", marginBottom: "24px" }}
-          >
+          <div className="panel" style={{ padding: '24px', marginBottom: '24px' }}>
             <div
               style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: "12px",
-                borderBottom: "1px solid var(--border-color)",
-                paddingBottom: "6px",
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '12px',
+                borderBottom: '1px solid var(--border-color)',
+                paddingBottom: '6px',
               }}
             >
-              <h2
-                className="panel-title"
-                style={{ fontSize: "0.95rem", margin: 0 }}
-              >
+              <h2 className="panel-title" style={{ fontSize: '0.95rem', margin: 0 }}>
                 Ticket Content
               </h2>
-              {currentUser.role === "it" && !isEditing && (
-                <div style={{ display: "flex", gap: "8px" }}>
-                  {ticket.status !== "closed" && (
+              {currentUser.role === 'it' && !isEditing && (
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  {ticket.status !== 'closed' && (
                     <button
                       className="btn btn-secondary"
-                      style={{ padding: "4px 8px", fontSize: "0.75rem" }}
+                      style={{ padding: '4px 8px', fontSize: '0.75rem' }}
                       onClick={() => setIsEditing(true)}
                     >
                       Edit Ticket
@@ -263,11 +228,11 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
                     id="btn-delete-ticket"
                     className="btn btn-danger"
                     style={{
-                      padding: "4px 8px",
-                      fontSize: "0.75rem",
-                      backgroundColor: "#dc2626",
-                      color: "white",
-                      border: "none",
+                      padding: '4px 8px',
+                      fontSize: '0.75rem',
+                      backgroundColor: '#dc2626',
+                      color: 'white',
+                      border: 'none',
                     }}
                     onClick={handleDeleteClick}
                   >
@@ -280,17 +245,14 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
             {isEditing ? (
               <div
                 style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "12px",
-                  marginBottom: "24px",
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px',
+                  marginBottom: '24px',
                 }}
               >
                 <div>
-                  <label
-                    className="form-label"
-                    style={{ fontSize: "0.8rem", marginBottom: "4px" }}
-                  >
+                  <label className="form-label" style={{ fontSize: '0.8rem', marginBottom: '4px' }}>
                     Category Type
                   </label>
                   <select
@@ -306,30 +268,24 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
                   </select>
                 </div>
                 <div>
-                  <label
-                    className="form-label"
-                    style={{ fontSize: "0.8rem", marginBottom: "4px" }}
-                  >
+                  <label className="form-label" style={{ fontSize: '0.8rem', marginBottom: '4px' }}>
                     Description
                   </label>
                   <textarea
                     className="form-input"
-                    style={{ minHeight: "100px" }}
+                    style={{ minHeight: '100px' }}
                     value={editDescription}
                     onChange={(e) => setEditDescription(e.target.value)}
                   />
                 </div>
-                {editType === "upgrade" && (
+                {editType === 'upgrade' && (
                   <div>
-                    <label
-                      className="form-label"
-                      style={{ fontSize: "0.8rem", marginBottom: "4px" }}
-                    >
+                    <label className="form-label" style={{ fontSize: '0.8rem', marginBottom: '4px' }}>
                       Justification
                     </label>
                     <textarea
                       className="form-input"
-                      style={{ minHeight: "80px" }}
+                      style={{ minHeight: '80px' }}
                       value={editJustification}
                       onChange={(e) => setEditJustification(e.target.value)}
                     />
@@ -337,15 +293,12 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
                 )}
                 <div
                   style={{
-                    display: "flex",
-                    gap: "8px",
-                    justifyContent: "flex-end",
+                    display: 'flex',
+                    gap: '8px',
+                    justifyContent: 'flex-end',
                   }}
                 >
-                  <button
-                    className="btn btn-secondary"
-                    onClick={() => setIsEditing(false)}
-                  >
+                  <button className="btn btn-secondary" onClick={() => setIsEditing(false)}>
                     Cancel
                   </button>
                   <button className="btn btn-primary" onClick={handleSaveEdit}>
@@ -356,13 +309,13 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
             ) : (
               <>
                 {/* Conditional Details Based on Ticket Type */}
-                {(ticket.type === "hardware" || ticket.type === "software") && (
+                {(ticket.type === 'hardware' || ticket.type === 'software') && (
                   <>
                     <h3
                       style={{
-                        fontSize: "0.85rem",
+                        fontSize: '0.85rem',
                         fontWeight: 600,
-                        margin: "0 0 8px 0",
+                        margin: '0 0 8px 0',
                       }}
                     >
                       Problem Details
@@ -371,46 +324,44 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
                   </>
                 )}
 
-                {ticket.type === "maintenance" && (
+                {ticket.type === 'maintenance' && (
                   <>
                     <h3
                       style={{
-                        fontSize: "0.85rem",
+                        fontSize: '0.85rem',
                         fontWeight: 600,
-                        margin: "0 0 8px 0",
+                        margin: '0 0 8px 0',
                       }}
                     >
                       Software List
                     </h3>
                     <div className="desc-card">
-                      <ul style={{ paddingLeft: "20px", margin: 0 }}>
-                        {ticket.description
-                          .split("\n")
-                          .map((software, index) => (
-                            <li key={index} style={{ marginBottom: "4px" }}>
-                              {software}
-                            </li>
-                          ))}
+                      <ul style={{ paddingLeft: '20px', margin: 0 }}>
+                        {ticket.description.split('\n').map((software, index) => (
+                          <li key={index} style={{ marginBottom: '4px' }}>
+                            {software}
+                          </li>
+                        ))}
                       </ul>
                     </div>
                   </>
                 )}
 
-                {ticket.type === "upgrade" && (
+                {ticket.type === 'upgrade' && (
                   <>
                     <h3
                       style={{
-                        fontSize: "0.85rem",
+                        fontSize: '0.85rem',
                         fontWeight: 600,
-                        margin: "0 0 8px 0",
+                        margin: '0 0 8px 0',
                       }}
                     >
                       What to Upgrade
                     </h3>
-                    <div className="desc-card" style={{ marginBottom: "20px" }}>
-                      <ul style={{ paddingLeft: "20px", margin: 0 }}>
-                        {ticket.description.split("\n").map((item, index) => (
-                          <li key={index} style={{ marginBottom: "4px" }}>
+                    <div className="desc-card" style={{ marginBottom: '20px' }}>
+                      <ul style={{ paddingLeft: '20px', margin: 0 }}>
+                        {ticket.description.split('\n').map((item, index) => (
+                          <li key={index} style={{ marginBottom: '4px' }}>
                             {item}
                           </li>
                         ))}
@@ -424,9 +375,9 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
                       </span>
                       <p
                         style={{
-                          color: "var(--text-primary)",
-                          fontSize: "0.9rem",
-                          marginTop: "8px",
+                          color: 'var(--text-primary)',
+                          fontSize: '0.9rem',
+                          marginTop: '8px',
                         }}
                       >
                         {ticket.justification}
@@ -439,10 +390,7 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
 
             {/* Comments Thread */}
             <div className="comments-container">
-              <h2
-                className="panel-title"
-                style={{ fontSize: "0.95rem", marginBottom: "16px" }}
-              >
+              <h2 className="panel-title" style={{ fontSize: '0.95rem', marginBottom: '16px' }}>
                 Conversation Threads ({ticket.comments.length})
               </h2>
 
@@ -452,42 +400,38 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
                     <div
                       className="comment-avatar"
                       style={{
-                        backgroundColor: "var(--color-primary)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: "0.7rem",
+                        backgroundColor: 'var(--color-primary)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '0.7rem',
                         fontWeight: 700,
-                        color: "white",
+                        color: 'white',
                       }}
                     >
                       {comment.authorName
-                        .split(" ")
+                        .split(' ')
                         .map((n: string) => n[0])
-                        .join("")
+                        .join('')
                         .toUpperCase()
                         .slice(0, 2)}
                     </div>
                     <div className="comment-body">
                       <div className="comment-header">
                         <div>
-                          <span className="comment-author-name">
-                            {comment.authorName}
-                          </span>
+                          <span className="comment-author-name">{comment.authorName}</span>
                           <span
                             className={`role-badge-pill role-badge-${comment.authorRole}`}
                             style={{
-                              fontSize: "0.6rem",
-                              padding: "1px 6px",
-                              marginLeft: "6px",
+                              fontSize: '0.6rem',
+                              padding: '1px 6px',
+                              marginLeft: '6px',
                             }}
                           >
                             {getRoleLabel(comment.authorRole)}
                           </span>
                         </div>
-                        <span className="comment-date">
-                          {formatDate(comment.createdAt)}
-                        </span>
+                        <span className="comment-date">{formatDate(comment.createdAt)}</span>
                       </div>
                       <div className="comment-text">{comment.content}</div>
                     </div>
@@ -496,10 +440,10 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
                 {ticket.comments.length === 0 && (
                   <div
                     style={{
-                      textAlign: "center",
-                      padding: "24px 0",
-                      color: "var(--text-muted)",
-                      fontSize: "0.85rem",
+                      textAlign: 'center',
+                      padding: '24px 0',
+                      color: 'var(--text-muted)',
+                      fontSize: '0.85rem',
                     }}
                   >
                     No messages recorded. Post a comment below.
@@ -508,30 +452,30 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
               </div>
 
               {/* Add Comment */}
-              {currentUser.role !== "executive" && (
+              {currentUser.role !== 'executive' && (
                 <div
                   style={{
-                    display: "flex",
-                    gap: "14px",
-                    alignItems: "flex-start",
+                    display: 'flex',
+                    gap: '14px',
+                    alignItems: 'flex-start',
                   }}
                 >
                   <div
                     className="comment-avatar"
                     style={{
-                      backgroundColor: "var(--color-primary)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: "0.7rem",
+                      backgroundColor: 'var(--color-primary)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '0.7rem',
                       fontWeight: 700,
-                      color: "white",
+                      color: 'white',
                     }}
                   >
                     {currentUser.name
-                      .split(" ")
+                      .split(' ')
                       .map((n: string) => n[0])
-                      .join("")
+                      .join('')
                       .toUpperCase()
                       .slice(0, 2)}
                   </div>
@@ -539,34 +483,32 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
                     onSubmit={handleSubmitComment}
                     style={{
                       flex: 1,
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "10px",
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '10px',
                     }}
                   >
                     <textarea
                       id="add-comment-textarea"
                       className="form-input"
-                      style={{ minHeight: "80px", resize: "vertical" }}
+                      style={{ minHeight: '80px', resize: 'vertical' }}
                       placeholder="Enter an update or note..."
                       value={commentText}
                       onChange={(e) => setCommentText(e.target.value)}
                       onKeyDown={(e) => {
                         // Check for Ctrl + Enter or Cmd + Enter (for Mac users)
-                        if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
                           e.preventDefault(); // Prevents a newline from being added
                           handleSubmitComment(e); // Submits the form
                         }
                       }}
                     />
-                    <div
-                      style={{ display: "flex", justifyContent: "flex-end" }}
-                    >
+                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                       <button
                         id="btn-submit-comment"
                         type="submit"
                         className="btn btn-primary"
-                        style={{ padding: "8px 16px" }}
+                        style={{ padding: '8px 16px' }}
                       >
                         <Send size={12} />
                         Post Update
@@ -579,11 +521,8 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
           </div>
 
           {/* Ticket Activity log timeline */}
-          <div className="panel" style={{ padding: "24px" }}>
-            <h2
-              className="panel-title"
-              style={{ fontSize: "0.95rem", marginBottom: "20px" }}
-            >
+          <div className="panel" style={{ padding: '24px' }}>
+            <h2 className="panel-title" style={{ fontSize: '0.95rem', marginBottom: '20px' }}>
               Workflow Activity Timeline
             </h2>
             <div className="timeline">
@@ -595,18 +534,16 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
                   <div className="timeline-details">
                     <div className="timeline-header">
                       <span className="timeline-action">{log.action}</span>
-                      <span className="timeline-time">
-                        {formatDate(log.timestamp)}
-                      </span>
+                      <span className="timeline-time">{formatDate(log.timestamp)}</span>
                     </div>
                     <div className="timeline-actor">
                       Performed by: <strong>{log.performedByName}</strong>
                       <span
                         className={`role-badge-pill role-badge-${log.performedByRole}`}
                         style={{
-                          fontSize: "0.58rem",
-                          padding: "1px 5px",
-                          marginLeft: "6px",
+                          fontSize: '0.58rem',
+                          padding: '1px 5px',
+                          marginLeft: '6px',
                         }}
                       >
                         {getRoleLabel(log.performedByRole)}
@@ -622,27 +559,19 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
         {/* Right Column: Workflow Action buttons and details metadata */}
         <div>
           {/* Action Decision Control Box */}
-          <div
-            className="panel"
-            style={{ padding: "20px", marginBottom: "24px" }}
-          >
-            <h2
-              className="panel-title"
-              style={{ fontSize: "0.95rem", marginBottom: "16px" }}
-            >
+          <div className="panel" style={{ padding: '20px', marginBottom: '24px' }}>
+            <h2 className="panel-title" style={{ fontSize: '0.95rem', marginBottom: '16px' }}>
               Approval Decisions
             </h2>
 
             {/* Workflow actions triggers */}
-            <div
-              style={{ display: "flex", flexDirection: "column", gap: "12px" }}
-            >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {canItApprove && (
                 <>
                   <button
                     id="btn-it-resolve"
                     className="btn btn-success"
-                    style={{ width: "100%" }}
+                    style={{ width: '100%' }}
                     onClick={handleItResolve}
                   >
                     <CheckCircle2 size={16} />
@@ -653,18 +582,18 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
                     (ticket.quotation === null && (
                       <div
                         style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: "8px",
-                          marginTop: "12px",
-                          borderTop: "1px solid var(--border-color)",
-                          paddingTop: "12px",
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '8px',
+                          marginTop: '12px',
+                          borderTop: '1px solid var(--border-color)',
+                          paddingTop: '12px',
                         }}
                       >
                         <label
                           htmlFor="quotation-input"
                           className="form-label"
-                          style={{ fontSize: "0.8rem", marginBottom: 0 }}
+                          style={{ fontSize: '0.8rem', marginBottom: 0 }}
                         >
                           Quotation Amount (Rs)
                         </label>
@@ -679,7 +608,7 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
                         <button
                           id="btn-it-escalate"
                           className="btn btn-success"
-                          style={{ width: "100%" }}
+                          style={{ width: '100%' }}
                           onClick={handleItEscalateWithQuotation}
                         >
                           <CheckCircle2 size={16} />
@@ -695,10 +624,10 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
                   id="btn-manager-approve"
                   className="btn btn-success"
                   style={{
-                    width: "100%",
-                    backgroundColor: "var(--status-manager-approval)",
-                    color: "white",
-                    border: "none",
+                    width: '100%',
+                    backgroundColor: 'var(--status-manager-approval)',
+                    color: 'white',
+                    border: 'none',
                   }}
                   onClick={handleManagerApprove}
                 >
@@ -710,50 +639,50 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
               {!canItApprove && !canManagerApprove && !canItClose && (
                 <div
                   style={{
-                    padding: "12px",
-                    textAlign: "center",
-                    backgroundColor: "var(--bg-primary)",
-                    border: "1px solid var(--border-color)",
-                    borderRadius: "var(--radius-md)",
+                    padding: '12px',
+                    textAlign: 'center',
+                    backgroundColor: 'var(--bg-primary)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: 'var(--radius-md)',
                   }}
                 >
                   <ShieldAlert
                     size={20}
                     style={{
-                      color: "var(--text-muted)",
-                      marginBottom: "4px",
+                      color: 'var(--text-muted)',
+                      marginBottom: '4px',
                     }}
                   />
                   <p
                     style={{
-                      fontSize: "0.78rem",
-                      color: "var(--text-secondary)",
+                      fontSize: '0.78rem',
+                      color: 'var(--text-secondary)',
                     }}
                   >
-                    {ticket.status === "closed"
-                      ? "This ticket is closed. No further workflow transitions are possible."
-                      : "No actions currently required for your role."}
+                    {ticket.status === 'closed'
+                      ? 'This ticket is closed. No further workflow transitions are possible.'
+                      : 'No actions currently required for your role.'}
                   </p>
                 </div>
               )}
             </div>
 
             {/* Assignee modification dropdown for IT users only */}
-            {currentUser.role === "it" && ticket.status !== "closed" && (
+            {currentUser.role === 'it' && ticket.status !== 'closed' && (
               <div
                 style={{
-                  marginTop: "20px",
-                  paddingTop: "16px",
-                  borderTop: "1px solid var(--border-color)",
+                  marginTop: '20px',
+                  paddingTop: '16px',
+                  borderTop: '1px solid var(--border-color)',
                 }}
               >
                 <label
                   htmlFor="assignee-select-details"
                   className="form-label"
                   style={{
-                    fontSize: "0.78rem",
-                    textTransform: "uppercase",
-                    marginBottom: "6px",
+                    fontSize: '0.78rem',
+                    textTransform: 'uppercase',
+                    marginBottom: '6px',
                   }}
                 >
                   Assign Support Engineer
@@ -761,8 +690,8 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
                 <select
                   id="assignee-select-details"
                   className="form-input"
-                  style={{ backgroundColor: "var(--bg-primary)" }}
-                  value={ticket.assigneeId || ""}
+                  style={{ backgroundColor: 'var(--bg-primary)' }}
+                  value={ticket.assigneeId || ''}
                   onChange={(e) => {
                     const sel = itUsers.find((u) => u.id === e.target.value);
                     if (sel) {
@@ -784,90 +713,70 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
           </div>
 
           {/* Ticket Information Panel */}
-          <div className="panel" style={{ padding: "20px" }}>
-            <h2
-              className="panel-title"
-              style={{ fontSize: "0.95rem", marginBottom: "16px" }}
-            >
+          <div className="panel" style={{ padding: '20px' }}>
+            <h2 className="panel-title" style={{ fontSize: '0.95rem', marginBottom: '16px' }}>
               Ticket Details
             </h2>
 
-            <div
-              style={{ display: "flex", flexDirection: "column", gap: "16px" }}
-            >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {/* Type Category */}
               <div>
-                <span
-                  className="form-label"
-                  style={{ fontSize: "0.72rem", textTransform: "uppercase" }}
-                >
+                <span className="form-label" style={{ fontSize: '0.72rem', textTransform: 'uppercase' }}>
                   Category Type
                 </span>
                 <div
                   style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    marginTop: "4px",
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    marginTop: '4px',
                   }}
                 >
-                  <Tag size={16} style={{ color: "var(--text-muted)" }} />
-                  <span style={{ fontSize: "0.88rem", fontWeight: 600 }}>
-                    {TICKET_TYPE_LABELS[ticket.type]}
-                  </span>
+                  <Tag size={16} style={{ color: 'var(--text-muted)' }} />
+                  <span style={{ fontSize: '0.88rem', fontWeight: 600 }}>{TICKET_TYPE_LABELS[ticket.type]}</span>
                 </div>
               </div>
 
               {/* Quotation */}
               {ticket.quotation !== undefined && ticket.quotation !== null && (
                 <div>
-                  <span
-                    className="form-label"
-                    style={{ fontSize: "0.72rem", textTransform: "uppercase" }}
-                  >
+                  <span className="form-label" style={{ fontSize: '0.72rem', textTransform: 'uppercase' }}>
                     Quotation Amount
                   </span>
                   <div
                     style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
-                      marginTop: "4px",
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      marginTop: '4px',
                     }}
                   >
-                    <Tag size={16} style={{ color: "var(--text-muted)" }} />
-                    <span style={{ fontSize: "0.88rem", fontWeight: 600 }}>
-                      Rs {ticket.quotation}
-                    </span>
+                    <Tag size={16} style={{ color: 'var(--text-muted)' }} />
+                    <span style={{ fontSize: '0.88rem', fontWeight: 600 }}>Rs {ticket.quotation}</span>
                   </div>
                 </div>
               )}
 
               {/* Reporter details */}
               <div>
-                <span
-                  className="form-label"
-                  style={{ fontSize: "0.72rem", textTransform: "uppercase" }}
-                >
+                <span className="form-label" style={{ fontSize: '0.72rem', textTransform: 'uppercase' }}>
                   Raised By
                 </span>
                 <div
                   style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    marginTop: "4px",
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    marginTop: '4px',
                   }}
                 >
-                  <User size={16} style={{ color: "var(--text-muted)" }} />
-                  <div style={{ display: "flex", flexDirection: "column" }}>
-                    <span style={{ fontSize: "0.88rem", fontWeight: 600 }}>
-                      {ticket.reporterName}
-                    </span>
+                  <User size={16} style={{ color: 'var(--text-muted)' }} />
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <span style={{ fontSize: '0.88rem', fontWeight: 600 }}>{ticket.reporterName}</span>
                     <span
                       style={{
-                        fontSize: "0.75rem",
-                        color: "var(--text-secondary)",
+                        fontSize: '0.75rem',
+                        color: 'var(--text-secondary)',
                       }}
                     >
                       {ticket.reporterEmail}
@@ -878,48 +787,42 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
 
               {/* Support Assignee details */}
               <div>
-                <span
-                  className="form-label"
-                  style={{ fontSize: "0.72rem", textTransform: "uppercase" }}
-                >
+                <span className="form-label" style={{ fontSize: '0.72rem', textTransform: 'uppercase' }}>
                   Assigned Engineer
                 </span>
                 <div
                   style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    marginTop: "4px",
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    marginTop: '4px',
                   }}
                 >
-                  <UserCheck size={16} style={{ color: "var(--text-muted)" }} />
-                  <span style={{ fontSize: "0.88rem", fontWeight: 600 }}>
-                    {ticket.assigneeName || "Not Assigned Yet"}
+                  <UserCheck size={16} style={{ color: 'var(--text-muted)' }} />
+                  <span style={{ fontSize: '0.88rem', fontWeight: 600 }}>
+                    {ticket.assigneeName || 'Not Assigned Yet'}
                   </span>
                 </div>
               </div>
 
               {/* Date Created */}
               <div>
-                <span
-                  className="form-label"
-                  style={{ fontSize: "0.72rem", textTransform: "uppercase" }}
-                >
+                <span className="form-label" style={{ fontSize: '0.72rem', textTransform: 'uppercase' }}>
                   Date Created
                 </span>
                 <div
                   style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    marginTop: "4px",
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    marginTop: '4px',
                   }}
                 >
-                  <Calendar size={16} style={{ color: "var(--text-muted)" }} />
+                  <Calendar size={16} style={{ color: 'var(--text-muted)' }} />
                   <span
                     style={{
-                      fontSize: "0.82rem",
-                      color: "var(--text-secondary)",
+                      fontSize: '0.82rem',
+                      color: 'var(--text-secondary)',
                     }}
                   >
                     {formatDate(ticket.createdAt)}
@@ -929,25 +832,22 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
 
               {/* Date Updated */}
               <div>
-                <span
-                  className="form-label"
-                  style={{ fontSize: "0.72rem", textTransform: "uppercase" }}
-                >
+                <span className="form-label" style={{ fontSize: '0.72rem', textTransform: 'uppercase' }}>
                   Last Activity
                 </span>
                 <div
                   style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    marginTop: "4px",
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    marginTop: '4px',
                   }}
                 >
-                  <Calendar size={16} style={{ color: "var(--text-muted)" }} />
+                  <Calendar size={16} style={{ color: 'var(--text-muted)' }} />
                   <span
                     style={{
-                      fontSize: "0.82rem",
-                      color: "var(--text-secondary)",
+                      fontSize: '0.82rem',
+                      color: 'var(--text-secondary)',
                     }}
                   >
                     {formatDate(ticket.updatedAt)}

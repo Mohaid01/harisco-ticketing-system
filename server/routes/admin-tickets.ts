@@ -1,113 +1,102 @@
-import { Router } from "express";
+import { Router } from 'express';
+import { getDb } from '../db.ts';
+import { authenticateToken } from '../middleware/auth.ts';
 import type {
-  AuthRequest,
-  ApiAuthRequest,
-  ApiResponse,
-  DbAdminTicket,
-  DbAdminComment,
-  DbAdminActivityLog,
-  CreateAdminTicketRequestBody,
-  UpdateAdminTicketStatusRequestBody,
   AddAdminCommentRequestBody,
-  UpdateAdminTicketRequestBody,
+  AddAdminCommentResponse,
   AdminTicketResponse,
   AdminTicketsResponse,
+  ApiAuthRequest,
+  ApiResponse,
+  AuthRequest,
+  CreateAdminTicketRequestBody,
   CreateAdminTicketResponse,
-  UpdateAdminTicketStatusResponse,
-  AddAdminCommentResponse,
+  DbAdminActivityLog,
+  DbAdminComment,
+  DbAdminTicket,
   DeleteAdminTicketResponse,
+  UpdateAdminTicketRequestBody,
   UpdateAdminTicketResponse,
-} from "../types/index.ts";
-import { authenticateToken } from "../middleware/auth.ts";
-import { getDb } from "../db.ts";
-import { logger } from "../utils/logger.ts";
+  UpdateAdminTicketStatusRequestBody,
+  UpdateAdminTicketStatusResponse,
+} from '../types/index.ts';
+import { logger } from '../utils/logger.ts';
 
 const router = Router();
 
 // GET /api/admin-tickets
-router.get(
-  "/",
-  authenticateToken,
-  async (req: AuthRequest, res: ApiResponse<AdminTicketsResponse>) => {
-    try {
-      const db = getDb();
-      const currentUser = req.user;
+router.get('/', authenticateToken, async (req: AuthRequest, res: ApiResponse<AdminTicketsResponse>) => {
+  try {
+    const db = getDb();
+    const currentUser = req.user;
 
-      if (!currentUser) {
-        return res.status(401).json({ error: "Unauthorized." });
-      }
-
-      let query = "SELECT *, executiveId, executiveName FROM admin_tickets";
-      const params: (string | undefined)[] = [];
-
-      if (currentUser.role === "employee") {
-        query += " WHERE reporterId = ?";
-        params.push(currentUser.id);
-      }
-
-      query += " ORDER BY createdAt DESC";
-
-      const tickets = await db.all<DbAdminTicket[]>(query, params);
-
-      if (tickets.length === 0) {
-        return res.json([]);
-      }
-
-      const ticketIds = tickets.map((t) => t.id);
-      const placeholders = ticketIds.map(() => "?").join(",");
-
-      const queryText = [
-        "SELECT * FROM admin_comments",
-        "WHERE ticketId IN (" + placeholders + ")",
-        "ORDER BY createdAt ASC",
-      ].join(" ");
-
-      const comments = await db.all<DbAdminComment[]>(queryText, ticketIds);
-
-      const logQueryText = [
-        "SELECT * FROM admin_activity_logs",
-        "WHERE ticketId IN (" + placeholders + ")",
-        "ORDER BY timestamp ASC",
-      ].join(" ");
-
-      const logs = await db.all<DbAdminActivityLog[]>(logQueryText, ticketIds);
-
-      const ticketsMap: AdminTicketResponse[] = tickets.map((ticket) => ({
-        ...ticket,
-        comments: comments.filter((c) => c.ticketId === ticket.id),
-        activityLogs: logs.filter((l) => l.ticketId === ticket.id),
-      }));
-
-      return res.json(ticketsMap);
-    } catch (error) {
-      logger.error("Failed to fetch admin tickets:", error);
-      return res
-        .status(500)
-        .json({ error: "Failed to retrieve admin tickets." });
+    if (!currentUser) {
+      return res.status(401).json({ error: 'Unauthorized.' });
     }
-  },
-);
+
+    let query = 'SELECT *, executiveId, executiveName FROM admin_tickets';
+    const params: (string | undefined)[] = [];
+
+    if (currentUser.role === 'employee') {
+      query += ' WHERE reporterId = ?';
+      params.push(currentUser.id);
+    }
+
+    query += ' ORDER BY createdAt DESC';
+
+    const tickets = await db.all<DbAdminTicket[]>(query, params);
+
+    if (tickets.length === 0) {
+      return res.json([]);
+    }
+
+    const ticketIds = tickets.map((t) => t.id);
+    const placeholders = ticketIds.map(() => '?').join(',');
+
+    const queryText = [
+      'SELECT * FROM admin_comments',
+      'WHERE ticketId IN (' + placeholders + ')',
+      'ORDER BY createdAt ASC',
+    ].join(' ');
+
+    const comments = await db.all<DbAdminComment[]>(queryText, ticketIds);
+
+    const logQueryText = [
+      'SELECT * FROM admin_activity_logs',
+      'WHERE ticketId IN (' + placeholders + ')',
+      'ORDER BY timestamp ASC',
+    ].join(' ');
+
+    const logs = await db.all<DbAdminActivityLog[]>(logQueryText, ticketIds);
+
+    const ticketsMap: AdminTicketResponse[] = tickets.map((ticket) => ({
+      ...ticket,
+      comments: comments.filter((c) => c.ticketId === ticket.id),
+      activityLogs: logs.filter((l) => l.ticketId === ticket.id),
+    }));
+
+    return res.json(ticketsMap);
+  } catch (error) {
+    logger.error('Failed to fetch admin tickets:', error);
+    return res.status(500).json({ error: 'Failed to retrieve admin tickets.' });
+  }
+});
 
 // POST /api/admin-tickets
 router.post(
-  "/",
+  '/',
   authenticateToken,
-  async (
-    req: ApiAuthRequest<CreateAdminTicketRequestBody>,
-    res: ApiResponse<CreateAdminTicketResponse>,
-  ) => {
+  async (req: ApiAuthRequest<CreateAdminTicketRequestBody>, res: ApiResponse<CreateAdminTicketResponse>) => {
     const { description, category } = req.body;
     if (!description || !category) {
-      res.status(400).json({ error: "Description and category are required." });
+      res.status(400).json({ error: 'Description and category are required.' });
       return;
     }
 
     try {
       const db = getDb();
 
-      const allTickets = await db.all<{ id: string }[]>(
-        "SELECT id FROM admin_tickets",
-      );
+      const allTickets = await db.all<{ id: string }[]>('SELECT id FROM admin_tickets');
       let maxIndex = 0;
       for (const t of allTickets) {
         const match = t.id.match(/HCIT-ADM-(\d+)/);
@@ -122,9 +111,9 @@ router.post(
       const ticketId = `HCIT-ADM-${index}`;
 
       const timestamp = new Date().toISOString();
-      const reporterId = req.user?.id || "";
-      const reporterName = req.user?.name || "";
-      const reporterEmail = req.user?.email || "";
+      const reporterId = req.user?.id || '';
+      const reporterName = req.user?.name || '';
+      const reporterEmail = req.user?.email || '';
 
       await db.run(
         `INSERT INTO admin_tickets (
@@ -135,13 +124,13 @@ router.post(
           ticketId,
           description,
           category,
-          "awaiting_admin_manager",
+          'awaiting_admin_manager',
           timestamp,
           timestamp,
           reporterId,
           reporterName,
           reporterEmail,
-        ],
+        ]
       );
 
       const logId = `log-${Date.now()}`;
@@ -149,21 +138,14 @@ router.post(
         `INSERT INTO admin_activity_logs (
               id, ticketId, action, timestamp, performedByName, performedByRole
             ) VALUES (?, ?, ?, ?, ?, ?)`,
-        [
-          logId,
-          ticketId,
-          "Ticket raised",
-          timestamp,
-          reporterName,
-          req.user?.role || "employee",
-        ],
+        [logId, ticketId, 'Ticket raised', timestamp, reporterName, req.user?.role || 'employee']
       );
 
       const response: CreateAdminTicketResponse = {
         id: ticketId,
         description,
         category,
-        status: "awaiting_admin_manager",
+        status: 'awaiting_admin_manager',
         createdAt: timestamp,
         updatedAt: timestamp,
         reporterId,
@@ -174,33 +156,33 @@ router.post(
           {
             id: logId,
             ticketId,
-            action: "Ticket raised",
+            action: 'Ticket raised',
             timestamp,
             performedByName: reporterName,
-            performedByRole: req.user?.role || "employee",
+            performedByRole: req.user?.role || 'employee',
           },
         ],
       };
 
       res.status(201).json(response);
     } catch (error) {
-      logger.error("Failed to create admin ticket:", error);
-      res.status(500).json({ error: "Failed to create admin ticket." });
+      logger.error('Failed to create admin ticket:', error);
+      res.status(500).json({ error: 'Failed to create admin ticket.' });
     }
-  },
+  }
 );
 
 // POST /api/admin-tickets/:id/status
 router.post(
-  "/:id/status",
+  '/:id/status',
   authenticateToken,
   async (
     req: ApiAuthRequest<UpdateAdminTicketStatusRequestBody>,
-    res: ApiResponse<UpdateAdminTicketStatusResponse>,
+    res: ApiResponse<UpdateAdminTicketStatusResponse>
   ) => {
-    if (req.user?.role !== "manager") {
+    if (req.user?.role !== 'manager') {
       res.status(403).json({
-        error: "Forbidden. Only Admin Manager can update admin ticket status.",
+        error: 'Forbidden. Only Admin Manager can update admin ticket status.',
       });
       return;
     }
@@ -210,7 +192,7 @@ router.post(
 
     if (!status || !actionMessage) {
       res.status(400).json({
-        error: "Status and actionMessage are required.",
+        error: 'Status and actionMessage are required.',
       });
       return;
     }
@@ -218,32 +200,25 @@ router.post(
     try {
       const db = getDb();
 
-      const ticket = await db.get<DbAdminTicket>(
-        "SELECT * FROM admin_tickets WHERE id = ?",
-        [ticketId],
-      );
+      const ticket = await db.get<DbAdminTicket>('SELECT * FROM admin_tickets WHERE id = ?', [ticketId]);
       if (!ticket) {
-        res.status(404).json({ error: "Admin ticket not found." });
+        res.status(404).json({ error: 'Admin ticket not found.' });
         return;
       }
 
       const timestamp = new Date().toISOString();
 
-      if (
-        status === "awaiting_materials" &&
-        ticket.status === "awaiting_executive"
-      ) {
+      if (status === 'awaiting_materials' && ticket.status === 'awaiting_executive') {
         if (!executiveId || !executiveName) {
           res.status(400).json({
-            error:
-              "executiveId and executiveName are required when transitioning from Awaiting Executive.",
+            error: 'executiveId and executiveName are required when transitioning from Awaiting Executive.',
           });
           return;
         }
 
         await db.run(
-          "UPDATE admin_tickets SET status = ?, updatedAt = ?, executiveId = ?, executiveName = ? WHERE id = ?",
-          [status, timestamp, executiveId, executiveName, ticketId],
+          'UPDATE admin_tickets SET status = ?, updatedAt = ?, executiveId = ?, executiveName = ? WHERE id = ?',
+          [status, timestamp, executiveId, executiveName, ticketId]
         );
 
         const logId = `log-${Date.now()}`;
@@ -252,22 +227,15 @@ router.post(
           ticketId,
           action: `Executive approved by ${executiveName} - Moved to Awaiting Materials`,
           timestamp,
-          performedByName: req.user?.name || "",
-          performedByRole: req.user?.role || "manager",
+          performedByName: req.user?.name || '',
+          performedByRole: req.user?.role || 'manager',
         };
 
         await db.run(
           `INSERT INTO admin_activity_logs (
                 id, ticketId, action, timestamp, performedByName, performedByRole
               ) VALUES (?, ?, ?, ?, ?, ?)`,
-          [
-            logId,
-            ticketId,
-            newLog.action,
-            timestamp,
-            newLog.performedByName,
-            newLog.performedByRole,
-          ],
+          [logId, ticketId, newLog.action, timestamp, newLog.performedByName, newLog.performedByRole]
         );
 
         const response: UpdateAdminTicketStatusResponse = {
@@ -283,16 +251,15 @@ router.post(
         return;
       }
 
-      let updateQuery =
-        "UPDATE admin_tickets SET status = ?, updatedAt = ?";
+      let updateQuery = 'UPDATE admin_tickets SET status = ?, updatedAt = ?';
       const updateParams: (string | undefined)[] = [status, timestamp];
 
       if (executiveId && executiveName) {
-        updateQuery += ", executiveId = ?, executiveName = ?";
+        updateQuery += ', executiveId = ?, executiveName = ?';
         updateParams.push(executiveId, executiveName);
       }
 
-      updateQuery += " WHERE id = ?";
+      updateQuery += ' WHERE id = ?';
       updateParams.push(ticketId);
 
       await db.run(updateQuery, updateParams);
@@ -303,22 +270,15 @@ router.post(
         ticketId,
         action: actionMessage,
         timestamp,
-        performedByName: req.user?.name || "",
-        performedByRole: req.user?.role || "manager",
+        performedByName: req.user?.name || '',
+        performedByRole: req.user?.role || 'manager',
       };
 
       await db.run(
         `INSERT INTO admin_activity_logs (
               id, ticketId, action, timestamp, performedByName, performedByRole
             ) VALUES (?, ?, ?, ?, ?, ?)`,
-        [
-          logId,
-          ticketId,
-          actionMessage,
-          timestamp,
-          newLog.performedByName,
-          newLog.performedByRole,
-        ],
+        [logId, ticketId, actionMessage, timestamp, newLog.performedByName, newLog.performedByRole]
       );
 
       const response: UpdateAdminTicketStatusResponse = {
@@ -332,37 +292,31 @@ router.post(
 
       res.json(response);
     } catch (error) {
-      logger.error("Failed to update admin ticket status:", error);
-      res.status(500).json({ error: "Failed to update admin ticket status." });
+      logger.error('Failed to update admin ticket status:', error);
+      res.status(500).json({ error: 'Failed to update admin ticket status.' });
     }
-  },
+  }
 );
 
 // POST /api/admin-tickets/:id/comments
 router.post(
-  "/:id/comments",
+  '/:id/comments',
   authenticateToken,
-  async (
-    req: ApiAuthRequest<AddAdminCommentRequestBody>,
-    res: ApiResponse<AddAdminCommentResponse>,
-  ) => {
+  async (req: ApiAuthRequest<AddAdminCommentRequestBody>, res: ApiResponse<AddAdminCommentResponse>) => {
     const ticketId = String(req.params.id);
     const { content } = req.body;
 
     if (!content || !content.trim()) {
-      res.status(400).json({ error: "Comment content cannot be empty." });
+      res.status(400).json({ error: 'Comment content cannot be empty.' });
       return;
     }
 
     try {
       const db = getDb();
 
-      const ticket = await db.get<DbAdminTicket>(
-        "SELECT id FROM admin_tickets WHERE id = ?",
-        [ticketId],
-      );
+      const ticket = await db.get<DbAdminTicket>('SELECT id FROM admin_tickets WHERE id = ?', [ticketId]);
       if (!ticket) {
-        res.status(404).json({ error: "Admin ticket not found." });
+        res.status(404).json({ error: 'Admin ticket not found.' });
         return;
       }
 
@@ -376,82 +330,69 @@ router.post(
         [
           commentId,
           ticketId,
-          req.user?.id || "",
-          req.user?.name || "",
-          req.user?.role || "employee",
+          req.user?.id || '',
+          req.user?.name || '',
+          req.user?.role || 'employee',
           content.trim(),
           timestamp,
-        ],
+        ]
       );
 
-      await db.run("UPDATE admin_tickets SET updatedAt = ? WHERE id = ?", [
-        timestamp,
-        ticketId,
-      ]);
+      await db.run('UPDATE admin_tickets SET updatedAt = ? WHERE id = ?', [timestamp, ticketId]);
 
       const response: AddAdminCommentResponse = {
         id: commentId,
         ticketId,
-        authorId: req.user?.id || "",
-        authorName: req.user?.name || "",
-        authorRole: req.user?.role || "employee",
+        authorId: req.user?.id || '',
+        authorName: req.user?.name || '',
+        authorRole: req.user?.role || 'employee',
         content: content.trim(),
         createdAt: timestamp,
       };
 
       res.status(201).json(response);
     } catch (error) {
-      logger.error("Failed to add comment to admin ticket:", error);
-      res.status(500).json({ error: "Failed to add comment." });
+      logger.error('Failed to add comment to admin ticket:', error);
+      res.status(500).json({ error: 'Failed to add comment.' });
     }
-  },
+  }
 );
 
 // DELETE /api/admin-tickets/:id
-router.delete(
-  "/:id",
-  authenticateToken,
-  async (req: AuthRequest, res: ApiResponse<DeleteAdminTicketResponse>) => {
-    const ticketId = String(req.params.id);
+router.delete('/:id', authenticateToken, async (req: AuthRequest, res: ApiResponse<DeleteAdminTicketResponse>) => {
+  const ticketId = String(req.params.id);
 
-    try {
-      const db = getDb();
+  try {
+    const db = getDb();
 
-      const ticket = await db.get<DbAdminTicket>(
-        "SELECT id FROM admin_tickets WHERE id = ?",
-        [ticketId],
-      );
-      if (!ticket) {
-        res.status(404).json({ error: "Admin ticket not found." });
-        return;
-      }
-
-      await db.run("DELETE FROM admin_tickets WHERE id = ?", [ticketId]);
-
-      const response: DeleteAdminTicketResponse = {
-        success: true,
-        message: "Admin ticket deleted successfully.",
-      };
-
-      res.json(response);
-    } catch (error) {
-      logger.error("Failed to delete admin ticket:", error);
-      res.status(500).json({ error: "Failed to delete admin ticket." });
+    const ticket = await db.get<DbAdminTicket>('SELECT id FROM admin_tickets WHERE id = ?', [ticketId]);
+    if (!ticket) {
+      res.status(404).json({ error: 'Admin ticket not found.' });
+      return;
     }
-  },
-);
+
+    await db.run('DELETE FROM admin_tickets WHERE id = ?', [ticketId]);
+
+    const response: DeleteAdminTicketResponse = {
+      success: true,
+      message: 'Admin ticket deleted successfully.',
+    };
+
+    res.json(response);
+  } catch (error) {
+    logger.error('Failed to delete admin ticket:', error);
+    res.status(500).json({ error: 'Failed to delete admin ticket.' });
+  }
+});
 
 // PUT /api/admin-tickets/:id
 router.put(
-  "/:id",
+  '/:id',
   authenticateToken,
-  async (
-    req: ApiAuthRequest<UpdateAdminTicketRequestBody>,
-    res: ApiResponse<UpdateAdminTicketResponse>,
-  ) => {
-    if (req.user?.role !== "manager") {
+  async (req: ApiAuthRequest<UpdateAdminTicketRequestBody>, res: ApiResponse<UpdateAdminTicketResponse>) => {
+    if (req.user?.role !== 'manager') {
       res.status(403).json({
-        error: "Forbidden. Only Admin Manager can edit admin tickets.",
+        error: 'Forbidden. Only Admin Manager can edit admin tickets.',
       });
       return;
     }
@@ -460,51 +401,43 @@ router.put(
     const { description, category } = req.body;
 
     if (!description) {
-      res.status(400).json({ error: "Description is required." });
+      res.status(400).json({ error: 'Description is required.' });
       return;
     }
 
     try {
       const db = getDb();
 
-      const ticket = await db.get<DbAdminTicket>(
-        "SELECT * FROM admin_tickets WHERE id = ?",
-        [ticketId],
-      );
+      const ticket = await db.get<DbAdminTicket>('SELECT * FROM admin_tickets WHERE id = ?', [ticketId]);
       if (!ticket) {
-        res.status(404).json({ error: "Admin ticket not found." });
+        res.status(404).json({ error: 'Admin ticket not found.' });
         return;
       }
 
       const timestamp = new Date().toISOString();
 
-      await db.run(
-        "UPDATE admin_tickets SET description = ?, category = ?, updatedAt = ? WHERE id = ?",
-        [description, category, timestamp, ticketId],
-      );
+      await db.run('UPDATE admin_tickets SET description = ?, category = ?, updatedAt = ? WHERE id = ?', [
+        description,
+        category,
+        timestamp,
+        ticketId,
+      ]);
 
       const logId = `log-${Date.now()}`;
       const newLog: DbAdminActivityLog = {
         id: logId,
         ticketId,
-        action: "Ticket details updated by Admin Manager",
+        action: 'Ticket details updated by Admin Manager',
         timestamp,
-        performedByName: req.user?.name || "",
-        performedByRole: req.user?.role || "manager",
+        performedByName: req.user?.name || '',
+        performedByRole: req.user?.role || 'manager',
       };
 
       await db.run(
         `INSERT INTO admin_activity_logs (
               id, ticketId, action, timestamp, performedByName, performedByRole
             ) VALUES (?, ?, ?, ?, ?, ?)`,
-        [
-          logId,
-          ticketId,
-          newLog.action,
-          timestamp,
-          newLog.performedByName,
-          newLog.performedByRole,
-        ],
+        [logId, ticketId, newLog.action, timestamp, newLog.performedByName, newLog.performedByRole]
       );
 
       const response: UpdateAdminTicketResponse = {
@@ -515,10 +448,10 @@ router.put(
 
       res.json(response);
     } catch (error) {
-      logger.error("Failed to edit admin ticket:", error);
-      res.status(500).json({ error: "Failed to edit admin ticket." });
+      logger.error('Failed to edit admin ticket:', error);
+      res.status(500).json({ error: 'Failed to edit admin ticket.' });
     }
-  },
+  }
 );
 
 export default router;

@@ -1,20 +1,13 @@
 type LogMeta = Record<string, unknown>;
 
 // Blacklist of keys that should never be written to logs in plain text
-const SENSITIVE_KEYS = [
-  "password",
-  "token",
-  "secret",
-  "oldpassword",
-  "newpassword",
-  "credential",
-];
+const SENSITIVE_KEYS = ['password', 'token', 'secret', 'oldpassword', 'newpassword', 'credential'];
 
 /**
  * Recursively removes sensitive properties from log metadata to prevent credential leaks.
  */
 const redactMeta = (obj: unknown): unknown => {
-  if (!obj || typeof obj !== "object") return obj;
+  if (!obj || typeof obj !== 'object') return obj;
 
   if (Array.isArray(obj)) {
     return obj.map(redactMeta);
@@ -23,8 +16,8 @@ const redactMeta = (obj: unknown): unknown => {
   const redacted: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(obj)) {
     if (SENSITIVE_KEYS.includes(key.toLowerCase())) {
-      redacted[key] = "[REDACTED]";
-    } else if (typeof value === "object") {
+      redacted[key] = '[REDACTED]';
+    } else if (typeof value === 'object') {
       redacted[key] = redactMeta(value);
     } else {
       redacted[key] = value;
@@ -46,8 +39,8 @@ export const logger = {
 
     return JSON.stringify({
       level,
-      date: now.toISOString().split("T")[0],
-      time: now.toTimeString().split(" ")[0],
+      date: now.toISOString().split('T')[0],
+      time: now.toTimeString().split(' ')[0],
       timestamp: now.toISOString(),
       message,
       ...cleanMeta,
@@ -55,11 +48,11 @@ export const logger = {
   },
 
   info: (message: string, meta?: LogMeta | unknown): void => {
-    console.log(logger.format("info", message, meta));
+    console.log(logger.format('info', message, meta));
   },
 
   warn: (message: string, meta?: LogMeta | unknown): void => {
-    console.warn(logger.format("warn", message, meta));
+    console.warn(logger.format('warn', message, meta));
   },
 
   error: (message: string, meta?: LogMeta | unknown): void => {
@@ -77,12 +70,10 @@ export const logger = {
         : metaObj;
 
     // 3. Cast the cleaned output back to LogMeta for the formatter
-    console.error(
-      logger.format("error", message, errorDetails as LogMeta | undefined),
-    );
+    console.error(logger.format('error', message, errorDetails as LogMeta | undefined));
   },
 
   security: (message: string, meta?: LogMeta | unknown): void => {
-    console.log(logger.format("security", message, meta));
+    console.log(logger.format('security', message, meta));
   },
 };

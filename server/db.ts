@@ -1,16 +1,15 @@
-import sqlite3 from "sqlite3";
-import { open, Database } from "sqlite";
-import bcrypt from "bcryptjs";
-import path from "path";
+import bcrypt from 'bcryptjs';
+import path from 'path';
+import { Database, open } from 'sqlite';
+import sqlite3 from 'sqlite3';
 
-import fs from "fs";
-import { logger } from "./utils/logger.ts";
+import fs from 'fs';
+import { logger } from './utils/logger.ts';
 
 let db: Database<sqlite3.Database, sqlite3.Statement>;
 
 export async function initDb() {
-  const dbPath =
-    process.env.DB_PATH || path.resolve(process.cwd(), "database.sqlite");
+  const dbPath = process.env.DB_PATH || path.resolve(process.cwd(), 'database.sqlite');
 
   if (process.env.DB_PATH) {
     const dbDir = path.dirname(dbPath);
@@ -25,8 +24,8 @@ export async function initDb() {
   });
 
   // Enable WAL mode for better concurrency (readers don't block writers, writers don't block readers)
-  await db.exec("PRAGMA journal_mode = WAL");
-  await db.exec("PRAGMA busy_timeout = 30000;");
+  await db.exec('PRAGMA journal_mode = WAL');
+  await db.exec('PRAGMA busy_timeout = 30000;');
 
   // Create Notices Table
   await db.exec(`
@@ -62,14 +61,12 @@ export async function initDb() {
 
   // Migrate existing users table if email is NOT NULL
   try {
-    const tableInfo = await db.all<{ name: string; notnull: number }[]>(
-      "PRAGMA table_info(users)",
-    );
+    const tableInfo = await db.all<{ name: string; notnull: number }[]>('PRAGMA table_info(users)');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const emailCol = tableInfo.find((c: any) => c.name === "email");
+    const emailCol = tableInfo.find((c: any) => c.name === 'email');
     if (emailCol && emailCol.notnull === 1) {
-      logger.info("Migrating users table to allow nullable email...");
-      await db.exec("ALTER TABLE users RENAME TO users_old");
+      logger.info('Migrating users table to allow nullable email...');
+      await db.exec('ALTER TABLE users RENAME TO users_old');
       await db.exec(`
         CREATE TABLE users (
           id TEXT PRIMARY KEY,
@@ -83,17 +80,17 @@ export async function initDb() {
         )
       `);
       await db.exec(
-        "INSERT INTO users SELECT id, name, email, username, role, avatar, passwordHash, needsPasswordReset FROM users_old",
+        'INSERT INTO users SELECT id, name, email, username, role, avatar, passwordHash, needsPasswordReset FROM users_old'
       );
-      await db.exec("DROP TABLE users_old");
-      logger.info("Migration completed.");
+      await db.exec('DROP TABLE users_old');
+      logger.info('Migration completed.');
     }
     const tableSchema = await db.get<{ sql: string }>(
-      "SELECT sql FROM sqlite_master WHERE type='table' AND name='users'",
+      "SELECT sql FROM sqlite_master WHERE type='table' AND name='users'"
     );
     if (tableSchema && !tableSchema.sql.includes("'executive'")) {
-      logger.info("Migrating users table structure...");
-      await db.exec("ALTER TABLE users RENAME TO users_old");
+      logger.info('Migrating users table structure...');
+      await db.exec('ALTER TABLE users RENAME TO users_old');
 
       // Re-create the table keeping ALL required columns intact
       await db.exec(`
@@ -114,37 +111,37 @@ export async function initDb() {
       // Determine columns available in old table to prevent crash if they don't exist yet
       const hasDeptHead = tableInfo.some(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (c: any) => c.name === "isDepartmentHead",
+        (c: any) => c.name === 'isDepartmentHead'
       );
       const hasLoginEnabled = tableInfo.some(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (c: any) => c.name === "loginEnabled",
+        (c: any) => c.name === 'loginEnabled'
       );
 
       // Dynamic column selection based on what the old table actually possessed
       const selectCols = [
-        "id",
-        "name",
-        "email",
-        "username",
-        "role",
-        "avatar",
-        "passwordHash",
-        "needsPasswordReset",
-        hasDeptHead ? "isDepartmentHead" : "0 AS isDepartmentHead",
-        hasLoginEnabled ? "loginEnabled" : "1 AS loginEnabled",
-      ].join(", ");
+        'id',
+        'name',
+        'email',
+        'username',
+        'role',
+        'avatar',
+        'passwordHash',
+        'needsPasswordReset',
+        hasDeptHead ? 'isDepartmentHead' : '0 AS isDepartmentHead',
+        hasLoginEnabled ? 'loginEnabled' : '1 AS loginEnabled',
+      ].join(', ');
 
       await db.exec(`
         INSERT INTO users (id, name, email, username, role, avatar, passwordHash, needsPasswordReset, isDepartmentHead, loginEnabled) 
         SELECT ${selectCols} FROM users_old
       `);
 
-      await db.exec("DROP TABLE users_old");
-      logger.info("Migration completed successfully.");
+      await db.exec('DROP TABLE users_old');
+      logger.info('Migration completed successfully.');
     }
   } catch (err) {
-    logger.error("Migration check failed:", err);
+    logger.error('Migration check failed:', err);
   }
 
   // Create Tickets Table
@@ -168,67 +165,55 @@ export async function initDb() {
   `);
 
   try {
-    await db.exec("ALTER TABLE tickets ADD COLUMN quotation REAL");
+    await db.exec('ALTER TABLE tickets ADD COLUMN quotation REAL');
   } catch {
     // Column might already exist, ignore error
   }
 
   try {
-    await db.exec(
-      "ALTER TABLE users ADD COLUMN needsPasswordReset INTEGER DEFAULT 1",
-    );
+    await db.exec('ALTER TABLE users ADD COLUMN needsPasswordReset INTEGER DEFAULT 1');
   } catch {
     // Column might already exist, ignore error
   }
 
   try {
-    await db.exec("ALTER TABLE users ADD COLUMN department TEXT");
+    await db.exec('ALTER TABLE users ADD COLUMN department TEXT');
   } catch {
     // Column might already exist, ignore error
   }
 
   try {
-    await db.exec("ALTER TABLE users ADD COLUMN designation TEXT");
+    await db.exec('ALTER TABLE users ADD COLUMN designation TEXT');
   } catch {
     // Column might already exist, ignore error
   }
 
   try {
-    await db.exec(
-      "ALTER TABLE users ADD COLUMN isDepartmentHead INTEGER DEFAULT 0",
-    );
+    await db.exec('ALTER TABLE users ADD COLUMN isDepartmentHead INTEGER DEFAULT 0');
   } catch {
     // Column might already exist, ignore error
   }
 
   try {
-    await db.exec(
-      "ALTER TABLE users ADD COLUMN loginEnabled INTEGER DEFAULT 1",
-    );
+    await db.exec('ALTER TABLE users ADD COLUMN loginEnabled INTEGER DEFAULT 1');
   } catch {
     // Column might already exist, ignore error
   }
 
   try {
-    await db.exec(
-      "ALTER TABLE users ADD COLUMN casualLeaves INTEGER DEFAULT 12",
-    );
+    await db.exec('ALTER TABLE users ADD COLUMN casualLeaves INTEGER DEFAULT 12');
   } catch {
     // Column might already exist, ignore error
   }
 
   try {
-    await db.exec(
-      "ALTER TABLE users ADD COLUMN annualLeaves INTEGER DEFAULT 14",
-    );
+    await db.exec('ALTER TABLE users ADD COLUMN annualLeaves INTEGER DEFAULT 14');
   } catch {
     // Column might already exist, ignore error
   }
 
   try {
-    await db.exec(
-      "ALTER TABLE users ADD COLUMN medicalLeaves INTEGER DEFAULT 8",
-    );
+    await db.exec('ALTER TABLE users ADD COLUMN medicalLeaves INTEGER DEFAULT 8');
   } catch {
     // Column might already exist, ignore error
   }
@@ -253,15 +238,11 @@ export async function initDb() {
   // Migrate admin_tickets to add rejected status and executive fields if missing
   try {
     const tableSchema = await db.get<{ sql: string }>(
-      "SELECT sql FROM sqlite_master WHERE type='table' AND name='admin_tickets'",
+      "SELECT sql FROM sqlite_master WHERE type='table' AND name='admin_tickets'"
     );
-    if (
-      tableSchema &&
-      (!tableSchema.sql.includes("executiveId") ||
-        !tableSchema.sql.includes("'rejected'"))
-    ) {
-      logger.info("Migrating admin_tickets table to add rejected status...");
-      await db.exec("ALTER TABLE admin_tickets RENAME TO admin_tickets_old");
+    if (tableSchema && (!tableSchema.sql.includes('executiveId') || !tableSchema.sql.includes("'rejected'"))) {
+      logger.info('Migrating admin_tickets table to add rejected status...');
+      await db.exec('ALTER TABLE admin_tickets RENAME TO admin_tickets_old');
 
       await db.exec(`
         CREATE TABLE admin_tickets (
@@ -284,11 +265,11 @@ export async function initDb() {
         SELECT id, description, category, status, createdAt, updatedAt, reporterId, reporterName, reporterEmail, executiveId, executiveName FROM admin_tickets_old
       `);
 
-      await db.exec("DROP TABLE admin_tickets_old");
-      logger.info("admin_tickets migration completed successfully.");
+      await db.exec('DROP TABLE admin_tickets_old');
+      logger.info('admin_tickets migration completed successfully.');
     }
   } catch (err) {
-    logger.error("admin_tickets migration check failed:", err);
+    logger.error('admin_tickets migration check failed:', err);
   }
 
   // Create Admin Comments Table
@@ -320,9 +301,7 @@ export async function initDb() {
 
   // Seed initial admin ticket numbering tracker
   try {
-    await db.exec(
-      "ALTER TABLE admin_tickets ADD COLUMN sequence_num INTEGER DEFAULT 0",
-    );
+    await db.exec('ALTER TABLE admin_tickets ADD COLUMN sequence_num INTEGER DEFAULT 0');
   } catch {
     // Column might already exist, ignore error
   }
@@ -374,15 +353,9 @@ export async function initDb() {
   `);
 
   // Create indexes for factory_users table to improve query performance
-  await db.exec(
-    "CREATE INDEX IF NOT EXISTS idx_factory_users_username ON factory_users(username)",
-  );
-  await db.exec(
-    "CREATE INDEX IF NOT EXISTS idx_factory_users_role ON factory_users(role)",
-  );
-  await db.exec(
-    "CREATE INDEX IF NOT EXISTS idx_factory_users_email ON factory_users(email)",
-  );
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_factory_users_username ON factory_users(username)');
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_factory_users_role ON factory_users(role)');
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_factory_users_email ON factory_users(email)');
 
   // Create Factory Attendance Logs Table
   await db.exec(`
@@ -411,17 +384,11 @@ export async function initDb() {
   `);
 
   // Create indexes for attendance tables to improve query performance
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_attendance_logs_user_id ON attendance_logs(userId)');
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_attendance_logs_user_id_ioTime ON attendance_logs(userId, ioTime)');
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_factory_attendance_logs_user_id ON factory_attendance_logs(userId)');
   await db.exec(
-    "CREATE INDEX IF NOT EXISTS idx_attendance_logs_user_id ON attendance_logs(userId)",
-  );
-  await db.exec(
-    "CREATE INDEX IF NOT EXISTS idx_attendance_logs_user_id_ioTime ON attendance_logs(userId, ioTime)",
-  );
-  await db.exec(
-    "CREATE INDEX IF NOT EXISTS idx_factory_attendance_logs_user_id ON factory_attendance_logs(userId)",
-  );
-  await db.exec(
-    "CREATE INDEX IF NOT EXISTS idx_factory_attendance_logs_user_id_ioTime ON factory_attendance_logs(userId, ioTime)",
+    'CREATE INDEX IF NOT EXISTS idx_factory_attendance_logs_user_id_ioTime ON factory_attendance_logs(userId, ioTime)'
   );
 
   // Create Leave Applications Table
@@ -465,27 +432,25 @@ export async function initDb() {
   `);
 
   // Seed initial admin user if table is empty
-  const userCount = await db.get<{ count: number }>(
-    "SELECT COUNT(*) as count FROM users",
-  );
+  const userCount = await db.get<{ count: number }>('SELECT COUNT(*) as count FROM users');
   if (userCount && userCount.count === 0) {
     const adminPassword = process.env.ADMIN_INITIAL_PASSWORD;
-    if (!adminPassword) throw new Error("ADMIN_INITIAL_PASSWORD required");
+    if (!adminPassword) throw new Error('ADMIN_INITIAL_PASSWORD required');
     const passwordHash = await bcrypt.hash(adminPassword, 10);
 
     await db.run(
-      "INSERT INTO users (id, name, email, username, role, avatar, passwordHash, needsPasswordReset, isDepartmentHead, loginEnabled) VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, 1)",
+      'INSERT INTO users (id, name, email, username, role, avatar, passwordHash, needsPasswordReset, isDepartmentHead, loginEnabled) VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, 1)',
       [
-        "usr-1",
-        "Default User",
-        "it@harisco.com",
-        "HC-00001",
-        "it",
-        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&h=100&q=80",
+        'usr-1',
+        'Default User',
+        'it@harisco.com',
+        'HC-00001',
+        'it',
+        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&h=100&q=80',
         passwordHash,
-      ],
+      ]
     );
-    logger.info("Seeded initial admin user.");
+    logger.info('Seeded initial admin user.');
   }
 
   // No seed tickets — tickets will be created by users through the application
@@ -493,7 +458,7 @@ export async function initDb() {
 
 export function getDb() {
   if (!db) {
-    throw new Error("Database not initialized! Call initDb first.");
+    throw new Error('Database not initialized! Call initDb first.');
   }
   return db;
 }
