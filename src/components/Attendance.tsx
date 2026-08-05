@@ -796,7 +796,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
         if (log.firstIn !== "--") {
           present++;
           if (log.status !== "On Leave") {
-            totalHours += log.hours;
+            // totalHours += log.hours;
           }
         } else {
           absent++;
