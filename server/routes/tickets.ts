@@ -23,6 +23,7 @@ import type {
 import { authenticateToken } from "../middleware/auth.ts";
 import { getDb } from "../db.ts";
 import { sendEmail } from "../email.ts";
+import { logger } from "../utils/logger.ts";
 
 const router = Router();
 
@@ -87,7 +88,7 @@ router.get(
 
       return res.json(ticketsMap);
     } catch (error) {
-      console.error("Failed to fetch tickets:", error);
+      logger.error("Failed to fetch tickets:", error);
       return res
         .status(500)
         .json({ error: "Failed to retrieve support tickets." });
@@ -187,13 +188,10 @@ router.post(
               itUser.email,
               `[New Ticket] ${ticketId} Raised by ${reporterName}`,
               `Hello,\n\nA new support ticket has been raised by ${reporterName} (${reporterEmail}).\n\nTicket ID: ${ticketId}\nType: ${type}\nDescription:\n${description}\n\nPlease log in to review and assign this ticket.`,
-            ).catch((err) => console.error("Email send failed:", err));
+            ).catch((err) => logger.error("Email send failed:", err));
           }
         } catch (err) {
-          console.error(
-            "Failed to query IT users for email notification:",
-            err,
-          );
+          logger.error("Failed to query IT users for email notification:", err);
         }
       }
 
@@ -217,7 +215,7 @@ router.post(
 
       res.status(201).json(response);
     } catch (error) {
-      console.error("Failed to create ticket:", error);
+      logger.error("Failed to create ticket:", error);
       res.status(500).json({ error: "Failed to create new ticket." });
     }
   },
@@ -298,10 +296,10 @@ router.post(
               mgr.email,
               `[Escalation Request] Ticket ${ticketId} Awaiting Manager Approval`,
               `Hello,\n\nA ticket has been escalated for your approval by ${req.user?.name || "IT"}.\n\nTicket ID: ${ticketId}\nQuotation Amount: Rs ${quotation !== undefined ? quotation : ticket.quotation || "N/A"}\nEscalation Message: ${actionMessage}\n\nPlease log in to review and approve this request.`,
-            ).catch((err) => console.error("Email send failed:", err));
+            ).catch((err) => logger.error("Email send failed:", err));
           }
         } catch (err) {
-          console.error("Failed to query managers for escalation email:", err);
+          logger.error("Failed to query managers for escalation email:", err);
         }
       }
 
@@ -320,10 +318,10 @@ router.post(
                 assignee.email,
                 `[Approved by Manager] Ticket ${ticketId} Ready for Handover`,
                 `Hello,\n\nThe ticket assigned to you has been approved by the manager.\n\nTicket ID: ${ticketId}\nDescription: ${ticket.description}\n\nPlease proceed with the resolution work and handover.`,
-              ).catch((err) => console.error("Email send failed:", err));
+              ).catch((err) => logger.error("Email send failed:", err));
             }
           } catch (err) {
-            console.error("Failed to query assignee for approval email:", err);
+            logger.error("Failed to query assignee for approval email:", err);
           }
         }
       }
@@ -338,7 +336,7 @@ router.post(
 
       res.json(response);
     } catch (error) {
-      console.error("Failed to update status:", error);
+      logger.error("Failed to update status:", error);
       res.status(500).json({ error: "Failed to update ticket status." });
     }
   },
@@ -417,7 +415,7 @@ router.put(
 
       res.json(response);
     } catch (error) {
-      console.error("Failed to edit ticket:", error);
+      logger.error("Failed to edit ticket:", error);
       res.status(500).json({ error: "Failed to edit ticket." });
     }
   },
@@ -452,7 +450,7 @@ router.delete(
 
       res.json({ success: true, message: "Ticket deleted successfully." });
     } catch (error) {
-      console.error("Failed to delete ticket:", error);
+      logger.error("Failed to delete ticket:", error);
       res.status(500).json({ error: "Failed to delete ticket." });
     }
   },
@@ -531,7 +529,7 @@ router.post(
 
       res.json(response);
     } catch (error) {
-      console.error("Failed to assign ticket:", error);
+      logger.error("Failed to assign ticket:", error);
       res.status(500).json({ error: "Failed to assign ticket." });
     }
   },
@@ -601,7 +599,7 @@ router.post(
 
       res.status(201).json(response);
     } catch (error) {
-      console.error("Failed to add comment:", error);
+      logger.error("Failed to add comment:", error);
       res.status(500).json({ error: "Failed to add comment to ticket." });
     }
   },
