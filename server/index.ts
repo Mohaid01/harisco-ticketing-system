@@ -5,6 +5,11 @@ import helmet from 'helmet';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+import { logger, performanceTiming, requestId } from '@utils';
+
+import { globalLimiter, PORT, writeLimiter } from './constants.ts';
+import { sseClients } from './middleware/sse.ts';
+
 import { initDb } from './db.js';
 import { setupDeviceHandlers } from './devices/index.ts';
 import activityLogsRouter from './routes/activity-logs.ts';
@@ -23,30 +28,10 @@ import usersRouter from './routes/users.ts';
 const app = express();
 
 // Request ID middleware for correlation
-app.use((req: Request, res: Response, next: NextFunction) => {
-  const requestId =
-    req.headers['x-request-id']?.toString() || `req-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-  (req as RequestWithId).requestId = requestId;
-  res.setHeader('x-request-id', requestId);
-  next();
-});
+app.use(requestId);
 
 // Performance timing middleware
-app.use((req: Request, res: Response, next: NextFunction) => {
-  const start = Date.now();
-  res.on('finish', () => {
-    const durationMs = Date.now() - start;
-    if (durationMs > 1000) {
-      logger.warn('Slow request', {
-        path: req.path,
-        method: req.method,
-        durationMs,
-        statusCode: res.statusCode,
-      });
-    }
-  });
-  next();
-});
+app.use(performanceTiming);
 
 // Global crash handlers — log the exact error before process exits
 process.on('uncaughtException', (err) => {
@@ -95,12 +80,6 @@ app.use(express.json({ limit: '10mb' }));
 
 // Loose global tracker applied to every endpoint under /api
 app.use('/api', globalLimiter);
-
-import { RequestWithId } from '@types';
-import { logger } from '@utils';
-
-import { globalLimiter, PORT, writeLimiter } from './constants.ts';
-import { sseClients } from './middleware/sse.ts';
 
 // High-performance centralized wrapper for write operations
 app.use('/api', (req: Request, res: Response, next: NextFunction) => {

@@ -75,7 +75,7 @@ export const logger = {
   },
 
   security: (message: string, meta?: LogMeta | unknown): void => {
-    console.log(logger.format('security', message, meta));
+    console.warn(logger.format('security', message, meta));
   },
 };
 
