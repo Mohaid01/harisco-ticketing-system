@@ -4,8 +4,7 @@ import cors from "cors";
 import helmet from "helmet";
 import path from "path";
 import { fileURLToPath } from "url";
-import { getDb, initDb } from "./db.js";
-import { WebSocketServer } from "ws";
+import { initDb } from "./db.js";
 import activityLogsRouter from "./routes/activity-logs.ts";
 import adminTicketsRouter from "./routes/admin-tickets.ts";
 import attendanceRouter from "./routes/attendance.ts";
@@ -18,6 +17,7 @@ import noticesRouter from "./routes/notices.ts";
 import siteDutiesRouter from "./routes/site-duties.ts";
 import ticketsRouter from "./routes/tickets.ts";
 import usersRouter from "./routes/users.ts";
+import { setupDeviceHandlers } from "./devices/index.ts";
 
 const app = express();
 
@@ -59,8 +59,27 @@ process.on("unhandledRejection", (reason) => {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Security Headers (CSP disabled to allow Vite inline scripts/styles)
-app.use(helmet({ contentSecurityPolicy: false }));
+// Security Headers — CSP relaxed in dev for Vite HMR inline scripts/styles
+app.use(
+  helmet({
+    contentSecurityPolicy:
+      process.env.NODE_ENV === "production"
+        ? {
+            directives: {
+              defaultSrc: ["'self'"],
+              scriptSrc: ["'self'"],
+              styleSrc: ["'self'", "'unsafe-inline'"],
+              imgSrc: ["'self'", "data:", "https:"],
+              connectSrc: ["'self'", "ws:", "wss:"],
+              fontSrc: ["'self'"],
+              objectSrc: ["'none'"],
+              mediaSrc: ["'self'"],
+              frameSrc: ["'none'"],
+            },
+          }
+        : false,
+  }),
+);
 
 // Required: trust Cloudflare Tunnel proxy so express-rate-limit reads X-Forwarded-For correctly
 app.set("trust proxy", true);
@@ -79,14 +98,9 @@ app.use(express.json({ limit: "10mb" }));
 app.use("/api", globalLimiter);
 
 import { sseClients } from "./middleware/sse.ts";
-import {
-  processAttendancePunch,
-  processFactoryAttendancePunch,
-} from "./services/punch-processors.ts";
 import { globalLimiter, PORT, writeLimiter } from "./constants.ts";
 import { logger } from "./utils/logger.ts";
-import { CreateFactoryUserResponse, RequestWithId } from "@types";
-import bcrypt from "bcryptjs";
+import { RequestWithId } from "@types";
 
 // High-performance centralized wrapper for write operations
 app.use("/api", (req: Request, res: Response, next: NextFunction) => {
@@ -114,179 +128,6 @@ app.use("/api/site-duties", siteDutiesRouter);
 app.use("/api/tickets", ticketsRouter);
 app.use("/api/users", usersRouter);
 
-// Unauthenticated route to add users dynamically
-app.post("/adduser", async (req, res) => {
-  const {
-    name,
-    email,
-    username,
-    role,
-    password,
-    avatar,
-    department,
-    designation,
-    isDepartmentHead,
-    loginEnabled,
-  } = req.body;
-
-  if (!name || !username || !role) {
-    res.status(400).json({ error: "Name, username, and role are required." });
-    return;
-  }
-
-  const validFactoryRoles = [
-    "factory_employee",
-    "factory_it",
-    "factory_manager",
-  ];
-
-  if (!validFactoryRoles.includes(role)) {
-    res.status(400).json({ error: "Invalid factory role." });
-    return;
-  }
-
-  const finalEmail = email && email.trim() ? email.trim().toLowerCase() : null;
-  const defaultPassword = process.env.VITE_DEFAULT_USER_PASSWORD;
-  if (!defaultPassword) throw new Error("DEFAULT_USER_PASSWORD required");
-  const clearPassword = password || defaultPassword;
-
-  const normalizedIsDepartmentHead = isDepartmentHead ? 1 : 0;
-  const normalizedLoginEnabled =
-    loginEnabled === false || loginEnabled === 0 ? 0 : 1;
-
-  try {
-    const db = getDb();
-
-    if (finalEmail) {
-      const existingEmail = await db.get(
-        "SELECT id FROM factory_users WHERE email = ?",
-        [finalEmail],
-      );
-      if (existingEmail) {
-        res.status(400).json({ error: "User with this email already exists." });
-        return;
-      }
-    }
-
-    const existingUsername = await db.get(
-      "SELECT id FROM factory_users WHERE username = ?",
-      [username.toLowerCase().trim()],
-    );
-    if (existingUsername) {
-      res
-        .status(400)
-        .json({ error: "User with this username already exists." });
-      return;
-    }
-
-    const passwordHash = await bcrypt.hash(clearPassword, 10);
-    const userId = `usr-${Date.now()}`;
-
-    await db.run(
-      "INSERT INTO factory_users (id, name, email, username, role, avatar, passwordHash, needsPasswordReset, department, designation, isDepartmentHead, loginEnabled) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)",
-      [
-        userId,
-        name,
-        finalEmail,
-        username.toLowerCase().trim(),
-        role,
-        avatar ? avatar.trim() : "",
-        passwordHash,
-        department ? department.trim() : null,
-        designation ? designation.trim() : null,
-        normalizedIsDepartmentHead,
-        normalizedLoginEnabled,
-      ],
-    );
-
-    const response: CreateFactoryUserResponse = {
-      id: userId,
-      name,
-      email: finalEmail,
-      username: username.toLowerCase().trim(),
-      role,
-      avatar: avatar ? avatar.trim() : "",
-      department: department ? department.trim() : null,
-      designation: designation ? designation.trim() : null,
-      isDepartmentHead: normalizedIsDepartmentHead,
-      loginEnabled: normalizedLoginEnabled,
-    };
-
-    res.status(201).json(response);
-  } catch (error) {
-    logger.error("Failed to create factory user:", error);
-    res.status(500).json({ error: "Failed to register new factory user." });
-  }
-});
-
-// PT-5000 HTTP Device Route
-app.post("/", async (req, res) => {
-  const requestCode = req.headers["request_code"] as string;
-  const devId = (req.headers["dev_id"] as string) || "UNKNOWN";
-  const transId = (req.headers["trans_id"] as string) || "ReceiveCommandAction";
-
-  // 1. Read raw stream into a Buffer
-  const buffers: Buffer[] = [];
-  for await (const chunk of req) {
-    buffers.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-  }
-  const rawBuffer = Buffer.concat(buffers);
-  const rawString = rawBuffer.toString("utf8");
-
-  // 2. Extract clean JSON by locating the first '{' and last '}'
-  let payload: Record<string, unknown> = {};
-  try {
-    const jsonStart = rawString.indexOf("{");
-    const jsonEnd = rawString.lastIndexOf("}");
-    if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
-      payload = JSON.parse(rawString.substring(jsonStart, jsonEnd + 1));
-    }
-  } catch (err: unknown) {
-    logger.error("❌ Failed to parse device payload JSON:", err);
-  }
-
-  // 3. Handle Heartbeat
-  if (requestCode === "receive_cmd") {
-    logger.info(`💓 [HEARTBEAT] Factory Attendance Device is Online.)`);
-  }
-
-  // 4. Handle Attendance Punch
-  if (requestCode === "realtime_glog" || payload.user_id) {
-    const userId = payload.user_id as string;
-    const rawTime = payload.io_time as string; // e.g., "20000328104051"
-    const verifyMode = payload.verify_mode as string;
-
-    // Format timestamp: "20000328104051" -> "2000-03-28 10:40:51"
-    let formattedTime: string;
-
-    if (rawTime && rawTime.length >= 14) {
-      formattedTime = `${rawTime.substring(0, 4)}-${rawTime.substring(4, 6)}-${rawTime.substring(6, 8)} ${rawTime.substring(8, 10)}:${rawTime.substring(10, 12)}:${rawTime.substring(12, 14)}`;
-    } else {
-      const options = { timeZone: "UTC", hour12: false };
-      const d = new Date();
-      const datePart = d.toLocaleDateString("en-CA", options); // outputs YYYY-MM-DD
-      const timePart = d.toLocaleTimeString("en-GB", options); // outputs HH:mm:ss
-      formattedTime = `${datePart} ${timePart}`;
-    }
-
-    const scanMethod = String(verifyMode ?? "Unknown");
-
-    if (userId) {
-      await processFactoryAttendancePunch({
-        userId: String(userId),
-        punchTime: formattedTime,
-        scanMethod,
-        deviceLabel: `PT-5000 Factory ${devId}`,
-      });
-    }
-  }
-
-  // Always acknowledge the device with required headers
-  res.setHeader("response_code", "OK");
-  res.setHeader("trans_id", transId);
-  return res.status(200).send("OK");
-});
-
 // Start Database and Server
 // Serve static frontend files in production
 app.use(express.static(path.join(__dirname, "../dist")));
@@ -309,118 +150,7 @@ async function startServer() {
       server.close(() => process.exit(0));
     });
 
-    // Integrated WebSocket Server for the biometric attendance device (Pioneer XML Bridge)
-    const wss = new WebSocketServer({ noServer: true });
-
-    server.on("upgrade", (request, socket, head) => {
-      // Handle websocket upgrade
-      wss.handleUpgrade(request, socket, head, (ws) => {
-        wss.emit("connection", ws, request);
-      });
-    });
-
-    const METHOD_MAP: Record<string, string> = {
-      FP: "Fingerprint",
-      FACE: "Face",
-      CD: "Card",
-      CARD: "Card",
-      PWD: "Password",
-    };
-
-    wss.on("connection", (ws, req) => {
-      logger.info(
-        `📡 [DEVICE CONNECTED] Connection open from IP: ${req.socket.remoteAddress}`,
-      );
-
-      logger.info("Device connected", {
-        ip: req.socket.remoteAddress,
-        firmware:
-          (ws as any).upgrade?.request?.headers?.["x-device-firmware"] ||
-          "unknown",
-      });
-      ws.on("message", async (message) => {
-        const rawString = message.toString("utf8").trim();
-
-        const serialNoMatch = rawString.match(
-          /<DeviceSerialNo>(.*?)<\/DeviceSerialNo>/,
-        );
-        const serialNo = serialNoMatch ? serialNoMatch[1] : "RSS20230560326";
-
-        // 1. HANDSHAKE STEP 1: Registration
-        if (rawString.includes("<Request>Register</Request>")) {
-          const xmlResponse = `<?xml version="1.0"?>\r\n<Message>\r\n<Response>Register</Response>\r\n<Result>OK</Result>\r\n<DeviceSerialNo>${serialNo}</DeviceSerialNo>\r\n</Message>`;
-          return ws.send(xmlResponse);
-        }
-
-        // 2. HANDSHAKE STEP 2: Login
-        if (rawString.includes("<Request>Login</Request>")) {
-          const sessionToken = `TOKEN_${Date.now()}`;
-          const xmlLoginResponse = `<?xml version="1.0"?>\r\n<Message>\r\n<Response>Login</Response>\r\n<Result>OK</Result>\r\n<DeviceSerialNo>${serialNo}</DeviceSerialNo>\r\n<Token>${sessionToken}</Token>\r\n</Message>`;
-          return ws.send(xmlLoginResponse);
-        }
-
-        // 3. MANAGEMENT LOG HOOK (OpLog_v2)
-        if (rawString.includes("OpLog_v2")) {
-          try {
-            const transId =
-              rawString.match(/<TransID>(.*?)<\/TransID>/)?.[1] || "0";
-            const logId = rawString.match(/<LogID>(.*?)<\/LogID>/)?.[1] || "0";
-            const xmlOpResponse = `<?xml version="1.0"?>\r\n<Message>\r\n<Response>OpLog_v2</Response>\r\n<Result>OK</Result>\r\n<DeviceSerialNo>${serialNo}</DeviceSerialNo>\r\n<TransID>${transId}</TransID>\r\n<LogID>${logId}</LogID>\r\n</Message>`;
-            ws.send(xmlOpResponse);
-          } catch (err: unknown) {
-            logger.error("❌ [ERROR] Processing Management Log:", err);
-          }
-          return;
-        }
-        // 4. LIVE ATTENDANCE PUNCH CAPTURE (TimeLog_v2 Event Core)
-        if (rawString.includes("TimeLog_v2")) {
-          try {
-            const userId = rawString.match(/<UserID>(.*?)<\/UserID>/)?.[1];
-            const punchTime = rawString.match(/<Time>(.*?)<\/Time>/)?.[1];
-            const actionRaw =
-              rawString.match(/<Action>(.*?)<\/Action>/)?.[1] || "FACE";
-            const attendStat =
-              rawString.match(/<AttendStat>(.*?)<\/AttendStat>/)?.[1] || "None";
-            const transId =
-              rawString.match(/<TransID>(.*?)<\/TransID>/)?.[1] || "0";
-            const logId = rawString.match(/<LogID>(.*?)<\/LogID>/)?.[1] || "0";
-
-            if (userId && punchTime) {
-              const xmlLogResponse = `<?xml version="1.0"?>\r\n<Message>\r\n<Response>TimeLog_v2</Response>\r\n<Result>OK</Result>\r\n<DeviceSerialNo>${serialNo}</DeviceSerialNo>\r\n<TransID>${transId}</TransID>\r\n<LogID>${logId}</LogID>\r\n</Message>`;
-              ws.send(xmlLogResponse);
-
-              const scanMethod =
-                METHOD_MAP[actionRaw.toUpperCase()] || actionRaw;
-
-              await processAttendancePunch({
-                userId,
-                punchTime,
-                scanMethod,
-                attendStat,
-                deviceLabel: `WebSocket (${serialNo})`,
-              });
-            }
-          } catch (err: unknown) {
-            logger.error("❌ [ERROR] Parsing XML Data Block:", err);
-          }
-          return;
-        }
-
-        // 5. HEARTBEAT MANAGER
-        if (
-          rawString.includes("<Request>Heartbeat</Request>") ||
-          rawString.includes("Heartbeat")
-        ) {
-          logger.info("💓 [SOCKET HEARTBEAT] HQ Attendance Device is online.");
-          const xmlHeartbeatResponse = `<?xml version="1.0"?>\r\n<Message>\r\n<Response>Heartbeat</Response>\r\n<Result>OK</Result>\r\n</Message>`;
-          return ws.send(xmlHeartbeatResponse);
-        }
-      });
-
-      ws.on("close", () =>
-        logger.info("🔌 [DEVICE DISCONNECTED] Channel closed."),
-      );
-    });
+    setupDeviceHandlers(app, server);
   } catch (err) {
     logger.error("Failed to start database/server:", err);
     process.exit(1);
