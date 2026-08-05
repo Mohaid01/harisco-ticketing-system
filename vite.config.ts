@@ -1,5 +1,7 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vite';
+
+const BACKEND_PORT = process.env.PORT || 8082;
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -7,9 +9,9 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:5000',
+        target: `http://localhost:${BACKEND_PORT}`,
         changeOrigin: true,
       },
     },
   },
-})
+});
