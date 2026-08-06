@@ -1,7 +1,7 @@
 import { Response } from 'express';
 
 class SSEManager {
-  private clients = new Map<Response, { lastSeen: number }>();
+  private clients = new Map<Response, { lastSeen: number; userId?: string }>();
   private readonly maxClients = 200;
   private readonly heartbeatMs = 15000;
   private heartbeatInterval?: NodeJS.Timeout;
@@ -21,13 +21,13 @@ class SSEManager {
     }, this.heartbeatMs);
   }
 
-  add(res: Response) {
+  add(res: Response, userId?: string) {
     if (this.clients.size >= this.maxClients) {
       res.write(`data: ${JSON.stringify({ error: 'Server at capacity' })}\n\n`);
       res.end();
       return;
     }
-    this.clients.set(res, { lastSeen: Date.now() });
+    this.clients.set(res, { lastSeen: Date.now(), userId });
 
     res.on('close', () => this.remove(res));
     res.on('error', () => this.remove(res));
@@ -42,9 +42,10 @@ class SSEManager {
     }
   }
 
-  broadcast(message: string) {
+  broadcast(message: string, excludeUserId?: string) {
     const now = Date.now();
     for (const [client, meta] of this.clients) {
+      if (excludeUserId && meta.userId === excludeUserId) continue;
       meta.lastSeen = now;
       try {
         client.write(message);

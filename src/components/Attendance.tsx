@@ -312,10 +312,6 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
     return { date: dateStr, time: timeStr, timestamp: `${dateStr} ${timeStr}` };
   };
 
-  const parseLogDate = (log: AttendanceLog): string => {
-    return parseLogPKT(log).date;
-  };
-
   // Determine user department
   const getUserDepartment = (user: AppUser): string => {
     return user.department || 'Operations';
@@ -522,12 +518,6 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
 
   // Compute today's daily stats across ALL employees (not filtered)
   const todayStats = useMemo(() => {
-    const todayStr = new Intl.DateTimeFormat('en-CA', {
-      timeZone: 'Asia/Karachi',
-    }).format(new Date());
-    const pktNow = new Date(new Date().getTime() + 5 * 60 * 60 * 1000);
-    const isSaturday = pktNow.getUTCDay() === 6;
-
     let present = 0;
     let absent = 0;
     let late = 0;
@@ -2543,7 +2533,6 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                               )}
                               {isFactory && (canWrite || currentUser.id === selectedEmployee?.id) && (() => {
                                 const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Karachi' }).format(new Date());
-                                const isPastOrToday = log.date <= todayStr;
                                 const canOverrideDate = canWrite || log.date === todayStr;
                                 if (!canOverrideDate) return null;
                                 const currentShift = shiftOverrides[log.date] || selectedEmployee?.defaultShift || 'general';

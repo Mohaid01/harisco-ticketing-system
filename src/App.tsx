@@ -142,32 +142,60 @@ function App() {
     fetchSessionAndData();
   }, [token]);
 
-  // Polling mechanism for real-time updates
+  // SSE-based real-time updates for tickets
   useEffect(() => {
-    if (!token || activeTab !== 'tickets') return;
+    if (!token) return;
 
-    const pollInterval = setInterval(async () => {
+    const eventSource = new EventSource(`/api/tickets/stream?token=${token}`);
+
+    eventSource.onopen = () => {
+      console.log('[SSE] Ticket stream connected');
+    };
+
+    eventSource.onerror = (err) => {
+      console.error('[SSE] Ticket stream error:', err);
+    };
+
+    eventSource.onmessage = (event) => {
       try {
-        const ticketsRes = await fetch('/api/tickets', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (ticketsRes.ok) {
-          const ticketsData = await ticketsRes.json();
-          // Update state only if data actually changed to prevent unnecessary re-renders
-          setTickets((prevTickets) => {
-            if (JSON.stringify(prevTickets) !== JSON.stringify(ticketsData)) {
-              return ticketsData;
-            }
-            return prevTickets;
-          });
-        }
-      } catch {
-        // Silent catch for background polling
-      }
-    }, 5000); // 5 seconds
+        const msg = JSON.parse(event.data);
+        if (msg.type !== 'ticket_update') return;
 
-    return () => clearInterval(pollInterval);
-  }, [token, activeTab]);
+        setTickets((prev) => {
+          switch (msg.action) {
+            case 'created':
+              return [msg.data, ...prev];
+            case 'status_changed':
+            case 'updated': {
+              const idx = prev.findIndex((t) => t.id === msg.data.id);
+              if (idx === -1) return prev;
+              const updated = [...prev];
+              updated[idx] = { ...updated[idx], ...msg.data };
+              return updated;
+            }
+            case 'commented': {
+              const idx = prev.findIndex((t) => t.id === msg.data.ticketId);
+              if (idx === -1) return prev;
+              const updated = [...prev];
+              updated[idx] = {
+                ...updated[idx],
+                comments: [...updated[idx].comments, msg.data.comment],
+              };
+              return updated;
+            }
+            case 'deleted':
+              return prev.filter((t) => t.id !== msg.data.ticketId);
+            default:
+              return prev;
+          }
+        });
+      } catch {
+        // ignore malformed messages
+      }
+    };
+
+    return () => eventSource.close();
+  }, [token]);
 
   // Polling mechanism for admin tickets real-time updates
   useEffect(() => {
