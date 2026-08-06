@@ -1,5 +1,4 @@
-import { Router } from 'express';
-import { Response } from 'express';
+import { Response, Router } from 'express';
 
 import type {
   AddTicketCommentRequestBody,
@@ -208,7 +207,10 @@ router.post(
         activityLogs: [activityLog],
       };
 
-      sseClients.broadcast(`data: ${JSON.stringify({ type: 'ticket_update', action: 'created', data: response })}\n\n`, req.user?.id);
+      sseClients.broadcast(
+        `data: ${JSON.stringify({ type: 'ticket_update', action: 'created', data: response })}\n\n`,
+        req.user?.id
+      );
       res.status(201).json(response);
     } catch (error) {
       logger.error('Failed to create ticket:', error);
@@ -314,7 +316,10 @@ router.post(
         newLog,
       };
 
-      sseClients.broadcast(`data: ${JSON.stringify({ type: 'ticket_update', action: 'status_changed', data: { id: ticketId, ...response } })}\n\n`, req.user?.id);
+      sseClients.broadcast(
+        `data: ${JSON.stringify({ type: 'ticket_update', action: 'status_changed', data: { id: ticketId, ...response } })}\n\n`,
+        req.user?.id
+      );
       res.json(response);
     } catch (error) {
       logger.error('Failed to update status:', error);
@@ -385,7 +390,10 @@ router.put(
         newLog,
       };
 
-      sseClients.broadcast(`data: ${JSON.stringify({ type: 'ticket_update', action: 'updated', data: { id: ticketId, description, type, justification: justification || '', updatedAt: timestamp } })}\n\n`, req.user?.id);
+      sseClients.broadcast(
+        `data: ${JSON.stringify({ type: 'ticket_update', action: 'updated', data: { id: ticketId, description, type, justification: justification || '', updatedAt: timestamp } })}\n\n`,
+        req.user?.id
+      );
       res.json(response);
     } catch (error) {
       logger.error('Failed to edit ticket:', error);
@@ -418,7 +426,10 @@ router.delete('/:id', authenticateToken, async (req: AuthRequest, res: ApiRespon
     await db.run('DELETE FROM activity_logs WHERE ticketId = ?', [ticketId]);
     await db.run('DELETE FROM tickets WHERE id = ?', [ticketId]);
 
-    sseClients.broadcast(`data: ${JSON.stringify({ type: 'ticket_update', action: 'deleted', data: { ticketId } })}\n\n`, req.user?.id);
+    sseClients.broadcast(
+      `data: ${JSON.stringify({ type: 'ticket_update', action: 'deleted', data: { ticketId } })}\n\n`,
+      req.user?.id
+    );
     res.json({ success: true, message: 'Ticket deleted successfully.' });
   } catch (error) {
     logger.error('Failed to delete ticket:', error);
@@ -486,7 +497,9 @@ router.post(
         newLog,
       };
 
-      sseClients.broadcast(`data: ${JSON.stringify({ type: 'ticket_update', action: 'status_changed', data: { id: ticketId, ...response } })}\n\n`);
+      sseClients.broadcast(
+        `data: ${JSON.stringify({ type: 'ticket_update', action: 'status_changed', data: { id: ticketId, ...response } })}\n\n`
+      );
       res.json(response);
     } catch (error) {
       logger.error('Failed to assign ticket:', error);
@@ -549,7 +562,10 @@ router.post(
         createdAt: timestamp,
       };
 
-      sseClients.broadcast(`data: ${JSON.stringify({ type: 'ticket_update', action: 'commented', data: { ticketId, comment: response } })}\n\n`, req.user?.id);
+      sseClients.broadcast(
+        `data: ${JSON.stringify({ type: 'ticket_update', action: 'commented', data: { ticketId, comment: response } })}\n\n`,
+        req.user?.id
+      );
       res.status(201).json(response);
     } catch (error) {
       logger.error('Failed to add comment:', error);

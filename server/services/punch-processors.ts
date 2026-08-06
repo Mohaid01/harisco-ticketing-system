@@ -144,7 +144,7 @@ export async function processFactoryAttendancePunch(input: {
     const paddedId = String(userId).padStart(5, '0');
     const targetUsername = `HC-${paddedId}`;
 
-    const userDoc = await db.get<{ name: string, default_shift: string }>(
+    const userDoc = await db.get<{ name: string; default_shift: string }>(
       'SELECT name, default_shift FROM factory_users WHERE LOWER(username) = ? OR id = ?',
       [targetUsername.toLowerCase(), userId]
     );
@@ -165,14 +165,14 @@ export async function processFactoryAttendancePunch(input: {
     const yesterdayStr = yesterday.toISOString().split('T')[0];
 
     const [overrideToday, overrideYesterday] = await Promise.all([
-      db.get<{ shift: string }>(
-        'SELECT shift FROM user_shift_overrides WHERE userId = ? AND date = ?',
-        [userId, rawDate]
-      ),
-      db.get<{ shift: string }>(
-        'SELECT shift FROM user_shift_overrides WHERE userId = ? AND date = ?',
-        [userId, yesterdayStr]
-      ),
+      db.get<{ shift: string }>('SELECT shift FROM user_shift_overrides WHERE userId = ? AND date = ?', [
+        userId,
+        rawDate,
+      ]),
+      db.get<{ shift: string }>('SELECT shift FROM user_shift_overrides WHERE userId = ? AND date = ?', [
+        userId,
+        yesterdayStr,
+      ]),
     ]);
 
     let shiftCode = defaultShift;
@@ -200,13 +200,13 @@ export async function processFactoryAttendancePunch(input: {
     twoDaysAgo.setDate(twoDaysAgo.getDate() - 1);
     const dateStr1 = twoDaysAgo.toISOString().split('T')[0];
     const dateStr2 = logicalPunchDate;
-    
+
     const recentLogs = await db.all<{ ioTime: string }>(
       'SELECT ioTime FROM factory_attendance_logs WHERE userId = ? AND (ioTime LIKE ? OR ioTime LIKE ?)',
       [userId, `${dateStr1}%`, `${dateStr2}%`]
     );
-    
-    const logsForLogicalDay = recentLogs.filter(log => getShiftDateForPunch(log.ioTime, shift) === logicalPunchDate);
+
+    const logsForLogicalDay = recentLogs.filter((log) => getShiftDateForPunch(log.ioTime, shift) === logicalPunchDate);
     const count = logsForLogicalDay.length;
 
     if (count === 0) {
@@ -224,7 +224,7 @@ export async function processFactoryAttendancePunch(input: {
           return 0;
         }
       })();
-      
+
       // For night shift, a punch in the evening is Check-In. For day shift, a punch in evening might be Ignored or Check-Out.
       // But we just use count === 0 as Check-In.
       status = 'Check-In';

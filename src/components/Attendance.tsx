@@ -26,7 +26,14 @@ import React, { useEffect, useMemo, useState } from 'react';
 import type { AppUser, AttendanceLog } from '../types';
 
 import { formatEmployeeCode, formatHours } from '../utils';
-import { calculateOvertime, getEffectiveShift, getLogShiftDate, hasShiftStartedForUser, isLateArrival, SHIFTS } from '../utils/shifts';
+import {
+  calculateOvertime,
+  getEffectiveShift,
+  getLogShiftDate,
+  hasShiftStartedForUser,
+  isLateArrival,
+  SHIFTS,
+} from '../utils/shifts';
 
 interface AttendanceProps {
   currentUser: AppUser;
@@ -344,7 +351,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
         });
         let todayStatus: 'Clocked In' | 'Clocked Out' | 'Absent' | 'On Leave' | 'Site Duty' | 'Pending';
         let isLateToday = false;
-        
+
         let userShiftStarted = shiftStarted;
         if (isFactory) {
           const shift = getEffectiveShift(user.defaultShift || 'general', shiftOverrides, todayStr);
@@ -883,10 +890,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
       return '18:00';
     })();
 
-    const time = window.prompt(
-      `Enter time for manual ${type} on ${date} (24-hour format HH:MM):`,
-      defaultTime
-    );
+    const time = window.prompt(`Enter time for manual ${type} on ${date} (24-hour format HH:MM):`, defaultTime);
     if (!time) return;
 
     if (!/^([01]\d|2[0-3]):([0-5]\d)$/.test(time)) {
@@ -897,7 +901,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
     let finalDate = date;
     if (isFactory && type === 'Check-Out' && shift?.code === 'night') {
       const [hour] = time.split(':').map(Number);
-      if (hour < (shift.weekdayEnd.h + shift.maxOtHours + 1)) {
+      if (hour < shift.weekdayEnd.h + shift.maxOtHours + 1) {
         const nextDay = new Date(date + 'T00:00:00Z');
         nextDay.setUTCDate(nextDay.getUTCDate() + 1);
         finalDate = nextDay.toISOString().split('T')[0];
@@ -953,7 +957,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
       let checkOutDate = date;
       if (isFactory && shift.code === 'night') {
         const [checkOutHour] = checkOutTime.split(':').map(Number);
-        if (checkOutHour < (shift.weekdayEnd.h + shift.maxOtHours + 1)) {
+        if (checkOutHour < shift.weekdayEnd.h + shift.maxOtHours + 1) {
           const nextDay = new Date(date + 'T00:00:00Z');
           nextDay.setUTCDate(nextDay.getUTCDate() + 1);
           checkOutDate = nextDay.toISOString().split('T')[0];
@@ -1081,7 +1085,11 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
             const min = parseInt(timeParts[1], 10);
             if (isFactory) {
               const shift = getEffectiveShift(emp.defaultShift || 'general', shiftOverrides, dateStr);
-              isLate = isLateArrival(`${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}`, shift, tempDate);
+              isLate = isLateArrival(
+                `${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}`,
+                shift,
+                tempDate
+              );
             } else {
               if (isSaturday) {
                 if (hour > 10 || (hour === 10 && min >= 30)) {
@@ -1534,26 +1542,26 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                     }}
                   >
                     <Briefcase size={14} style={{ color: 'var(--text-muted)' }} />
-                      <select
-                        className="form-input"
-                        style={{
-                          width: '160px',
-                          backgroundColor: 'var(--bg-primary)',
-                        }}
-                        value={filterShift}
-                        onChange={(e) => setFilterShift(e.target.value)}
-                      >
-                        <option value="All">All Shifts</option>
-                        {isFactory ? (
-                          <>
-                            <option value={SHIFTS.general.label}>General Shift</option>
-                            <option value={SHIFTS.day.label}>Day Shift</option>
-                            <option value={SHIFTS.night.label}>Night Shift</option>
-                          </>
-                        ) : (
+                    <select
+                      className="form-input"
+                      style={{
+                        width: '160px',
+                        backgroundColor: 'var(--bg-primary)',
+                      }}
+                      value={filterShift}
+                      onChange={(e) => setFilterShift(e.target.value)}
+                    >
+                      <option value="All">All Shifts</option>
+                      {isFactory ? (
+                        <>
                           <option value={SHIFTS.general.label}>General Shift</option>
-                        )}
-                      </select>
+                          <option value={SHIFTS.day.label}>Day Shift</option>
+                          <option value={SHIFTS.night.label}>Night Shift</option>
+                        </>
+                      ) : (
+                        <option value={SHIFTS.general.label}>General Shift</option>
+                      )}
+                    </select>
                   </div>
 
                   {/* Today's Status Filter */}
@@ -2531,27 +2539,34 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                               ) : (
                                 <></>
                               )}
-                              {isFactory && (canWrite || currentUser.id === selectedEmployee?.id) && (() => {
-                                const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Karachi' }).format(new Date());
-                                const canOverrideDate = canWrite || log.date === todayStr;
-                                if (!canOverrideDate) return null;
-                                const currentShift = shiftOverrides[log.date] || selectedEmployee?.defaultShift || 'general';
-                                return (
-                                  <div style={{ marginTop: '4px' }}>
-                                    <select
-                                      id={`shift-override-${log.date}`}
-                                      className="form-input"
-                                      style={{ fontSize: '0.65rem', padding: '2px 4px', height: 'auto' }}
-                                      value={currentShift}
-                                      onChange={(e) => handleShiftOverride(selectedEmployee!.id, log.date, e.target.value)}
-                                      title="Override shift for today"
-                                    >
-                                      <option value="day">Day</option>
-                                      <option value="night">Night</option>
-                                    </select>
-                                  </div>
-                                );
-                              })()}
+                              {isFactory &&
+                                (canWrite || currentUser.id === selectedEmployee?.id) &&
+                                (() => {
+                                  const todayStr = new Intl.DateTimeFormat('en-CA', {
+                                    timeZone: 'Asia/Karachi',
+                                  }).format(new Date());
+                                  const canOverrideDate = canWrite || log.date === todayStr;
+                                  if (!canOverrideDate) return null;
+                                  const currentShift =
+                                    shiftOverrides[log.date] || selectedEmployee?.defaultShift || 'general';
+                                  return (
+                                    <div style={{ marginTop: '4px' }}>
+                                      <select
+                                        id={`shift-override-${log.date}`}
+                                        className="form-input"
+                                        style={{ fontSize: '0.65rem', padding: '2px 4px', height: 'auto' }}
+                                        value={currentShift}
+                                        onChange={(e) =>
+                                          handleShiftOverride(selectedEmployee!.id, log.date, e.target.value)
+                                        }
+                                        title="Override shift for today"
+                                      >
+                                        <option value="day">Day</option>
+                                        <option value="night">Night</option>
+                                      </select>
+                                    </div>
+                                  );
+                                })()}
                             </div>
                           )}
                         </div>
@@ -2595,12 +2610,17 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                           Shift Hours worked
                         </span>
                         <strong style={{ fontSize: '0.85rem' }}>
-                          {formatHours(todayShiftProgress.hours)} / {(() => {
+                          {formatHours(todayShiftProgress.hours)} /{' '}
+                          {(() => {
                             if (!selectedEmployee) return '8h 0m';
                             const todayStr = new Intl.DateTimeFormat('en-CA', {
                               timeZone: 'Asia/Karachi',
                             }).format(new Date());
-                            const shift = getEffectiveShift(selectedEmployee.defaultShift || 'general', shiftOverrides, todayStr);
+                            const shift = getEffectiveShift(
+                              selectedEmployee.defaultShift || 'general',
+                              shiftOverrides,
+                              todayStr
+                            );
                             const pktNow = new Date(new Date().getTime() + 5 * 60 * 60 * 1000);
                             const isSat = pktNow.getUTCDay() === 6;
                             const base = isSat && shift.code === 'general' ? 6 : shift.baseHours;
@@ -2619,16 +2639,25 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                       >
                         <div
                           style={{
-                            width: `${Math.min((todayShiftProgress.hours / (() => {
-                            if (!selectedEmployee) return 8;
-                            const todayStr = new Intl.DateTimeFormat('en-CA', {
-                              timeZone: 'Asia/Karachi',
-                            }).format(new Date());
-                            const shift = getEffectiveShift(selectedEmployee.defaultShift || 'general', shiftOverrides, todayStr);
-                            const pktNow = new Date(new Date().getTime() + 5 * 60 * 60 * 1000);
-                            const isSat = pktNow.getUTCDay() === 6;
-                            return isSat && shift.code === 'general' ? 6 : shift.baseHours;
-                          })()) * 100, 100)}%`,
+                            width: `${Math.min(
+                              (todayShiftProgress.hours /
+                                (() => {
+                                  if (!selectedEmployee) return 8;
+                                  const todayStr = new Intl.DateTimeFormat('en-CA', {
+                                    timeZone: 'Asia/Karachi',
+                                  }).format(new Date());
+                                  const shift = getEffectiveShift(
+                                    selectedEmployee.defaultShift || 'general',
+                                    shiftOverrides,
+                                    todayStr
+                                  );
+                                  const pktNow = new Date(new Date().getTime() + 5 * 60 * 60 * 1000);
+                                  const isSat = pktNow.getUTCDay() === 6;
+                                  return isSat && shift.code === 'general' ? 6 : shift.baseHours;
+                                })()) *
+                                100,
+                              100
+                            )}%`,
                             height: '100%',
                             backgroundColor: 'var(--color-primary)',
                             borderRadius: '3px',

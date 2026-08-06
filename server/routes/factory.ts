@@ -82,8 +82,19 @@ router.post(
       return;
     }
 
-    const { name, email, username, role, password, avatar, department, designation, isDepartmentHead, loginEnabled, defaultShift } =
-      req.body;
+    const {
+      name,
+      email,
+      username,
+      role,
+      password,
+      avatar,
+      department,
+      designation,
+      isDepartmentHead,
+      loginEnabled,
+      defaultShift,
+    } = req.body;
 
     if (!name || !username || !role) {
       res.status(400).json({ error: 'Name, username, and role are required.' });
@@ -140,7 +151,7 @@ router.post(
           designation ? designation.trim() : null,
           normalizedIsDepartmentHead,
           normalizedLoginEnabled,
-          defaultShift || 'general'
+          defaultShift || 'general',
         ]
       );
 
@@ -511,9 +522,7 @@ router.get('/shift-overrides/:userId/:date', authenticateToken, async (req: Auth
 
     if (!currentUser) return res.status(401).json({ error: 'Unauthorized.' });
 
-    const canView =
-      currentUser.id === userId ||
-      ['factory_it', 'factory_manager', 'it'].includes(currentUser.role);
+    const canView = currentUser.id === userId || ['factory_it', 'factory_manager', 'it'].includes(currentUser.role);
     if (!canView) return res.status(403).json({ error: 'Forbidden.' });
 
     const override = await db.get<{ shift: string }>(
@@ -542,7 +551,8 @@ router.put('/shift-overrides/:userId/:date', authenticateToken, async (req: Auth
     const canWrite =
       (currentUser.id === userId && date === todayStr) ||
       ['factory_it', 'factory_manager', 'it'].includes(currentUser.role);
-    if (!canWrite) return res.status(403).json({ error: 'Forbidden. Employees can only override their own current day shift.' });
+    if (!canWrite)
+      return res.status(403).json({ error: 'Forbidden. Employees can only override their own current day shift.' });
 
     const validShifts = ['general', 'day', 'night'];
     if (!validShifts.includes(shift)) return res.status(400).json({ error: 'Invalid shift code.' });

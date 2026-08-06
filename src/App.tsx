@@ -197,7 +197,7 @@ function App() {
     return () => eventSource.close();
   }, [token]);
 
-   // SSE-based real-time updates for admin tickets
+  // SSE-based real-time updates for admin tickets
   useEffect(() => {
     if (!token) return;
 

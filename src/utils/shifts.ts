@@ -9,8 +9,8 @@ export interface ShiftDefinition {
   saturdayEnd?: { h: number; m: number };
   sundayOff: boolean;
   graceMinutes: number;
-  baseHours: number;      // Hours before OT kicks in
-  maxOtHours: number;     // OT cap per day
+  baseHours: number; // Hours before OT kicks in
+  maxOtHours: number; // OT cap per day
 }
 
 export const SHIFTS: Record<ShiftCode, ShiftDefinition> = {
@@ -23,8 +23,8 @@ export const SHIFTS: Record<ShiftCode, ShiftDefinition> = {
     saturdayEnd: { h: 16, m: 0 },
     sundayOff: true,
     graceMinutes: 30,
-    baseHours: 8,         // HQ weekday
-    maxOtHours: 0,        // HQ OT disabled
+    baseHours: 8, // HQ weekday
+    maxOtHours: 0, // HQ OT disabled
   },
   day: {
     code: 'day',
@@ -35,7 +35,7 @@ export const SHIFTS: Record<ShiftCode, ShiftDefinition> = {
     saturdayEnd: { h: 17, m: 0 },
     sundayOff: true,
     graceMinutes: 15,
-    baseHours: 9,         // Factory 9 hours
+    baseHours: 9, // Factory 9 hours
     maxOtHours: 3,
   },
   night: {
@@ -45,9 +45,9 @@ export const SHIFTS: Record<ShiftCode, ShiftDefinition> = {
     weekdayEnd: { h: 5, m: 0 },
     saturdayStart: { h: 20, m: 0 },
     saturdayEnd: { h: 5, m: 0 },
-    sundayOff: true,      // Sunday night is off
+    sundayOff: true, // Sunday night is off
     graceMinutes: 15,
-    baseHours: 9,         // 20:00–05:00 = 9 hrs
+    baseHours: 9, // 20:00–05:00 = 9 hrs
     maxOtHours: 3,
   },
 };
@@ -87,7 +87,7 @@ export function getShiftDateForPunch(punchTime: string, shift: ShiftDefinition):
 
   const [hour] = timePart.split(':').map(Number);
 
-  if (shift.code === 'night' && hour < (shift.weekdayEnd.h + shift.maxOtHours + 1)) {
+  if (shift.code === 'night' && hour < shift.weekdayEnd.h + shift.maxOtHours + 1) {
     const prev = new Date(datePart + 'T00:00:00Z');
     prev.setUTCDate(prev.getUTCDate() - 1);
     return prev.toISOString().split('T')[0];
@@ -103,7 +103,7 @@ export function getLogShiftDate(log: { ioTime?: string; timestamp?: string }, sh
 }
 
 export function isLateArrival(
-  checkInTime: string,        // "HH:MM"
+  checkInTime: string, // "HH:MM"
   shift: ShiftDefinition,
   date: Date
 ): boolean {
@@ -140,7 +140,7 @@ export function calculateOvertime(
     return { otHours: 0, baseHours: actualHours };
   }
 
-  const baseHours = (isSaturday && shift.code === 'general') ? 6 : shift.baseHours;
+  const baseHours = isSaturday && shift.code === 'general' ? 6 : shift.baseHours;
 
   if (actualHours <= baseHours) {
     return { otHours: 0, baseHours };

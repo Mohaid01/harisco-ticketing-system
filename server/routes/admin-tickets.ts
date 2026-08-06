@@ -1,5 +1,4 @@
-import { Router } from 'express';
-import { Response } from 'express';
+import { Response, Router } from 'express';
 
 import type {
   AddAdminCommentRequestBody,
@@ -178,7 +177,10 @@ router.post(
         ],
       };
 
-      sseClients.broadcast(`data: ${JSON.stringify({ type: 'admin_ticket_update', action: 'created', data: response })}\n\n`, req.user?.id);
+      sseClients.broadcast(
+        `data: ${JSON.stringify({ type: 'admin_ticket_update', action: 'created', data: response })}\n\n`,
+        req.user?.id
+      );
       res.status(201).json(response);
     } catch (error) {
       logger.error('Failed to create admin ticket:', error);
@@ -258,13 +260,16 @@ router.post(
           status,
           updatedAt: timestamp,
           executiveId,
-        executiveName,
-        newLog,
-      };
+          executiveName,
+          newLog,
+        };
 
-      sseClients.broadcast(`data: ${JSON.stringify({ type: 'admin_ticket_update', action: 'status_changed', data: { id: ticketId, ...response } })}\n\n`, req.user?.id);
-      res.json(response);
-      return;
+        sseClients.broadcast(
+          `data: ${JSON.stringify({ type: 'admin_ticket_update', action: 'status_changed', data: { id: ticketId, ...response } })}\n\n`,
+          req.user?.id
+        );
+        res.json(response);
+        return;
       }
 
       let updateQuery = 'UPDATE admin_tickets SET status = ?, updatedAt = ?';
@@ -306,7 +311,10 @@ router.post(
         newLog,
       };
 
-      sseClients.broadcast(`data: ${JSON.stringify({ type: 'admin_ticket_update', action: 'status_changed', data: { id: ticketId, ...response } })}\n\n`, req.user?.id);
+      sseClients.broadcast(
+        `data: ${JSON.stringify({ type: 'admin_ticket_update', action: 'status_changed', data: { id: ticketId, ...response } })}\n\n`,
+        req.user?.id
+      );
       res.json(response);
     } catch (error) {
       logger.error('Failed to update admin ticket status:', error);
@@ -367,7 +375,10 @@ router.post(
         createdAt: timestamp,
       };
 
-      sseClients.broadcast(`data: ${JSON.stringify({ type: 'admin_ticket_update', action: 'commented', data: { ticketId, comment: response } })}\n\n`, req.user?.id);
+      sseClients.broadcast(
+        `data: ${JSON.stringify({ type: 'admin_ticket_update', action: 'commented', data: { ticketId, comment: response } })}\n\n`,
+        req.user?.id
+      );
       res.status(201).json(response);
     } catch (error) {
       logger.error('Failed to add comment to admin ticket:', error);
@@ -396,7 +407,10 @@ router.delete('/:id', authenticateToken, async (req: AuthRequest, res: ApiRespon
       message: 'Admin ticket deleted successfully.',
     };
 
-    sseClients.broadcast(`data: ${JSON.stringify({ type: 'admin_ticket_update', action: 'deleted', data: { ticketId } })}\n\n`, req.user?.id);
+    sseClients.broadcast(
+      `data: ${JSON.stringify({ type: 'admin_ticket_update', action: 'deleted', data: { ticketId } })}\n\n`,
+      req.user?.id
+    );
     res.json(response);
   } catch (error) {
     logger.error('Failed to delete admin ticket:', error);
@@ -465,7 +479,10 @@ router.put(
         newLog,
       };
 
-      sseClients.broadcast(`data: ${JSON.stringify({ type: 'admin_ticket_update', action: 'updated', data: { id: ticketId, description, category, updatedAt: timestamp } })}\n\n`, req.user?.id);
+      sseClients.broadcast(
+        `data: ${JSON.stringify({ type: 'admin_ticket_update', action: 'updated', data: { id: ticketId, description, category, updatedAt: timestamp } })}\n\n`,
+        req.user?.id
+      );
       res.json(response);
     } catch (error) {
       logger.error('Failed to edit admin ticket:', error);
