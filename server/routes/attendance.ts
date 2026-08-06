@@ -1,6 +1,5 @@
 import type { Response } from 'express';
 
-import { logger } from '@utils';
 import { Router } from 'express';
 
 import type {
@@ -17,6 +16,7 @@ import type {
 import { getDb } from '../db.ts';
 import { authenticateToken } from '../middleware/auth.ts';
 import { sseClients } from '../middleware/sse.ts';
+import logger from '../utils/logger.ts';
 
 const router = Router();
 

@@ -1,4 +1,3 @@
-import { logger } from '@utils';
 import bcrypt from 'bcryptjs';
 import { Router } from 'express';
 
@@ -19,6 +18,7 @@ import type {
 
 import { getDb } from '../db.ts';
 import { authenticateToken } from '../middleware/auth.ts';
+import logger from '../utils/logger.ts';
 
 const router = Router();
 

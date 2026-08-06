@@ -1,5 +1,6 @@
-import { logger } from '@utils';
 import nodemailer from 'nodemailer';
+
+import logger from './utils/logger.ts';
 
 const host = process.env.SMTP_HOST;
 const port = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : undefined;

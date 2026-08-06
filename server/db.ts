@@ -1,9 +1,10 @@
-import { logger } from '@utils';
 import bcrypt from 'bcryptjs';
 import fs from 'fs';
 import path from 'path';
 import { Database, open } from 'sqlite';
 import sqlite3 from 'sqlite3';
+
+import logger from './utils/logger.ts';
 
 let db: Database<sqlite3.Database, sqlite3.Statement>;
 

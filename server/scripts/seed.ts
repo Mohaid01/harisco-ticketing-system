@@ -179,10 +179,10 @@ async function main() {
     });
   }
 
-  logger.log('Seed data inserted successfully.');
-  logger.log('HQ Users:', hqUsers.length);
-  logger.log('Factory Users:', factoryUsers.length);
-  logger.log('Holidays:', holidays.length);
+  logger.info('Seed data inserted successfully.');
+  logger.info('HQ Users:', hqUsers.length);
+  logger.info('Factory Users:', factoryUsers.length);
+  logger.info('Holidays:', holidays.length);
   db.close();
 }
 

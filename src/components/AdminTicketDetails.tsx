@@ -510,6 +510,21 @@ export const AdminTicketDetails: React.FC<AdminTicketDetailsProps> = ({
                   {ticket.status === 'awaiting_admin_manager' && (
                     <>
                       <button
+                        id="btn-admin-mgr-to-technician"
+                        className="btn btn-success"
+                        style={{
+                          width: '100%',
+                          backgroundColor: '#06b6d4',
+                          color: 'white',
+                          border: 'none',
+                        }}
+                        onClick={() => onUpdateStatus(ticket.id, 'awaiting_technician', 'Forwarded to Technician')}
+                      >
+                        <ShieldAlert size={16} />
+                        Forward to Technician
+                      </button>
+
+                      <button
                         id="btn-admin-mgr-to-materials"
                         className="btn btn-success"
                         style={{

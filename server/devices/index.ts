@@ -1,8 +1,8 @@
-import { logger } from '@utils';
 import express, { Request, Response } from 'express';
 import { WebSocketServer } from 'ws';
 
 import { processAttendancePunch, processFactoryAttendancePunch } from '../services/punch-processors.ts';
+import logger from '../utils/logger.ts';
 
 const METHOD_MAP: Record<string, string> = {
   FP: 'Fingerprint',

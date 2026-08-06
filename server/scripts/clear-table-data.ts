@@ -1,6 +1,7 @@
-import { logger } from '@utils';
 import path from 'path';
 import sqlite3 from 'sqlite3';
+
+import logger from '../utils/logger.ts';
 
 // === CONFIGURATION ===
 const DB_PATH = process.env.DB_PATH || path.resolve(process.cwd(), 'database.sqlite');
@@ -17,7 +18,7 @@ function clearTableData() {
 
   // 2. Serialize forces operations to run in sequential order
   db.serialize(() => {
-    logger.log(`🧹 Clearing all rows from table "${TARGET_TABLE}"...`);
+    logger.info(`🧹 Clearing all rows from table "${TARGET_TABLE}"...`);
 
     // Start manual transaction block
     db.run('BEGIN TRANSACTION;');
@@ -35,7 +36,7 @@ function clearTableData() {
     db.run(`DELETE FROM sqlite_sequence WHERE name = ?;`, [TARGET_TABLE], (err) => {
       if (err) {
         // We don't rollback here because some tables don't use auto-increment keys
-        logger.log(`ℹ️ Note: Auto-increment sequence not found or not reset.`);
+        logger.info(`ℹ️ Note: Auto-increment sequence not found or not reset.`);
       }
     });
 
@@ -44,8 +45,8 @@ function clearTableData() {
       if (err) {
         logger.error('❌ Failed to commit transaction:', err.message);
       } else {
-        logger.log(`\n✅ Success! Table "${TARGET_TABLE}" is now empty.`);
-        logger.log(`ℹ️ Note: Table structure and schema are fully preserved.`);
+        logger.info(`\n✅ Success! Table "${TARGET_TABLE}" is now empty.`);
+        logger.info(`ℹ️ Note: Table structure and schema are fully preserved.`);
       }
 
       // 3. Close connection after completion

@@ -1,4 +1,3 @@
-import { logger } from '@utils';
 import bcrypt from 'bcryptjs';
 import { Router } from 'express';
 import jwt from 'jsonwebtoken';
@@ -21,6 +20,7 @@ import type {
 import { JWT_SECRET, loginLimiter } from '../constants.ts';
 import { getDb } from '../db.ts';
 import { authenticateToken } from '../middleware/auth.ts';
+import logger from '../utils/logger.ts';
 
 const router = Router();
 

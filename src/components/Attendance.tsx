@@ -410,6 +410,8 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
           if (firstPunch && (firstPunch.status === 'Site Duty' || firstPunch.status === 'On Leave')) {
             daysNotAvailable++;
             daysPresent++;
+            const isSaturday = tempDate.getUTCDay() === 6;
+            totalHours += isSaturday ? 6 : 8;
             continue;
           }
 
@@ -1096,6 +1098,8 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
           const inTotal = inH * 60 + inM;
           const outTotal = outH * 60 + outM;
           actualDayHours = Math.max(0, (outTotal - inTotal) / 60);
+        } else if (punches.status === 'Site Duty' || punches.status === 'On Leave') {
+          actualDayHours = isSaturday ? 6 : 8;
         }
 
         const otHours = actualDayHours > expectedDayHours ? actualDayHours - expectedDayHours : 0;

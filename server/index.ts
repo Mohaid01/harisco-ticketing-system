@@ -5,13 +5,10 @@ import helmet from 'helmet';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-import { logger, performanceTiming, requestId } from '@utils';
-
 import { globalLimiter, PORT, writeLimiter } from './constants.ts';
-import { sseClients } from './middleware/sse.ts';
-
 import { initDb } from './db.js';
 import { setupDeviceHandlers } from './devices/index.ts';
+import { sseClients } from './middleware/sse.ts';
 import activityLogsRouter from './routes/activity-logs.ts';
 import adminTicketsRouter from './routes/admin-tickets.ts';
 import attendanceRouter from './routes/attendance.ts';
@@ -24,6 +21,8 @@ import noticesRouter from './routes/notices.ts';
 import siteDutiesRouter from './routes/site-duties.ts';
 import ticketsRouter from './routes/tickets.ts';
 import usersRouter from './routes/users.ts';
+import logger from './utils/logger.ts';
+import { performanceTiming, requestId } from './utils/middleware.ts';
 
 const app = express();
 
