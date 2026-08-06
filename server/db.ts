@@ -118,24 +118,17 @@ export async function initDb() {
         (c: any) => c.name === 'loginEnabled'
       );
 
-      // Dynamic column selection based on what the old table actually possessed
-      const selectCols = [
-        'id',
-        'name',
-        'email',
-        'username',
-        'role',
-        'avatar',
-        'passwordHash',
-        'needsPasswordReset',
-        hasDeptHead ? 'isDepartmentHead' : '0 AS isDepartmentHead',
-        hasLoginEnabled ? 'loginEnabled' : '1 AS loginEnabled',
-      ].join(', ');
-
-      await db.exec(`
-        INSERT INTO users (id, name, email, username, role, avatar, passwordHash, needsPasswordReset, isDepartmentHead, loginEnabled) 
-        SELECT ${selectCols} FROM users_old
-      `);
+      await db.run(
+        `
+      INSERT INTO users (id, name, email, username, role, avatar, passwordHash, needsPasswordReset, isDepartmentHead, loginEnabled) 
+        SELECT 
+          id, name, email, username, role, avatar, passwordHash, needsPasswordReset,
+          CASE WHEN ? = 1 THEN isDepartmentHead ELSE 0 END,
+          CASE WHEN ? = 1 THEN loginEnabled ELSE 1 END
+        FROM users_old
+      `,
+        [hasDeptHead ? 1 : 0, hasLoginEnabled ? 1 : 0]
+      );
 
       await db.exec('DROP TABLE users_old');
       logger.info('Migration completed successfully.');

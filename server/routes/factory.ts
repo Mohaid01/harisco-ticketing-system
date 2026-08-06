@@ -56,13 +56,13 @@ router.get('/users', authenticateToken, async (req: AuthRequest, res: ApiRespons
 
     if (['factory_manager', 'factory_it', 'it', 'manager'].includes(currentUser.role) || currentUser.isDepartmentHead) {
       const users = await db.all<DbUser[]>(query, params);
-      return res.json(users.map((u) => ({ ...u, defaultShift: u.default_shift })));
+      return res.json(users.map((u) => ({ ...u, defaultShift: u.defaultShift })));
     } else {
       const user = await db.get<DbUser>(query, params);
       if (!user) {
         return res.status(404).json({ error: 'User profile not found.' });
       }
-      return res.json([{ ...user, defaultShift: user.default_shift }]);
+      return res.json([{ ...user, defaultShift: user.defaultShift }]);
     }
   } catch (error) {
     logger.error('Error fetching factory users data:', error);

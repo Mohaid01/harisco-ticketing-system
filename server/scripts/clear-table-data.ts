@@ -23,8 +23,9 @@ function clearTableData() {
     // Start manual transaction block
     db.run('BEGIN TRANSACTION;');
 
+    const sanitizedTable = TARGET_TABLE.replace(/[`"']/g, '');
     // Empty the table data
-    db.run(`DELETE FROM ${TARGET_TABLE};`, (err) => {
+    db.run(`DELETE FROM \`${sanitizedTable}\`;`, (err) => {
       if (err) {
         logger.error(`❌ Error deleting data from ${TARGET_TABLE}:`, err.message);
         db.run('ROLLBACK;'); // Undo everything if it fails

@@ -201,30 +201,15 @@ export async function processFactoryAttendancePunch(input: {
     const dateStr1 = twoDaysAgo.toISOString().split('T')[0];
     const dateStr2 = logicalPunchDate;
 
-    const recentLogs = await db.all<{ ioTime: string }>(
+    const recentLogs = (await db.all(
       'SELECT ioTime FROM factory_attendance_logs WHERE userId = ? AND (ioTime LIKE ? OR ioTime LIKE ?)',
       [userId, `${dateStr1}%`, `${dateStr2}%`]
-    );
+    )) as { ioTime: string }[];
 
     const logsForLogicalDay = recentLogs.filter((log) => getShiftDateForPunch(log.ioTime, shift) === logicalPunchDate);
     const count = logsForLogicalDay.length;
 
     if (count === 0) {
-      const punchHourPKT = (() => {
-        try {
-          const timePart = punchTime.includes(' ')
-            ? punchTime.split(' ')[1]
-            : punchTime.includes('T')
-              ? punchTime.split('T')[1]
-              : '';
-
-          if (!timePart) return 0;
-          return parseInt(timePart.split(':')[0], 10);
-        } catch {
-          return 0;
-        }
-      })();
-
       // For night shift, a punch in the evening is Check-In. For day shift, a punch in evening might be Ignored or Check-Out.
       // But we just use count === 0 as Check-In.
       status = 'Check-In';
