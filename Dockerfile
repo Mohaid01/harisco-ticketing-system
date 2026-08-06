@@ -18,9 +18,9 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Copy package files and install ONLY production dependencies
+# Copy package files and install dependencies
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm install
 
 # Copy backend files and built frontend
 COPY --from=builder /app/server ./server
