@@ -399,6 +399,8 @@ router.delete('/:id', authenticateToken, async (req: AuthRequest, res: ApiRespon
       return;
     }
 
+    await db.run('DELETE FROM comments WHERE ticketId = ?', [ticketId]);
+    await db.run('DELETE FROM activity_logs WHERE ticketId = ?', [ticketId]);
     await db.run('DELETE FROM tickets WHERE id = ?', [ticketId]);
 
     res.json({ success: true, message: 'Ticket deleted successfully.' });
