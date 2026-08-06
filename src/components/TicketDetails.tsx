@@ -96,11 +96,12 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
   };
 
   // RBAC Action checks
-  const canItApprove = currentUser.role === 'it' && ticket.status === 'awaiting_it_approval';
+  const isAssignedEngineer = currentUser.role === 'it' && ticket.assigneeId === currentUser.id;
+  const canItApprove = isAssignedEngineer && ticket.status === 'awaiting_it_approval';
 
   const canManagerApprove = currentUser.role === 'manager' && ticket.status === 'awaiting_manager_approval';
 
-  const canItClose = currentUser.role === 'it' && ticket.status === 'awaiting_it_approval';
+  const canItClose = isAssignedEngineer && ticket.status === 'awaiting_it_approval';
 
   const handleItResolve = () => {
     onUpdateStatus(ticket.id, 'closed', 'Resolved by IT in-house');

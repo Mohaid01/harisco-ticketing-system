@@ -197,31 +197,61 @@ function App() {
     return () => eventSource.close();
   }, [token]);
 
-  // Polling mechanism for admin tickets real-time updates
+   // SSE-based real-time updates for admin tickets
   useEffect(() => {
-    if (!token || activeTab !== 'admin_tickets') return;
+    if (!token) return;
 
-    const pollInterval = setInterval(async () => {
+    const eventSource = new EventSource(`/api/admin-tickets/stream?token=${token}`);
+
+    eventSource.onopen = () => {
+      console.log('[SSE] Admin ticket stream connected');
+    };
+
+    eventSource.onerror = (err) => {
+      console.error('[SSE] Admin ticket stream error:', err);
+    };
+
+    eventSource.onmessage = (event) => {
       try {
-        const adminTicketsRes = await fetch('/api/admin-tickets', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (adminTicketsRes.ok) {
-          const adminTicketsData = await adminTicketsRes.json();
-          setAdminTickets((prev) => {
-            if (JSON.stringify(prev) !== JSON.stringify(adminTicketsData)) {
-              return adminTicketsData;
-            }
-            return prev;
-          });
-        }
-      } catch {
-        // Silent catch for background polling
-      }
-    }, 5000); // 5 seconds
+        const msg = JSON.parse(event.data);
+        if (msg.type !== 'admin_ticket_update') return;
 
-    return () => clearInterval(pollInterval);
-  }, [token, activeTab]);
+        setAdminTickets((prev) => {
+          switch (msg.action) {
+            case 'created':
+              return [msg.data, ...prev];
+            case 'status_changed':
+            case 'updated': {
+              const idx = prev.findIndex((t) => t.id === (msg.data.id || msg.data.ticketId));
+              if (idx === -1) return prev;
+              const updated = [...prev];
+              updated[idx] = { ...updated[idx], ...msg.data };
+              return updated;
+            }
+            case 'commented': {
+              const idx = prev.findIndex((t) => t.id === msg.data.ticketId);
+              if (idx === -1) return prev;
+              const updated = [...prev];
+              updated[idx] = {
+                ...updated[idx],
+                comments: [...updated[idx].comments, msg.data.comment],
+                updatedAt: msg.data.comment.createdAt,
+              };
+              return updated;
+            }
+            case 'deleted':
+              return prev.filter((t) => t.id !== msg.data.ticketId);
+            default:
+              return prev;
+          }
+        });
+      } catch {
+        // ignore malformed messages
+      }
+    };
+
+    return () => eventSource.close();
+  }, [token]);
 
   // Synchronize document title for SEO
   useEffect(() => {

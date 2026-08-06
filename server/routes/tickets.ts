@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { Response } from 'express';
 
 import type {
   AddTicketCommentRequestBody,
@@ -21,8 +22,6 @@ import type {
   UpdateTicketStatusRequestBody,
   UpdateTicketStatusResponse,
 } from '../types/index.ts';
-
-import { Response } from 'express';
 
 import { getDb } from '../db.ts';
 import { sendEmail } from '../email.ts';
@@ -315,7 +314,7 @@ router.post(
         newLog,
       };
 
-      sseClients.broadcast(`data: ${JSON.stringify({ type: 'ticket_update', action: 'status_changed', data: response })}\n\n`, req.user?.id);
+      sseClients.broadcast(`data: ${JSON.stringify({ type: 'ticket_update', action: 'status_changed', data: { id: ticketId, ...response } })}\n\n`, req.user?.id);
       res.json(response);
     } catch (error) {
       logger.error('Failed to update status:', error);
@@ -386,7 +385,7 @@ router.put(
         newLog,
       };
 
-      sseClients.broadcast(`data: ${JSON.stringify({ type: 'ticket_update', action: 'updated', data: { ticketId, ...response } })}\n\n`, req.user?.id);
+      sseClients.broadcast(`data: ${JSON.stringify({ type: 'ticket_update', action: 'updated', data: { id: ticketId, description, type, justification: justification || '', updatedAt: timestamp } })}\n\n`, req.user?.id);
       res.json(response);
     } catch (error) {
       logger.error('Failed to edit ticket:', error);
@@ -482,11 +481,12 @@ router.post(
         success: true,
         assigneeId,
         assigneeName,
-        status: 'in_progress',
+        status: newStatus,
         updatedAt: timestamp,
         newLog,
       };
 
+      sseClients.broadcast(`data: ${JSON.stringify({ type: 'ticket_update', action: 'status_changed', data: { id: ticketId, ...response } })}\n\n`);
       res.json(response);
     } catch (error) {
       logger.error('Failed to assign ticket:', error);
