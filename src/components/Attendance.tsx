@@ -342,7 +342,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
         );
 
         const todayPunches = userLogs.filter((log) => parseLogDate(log) === todayStr);
-        let todayStatus: 'Clocked In' | 'Clocked Out' | 'Absent' | 'On Leave' | 'Site Duty' | 'Pending' = 'Pending';
+        let todayStatus: 'Clocked In' | 'Clocked Out' | 'Absent' | 'On Leave' | 'Site Duty' | 'Pending';
         let isLateToday = false;
 
         if (todayPunches.length > 0) {
