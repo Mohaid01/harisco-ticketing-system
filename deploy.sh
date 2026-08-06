@@ -23,7 +23,7 @@ echo "⚡ Building and updating services..."
 echo ""
 
 # Rebuilds and restarts without tearing down everything first
-docker compose up -d --build || { echo "❌ Build/restart failed! Check logs."; exit 1; }
+docker-compose up -d --build || { echo "❌ Build/restart failed! Check logs."; exit 1; }
 
 echo ""
 echo "🧹 Cleaning up old unused images..."
