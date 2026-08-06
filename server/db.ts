@@ -218,6 +218,12 @@ export async function initDb() {
     // Column might already exist, ignore error
   }
 
+  try {
+    await db.exec('ALTER TABLE users ADD COLUMN default_shift TEXT DEFAULT "general"');
+  } catch {
+    // Column might already exist, ignore error
+  }
+
   // Create Admin Tickets Table
   await db.exec(`
     CREATE TABLE IF NOT EXISTS admin_tickets (
@@ -348,7 +354,26 @@ export async function initDb() {
       department TEXT,
       designation TEXT,
       isDepartmentHead INTEGER DEFAULT 0,
-      loginEnabled INTEGER DEFAULT 1
+      loginEnabled INTEGER DEFAULT 1,
+      default_shift TEXT DEFAULT 'general'
+    )
+  `);
+
+  try {
+    await db.exec('ALTER TABLE factory_users ADD COLUMN default_shift TEXT DEFAULT "general"');
+  } catch {
+    // Column might already exist, ignore error
+  }
+
+  // Create User Shift Overrides Table
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS user_shift_overrides (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      userId TEXT NOT NULL,
+      date TEXT NOT NULL,
+      shift TEXT NOT NULL,
+      createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(userId, date)
     )
   `);
 

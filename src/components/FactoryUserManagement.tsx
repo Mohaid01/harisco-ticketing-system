@@ -22,6 +22,7 @@ interface FactoryUserManagementProps {
     designation?: string;
     isDepartmentHead?: boolean;
     loginEnabled?: boolean;
+    defaultShift?: string;
   }) => void;
   onDeleteUser: (userId: string) => void;
   onUpdateUser?: (
@@ -34,6 +35,7 @@ interface FactoryUserManagementProps {
       avatar?: string | null;
       isDepartmentHead?: boolean;
       loginEnabled?: boolean;
+      defaultShift?: string;
     }
   ) => void;
 }
@@ -56,6 +58,7 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
   const [designation, setDesignation] = useState('');
   const [isDepartmentHead, setIsDepartmentHead] = useState(false);
   const [loginEnabled, setLoginEnabled] = useState(true);
+  const [defaultShift, setDefaultShift] = useState('general');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const [resetPasswordTarget, setResetPasswordTarget] = useState<AppUser | null>(null);
@@ -68,6 +71,7 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
   const [editAvatar, setEditAvatar] = useState('');
   const [editIsDepartmentHead, setEditIsDepartmentHead] = useState(false);
   const [editLoginEnabled, setEditLoginEnabled] = useState(true);
+  const [editDefaultShift, setEditDefaultShift] = useState('general');
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, isEdit: boolean) => {
     const file = e.target.files?.[0];
@@ -120,6 +124,7 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
       designation: designation.trim() || undefined,
       isDepartmentHead,
       loginEnabled,
+      defaultShift,
     });
 
     setName('');
@@ -132,6 +137,7 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
     setDesignation('');
     setIsDepartmentHead(false);
     setLoginEnabled(true);
+    setDefaultShift('general');
   };
 
   const handleSaveEdit = (userId: string) => {
@@ -148,6 +154,7 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
         avatar: editAvatar || null,
         isDepartmentHead: editIsDepartmentHead,
         loginEnabled: editLoginEnabled,
+        defaultShift: editDefaultShift,
       });
     }
     setEditingUserId(null);
@@ -162,6 +169,7 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
     setEditAvatar(user.avatar || '');
     setEditIsDepartmentHead(!!user.isDepartmentHead);
     setEditLoginEnabled(user.loginEnabled !== 0);
+    setEditDefaultShift(user.defaultShift || 'general');
   };
 
   const getRoleBadgeClass = (r: string) => `role-badge-pill role-badge-${r.replace('factory_', '')}`;
@@ -386,6 +394,21 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
                 gap: '10px',
               }}
             >
+              <div className="form-group">
+                <label htmlFor="factory-user-shift-select" className="form-label">
+                  Default Shift
+                </label>
+                <select
+                  id="factory-user-shift-select"
+                  className="form-input"
+                  value={defaultShift}
+                  onChange={(e) => setDefaultShift(e.target.value)}
+                >
+                  <option value="day">Day Shift (08:00–17:00)</option>
+                  <option value="night">Night Shift (20:00–05:00)</option>
+                </select>
+              </div>
+
               <label
                 className="form-label"
                 style={{
@@ -591,6 +614,26 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
                         gap: '8px',
                       }}
                     >
+                      <div>
+                        <label
+                          htmlFor={`factory-edit-shift-${editingUserId}`}
+                          style={inlineLabelStyle}
+                          className="form-label"
+                        >
+                          Default Shift
+                        </label>
+                        <select
+                          id={`factory-edit-shift-${editingUserId}`}
+                          className="form-input"
+                          style={inlineInputStyle}
+                          value={editDefaultShift}
+                          onChange={(e) => setEditDefaultShift(e.target.value)}
+                        >
+                          <option value="day">Day Shift (08:00–17:00)</option>
+                          <option value="night">Night Shift (20:00–05:00)</option>
+                        </select>
+                      </div>
+
                       <label
                         className="form-label"
                         style={{

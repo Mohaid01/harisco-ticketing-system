@@ -19,6 +19,7 @@ export interface AppUser {
   casualLeaves?: number;
   annualLeaves?: number;
   medicalLeaves?: number;
+  defaultShift?: string;
 }
 
 // Ticket Types

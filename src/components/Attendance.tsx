@@ -26,6 +26,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import type { AppUser, AttendanceLog } from '../types';
 
 import { formatEmployeeCode, formatHours } from '../utils';
+import { calculateOvertime, getEffectiveShift, getLogShiftDate, hasShiftStartedForUser, isLateArrival, SHIFTS } from '../utils/shifts';
 
 interface AttendanceProps {
   currentUser: AppUser;
@@ -40,23 +41,6 @@ const PUNCH_STATUS = {
   CHECK_OUT: 'Check-Out',
   IGNORED: 'Ignored',
 } as const;
-
-// Shift Constants (9:30 AM to 6:00 PM, Saturday 10:00 AM to 4:00 PM)
-const SHIFTS = {
-  GENERAL: 'General Shift (09:30 AM - 06:00 PM)',
-} as const;
-
-const SHIFT_START = { weekday: { h: 9, m: 30 }, saturday: { h: 10, m: 0 } };
-
-const hasShiftStartedPKT = (): boolean => {
-  const now = new Date();
-  const pktNow = new Date(now.getTime() + 5 * 60 * 60 * 1000);
-  const dayOfWeek = pktNow.getUTCDay(); // 0=Sun, 6=Sat
-  const currentH = pktNow.getUTCHours();
-  const currentM = pktNow.getUTCMinutes();
-  const start = dayOfWeek === 6 ? SHIFT_START.saturday : SHIFT_START.weekday;
-  return currentH > start.h || (currentH === start.h && currentM >= start.m);
-};
 
 const isTodaySundayPKT = (): boolean => {
   const now = new Date();
@@ -115,6 +99,23 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
   const [showHolidayModal, setShowHolidayModal] = useState(false);
   const [holidayDate, setHolidayDate] = useState('');
   const [holidayName, setHolidayName] = useState('');
+
+  // Shift overrides (Factory only): maps dateStr -> shift code
+  const [shiftOverrides, setShiftOverrides] = useState<Record<string, string>>({});
+
+  const handleShiftOverride = async (userId: string, date: string, shift: string) => {
+    try {
+      const token = localStorage.getItem('harisco_token') || '';
+      await fetch(`/api/factory/shift-overrides/${userId}/${date}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ shift }),
+      });
+      setShiftOverrides((prev) => ({ ...prev, [date]: shift }));
+    } catch {
+      alert('Failed to save shift override.');
+    }
+  };
 
   // Fetch Attendance Logs from Biometric API
   const fetchLogs = async (isSilent = false) => {
@@ -328,7 +329,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
 
     const [sYear, sMonth] = selectedMonth.split('-').map(Number);
     const daysInMonth = new Date(sYear, sMonth, 0).getDate();
-    const shiftStarted = hasShiftStartedPKT();
+    const shiftStarted = hasShiftStartedForUser(SHIFTS.general);
 
     return allUsers
       .filter((user) => user.department !== 'Executive')
@@ -341,9 +342,23 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
             log.userId === uId || log.userId === user.username || formatEmployeeCode(log.userId) === formattedCode
         );
 
-        const todayPunches = userLogs.filter((log) => parseLogDate(log) === todayStr);
+        const todayPunches = userLogs.filter((log) => {
+          const todayShift = getEffectiveShift(user.defaultShift || 'general', shiftOverrides, todayStr);
+          return getLogShiftDate(log, todayShift) === todayStr;
+        });
         let todayStatus: 'Clocked In' | 'Clocked Out' | 'Absent' | 'On Leave' | 'Site Duty' | 'Pending';
         let isLateToday = false;
+        
+        let userShiftStarted = shiftStarted;
+        if (isFactory) {
+          const shift = getEffectiveShift(user.defaultShift || 'general', shiftOverrides, todayStr);
+          const pktNow = new Date(new Date().getTime() + 5 * 60 * 60 * 1000);
+          const currentH = pktNow.getUTCHours();
+          const currentM = pktNow.getUTCMinutes();
+          const isSat = pktNow.getUTCDay() === 6;
+          const start = isSat && shift.saturdayStart ? shift.saturdayStart : shift.weekdayStart;
+          userShiftStarted = currentH > start.h || (currentH === start.h && currentM >= start.m);
+        }
 
         if (todayPunches.length > 0) {
           const sortedPunches = [...todayPunches].sort((a, b) => {
@@ -362,7 +377,13 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
               const pktNow = new Date(new Date().getTime() + 5 * 60 * 60 * 1000);
               const isSaturday = pktNow.getUTCDay() === 6;
 
-              isLateToday = isSaturday ? hour > 10 || (hour === 10 && min >= 30) : hour >= 10;
+              if (isFactory) {
+                const shift = getEffectiveShift(user.defaultShift || 'general', shiftOverrides, todayStr);
+                const checkInTime = `${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+                isLateToday = isLateArrival(checkInTime, shift, pktNow);
+              } else {
+                isLateToday = isSaturday ? hour > 10 || (hour === 10 && min >= 30) : hour >= 10;
+              }
             }
           }
 
@@ -381,7 +402,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
             todayStatus = 'Clocked In';
           }
         } else {
-          todayStatus = shiftStarted ? 'Absent' : 'Pending';
+          todayStatus = userShiftStarted ? 'Absent' : 'Pending';
         }
 
         let daysPresent = 0;
@@ -397,7 +418,8 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
           const isHoliday = holidays.find((h) => h.date === dateStr);
 
           totalWorkDays++;
-          const dayPunches = userLogs.filter((log) => parseLogDate(log) === dateStr);
+          const dayShift = getEffectiveShift(user.defaultShift || 'general', shiftOverrides, dateStr);
+          const dayPunches = userLogs.filter((log) => getLogShiftDate(log, dayShift) === dateStr);
 
           const sorted = [...dayPunches].sort((a, b) => {
             const tA = parseLogPKT(a).timestamp;
@@ -411,7 +433,12 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
             daysNotAvailable++;
             daysPresent++;
             const isSaturday = tempDate.getUTCDay() === 6;
-            totalHours += isSaturday ? 6 : 8;
+            if (isFactory) {
+              const shift = getEffectiveShift(user.defaultShift || 'general', shiftOverrides, dateStr);
+              totalHours += isSaturday && shift.code === 'general' ? 6 : shift.baseHours;
+            } else {
+              totalHours += isSaturday ? 6 : 8;
+            }
             continue;
           }
 
@@ -444,11 +471,13 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
           }
         }
 
+        const todayShift = getEffectiveShift(user.defaultShift || 'general', shiftOverrides, todayStr);
+
         return {
           ...user,
           formattedCode,
           department: getUserDepartment(user),
-          shift: SHIFTS.GENERAL,
+          shift: todayShift.label,
           todayStatus,
           isLateToday,
           daysPresent,
@@ -458,7 +487,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
           totalWorkDays,
         };
       });
-  }, [allUsers, logs, selectedMonth, holidays]);
+  }, [allUsers, logs, selectedMonth, holidays, shiftOverrides]);
 
   // Filter summaries based on Search & Dropdowns
   const filteredSummaries = useMemo(() => {
@@ -508,27 +537,8 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
         emp.todayStatus === 'Clocked In' || emp.todayStatus === 'Clocked Out' || emp.todayStatus === 'Site Duty';
       if (isPresent) {
         present++;
-        const formattedCode = emp.formattedCode;
-        const todayPunches = logs.filter(
-          (log) =>
-            (log.userId === emp.id ||
-              log.userId === emp.username ||
-              formatEmployeeCode(log.userId) === formattedCode) &&
-            parseLogDate(log) === todayStr &&
-            log.status === PUNCH_STATUS.CHECK_IN
-        );
-        if (todayPunches.length > 0) {
-          const sorted = [...todayPunches].sort((a, b) =>
-            parseLogPKT(a).timestamp.localeCompare(parseLogPKT(b).timestamp)
-          );
-          const firstInTime = parseLogPKT(sorted[0]).time;
-          const parts = firstInTime.split(':');
-          if (parts.length >= 2) {
-            const hour = parseInt(parts[0], 10);
-            const min = parseInt(parts[1], 10);
-            const isLate = isSaturday ? hour > 10 || (hour === 10 && min >= 30) : hour >= 10;
-            if (isLate) late++;
-          }
+        if (emp.isLateToday) {
+          late++;
         }
       } else if (emp.todayStatus === 'Absent') {
         absent++;
@@ -577,7 +587,8 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
 
       const isHoliday = holidays.find((h) => h.date === dateStr);
 
-      const dayPunches = userLogs.filter((log) => parseLogDate(log) === dateStr);
+      const dayShift = getEffectiveShift(selectedEmployee.defaultShift || 'general', shiftOverrides, dateStr);
+      const dayPunches = userLogs.filter((log) => getLogShiftDate(log, dayShift) === dateStr);
 
       if (isWeekend || isHoliday) {
         list.push({
@@ -631,16 +642,17 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
           const min = parseInt(timeParts[1], 10);
           const isSaturday = tempDate.getUTCDay() === 6;
 
-          if (isSaturday) {
-            // Saturday shift starts at 10:00 AM (grace period until 10:29 AM)
-            if (hour > 10 || (hour === 10 && min >= 30)) {
+          if (isFactory && selectedEmployee) {
+            const shift = getEffectiveShift(selectedEmployee.defaultShift || 'general', shiftOverrides, dateStr);
+            const checkInTime = `${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+            if (isLateArrival(checkInTime, shift, tempDate)) {
               status = 'Late Arrival';
             }
           } else {
-            // Regular shift starts at 09:30 AM (grace period until 09:59 AM)
-            // Any punch in at 10:00 AM or later is late.
-            if (hour >= 10) {
-              status = 'Late Arrival';
+            if (isSaturday) {
+              if (hour > 10 || (hour === 10 && min >= 30)) status = 'Late Arrival';
+            } else {
+              if (hour >= 10) status = 'Late Arrival';
             }
           }
         }
@@ -681,7 +693,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
       }
     }
     return list;
-  }, [selectedEmployee, logs, selectedMonth, tick]);
+  }, [selectedEmployee, logs, selectedMonth, tick, shiftOverrides]);
 
   // Today's specific shift progress calculations
   const todayShiftProgress = useMemo(() => {
@@ -711,7 +723,10 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
       timeZone: 'Asia/Karachi',
     }).format(new Date());
 
-    const shiftStarted = hasShiftStartedPKT();
+    const selectedShift = selectedEmployee
+      ? getEffectiveShift(selectedEmployee.defaultShift || 'general', shiftOverrides, todayStr)
+      : undefined;
+    const shiftStarted = selectedShift ? hasShiftStartedForUser(selectedShift) : false;
 
     selectedEmployeePunchLogs.forEach((log) => {
       if (log.date > todayStr) return;
@@ -859,15 +874,44 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
       return;
     }
 
+    const shift = isFactory
+      ? getEffectiveShift(selectedEmployee?.defaultShift || 'general', shiftOverrides, date)
+      : undefined;
+
+    const defaultTime = (() => {
+      if (type === 'Check-In') {
+        if (isFactory && shift) {
+          const start = shift.weekdayStart;
+          return `${String(start.h).padStart(2, '0')}:${String(start.m).padStart(2, '0')}`;
+        }
+        return '09:30';
+      }
+      if (isFactory && shift) {
+        const end = shift.weekdayEnd;
+        return `${String(end.h).padStart(2, '0')}:${String(end.m).padStart(2, '0')}`;
+      }
+      return '18:00';
+    })();
+
     const time = window.prompt(
       `Enter time for manual ${type} on ${date} (24-hour format HH:MM):`,
-      type === 'Check-In' ? '09:30' : '18:00'
+      defaultTime
     );
     if (!time) return;
 
     if (!/^([01]\d|2[0-3]):([0-5]\d)$/.test(time)) {
       alert('Invalid time format. Please use HH:MM (e.g., 09:30, 18:00)');
       return;
+    }
+
+    let finalDate = date;
+    if (isFactory && type === 'Check-Out' && shift?.code === 'night') {
+      const [hour] = time.split(':').map(Number);
+      if (hour < (shift.weekdayEnd.h + shift.maxOtHours + 1)) {
+        const nextDay = new Date(date + 'T00:00:00Z');
+        nextDay.setUTCDate(nextDay.getUTCDate() + 1);
+        finalDate = nextDay.toISOString().split('T')[0];
+      }
     }
 
     try {
@@ -880,7 +924,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
         },
         body: JSON.stringify({
           userId: selectedEmployee?.id,
-          date,
+          date: finalDate,
           time,
           status: type,
         }),
@@ -899,7 +943,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
   };
 
   const handleMarkDayStatus = async (date: string, status: 'Site Duty' | 'On Leave') => {
-    if (currentUser.role !== 'manager') return;
+    if (!canWrite) return;
 
     if (!window.confirm(`Are you sure you want to mark ${date} as ${status}?`)) {
       return;
@@ -908,12 +952,26 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
     try {
       const token = localStorage.getItem('harisco_token');
 
-      const isSaturday = new Date(date).getDay() === 6;
-      const checkInTime = isSaturday ? '10:00' : '09:30';
-      const checkOutTime = isSaturday ? '16:00' : '18:00';
+      const dateObj = new Date(date + 'T00:00:00Z');
+      const isSaturday = dateObj.getUTCDay() === 6;
+      const shift = getEffectiveShift(selectedEmployee?.defaultShift || 'general', shiftOverrides, date);
+      const start = isSaturday && shift.saturdayStart ? shift.saturdayStart : shift.weekdayStart;
+      const end = isSaturday && shift.saturdayEnd ? shift.saturdayEnd : shift.weekdayEnd;
+      const checkInTime = `${String(start.h).padStart(2, '0')}:${String(start.m).padStart(2, '0')}`;
+      const checkOutTime = `${String(end.h).padStart(2, '0')}:${String(end.m).padStart(2, '0')}`;
+
+      let checkOutDate = date;
+      if (isFactory && shift.code === 'night') {
+        const [checkOutHour] = checkOutTime.split(':').map(Number);
+        if (checkOutHour < (shift.weekdayEnd.h + shift.maxOtHours + 1)) {
+          const nextDay = new Date(date + 'T00:00:00Z');
+          nextDay.setUTCDate(nextDay.getUTCDate() + 1);
+          checkOutDate = nextDay.toISOString().split('T')[0];
+        }
+      }
 
       // Insert check-in punch
-      const resIn = await fetch('/api/attendance/manual', {
+      const resIn = await fetch(`${apiBase}/manual`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -928,7 +986,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
       });
 
       // Insert check-out punch
-      const resOut = await fetch('/api/attendance/manual', {
+      const resOut = await fetch(`${apiBase}/manual`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -936,7 +994,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
         },
         body: JSON.stringify({
           userId: selectedEmployee?.id,
-          date,
+          date: checkOutDate,
           time: checkOutTime,
           status,
         }),
@@ -995,7 +1053,8 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
         const sDay = String(day).padStart(2, '0');
         const dateStr = `${sYear}-${String(sMonth).padStart(2, '0')}-${sDay}`;
 
-        const dayPunches = userLogs.filter((log) => parseLogDate(log) === dateStr);
+        const dayShift = getEffectiveShift(emp.defaultShift || 'general', shiftOverrides, dateStr);
+        const dayPunches = userLogs.filter((log) => getLogShiftDate(log, dayShift) === dateStr);
 
         if (dayPunches.length === 0) {
           dateMap.set(dateStr, {
@@ -1030,13 +1089,18 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
           if (timeParts.length >= 2) {
             const hour = parseInt(timeParts[0], 10);
             const min = parseInt(timeParts[1], 10);
-            if (isSaturday) {
-              if (hour > 10 || (hour === 10 && min >= 30)) {
-                isLate = true;
-              }
+            if (isFactory) {
+              const shift = getEffectiveShift(emp.defaultShift || 'general', shiftOverrides, dateStr);
+              isLate = isLateArrival(`${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}`, shift, tempDate);
             } else {
-              if (hour >= 10) {
-                isLate = true;
+              if (isSaturday) {
+                if (hour > 10 || (hour === 10 && min >= 30)) {
+                  isLate = true;
+                }
+              } else {
+                if (hour >= 10) {
+                  isLate = true;
+                }
               }
             }
           }
@@ -1087,22 +1151,41 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
         const isHoliday = holidays.some((h) => h.date === dateStr);
 
         let expectedDayHours = 0;
-        if (!isSunday && !isHoliday) {
-          expectedDayHours = isSaturday ? 6 : 8;
-        }
-
+        let otHours = 0;
         let actualDayHours = 0;
-        if (punches.in !== '-' && punches.out !== '-' && punches.status === 'Present') {
-          const [inH, inM] = punches.in.split(':').map(Number);
-          const [outH, outM] = punches.out.split(':').map(Number);
-          const inTotal = inH * 60 + inM;
-          const outTotal = outH * 60 + outM;
-          actualDayHours = Math.max(0, (outTotal - inTotal) / 60);
-        } else if (punches.status === 'Site Duty' || punches.status === 'On Leave') {
-          actualDayHours = isSaturday ? 6 : 8;
+
+        if (isFactory) {
+          const shift = getEffectiveShift(emp.defaultShift || 'general', shiftOverrides, dateStr);
+          if (punches.in !== '-' && punches.out !== '-' && punches.status === 'Present') {
+            const [inH, inM] = punches.in.split(':').map(Number);
+            const [outH, outM] = punches.out.split(':').map(Number);
+            const inTotal = inH * 60 + inM;
+            const outTotal = outH * 60 + outM;
+            actualDayHours = Math.max(0, (outTotal - inTotal) / 60);
+          }
+          const otCalc = calculateOvertime(actualDayHours, shift, isHoliday, isSunday, isSaturday);
+          otHours = otCalc.otHours;
+          expectedDayHours = otCalc.baseHours;
+          if (punches.status === 'Site Duty' || punches.status === 'On Leave') {
+            actualDayHours = expectedDayHours;
+            otHours = 0;
+          }
+        } else {
+          if (!isSunday && !isHoliday) {
+            expectedDayHours = isSaturday ? 6 : 8;
+          }
+          if (punches.in !== '-' && punches.out !== '-' && punches.status === 'Present') {
+            const [inH, inM] = punches.in.split(':').map(Number);
+            const [outH, outM] = punches.out.split(':').map(Number);
+            const inTotal = inH * 60 + inM;
+            const outTotal = outH * 60 + outM;
+            actualDayHours = Math.max(0, (outTotal - inTotal) / 60);
+          } else if (punches.status === 'Site Duty' || punches.status === 'On Leave') {
+            actualDayHours = isSaturday ? 6 : 8;
+          }
+          otHours = actualDayHours > expectedDayHours ? actualDayHours - expectedDayHours : 0;
         }
 
-        const otHours = actualDayHours > expectedDayHours ? actualDayHours - expectedDayHours : 0;
         const otText = otHours > 0 ? `${otHours.toFixed(1)}h` : '0';
 
         let cellValue = '-';
@@ -1131,12 +1214,30 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
         }
       }
 
+      let empExpectedHours = expectedHours;
+      if (isFactory) {
+        empExpectedHours = 0;
+        for (let day = 1; day <= daysInMonth; day++) {
+          const tempDate = new Date(Date.UTC(sYear, sMonth - 1, day));
+          const dayOfWeek = tempDate.getUTCDay();
+          const isSunday = dayOfWeek === 0;
+          const isSaturday = dayOfWeek === 6;
+          const sDay = String(day).padStart(2, '0');
+          const dateStr = `${sYear}-${String(sMonth).padStart(2, '0')}-${sDay}`;
+          const isHoliday = holidays.some((h) => h.date === dateStr);
+          const shift = getEffectiveShift(emp.defaultShift || 'general', shiftOverrides, dateStr);
+          if (!isHoliday && !(isSunday && shift.sundayOff)) {
+            empExpectedHours += isSaturday && shift.code === 'general' ? 6 : shift.baseHours;
+          }
+        }
+      }
+
       const rawHours = typeof emp.totalHours === 'number' ? emp.totalHours : 0;
       const formattedHours = formatHours(rawHours);
-      const difference = rawHours - expectedHours;
+      const difference = rawHours - empExpectedHours;
 
       rowData.push(
-        expectedHours,
+        empExpectedHours,
         formattedHours,
         difference.toFixed(2),
         emp.daysPresent ?? 0,
@@ -1173,7 +1274,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `HarisCo - HQ Attendance - ${currentMonth} ${currentYear}.xlsx`;
+    link.download = `HarisCo - ${mode.toUpperCase()} Attendance - ${currentMonth} ${currentYear}.xlsx`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -1443,18 +1544,26 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                     }}
                   >
                     <Briefcase size={14} style={{ color: 'var(--text-muted)' }} />
-                    <select
-                      className="form-input"
-                      style={{
-                        width: '160px',
-                        backgroundColor: 'var(--bg-primary)',
-                      }}
-                      value={filterShift}
-                      onChange={(e) => setFilterShift(e.target.value)}
-                    >
-                      <option value="All">All Shifts</option>
-                      <option value={SHIFTS.GENERAL}>General Shift</option>
-                    </select>
+                      <select
+                        className="form-input"
+                        style={{
+                          width: '160px',
+                          backgroundColor: 'var(--bg-primary)',
+                        }}
+                        value={filterShift}
+                        onChange={(e) => setFilterShift(e.target.value)}
+                      >
+                        <option value="All">All Shifts</option>
+                        {isFactory ? (
+                          <>
+                            <option value={SHIFTS.general.label}>General Shift</option>
+                            <option value={SHIFTS.day.label}>Day Shift</option>
+                            <option value={SHIFTS.night.label}>Night Shift</option>
+                          </>
+                        ) : (
+                          <option value={SHIFTS.general.label}>General Shift</option>
+                        )}
+                      </select>
                   </div>
 
                   {/* Today's Status Filter */}
@@ -1975,9 +2084,26 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                         <span>
                           Shift:{' '}
                           <strong style={{ color: 'white' }}>
-                            {new Date().getDay() === 6
-                              ? 'Saturday Shift (10:00 AM - 04:00 PM)'
-                              : selectedEmployee.shift}
+                            {(() => {
+                              const todayStr = new Intl.DateTimeFormat('en-CA', {
+                                timeZone: 'Asia/Karachi',
+                              }).format(new Date());
+                              const shift = getEffectiveShift(
+                                selectedEmployee.defaultShift || 'general',
+                                shiftOverrides,
+                                todayStr
+                              );
+                              const pktNow = new Date(new Date().getTime() + 5 * 60 * 60 * 1000);
+                              const isSat = pktNow.getUTCDay() === 6;
+                              if (isSat && shift.saturdayStart && shift.saturdayEnd) {
+                                const sH = String(shift.saturdayStart.h).padStart(2, '0');
+                                const sM = String(shift.saturdayStart.m).padStart(2, '0');
+                                const eH = String(shift.saturdayEnd.h).padStart(2, '0');
+                                const eM = String(shift.saturdayEnd.m).padStart(2, '0');
+                                return `Saturday Shift (${sH}:${sM} AM - ${eH}:${eM} PM)`;
+                              }
+                              return selectedEmployee.shift;
+                            })()}
                           </strong>
                         </span>
                       </div>
@@ -2415,6 +2541,28 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                               ) : (
                                 <></>
                               )}
+                              {isFactory && (canWrite || currentUser.id === selectedEmployee?.id) && (() => {
+                                const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Karachi' }).format(new Date());
+                                const isPastOrToday = log.date <= todayStr;
+                                const canOverrideDate = canWrite || log.date === todayStr;
+                                if (!canOverrideDate) return null;
+                                const currentShift = shiftOverrides[log.date] || selectedEmployee?.defaultShift || 'general';
+                                return (
+                                  <div style={{ marginTop: '4px' }}>
+                                    <select
+                                      id={`shift-override-${log.date}`}
+                                      className="form-input"
+                                      style={{ fontSize: '0.65rem', padding: '2px 4px', height: 'auto' }}
+                                      value={currentShift}
+                                      onChange={(e) => handleShiftOverride(selectedEmployee!.id, log.date, e.target.value)}
+                                      title="Override shift for today"
+                                    >
+                                      <option value="day">Day</option>
+                                      <option value="night">Night</option>
+                                    </select>
+                                  </div>
+                                );
+                              })()}
                             </div>
                           )}
                         </div>
@@ -2458,7 +2606,17 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                           Shift Hours worked
                         </span>
                         <strong style={{ fontSize: '0.85rem' }}>
-                          {formatHours(todayShiftProgress.hours)} / {new Date().getDay() === 6 ? '6h 0m' : '8h 0m'}
+                          {formatHours(todayShiftProgress.hours)} / {(() => {
+                            if (!selectedEmployee) return '8h 0m';
+                            const todayStr = new Intl.DateTimeFormat('en-CA', {
+                              timeZone: 'Asia/Karachi',
+                            }).format(new Date());
+                            const shift = getEffectiveShift(selectedEmployee.defaultShift || 'general', shiftOverrides, todayStr);
+                            const pktNow = new Date(new Date().getTime() + 5 * 60 * 60 * 1000);
+                            const isSat = pktNow.getUTCDay() === 6;
+                            const base = isSat && shift.code === 'general' ? 6 : shift.baseHours;
+                            return formatHours(base);
+                          })()}
                         </strong>
                       </div>
                       <div
@@ -2472,7 +2630,16 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                       >
                         <div
                           style={{
-                            width: `${Math.min((todayShiftProgress.hours / (new Date().getDay() === 6 ? 6.0 : 8.0)) * 100, 100)}%`,
+                            width: `${Math.min((todayShiftProgress.hours / (() => {
+                            if (!selectedEmployee) return 8;
+                            const todayStr = new Intl.DateTimeFormat('en-CA', {
+                              timeZone: 'Asia/Karachi',
+                            }).format(new Date());
+                            const shift = getEffectiveShift(selectedEmployee.defaultShift || 'general', shiftOverrides, todayStr);
+                            const pktNow = new Date(new Date().getTime() + 5 * 60 * 60 * 1000);
+                            const isSat = pktNow.getUTCDay() === 6;
+                            return isSat && shift.code === 'general' ? 6 : shift.baseHours;
+                          })()) * 100, 100)}%`,
                             height: '100%',
                             backgroundColor: 'var(--color-primary)',
                             borderRadius: '3px',

@@ -39,7 +39,7 @@ router.get('/users', authenticateToken, async (req: AuthRequest, res: ApiRespons
     }
 
     const selectFields =
-      'SELECT id, name, email, username, role, avatar, department, designation, isDepartmentHead, loginEnabled FROM factory_users';
+      'SELECT id, name, email, username, role, avatar, department, designation, isDepartmentHead, loginEnabled, default_shift FROM factory_users';
 
     let query = '';
     const params: (string | undefined)[] = [];
@@ -56,13 +56,13 @@ router.get('/users', authenticateToken, async (req: AuthRequest, res: ApiRespons
 
     if (['factory_manager', 'factory_it', 'it', 'manager'].includes(currentUser.role) || currentUser.isDepartmentHead) {
       const users = await db.all<DbUser[]>(query, params);
-      return res.json(users);
+      return res.json(users.map((u) => ({ ...u, defaultShift: u.default_shift })));
     } else {
       const user = await db.get<DbUser>(query, params);
       if (!user) {
         return res.status(404).json({ error: 'User profile not found.' });
       }
-      return res.json([user]);
+      return res.json([{ ...user, defaultShift: user.default_shift }]);
     }
   } catch (error) {
     logger.error('Error fetching factory users data:', error);
@@ -82,7 +82,7 @@ router.post(
       return;
     }
 
-    const { name, email, username, role, password, avatar, department, designation, isDepartmentHead, loginEnabled } =
+    const { name, email, username, role, password, avatar, department, designation, isDepartmentHead, loginEnabled, defaultShift } =
       req.body;
 
     if (!name || !username || !role) {
@@ -127,7 +127,7 @@ router.post(
       const userId = `usr-${Date.now()}`;
 
       await db.run(
-        'INSERT INTO factory_users (id, name, email, username, role, avatar, passwordHash, needsPasswordReset, department, designation, isDepartmentHead, loginEnabled) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)',
+        'INSERT INTO factory_users (id, name, email, username, role, avatar, passwordHash, needsPasswordReset, department, designation, isDepartmentHead, loginEnabled, default_shift) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?)',
         [
           userId,
           name,
@@ -140,6 +140,7 @@ router.post(
           designation ? designation.trim() : null,
           normalizedIsDepartmentHead,
           normalizedLoginEnabled,
+          defaultShift || 'general'
         ]
       );
 
@@ -154,6 +155,7 @@ router.post(
         designation: designation ? designation.trim() : null,
         isDepartmentHead: normalizedIsDepartmentHead,
         loginEnabled: normalizedLoginEnabled,
+        defaultShift: defaultShift || 'general',
       };
 
       res.status(201).json(response);
@@ -213,7 +215,7 @@ router.put(
     }
 
     const userId = String(req.params.id);
-    const { name, email, department, designation, avatar, isDepartmentHead, loginEnabled } = req.body;
+    const { name, email, department, designation, avatar, isDepartmentHead, loginEnabled, defaultShift } = req.body;
 
     if (!name || !name.trim()) {
       res.status(400).json({ error: 'Name is required.' });
@@ -242,7 +244,7 @@ router.put(
       }
 
       const result = await db.run(
-        'UPDATE factory_users SET name = ?, email = ?, department = ?, designation = ?, avatar = ?, isDepartmentHead = ?, loginEnabled = ? WHERE id = ?',
+        'UPDATE factory_users SET name = ?, email = ?, department = ?, designation = ?, avatar = ?, isDepartmentHead = ?, loginEnabled = ?, default_shift = ? WHERE id = ?',
         [
           name.trim(),
           finalEmail,
@@ -251,6 +253,7 @@ router.put(
           avatar ? avatar.trim() : '',
           normalizedIsDepartmentHead,
           normalizedLoginEnabled,
+          defaultShift || 'general',
           userId,
         ]
       );
@@ -269,6 +272,7 @@ router.put(
         avatar: avatar ? avatar.trim() : '',
         isDepartmentHead: normalizedIsDepartmentHead,
         loginEnabled: normalizedLoginEnabled,
+        defaultShift: defaultShift || 'general',
       };
 
       res.json(response);
@@ -408,22 +412,7 @@ router.post(
         return;
       }
 
-      const pktDateStr = `${date}T${time}:00+05:00`;
-      const pktDate = new Date(pktDateStr);
-
-      if (isNaN(pktDate.getTime())) {
-        res.status(400).json({ error: 'Invalid date or time.' });
-        return;
-      }
-
-      const year = pktDate.getUTCFullYear();
-      const month = String(pktDate.getUTCMonth() + 1).padStart(2, '0');
-      const day = String(pktDate.getUTCDate()).padStart(2, '0');
-      const hours = String(pktDate.getUTCHours()).padStart(2, '0');
-      const minutes = String(pktDate.getUTCMinutes()).padStart(2, '0');
-      const seconds = String(pktDate.getUTCSeconds()).padStart(2, '0');
-
-      const timestamp = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+      const ioTime = `${date} ${time}:00`;
 
       const user = await db.get('SELECT name FROM factory_users WHERE id = ?', [userId]);
       if (!user) {
@@ -433,7 +422,7 @@ router.post(
 
       await db.run(
         'INSERT INTO factory_attendance_logs (name, userId, ioTime, method, status, timestamp) VALUES (?, ?, ?, ?, ?, ?)',
-        [user.name, userId, timestamp, 'Manual', status, timestamp]
+        [user.name, userId, ioTime, 'Manual', status, ioTime]
       );
 
       res.json({ success: true });
@@ -511,6 +500,62 @@ router.get('/attendance/stream', authenticateToken, (req: AuthRequest, res: Resp
   res.flushHeaders();
 
   sseClients.add(res);
+});
+
+// GET /api/factory/shift-overrides/:userId/:date
+router.get('/shift-overrides/:userId/:date', authenticateToken, async (req: AuthRequest, res) => {
+  try {
+    const db = getDb();
+    const { userId, date } = req.params;
+    const currentUser = req.user;
+
+    if (!currentUser) return res.status(401).json({ error: 'Unauthorized.' });
+
+    const canView =
+      currentUser.id === userId ||
+      ['factory_it', 'factory_manager', 'it'].includes(currentUser.role);
+    if (!canView) return res.status(403).json({ error: 'Forbidden.' });
+
+    const override = await db.get<{ shift: string }>(
+      'SELECT shift FROM user_shift_overrides WHERE userId = ? AND date = ?',
+      [userId, date]
+    );
+    return res.json({ shift: override?.shift ?? null });
+  } catch (error) {
+    logger.error('Error fetching shift override:', error);
+    return res.status(500).json({ error: 'Failed to fetch shift override.' });
+  }
+});
+
+// PUT /api/factory/shift-overrides/:userId/:date
+router.put('/shift-overrides/:userId/:date', authenticateToken, async (req: AuthRequest, res) => {
+  try {
+    const db = getDb();
+    const { userId, date } = req.params;
+    const { shift } = req.body as { shift: string };
+    const currentUser = req.user;
+
+    if (!currentUser) return res.status(401).json({ error: 'Unauthorized.' });
+
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    const canWrite =
+      (currentUser.id === userId && date === todayStr) ||
+      ['factory_it', 'factory_manager', 'it'].includes(currentUser.role);
+    if (!canWrite) return res.status(403).json({ error: 'Forbidden. Employees can only override their own current day shift.' });
+
+    const validShifts = ['general', 'day', 'night'];
+    if (!validShifts.includes(shift)) return res.status(400).json({ error: 'Invalid shift code.' });
+
+    await db.run(
+      'INSERT INTO user_shift_overrides (userId, date, shift) VALUES (?, ?, ?) ON CONFLICT(userId, date) DO UPDATE SET shift = excluded.shift',
+      [userId, date, shift]
+    );
+    return res.json({ success: true, userId, date, shift });
+  } catch (error) {
+    logger.error('Error saving shift override:', error);
+    return res.status(500).json({ error: 'Failed to save shift override.' });
+  }
 });
 
 export default router;

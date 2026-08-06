@@ -859,6 +859,7 @@ function App() {
     designation?: string;
     isDepartmentHead?: boolean;
     loginEnabled?: boolean;
+    defaultShift?: string;
   }) => {
     if (!token || !currentUser) return;
     try {
@@ -918,6 +919,7 @@ function App() {
       avatar?: string | null;
       isDepartmentHead?: boolean;
       loginEnabled?: boolean;
+      defaultShift?: string;
     }
   ) => {
     if (!token || !currentUser) return;
@@ -949,6 +951,7 @@ function App() {
                 avatar: updatedUser.avatar,
                 isDepartmentHead: updatedUser.isDepartmentHead,
                 loginEnabled: updatedUser.loginEnabled,
+                defaultShift: updatedUser.defaultShift,
               }
             : u
         )

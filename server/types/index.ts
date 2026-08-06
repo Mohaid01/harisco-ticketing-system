@@ -26,6 +26,7 @@ export interface DbUser {
   casualLeaves?: number;
   annualLeaves?: number;
   medicalLeaves?: number;
+  default_shift?: string;
 }
 
 export type RequestWithId = Request & { requestId: string };
@@ -719,6 +720,7 @@ export interface CreateFactoryUserResponse {
   designation?: string | null;
   isDepartmentHead: number;
   loginEnabled: number;
+  defaultShift: string;
 }
 
 export interface UpdateFactoryUserResponse {
@@ -730,6 +732,7 @@ export interface UpdateFactoryUserResponse {
   avatar?: string;
   isDepartmentHead: number;
   loginEnabled: number;
+  defaultShift: string;
 }
 
 export interface ResetFactoryUserPasswordResponse {

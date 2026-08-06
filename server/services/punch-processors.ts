@@ -1,6 +1,7 @@
 import { getDb } from '../db.ts';
 import { sseClients } from '../middleware/sse.ts';
 import logger from '../utils/logger.ts';
+import { getEffectiveShift, getShiftDateForPunch } from '../../src/utils/shifts.ts';
 
 // Shared attendance punch processor for both WebSocket and PT-5000 device routes
 const lastProcessedPunchMap = new Map<string, string>();
@@ -143,24 +144,70 @@ export async function processFactoryAttendancePunch(input: {
     const paddedId = String(userId).padStart(5, '0');
     const targetUsername = `HC-${paddedId}`;
 
-    const userDoc = await db.get<{ name: string }>(
-      'SELECT name FROM factory_users WHERE LOWER(username) = ? OR id = ?',
+    const userDoc = await db.get<{ name: string, default_shift: string }>(
+      'SELECT name, default_shift FROM factory_users WHERE LOWER(username) = ? OR id = ?',
       [targetUsername.toLowerCase(), userId]
     );
-    if (userDoc && userDoc.name) {
-      parsedName = userDoc.name;
+    let defaultShift = 'general';
+    if (userDoc) {
+      if (userDoc.name) parsedName = userDoc.name;
+      if (userDoc.default_shift) defaultShift = userDoc.default_shift;
     }
 
-    const punchDate = punchTime.includes(' ')
+    const rawDate = punchTime.includes(' ')
       ? punchTime.split(' ')[0]
       : punchTime.includes('T')
         ? punchTime.split('T')[0]
         : punchTime;
-    const dayLogsCount = await db.get<{ count: number }>(
-      'SELECT COUNT(*) as count FROM factory_attendance_logs WHERE userId = ? AND ioTime LIKE ?',
-      [userId, `${punchDate}%`]
+
+    const yesterday = new Date(rawDate + 'T00:00:00Z');
+    yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+    const [overrideToday, overrideYesterday] = await Promise.all([
+      db.get<{ shift: string }>(
+        'SELECT shift FROM user_shift_overrides WHERE userId = ? AND date = ?',
+        [userId, rawDate]
+      ),
+      db.get<{ shift: string }>(
+        'SELECT shift FROM user_shift_overrides WHERE userId = ? AND date = ?',
+        [userId, yesterdayStr]
+      ),
+    ]);
+
+    let shiftCode = defaultShift;
+    let logicalPunchDate = rawDate;
+
+    if (overrideYesterday?.shift === 'night') {
+      shiftCode = 'night';
+      logicalPunchDate = yesterdayStr;
+    } else if (overrideToday?.shift) {
+      shiftCode = overrideToday.shift;
+      const tempShift = getEffectiveShift(shiftCode, undefined, rawDate);
+      logicalPunchDate = getShiftDateForPunch(punchTime, tempShift);
+    } else {
+      const tempShift = getEffectiveShift(defaultShift, undefined, rawDate);
+      logicalPunchDate = getShiftDateForPunch(punchTime, tempShift);
+    }
+
+    const shift = getEffectiveShift(shiftCode, undefined, logicalPunchDate);
+
+    // Get logs for the *logical* date, meaning we look for logs that logically belong to this day's shift.
+    // Wait, if ioTime is 2026-08-11 05:00:00, and logical date is 2026-08-10, `ioTime LIKE '2026-08-10%'` won't match it.
+    // We should count the logs for this user where the logical date would be `logicalPunchDate`.
+    // Since we don't store logical date in DB yet, we can fetch the last 2 days of logs and filter in JS.
+    const twoDaysAgo = new Date(logicalPunchDate);
+    twoDaysAgo.setDate(twoDaysAgo.getDate() - 1);
+    const dateStr1 = twoDaysAgo.toISOString().split('T')[0];
+    const dateStr2 = logicalPunchDate;
+    
+    const recentLogs = await db.all<{ ioTime: string }>(
+      'SELECT ioTime FROM factory_attendance_logs WHERE userId = ? AND (ioTime LIKE ? OR ioTime LIKE ?)',
+      [userId, `${dateStr1}%`, `${dateStr2}%`]
     );
-    const count = dayLogsCount ? dayLogsCount.count : 0;
+    
+    const logsForLogicalDay = recentLogs.filter(log => getShiftDateForPunch(log.ioTime, shift) === logicalPunchDate);
+    const count = logsForLogicalDay.length;
 
     if (count === 0) {
       const punchHourPKT = (() => {
@@ -172,14 +219,15 @@ export async function processFactoryAttendancePunch(input: {
               : '';
 
           if (!timePart) return 0;
-
-          // Extract the first two characters (the hour) and turn it into an integer
           return parseInt(timePart.split(':')[0], 10);
         } catch {
           return 0;
         }
       })();
-      status = punchHourPKT >= 18 ? 'Ignored' : 'Check-In';
+      
+      // For night shift, a punch in the evening is Check-In. For day shift, a punch in evening might be Ignored or Check-Out.
+      // But we just use count === 0 as Check-In.
+      status = 'Check-In';
     } else if (count === 1) {
       status = 'Check-Out';
     } else {
