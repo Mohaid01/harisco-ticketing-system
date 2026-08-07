@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import type { AppUser, LeaveApplication, LeaveCategory, LeaveStatus } from '../types';
 
 import { formatEmployeeCode } from '../utils';
+import { LoadingSpinner } from './LoadingSpinner';
 
 interface LeaveManagementProps {
   currentUser: AppUser;
@@ -168,7 +169,7 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({ currentUser, t
       </div>
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '40px' }}>Loading...</div>
+        <LoadingSpinner type="table" rows={6} />
       ) : (
         <div className="panel" style={{ padding: '20px' }}>
           <h2 className="panel-title" style={{ marginBottom: '16px' }}>

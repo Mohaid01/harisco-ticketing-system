@@ -3,11 +3,14 @@ import React, { useState } from 'react';
 
 import type { AppUser, Notice, NoticeType } from '../types';
 
+import { LoadingSpinner } from './LoadingSpinner';
+
 interface NoticeBoardProps {
   notices: Notice[];
   currentUser: AppUser;
   onCreateNoticeClick: () => void;
   onEditNoticeClick?: (noticeId: string) => void;
+  loading?: boolean;
 }
 
 export const NoticeBoard: React.FC<NoticeBoardProps> = ({
@@ -15,6 +18,7 @@ export const NoticeBoard: React.FC<NoticeBoardProps> = ({
   currentUser,
   onCreateNoticeClick,
   onEditNoticeClick,
+  loading = false,
 }) => {
   const isAdmin = currentUser.role !== 'employee';
   const [activeTab, setActiveTab] = useState<'active' | 'archive'>('active');
@@ -154,210 +158,212 @@ export const NoticeBoard: React.FC<NoticeBoardProps> = ({
       )}
 
       {/* Notice Feed Stream */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        {sortedNotices.map((notice) => {
-          const meta = getTagMeta(notice.type);
-          const isExpired = notice.expiresAt && new Date(notice.expiresAt) <= now;
+      {loading ? <LoadingSpinner type="notices" rows={4} /> : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {sortedNotices.map((notice) => {
+            const meta = getTagMeta(notice.type);
+            const isExpired = notice.expiresAt && new Date(notice.expiresAt) <= now;
 
-          return (
-            <div
-              key={notice.id}
-              className={`notice-card notice-card-${notice.type} ${isExpired ? 'notice-card-expired' : ''}`}
-              style={{
-                cursor: isAdmin && onEditNoticeClick ? 'pointer' : 'default',
-              }}
-              onClick={() => isAdmin && onEditNoticeClick && onEditNoticeClick(notice.id)}
-            >
-              {/* Notice Metadata Header (English LTR) */}
-              <div className="notice-badge-section">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span
-                    className="badge"
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      padding: '4px 10px',
-                      borderRadius: '4px',
-                      fontSize: '0.75rem',
-                      fontWeight: 600,
-                      ...meta.style,
-                    }}
-                  >
-                    {meta.icon} {meta.label}
-                  </span>
-                </div>
-                <div
-                  style={{
-                    textAlign: 'right',
-                    fontSize: '0.78rem',
-                    color: 'var(--text-muted, #a0aec0)',
-                  }}
-                >
-                  <div>
-                    {new Date(notice.createdAt).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </div>
-                  {notice.expiresAt && (
-                    <div
+            return (
+              <div
+                key={notice.id}
+                className={`notice-card notice-card-${notice.type} ${isExpired ? 'notice-card-expired' : ''}`}
+                style={{
+                  cursor: isAdmin && onEditNoticeClick ? 'pointer' : 'default',
+                }}
+                onClick={() => isAdmin && onEditNoticeClick && onEditNoticeClick(notice.id)}
+              >
+                {/* Notice Metadata Header (English LTR) */}
+                <div className="notice-badge-section">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span
+                      className="badge"
                       style={{
-                        fontSize: '0.72rem',
-                        marginTop: '2px',
-                        color: isExpired ? '#ef4444' : 'var(--text-muted)',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '4px 10px',
+                        borderRadius: '4px',
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        ...meta.style,
                       }}
                     >
-                      {isExpired
-                        ? 'Expired'
-                        : `Expires: ${new Date(notice.expiresAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
+                      {meta.icon} {meta.label}
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      textAlign: 'right',
+                      fontSize: '0.78rem',
+                      color: 'var(--text-muted, #a0aec0)',
+                    }}
+                  >
+                    <div>
+                      {new Date(notice.createdAt).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
                     </div>
-                  )}
-                </div>
-              </div>
-
-              {/* BILINGUAL CONTENT AREA */}
-              <div className="notice-content-area">
-                {/* 1. English Content Block */}
-                <div className="notice-lang-box ltr">
-                  <span className="notice-lang-header">English Announcement</span>
-                  <h2
-                    style={{
-                      margin: '0 0 6px 0',
-                      fontSize: '1.1rem',
-                      color: 'white',
-                      fontWeight: 600,
-                    }}
-                  >
-                    {notice.en.title}
-                  </h2>
-                  <p
-                    style={{
-                      margin: 0,
-                      fontSize: '0.9rem',
-                      color: 'var(--text-secondary, #e2e8f0)',
-                      lineHeight: '1.5',
-                      whiteSpace: 'pre-wrap',
-                    }}
-                  >
-                    {notice.en.content}
-                  </p>
+                    {notice.expiresAt && (
+                      <div
+                        style={{
+                          fontSize: '0.72rem',
+                          marginTop: '2px',
+                          color: isExpired ? '#ef4444' : 'var(--text-muted)',
+                        }}
+                      >
+                        {isExpired
+                          ? 'Expired'
+                          : `Expires: ${new Date(notice.expiresAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                {/* 2. Urdu Content Block (Strictly RTL & Right Aligned) */}
-                {notice.ur?.title && (
-                  <div className="notice-lang-box rtl">
-                    <span className="notice-lang-header">اردو اعلان</span>
+                {/* BILINGUAL CONTENT AREA */}
+                <div className="notice-content-area">
+                  {/* 1. English Content Block */}
+                  <div className="notice-lang-box ltr">
+                    <span className="notice-lang-header">English Announcement</span>
                     <h2
                       style={{
                         margin: '0 0 6px 0',
-                        fontSize: '1.2rem',
+                        fontSize: '1.1rem',
                         color: 'white',
                         fontWeight: 600,
-                        fontFamily: 'inherit',
                       }}
                     >
-                      {notice.ur.title}
+                      {notice.en.title}
                     </h2>
                     <p
                       style={{
                         margin: 0,
-                        fontSize: '1rem',
+                        fontSize: '0.9rem',
                         color: 'var(--text-secondary, #e2e8f0)',
-                        lineHeight: '1.6',
+                        lineHeight: '1.5',
                         whiteSpace: 'pre-wrap',
-                        fontFamily: 'inherit',
                       }}
                     >
-                      {notice.ur.content}
+                      {notice.en.content}
                     </p>
                   </div>
-                )}
-              </div>
 
-              {/* Card Footer */}
-              <div className="notice-footer">
-                <span
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'start',
-                    gap: '12px',
-                  }}
-                >
-                  Posted by
-                  <div
+                  {/* 2. Urdu Content Block (Strictly RTL & Right Aligned) */}
+                  {notice.ur?.title && (
+                    <div className="notice-lang-box rtl">
+                      <span className="notice-lang-header">اردو اعلان</span>
+                      <h2
+                        style={{
+                          margin: '0 0 6px 0',
+                          fontSize: '1.2rem',
+                          color: 'white',
+                          fontWeight: 600,
+                          fontFamily: 'inherit',
+                        }}
+                      >
+                        {notice.ur.title}
+                      </h2>
+                      <p
+                        style={{
+                          margin: 0,
+                          fontSize: '1rem',
+                          color: 'var(--text-secondary, #e2e8f0)',
+                          lineHeight: '1.6',
+                          whiteSpace: 'pre-wrap',
+                          fontFamily: 'inherit',
+                        }}
+                      >
+                        {notice.ur.content}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Card Footer */}
+                <div className="notice-footer">
+                  <span
                     style={{
                       display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      fontSize: '0.78rem',
-                      color: 'var(--text-muted)',
+                      flexDirection: 'column',
+                      alignItems: 'start',
+                      gap: '12px',
                     }}
                   >
-                    {notice?.authorAvatar ? (
-                      <img
-                        src={notice.authorAvatar}
-                        alt={notice.authorName}
-                        style={{
-                          width: '64px',
-                          height: '64px',
-                          borderRadius: '50%',
-                          objectFit: 'cover',
-                          border: '1px solid var(--border-color)',
-                        }}
-                      />
-                    ) : (
-                      <div
-                        style={{
-                          width: '64px',
-                          height: '64px',
-                          borderRadius: '50%',
-                          backgroundColor: 'var(--color-primary-glow)',
-                          border: '1px solid var(--border-color)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontWeight: 600,
-                          fontSize: '0.8rem',
-                          color: 'white',
-                        }}
-                      />
-                    )}
-                    <strong>{notice.authorName}</strong>
-                    {' | '}
-                    {notice.authorDepartment} - {notice.authorDesignation}
-                  </div>
-                </span>
-                {isAdmin && onEditNoticeClick && (
-                  <span style={{ color: 'var(--color-primary-solid, #3b82f6)' }}>Click to edit notice</span>
-                )}
+                    Posted by
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        fontSize: '0.78rem',
+                        color: 'var(--text-muted)',
+                      }}
+                    >
+                      {notice?.authorAvatar ? (
+                        <img
+                          src={notice.authorAvatar}
+                          alt={notice.authorName}
+                          style={{
+                            width: '64px',
+                            height: '64px',
+                            borderRadius: '50%',
+                            objectFit: 'cover',
+                            border: '1px solid var(--border-color)',
+                          }}
+                        />
+                      ) : (
+                        <div
+                          style={{
+                            width: '64px',
+                            height: '64px',
+                            borderRadius: '50%',
+                            backgroundColor: 'var(--color-primary-glow)',
+                            border: '1px solid var(--border-color)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontWeight: 600,
+                            fontSize: '0.8rem',
+                            color: 'white',
+                          }}
+                        />
+                      )}
+                      <strong>{notice.authorName}</strong>
+                      {' | '}
+                      {notice.authorDepartment} - {notice.authorDesignation}
+                    </div>
+                  </span>
+                  {isAdmin && onEditNoticeClick && (
+                    <span style={{ color: 'var(--color-primary-solid, #3b82f6)' }}>Click to edit notice</span>
+                  )}
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
 
-        {/* Empty State */}
-        {sortedNotices.length === 0 && (
-          <div
-            className="panel"
-            style={{
-              textAlign: 'center',
-              padding: '60px 20px',
-              color: 'var(--text-secondary)',
-            }}
-          >
-            <Megaphone size={40} style={{ opacity: 0.3, marginBottom: '12px' }} />
-            <p style={{ margin: 0, fontSize: '0.95rem' }}>
-              {activeTab === 'archive'
-                ? 'The history archive is empty.'
-                : 'No active notices broadcasted on the board right now.'}
-            </p>
-          </div>
-        )}
-      </div>
+          {/* Empty State */}
+          {sortedNotices.length === 0 && (
+            <div
+              className="panel"
+              style={{
+                textAlign: 'center',
+                padding: '60px 20px',
+                color: 'var(--text-secondary)',
+              }}
+            >
+              <Megaphone size={40} style={{ opacity: 0.3, marginBottom: '12px' }} />
+              <p style={{ margin: 0, fontSize: '0.95rem' }}>
+                {activeTab === 'archive'
+                  ? 'The history archive is empty.'
+                  : 'No active notices broadcasted on the board right now.'}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

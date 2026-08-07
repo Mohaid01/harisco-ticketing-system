@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import type { AppUser, LeaveStatus, SiteDutyApplication } from '../types';
 
 import { formatEmployeeCode } from '../utils';
+import { LoadingSpinner } from './LoadingSpinner';
 
 interface SiteDutyManagementProps {
   currentUser: AppUser;
@@ -175,7 +176,7 @@ export const SiteDutyManagement: React.FC<SiteDutyManagementProps> = ({ currentU
       </div>
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '40px' }}>Loading...</div>
+        <LoadingSpinner type="table" rows={6} />
       ) : (
         <div className="panel" style={{ padding: '20px' }}>
           <h2 className="panel-title" style={{ marginBottom: '16px' }}>

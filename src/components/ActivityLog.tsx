@@ -4,14 +4,16 @@ import React, { useMemo } from 'react';
 import type { AppUser, Ticket } from '../types';
 
 import { ROLE_LABELS, TICKET_TYPE_LABELS } from '../constants';
+import { LoadingSpinner } from './LoadingSpinner';
 
 interface ActivityLogProps {
   tickets: Ticket[];
   currentUser: AppUser;
   onSelectTicket: (ticketId: string) => void;
+  loading?: boolean;
 }
 
-export const ActivityLog: React.FC<ActivityLogProps> = ({ tickets, currentUser, onSelectTicket }) => {
+export const ActivityLog: React.FC<ActivityLogProps> = ({ tickets, currentUser, onSelectTicket, loading = false }) => {
   // Aggregate and sort activity logs across all tickets visible to the current user
   const visibleLogs = useMemo(() => {
     // Filter tickets by RBAC permission first
@@ -81,7 +83,7 @@ export const ActivityLog: React.FC<ActivityLogProps> = ({ tickets, currentUser, 
 
       <div className="panel" style={{ padding: '24px' }}>
         <div className="timeline">
-          {visibleLogs.map((log) => (
+          {loading ? <LoadingSpinner type="list" rows={5} /> : visibleLogs.map((log) => (
             <div
               className="timeline-item"
               key={log.id}

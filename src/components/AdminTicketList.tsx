@@ -14,6 +14,7 @@ import React, { useMemo, useState } from 'react';
 import type { AdminTicket, AdminTicketCategory, AdminTicketStatus, AppUser } from '../types';
 
 import { ADMIN_TICKET_CATEGORY_LABELS, ADMIN_TICKET_CATEGORY_OPTIONS, ADMIN_TICKET_STATUS_OPTIONS } from '../constants';
+import { LoadingSpinner } from './LoadingSpinner';
 
 interface AdminTicketListProps {
   tickets: AdminTicket[];
@@ -22,6 +23,7 @@ interface AdminTicketListProps {
   onCreateTicketClick: () => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
+  loading?: boolean;
 }
 
 type SortByOptionAdmin = 'newest' | 'oldest' | 'status';
@@ -33,6 +35,7 @@ export const AdminTicketList: React.FC<AdminTicketListProps> = ({
   onCreateTicketClick,
   searchQuery,
   setSearchQuery,
+  loading = false,
 }) => {
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -399,7 +402,7 @@ export const AdminTicketList: React.FC<AdminTicketListProps> = ({
               </tr>
             </thead>
             <tbody>
-              {filteredTickets.map((ticket) => (
+              {loading ? <LoadingSpinner type="table" rows={6} /> : filteredTickets.map((ticket) => (
                 <tr key={ticket.id} onClick={() => onSelectTicket(ticket.id)}>
                   <td style={{ fontWeight: 'bold', width: '90px' }}>{ticket.id}</td>
                   <td>

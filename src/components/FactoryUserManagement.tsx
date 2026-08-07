@@ -5,6 +5,7 @@ import type { AppUser, UserRole } from '../types';
 
 import { ROLE_LABELS } from '../constants';
 import { formatEmployeeCode } from '../utils';
+import { LoadingSpinner } from './LoadingSpinner';
 import { ResetUserPasswordModal } from './ResetUserPasswordModal';
 
 interface FactoryUserManagementProps {
@@ -38,6 +39,7 @@ interface FactoryUserManagementProps {
       defaultShift?: string;
     }
   ) => void;
+  loading?: boolean;
 }
 
 export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
@@ -47,6 +49,7 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
   onAddUser,
   onDeleteUser,
   onUpdateUser,
+  loading = false,
 }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -456,7 +459,7 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
           </h2>
 
           <div className="user-grid">
-            {users.map((user) => (
+            {loading ? <LoadingSpinner type="cards" rows={6} /> : users.map((user) => (
               <div className="user-card" key={user.id}>
                 {editingUserId === user.id ? (
                   <div

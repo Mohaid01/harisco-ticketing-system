@@ -1106,6 +1106,7 @@ function App() {
               currentUser={currentUser}
               onCreateNoticeClick={() => setIsCreateNoticeOpen(true)}
               onEditNoticeClick={(noticeId) => setSelectedNoticeId(noticeId)}
+              loading={loading}
             />
           ) : activeTab === 'tickets' ? (
             <TicketList
@@ -1115,6 +1116,7 @@ function App() {
               onCreateTicketClick={() => setIsCreateModalOpen(true)}
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
+              loading={loading}
             />
           ) : activeTab === 'users' && currentUser.role === 'it' ? (
             <UserManagement
@@ -1124,6 +1126,7 @@ function App() {
               onAddUser={handleAddUser}
               onDeleteUser={handleDeleteUser}
               onUpdateUser={handleUpdateUser}
+              loading={loading}
             />
           ) : activeTab === 'factory_users' && (currentUser.role === 'factory_it' || currentUser.role === 'it') ? (
             <FactoryUserManagement
@@ -1133,6 +1136,7 @@ function App() {
               onAddUser={handleAddFactoryUser}
               onDeleteUser={handleDeleteFactoryUser}
               onUpdateUser={handleUpdateFactoryUser}
+              loading={loading}
             />
           ) : activeTab === 'attendance' ? (
             <Attendance currentUser={currentUser} allUsers={users} mode="hq" />
@@ -1162,10 +1166,11 @@ function App() {
                 onCreateTicketClick={() => setIsCreateAdminModalOpen(true)}
                 searchQuery={adminSearchQuery}
                 setSearchQuery={setAdminSearchQuery}
+                loading={loading}
               />
             )
           ) : (
-            <ActivityLog tickets={tickets} currentUser={currentUser} onSelectTicket={(id) => setSelectedTicketId(id)} />
+            <ActivityLog tickets={tickets} currentUser={currentUser} onSelectTicket={(id) => setSelectedTicketId(id)} loading={loading} />
           )}
         </section>
       </main>

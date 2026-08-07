@@ -34,6 +34,7 @@ import {
   isLateArrival,
   SHIFTS,
 } from '../utils/shifts';
+import { LoadingSpinner } from './LoadingSpinner';
 
 interface AttendanceProps {
   currentUser: AppUser;
@@ -1369,18 +1370,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
       </div>
 
       {loading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '80px' }}>
-          <div
-            style={{
-              width: '36px',
-              height: '36px',
-              border: '3px solid var(--border-color)',
-              borderTopColor: 'var(--color-primary)',
-              borderRadius: '50%',
-              animation: 'spin 1s linear infinite',
-            }}
-          />
-        </div>
+        <LoadingSpinner type="table" rows={8} />
       ) : (
         <>
           {/* ─────────────────── ALL EMPLOYEES SUMMARY VIEW ─────────────────── */}

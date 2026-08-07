@@ -4,6 +4,7 @@ import React, { useMemo, useState } from 'react';
 import type { AppUser, Ticket, TicketStatus, TicketType } from '../types';
 
 import { STATUS_OPTIONS, TICKET_TYPE_LABELS, TICKET_TYPE_OPTIONS } from '../constants';
+import { LoadingSpinner } from './LoadingSpinner';
 
 interface TicketListProps {
   tickets: Ticket[];
@@ -12,6 +13,7 @@ interface TicketListProps {
   onCreateTicketClick: () => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
+  loading?: boolean;
 }
 
 type SortByOption = 'newest' | 'oldest' | 'status';
@@ -23,6 +25,7 @@ export const TicketList: React.FC<TicketListProps> = ({
   onCreateTicketClick,
   searchQuery,
   setSearchQuery,
+  loading = false,
 }) => {
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -323,7 +326,7 @@ export const TicketList: React.FC<TicketListProps> = ({
               </tr>
             </thead>
             <tbody>
-              {filteredTickets.map((ticket) => (
+              {loading ? <LoadingSpinner type="table" rows={6} /> : filteredTickets.map((ticket) => (
                 <tr key={ticket.id} onClick={() => onSelectTicket(ticket.id)}>
                   <td style={{ fontWeight: 'bold', width: '90px' }}>{ticket.id}</td>
                   <td>
