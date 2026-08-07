@@ -193,9 +193,12 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
   };
 
   const handleDeletePunchOut = async (logId: number, dateStr: string) => {
-    if (!window.confirm(`Are you sure you want to delete the punch out (second punch) for ${dateStr}?`)) {
+    const confirmMessage = ['Are you sure you want to delete the punch out (second punch) for ', dateStr, '?'].join('');
+
+    if (!window.confirm(confirmMessage)) {
       return;
     }
+
     try {
       const token = localStorage.getItem('harisco_token');
       const res = await fetch(`${apiBase}/${logId}`, {
@@ -214,9 +217,12 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
   };
 
   const handleDeletePunchIn = async (logId: number, dateStr: string) => {
-    if (!window.confirm(`Are you sure you want to delete the punch in (first punch) for ${dateStr}?`)) {
+    const confirmMessage = ['Are you sure you want to delete the punch in (first punch) for ', dateStr, '?'].join('');
+
+    if (!window.confirm(confirmMessage)) {
       return;
     }
+
     try {
       const token = localStorage.getItem('harisco_token');
       const res = await fetch(`${apiBase}/${logId}`, {

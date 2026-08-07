@@ -141,7 +141,7 @@ export const AdminTicketList: React.FC<AdminTicketListProps> = ({
     }
   };
 
-  const getCategoryLabel = (category: AdminTicketCategory) => {
+  const getCategoryLabel = (category: AdminTicketCategory): string => {
     return ADMIN_TICKET_CATEGORY_LABELS[category];
   };
 
@@ -402,40 +402,44 @@ export const AdminTicketList: React.FC<AdminTicketListProps> = ({
               </tr>
             </thead>
             <tbody>
-              {loading ? <LoadingSpinner type="table" rows={6} /> : filteredTickets.map((ticket) => (
-                <tr key={ticket.id} onClick={() => onSelectTicket(ticket.id)}>
-                  <td style={{ fontWeight: 'bold', width: '90px' }}>{ticket.id}</td>
-                  <td>
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <span
-                        style={{
-                          fontWeight: 600,
-                          color: 'white',
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          maxWidth: '340px',
-                        }}
-                      >
-                        {ticket.description}
-                      </span>
-                    </div>
-                  </td>
-                  <td>
-                    <span className="badge badge-type">{getCategoryLabel(ticket.category)}</span>
-                  </td>
-                  <td style={{ fontSize: '0.85rem' }}>{ticket.reporterName}</td>
-                  <td>{getStatusBadge(ticket.status)}</td>
-                  <td
-                    style={{
-                      fontSize: '0.78rem',
-                      color: 'var(--text-secondary)',
-                    }}
-                  >
-                    {formatDate(ticket.createdAt)}
-                  </td>
-                </tr>
-              ))}
+              {loading ? (
+                <LoadingSpinner type="table" rows={6} />
+              ) : (
+                filteredTickets.map((ticket) => (
+                  <tr key={ticket.id} onClick={() => onSelectTicket(ticket.id)}>
+                    <td style={{ fontWeight: 'bold', width: '90px' }}>{ticket.id}</td>
+                    <td>
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span
+                          style={{
+                            fontWeight: 600,
+                            color: 'white',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            maxWidth: '340px',
+                          }}
+                        >
+                          {ticket.description}
+                        </span>
+                      </div>
+                    </td>
+                    <td>
+                      <span className="badge badge-type">{getCategoryLabel(ticket.category)}</span>
+                    </td>
+                    <td style={{ fontSize: '0.85rem' }}>{ticket.reporterName}</td>
+                    <td>{getStatusBadge(ticket.status)}</td>
+                    <td
+                      style={{
+                        fontSize: '0.78rem',
+                        color: 'var(--text-secondary)',
+                      }}
+                    >
+                      {formatDate(ticket.createdAt)}
+                    </td>
+                  </tr>
+                ))
+              )}
               {filteredTickets.length === 0 && (
                 <tr>
                   <td

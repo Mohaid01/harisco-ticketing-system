@@ -154,9 +154,12 @@ export const AdminTicketDetails: React.FC<AdminTicketDetailsProps> = ({
 
   const handleDeleteClick = () => {
     if (onDeleteTicket) {
-      const confirmed = window.confirm(
-        `WARNING: You are about to permanently delete admin ticket ${ticket.id}.\n\nAre you sure you want to proceed?`
-      );
+      const msg = [
+        'WARNING: You are about to permanently delete admin ticket ',
+        ticket.id,
+        '.\n\nAre you sure you want to proceed?',
+      ].join('');
+      const confirmed = window.confirm(msg);
       if (confirmed) {
         onDeleteTicket(ticket.id);
       }
