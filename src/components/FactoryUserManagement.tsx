@@ -5,8 +5,8 @@ import type { AppUser, UserRole } from '../types';
 
 import { ROLE_LABELS } from '../constants';
 import { formatEmployeeCode } from '../utils';
-import { LoadingSpinner } from './LoadingSpinner';
 import { ResetUserPasswordModal } from './ResetUserPasswordModal';
+import { UserCarousel } from './UserCarousel';
 
 interface FactoryUserManagementProps {
   users: AppUser[];
@@ -226,82 +226,102 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
           )}
 
           <form onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label htmlFor="factory-user-name-input" className="form-label">
-                Full Name
-              </label>
-              <input
-                id="factory-user-name-input"
-                type="text"
-                className="form-input"
-                placeholder="e.g. Factory Worker Name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-              />
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="factory-user-name-input" className="form-label">
+                  Full Name
+                </label>
+                <input
+                  id="factory-user-name-input"
+                  type="text"
+                  className="form-input"
+                  placeholder="e.g. Factory Worker Name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="factory-user-username-input" className="form-label">
+                  Employee Code
+                </label>
+                <input
+                  id="factory-user-username-input"
+                  type="text"
+                  className="form-input"
+                  placeholder="e.g. 001"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  required
+                />
+              </div>
             </div>
 
-            <div className="form-group">
-              <label htmlFor="factory-user-username-input" className="form-label">
-                Employee Code
-              </label>
-              <input
-                id="factory-user-username-input"
-                type="text"
-                className="form-input"
-                placeholder="e.g. 001"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                required
-              />
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="factory-user-email-input" className="form-label">
+                  Email Address (Optional)
+                </label>
+                <input
+                  id="factory-user-email-input"
+                  type="email"
+                  className="form-input"
+                  placeholder="e.g. factory@harisco.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="factory-user-password-input" className="form-label">
+                  Password (Optional)
+                </label>
+                <input
+                  id="factory-user-password-input"
+                  type="password"
+                  className="form-input"
+                  placeholder={`Defaults to ${import.meta.env.VITE_DEFAULT_USER_PASSWORD}`}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
             </div>
 
-            <div className="form-group">
-              <label htmlFor="factory-user-email-input" className="form-label">
-                Email Address (Optional)
-              </label>
-              <input
-                id="factory-user-email-input"
-                type="email"
-                className="form-input"
-                placeholder="e.g. factory@harisco.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="factory-user-department-input" className="form-label">
+                  Department
+                </label>
+                <select
+                  id="factory-user-department-input"
+                  className="form-input"
+                  style={{ backgroundColor: 'var(--bg-primary)' }}
+                  value={department}
+                  onChange={(e) => setDepartment(e.target.value)}
+                  required
+                >
+                  <option value="" selected disabled>
+                    -- Select Department --
+                  </option>
+                  <option value="Factory">Factory</option>
+                </select>
+              </div>
 
-            <div className="form-group">
-              <label htmlFor="factory-user-department-input" className="form-label">
-                Department
-              </label>
-              <select
-                id="factory-user-department-input"
-                className="form-input"
-                style={{ backgroundColor: 'var(--bg-primary)' }}
-                value={department}
-                onChange={(e) => setDepartment(e.target.value)}
-                required
-              >
-                <option value="" selected disabled>
-                  -- Select Department --
-                </option>
-                <option value="Factory">Factory</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="factory-user-designation-input" className="form-label">
-                Designation
-              </label>
-              <input
-                id="factory-user-designation-input"
-                type="text"
-                className="form-input"
-                placeholder="e.g. Machine Operator"
-                value={designation}
-                onChange={(e) => setDesignation(e.target.value)}
-                required
-              />
+              <div className="form-group">
+                <label htmlFor="factory-user-designation-input" className="form-label">
+                  Designation
+                </label>
+                <input
+                  id="factory-user-designation-input"
+                  type="text"
+                  className="form-input"
+                  placeholder="e.g. Machine Operator"
+                  value={designation}
+                  onChange={(e) => setDesignation(e.target.value)}
+                  required
+                />
+              </div>
             </div>
 
             {/* Picture Upload Field */}
@@ -354,47 +374,25 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
               </div>
             </div>
 
-            <div className="form-group">
-              <label htmlFor="factory-user-password-input" className="form-label">
-                Password
-              </label>
-              <input
-                id="factory-user-password-input"
-                type="password"
-                className="form-input"
-                placeholder={`Optional (defaults to ${import.meta.env.VITE_DEFAULT_USER_PASSWORD})`}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
+            <div className="form-row">
+              <div className="form-group" style={{ marginBottom: '24px' }}>
+                <label htmlFor="factory-user-role-select" className="form-label">
+                  System Role
+                </label>
+                <select
+                  id="factory-user-role-select"
+                  className="form-input"
+                  style={{ backgroundColor: 'var(--bg-primary)' }}
+                  value={role}
+                  onChange={(e) => setRole(e.target.value as UserRole)}
+                >
+                  <option value="factory_employee">Employee</option>
+                  <option value="factory_it">IT</option>
+                  <option value="factory_manager">Manager</option>
+                </select>
+              </div>
 
-            <div className="form-group" style={{ marginBottom: '24px' }}>
-              <label htmlFor="factory-user-role-select" className="form-label">
-                System Role
-              </label>
-              <select
-                id="factory-user-role-select"
-                className="form-input"
-                style={{ backgroundColor: 'var(--bg-primary)' }}
-                value={role}
-                onChange={(e) => setRole(e.target.value as UserRole)}
-              >
-                <option value="factory_employee">Employee</option>
-                <option value="factory_it">IT</option>
-                <option value="factory_manager">Manager</option>
-              </select>
-            </div>
-
-            <div
-              className="form-group"
-              style={{
-                marginBottom: '24px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '10px',
-              }}
-            >
-              <div className="form-group">
+              <div className="form-group" style={{ marginBottom: '24px' }}>
                 <label htmlFor="factory-user-shift-select" className="form-label">
                   Default Shift
                 </label>
@@ -409,7 +407,17 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
                   <option value="night">Night Shift (20:00–05:00)</option>
                 </select>
               </div>
+            </div>
 
+            <div
+              className="form-group"
+              style={{
+                marginBottom: '24px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '10px',
+              }}
+            >
               <label
                 className="form-label"
                 style={{
@@ -453,13 +461,16 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
         </div>
 
         {/* Right Column: Users List Grid */}
-        <div className="panel" style={{ padding: '24px' }}>
-          <h2 className="panel-title" style={{ marginBottom: '20px' }}>
+        <div
+          className="panel"
+          style={{ padding: '24px', display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}
+        >
+          <h2 className="panel-title" style={{ marginBottom: '20px', flexShrink: 0 }}>
             Active Factory User Roster ({users.length})
           </h2>
 
-          <div className="user-grid">
-            {loading ? <LoadingSpinner type="cards" rows={6} /> : users.map((user) => (
+          <UserCarousel loading={loading}>
+            {users.map((user) => (
               <div className="user-card" key={user.id}>
                 {editingUserId === user.id ? (
                   <div
@@ -696,114 +707,125 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
                     </div>
                   </div>
                 ) : (
-                  <>
-                    {user.avatar ? (
-                      <img
-                        src={user.avatar}
-                        alt={user.name}
-                        className="user-card-avatar"
-                        style={{ objectFit: 'cover' }}
-                      />
-                    ) : (
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      height: '100%',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      textAlign: 'center',
+                      gap: '32px',
+                    }}
+                  >
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+                      {user.avatar ? (
+                        <img
+                          src={user.avatar}
+                          alt={user.name}
+                          style={{
+                            width: '120px',
+                            height: '120px',
+                            borderRadius: '50%',
+                            objectFit: 'cover',
+                            border: '3px solid var(--border-color)',
+                            display: 'block',
+                          }}
+                        />
+                      ) : (
+                        <div
+                          style={{
+                            width: '120px',
+                            height: '120px',
+                            borderRadius: '50%',
+                            backgroundColor: 'var(--color-primary)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '2.5rem',
+                            fontWeight: 700,
+                            color: 'white',
+                          }}
+                        >
+                          {user.name
+                            .split(' ')
+                            .map((n) => n[0])
+                            .join('')
+                            .toUpperCase()
+                            .slice(0, 2)}
+                        </div>
+                      )}
                       <div
-                        className="user-card-avatar"
                         style={{
-                          backgroundColor: 'var(--color-primary)',
+                          width: '100%',
                           display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '1.2rem',
-                          fontWeight: 700,
-                          color: 'white',
+                          flexDirection: 'column',
+                          gap: '3px',
+                          textAlign: 'center',
                         }}
                       >
-                        {user.name
-                          .split(' ')
-                          .map((n) => n[0])
-                          .join('')
-                          .toUpperCase()
-                          .slice(0, 2)}
+                        <div style={{ fontSize: '1.1rem', fontWeight: 600, color: 'white', lineHeight: 1.3 }}>
+                          {user.name}
+                        </div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                          {formatEmployeeCode(user.username || user.id)}
+                        </div>
                       </div>
-                    )}
-                    <span className="user-card-name">{user.name}</span>
+                    </div>
 
-                    <span
-                      className="user-card-email"
-                      style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '2px',
-                        alignItems: 'center',
-                        fontSize: '0.78rem',
-                        color: 'var(--text-secondary)',
-                      }}
+                    <div
+                      style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '8px', textAlign: 'left' }}
                     >
-                      <span>Code: {formatEmployeeCode(user.username || user.id)}</span>
                       {user.email ? (
                         <span
-                          style={{
-                            color: 'var(--color-primary-solid)',
-                            wordBreak: 'break-all',
-                          }}
+                          style={{ color: 'var(--color-primary-solid)', fontSize: '0.9rem', wordBreak: 'break-all' }}
                         >
                           {user.email}
                         </span>
                       ) : (
-                        <span
-                          style={{
-                            fontStyle: 'italic',
-                            color: 'var(--text-muted)',
-                          }}
-                        >
+                        <span style={{ fontStyle: 'italic', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
                           No Email Address
                         </span>
                       )}
-                    </span>
-
-                    {(user.designation || user.department) && (
-                      <div
-                        style={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '2px',
-                          alignItems: 'center',
-                          marginBottom: '4px',
-                        }}
-                      >
-                        {user.designation && (
-                          <span
-                            style={{
-                              fontSize: '0.75rem',
-                              color: 'var(--text-primary)',
-                              fontWeight: 500,
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                            }}
-                          >
-                            <Briefcase size={11} style={{ color: 'var(--text-muted)' }} />
+                      {user.designation && (
+                        <span
+                          style={{
+                            fontSize: '0.9rem',
+                            color: 'var(--text-primary)',
+                            fontWeight: 500,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                          }}
+                        >
+                          <Briefcase size={15} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {user.designation}
                           </span>
-                        )}
-                        {user.department && (
-                          <span
-                            style={{
-                              fontSize: '0.72rem',
-                              color: 'var(--text-secondary)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                            }}
-                          >
-                            <Building2 size={11} style={{ color: 'var(--text-muted)' }} />
+                        </span>
+                      )}
+                      {user.department && (
+                        <span
+                          style={{
+                            fontSize: '0.9rem',
+                            color: 'var(--text-secondary)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                          }}
+                        >
+                          <Building2 size={15} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {user.department}
                           </span>
-                        )}
-                      </div>
-                    )}
+                        </span>
+                      )}
 
-                    <div style={{ marginBottom: '16px' }}>
-                      <span className={getRoleBadgeClass(user.role)}>{ROLE_LABELS[user.role]}</span>
+                      <div style={{ marginTop: '4px', display: 'flex', justifyContent: 'center' }}>
+                        <span className={getRoleBadgeClass(user.role)} style={{ fontSize: '0.85rem' }}>
+                          {ROLE_LABELS[user.role]}
+                        </span>
+                      </div>
                     </div>
 
                     <div
@@ -811,7 +833,7 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
                       style={{
                         display: 'flex',
                         flexDirection: 'column',
-                        gap: '6px',
+                        gap: '10px',
                         width: '100%',
                       }}
                     >
@@ -819,8 +841,8 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
                         className="btn btn-secondary"
                         style={{
                           width: '100%',
-                          padding: '6px 12px',
-                          fontSize: '0.8rem',
+                          padding: '10px 16px',
+                          fontSize: '0.85rem',
                         }}
                         onClick={() => startEdit(user)}
                       >
@@ -833,8 +855,8 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
                             className="btn btn-secondary"
                             style={{
                               width: '100%',
-                              padding: '6px 12px',
-                              fontSize: '0.8rem',
+                              padding: '10px 16px',
+                              fontSize: '0.85rem',
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
@@ -842,7 +864,7 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
                             }}
                             onClick={() => setResetPasswordTarget(user)}
                           >
-                            <KeyRound size={12} />
+                            <KeyRound size={14} />
                             Reset Password
                           </button>
                           <button
@@ -861,11 +883,11 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
                         </>
                       )}
                     </div>
-                  </>
+                  </div>
                 )}
               </div>
             ))}
-          </div>
+          </UserCarousel>
         </div>
       </div>
 
