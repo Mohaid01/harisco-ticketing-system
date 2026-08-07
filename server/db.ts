@@ -212,7 +212,7 @@ export async function initDb() {
   }
 
   try {
-    await db.exec('ALTER TABLE users ADD COLUMN default_shift TEXT DEFAULT "general"');
+    await db.exec('ALTER TABLE users ADD COLUMN default_shift TEXT DEFAULT "headquarters"');
   } catch {
     // Column might already exist, ignore error
   }

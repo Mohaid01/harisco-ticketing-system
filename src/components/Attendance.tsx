@@ -332,7 +332,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
 
     const [sYear, sMonth] = selectedMonth.split('-').map(Number);
     const daysInMonth = new Date(sYear, sMonth, 0).getDate();
-    const shiftStarted = hasShiftStartedForUser(SHIFTS.general);
+    const shiftStarted = hasShiftStartedForUser(SHIFTS.headquarters);
 
     return allUsers
       .filter((user) => user.department !== 'Executive')
@@ -346,7 +346,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
         );
 
         const todayPunches = userLogs.filter((log) => {
-          const todayShift = getEffectiveShift(user.defaultShift || 'general', shiftOverrides, todayStr);
+          const todayShift = getEffectiveShift(user.defaultShift || 'headquarters', shiftOverrides, todayStr);
           return getLogShiftDate(log, todayShift) === todayStr;
         });
         let todayStatus: 'Clocked In' | 'Clocked Out' | 'Absent' | 'On Leave' | 'Site Duty' | 'Pending';
@@ -354,7 +354,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
 
         let userShiftStarted = shiftStarted;
         if (isFactory) {
-          const shift = getEffectiveShift(user.defaultShift || 'general', shiftOverrides, todayStr);
+          const shift = getEffectiveShift(user.defaultShift || 'headquarters', shiftOverrides, todayStr);
           const pktNow = new Date(new Date().getTime() + 5 * 60 * 60 * 1000);
           const currentH = pktNow.getUTCHours();
           const currentM = pktNow.getUTCMinutes();
@@ -381,7 +381,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
               const isSaturday = pktNow.getUTCDay() === 6;
 
               if (isFactory) {
-                const shift = getEffectiveShift(user.defaultShift || 'general', shiftOverrides, todayStr);
+                const shift = getEffectiveShift(user.defaultShift || 'headquarters', shiftOverrides, todayStr);
                 const checkInTime = `${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
                 isLateToday = isLateArrival(checkInTime, shift, pktNow);
               } else {
@@ -421,7 +421,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
           const isHoliday = holidays.find((h) => h.date === dateStr);
 
           totalWorkDays++;
-          const dayShift = getEffectiveShift(user.defaultShift || 'general', shiftOverrides, dateStr);
+          const dayShift = getEffectiveShift(user.defaultShift || 'headquarters', shiftOverrides, dateStr);
           const dayPunches = userLogs.filter((log) => getLogShiftDate(log, dayShift) === dateStr);
 
           const sorted = [...dayPunches].sort((a, b) => {
@@ -437,8 +437,8 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
             daysPresent++;
             const isSaturday = tempDate.getUTCDay() === 6;
             if (isFactory) {
-              const shift = getEffectiveShift(user.defaultShift || 'general', shiftOverrides, dateStr);
-              totalHours += isSaturday && shift.code === 'general' ? 6 : shift.baseHours;
+              const shift = getEffectiveShift(user.defaultShift || 'headquarters', shiftOverrides, dateStr);
+              totalHours += isSaturday && shift.code === 'headquarters' ? 6 : shift.baseHours;
             } else {
               totalHours += isSaturday ? 6 : 8;
             }
@@ -474,7 +474,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
           }
         }
 
-        const todayShift = getEffectiveShift(user.defaultShift || 'general', shiftOverrides, todayStr);
+        const todayShift = getEffectiveShift(user.defaultShift || 'headquarters', shiftOverrides, todayStr);
 
         return {
           ...user,
@@ -584,7 +584,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
 
       const isHoliday = holidays.find((h) => h.date === dateStr);
 
-      const dayShift = getEffectiveShift(selectedEmployee.defaultShift || 'general', shiftOverrides, dateStr);
+      const dayShift = getEffectiveShift(selectedEmployee.defaultShift || 'headquarters', shiftOverrides, dateStr);
       const dayPunches = userLogs.filter((log) => getLogShiftDate(log, dayShift) === dateStr);
 
       if (isWeekend || isHoliday) {
@@ -640,7 +640,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
           const isSaturday = tempDate.getUTCDay() === 6;
 
           if (isFactory && selectedEmployee) {
-            const shift = getEffectiveShift(selectedEmployee.defaultShift || 'general', shiftOverrides, dateStr);
+            const shift = getEffectiveShift(selectedEmployee.defaultShift || 'headquarters', shiftOverrides, dateStr);
             const checkInTime = `${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
             if (isLateArrival(checkInTime, shift, tempDate)) {
               status = 'Late Arrival';
@@ -721,7 +721,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
     }).format(new Date());
 
     const selectedShift = selectedEmployee
-      ? getEffectiveShift(selectedEmployee.defaultShift || 'general', shiftOverrides, todayStr)
+      ? getEffectiveShift(selectedEmployee.defaultShift || 'headquarters', shiftOverrides, todayStr)
       : undefined;
     const shiftStarted = selectedShift ? hasShiftStartedForUser(selectedShift) : false;
 
@@ -872,7 +872,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
     }
 
     const shift = isFactory
-      ? getEffectiveShift(selectedEmployee?.defaultShift || 'general', shiftOverrides, date)
+      ? getEffectiveShift(selectedEmployee?.defaultShift || 'headquarters', shiftOverrides, date)
       : undefined;
 
     const defaultTime = (() => {
@@ -948,7 +948,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
 
       const dateObj = new Date(date + 'T00:00:00Z');
       const isSaturday = dateObj.getUTCDay() === 6;
-      const shift = getEffectiveShift(selectedEmployee?.defaultShift || 'general', shiftOverrides, date);
+      const shift = getEffectiveShift(selectedEmployee?.defaultShift || 'headquarters', shiftOverrides, date);
       const start = isSaturday && shift.saturdayStart ? shift.saturdayStart : shift.weekdayStart;
       const end = isSaturday && shift.saturdayEnd ? shift.saturdayEnd : shift.weekdayEnd;
       const checkInTime = `${String(start.h).padStart(2, '0')}:${String(start.m).padStart(2, '0')}`;
@@ -1047,7 +1047,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
         const sDay = String(day).padStart(2, '0');
         const dateStr = `${sYear}-${String(sMonth).padStart(2, '0')}-${sDay}`;
 
-        const dayShift = getEffectiveShift(emp.defaultShift || 'general', shiftOverrides, dateStr);
+        const dayShift = getEffectiveShift(emp.defaultShift || 'headquarters', shiftOverrides, dateStr);
         const dayPunches = userLogs.filter((log) => getLogShiftDate(log, dayShift) === dateStr);
 
         if (dayPunches.length === 0) {
@@ -1084,7 +1084,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
             const hour = parseInt(timeParts[0], 10);
             const min = parseInt(timeParts[1], 10);
             if (isFactory) {
-              const shift = getEffectiveShift(emp.defaultShift || 'general', shiftOverrides, dateStr);
+              const shift = getEffectiveShift(emp.defaultShift || 'headquarters', shiftOverrides, dateStr);
               isLate = isLateArrival(
                 `${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}`,
                 shift,
@@ -1153,7 +1153,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
         let actualDayHours = 0;
 
         if (isFactory) {
-          const shift = getEffectiveShift(emp.defaultShift || 'general', shiftOverrides, dateStr);
+          const shift = getEffectiveShift(emp.defaultShift || 'headquarters', shiftOverrides, dateStr);
           if (punches.in !== '-' && punches.out !== '-' && punches.status === 'Present') {
             const [inH, inM] = punches.in.split(':').map(Number);
             const [outH, outM] = punches.out.split(':').map(Number);
@@ -1223,9 +1223,9 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
           const sDay = String(day).padStart(2, '0');
           const dateStr = `${sYear}-${String(sMonth).padStart(2, '0')}-${sDay}`;
           const isHoliday = holidays.some((h) => h.date === dateStr);
-          const shift = getEffectiveShift(emp.defaultShift || 'general', shiftOverrides, dateStr);
+          const shift = getEffectiveShift(emp.defaultShift || 'headquarters', shiftOverrides, dateStr);
           if (!isHoliday && !(isSunday && shift.sundayOff)) {
-            empExpectedHours += isSaturday && shift.code === 'general' ? 6 : shift.baseHours;
+            empExpectedHours += isSaturday && shift.code === 'headquarters' ? 6 : shift.baseHours;
           }
         }
       }
@@ -1554,12 +1554,12 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                       <option value="All">All Shifts</option>
                       {isFactory ? (
                         <>
-                          <option value={SHIFTS.general.label}>General Shift</option>
+                          <option value={SHIFTS.headquarters.label}>General Shift</option>
                           <option value={SHIFTS.day.label}>Day Shift</option>
                           <option value={SHIFTS.night.label}>Night Shift</option>
                         </>
                       ) : (
-                        <option value={SHIFTS.general.label}>General Shift</option>
+                        <option value={SHIFTS.headquarters.label}>General Shift</option>
                       )}
                     </select>
                   </div>
@@ -2087,7 +2087,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                                 timeZone: 'Asia/Karachi',
                               }).format(new Date());
                               const shift = getEffectiveShift(
-                                selectedEmployee.defaultShift || 'general',
+                                selectedEmployee.defaultShift || 'headquarters',
                                 shiftOverrides,
                                 todayStr
                               );
@@ -2548,7 +2548,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                                   const canOverrideDate = canWrite || log.date === todayStr;
                                   if (!canOverrideDate) return null;
                                   const currentShift =
-                                    shiftOverrides[log.date] || selectedEmployee?.defaultShift || 'general';
+                                    shiftOverrides[log.date] || selectedEmployee?.defaultShift || 'headquarters';
                                   return (
                                     <div style={{ marginTop: '4px' }}>
                                       <select
@@ -2617,13 +2617,13 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                               timeZone: 'Asia/Karachi',
                             }).format(new Date());
                             const shift = getEffectiveShift(
-                              selectedEmployee.defaultShift || 'general',
+                              selectedEmployee.defaultShift || 'headquarters',
                               shiftOverrides,
                               todayStr
                             );
                             const pktNow = new Date(new Date().getTime() + 5 * 60 * 60 * 1000);
                             const isSat = pktNow.getUTCDay() === 6;
-                            const base = isSat && shift.code === 'general' ? 6 : shift.baseHours;
+                            const base = isSat && shift.code === 'headquarters' ? 6 : shift.baseHours;
                             return formatHours(base);
                           })()}
                         </strong>
@@ -2647,13 +2647,13 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                                     timeZone: 'Asia/Karachi',
                                   }).format(new Date());
                                   const shift = getEffectiveShift(
-                                    selectedEmployee.defaultShift || 'general',
+                                    selectedEmployee.defaultShift || 'headquarters',
                                     shiftOverrides,
                                     todayStr
                                   );
                                   const pktNow = new Date(new Date().getTime() + 5 * 60 * 60 * 1000);
                                   const isSat = pktNow.getUTCDay() === 6;
-                                  return isSat && shift.code === 'general' ? 6 : shift.baseHours;
+                                  return isSat && shift.code === 'headquarters' ? 6 : shift.baseHours;
                                 })()) *
                                 100,
                               100

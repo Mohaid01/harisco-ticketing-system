@@ -39,7 +39,7 @@ router.get('/users', authenticateToken, async (req: AuthRequest, res: ApiRespons
     }
 
     const selectFields =
-      'SELECT id, name, email, username, role, avatar, department, designation, isDepartmentHead, loginEnabled, default_shift FROM factory_users';
+      'SELECT id, name, email, username, role, avatar, department, designation, isDepartmentHead, loginEnabled, default_shift as defaultShift FROM factory_users';
 
     let query = '';
     const params: (string | undefined)[] = [];
@@ -554,7 +554,7 @@ router.put('/shift-overrides/:userId/:date', authenticateToken, async (req: Auth
     if (!canWrite)
       return res.status(403).json({ error: 'Forbidden. Employees can only override their own current day shift.' });
 
-    const validShifts = ['general', 'day', 'night'];
+    const validShifts = ['general', 'day', 'night', 'extended'];
     if (!validShifts.includes(shift)) return res.status(400).json({ error: 'Invalid shift code.' });
 
     await db.run(

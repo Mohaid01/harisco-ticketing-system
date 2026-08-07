@@ -1,4 +1,4 @@
-export type ShiftCode = 'general' | 'day' | 'night';
+export type ShiftCode = 'headquarters' | 'day' | 'night' | 'extended';
 
 export interface ShiftDefinition {
   code: ShiftCode;
@@ -9,13 +9,13 @@ export interface ShiftDefinition {
   saturdayEnd?: { h: number; m: number };
   sundayOff: boolean;
   graceMinutes: number;
-  baseHours: number; // Hours before OT kicks in
-  maxOtHours: number; // OT cap per day
+  baseHours: number;
+  maxOtHours: number;
 }
 
 export const SHIFTS: Record<ShiftCode, ShiftDefinition> = {
-  general: {
-    code: 'general',
+  headquarters: {
+    code: 'headquarters',
     label: 'General Shift (HQ)',
     weekdayStart: { h: 9, m: 30 },
     weekdayEnd: { h: 18, m: 0 },
@@ -23,8 +23,8 @@ export const SHIFTS: Record<ShiftCode, ShiftDefinition> = {
     saturdayEnd: { h: 16, m: 0 },
     sundayOff: true,
     graceMinutes: 30,
-    baseHours: 8, // HQ weekday
-    maxOtHours: 0, // HQ OT disabled
+    baseHours: 8,
+    maxOtHours: 0,
   },
   day: {
     code: 'day',
@@ -35,7 +35,7 @@ export const SHIFTS: Record<ShiftCode, ShiftDefinition> = {
     saturdayEnd: { h: 17, m: 0 },
     sundayOff: true,
     graceMinutes: 15,
-    baseHours: 9, // Factory 9 hours
+    baseHours: 9,
     maxOtHours: 3,
   },
   night: {
@@ -45,10 +45,22 @@ export const SHIFTS: Record<ShiftCode, ShiftDefinition> = {
     weekdayEnd: { h: 5, m: 0 },
     saturdayStart: { h: 20, m: 0 },
     saturdayEnd: { h: 5, m: 0 },
-    sundayOff: true, // Sunday night is off
+    sundayOff: true,
     graceMinutes: 15,
-    baseHours: 9, // 20:00–05:00 = 9 hrs
+    baseHours: 9,
     maxOtHours: 3,
+  },
+  extended: {
+    code: 'extended',
+    label: 'General Shift (Factory)',
+    weekdayStart: { h: 9, m: 0 },
+    weekdayEnd: { h: 20, m: 0 },
+    saturdayStart: { h: 9, m: 0 },
+    saturdayEnd: { h: 20, m: 0 },
+    sundayOff: true,
+    graceMinutes: 15,
+    baseHours: 11,
+    maxOtHours: 0,
   },
 };
 
@@ -61,7 +73,7 @@ export function getEffectiveShift(
   if (dateStr && overrides && overrides[dateStr]) {
     shiftCode = overrides[dateStr] as ShiftCode;
   }
-  return SHIFTS[shiftCode] || SHIFTS.general;
+  return SHIFTS[shiftCode] || SHIFTS.headquarters;
 }
 
 export function hasShiftStartedForUser(shift: ShiftDefinition): boolean {
@@ -140,7 +152,7 @@ export function calculateOvertime(
     return { otHours: 0, baseHours: actualHours };
   }
 
-  const baseHours = isSaturday && shift.code === 'general' ? 6 : shift.baseHours;
+  const baseHours = isSaturday && shift.code === 'headquarters' ? 6 : shift.baseHours;
 
   if (actualHours <= baseHours) {
     return { otHours: 0, baseHours };

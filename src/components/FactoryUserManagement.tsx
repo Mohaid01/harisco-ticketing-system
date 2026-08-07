@@ -282,10 +282,7 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
                 <option value="" selected disabled>
                   -- Select Department --
                 </option>
-                <option value="Factory Floor">Factory Floor</option>
-                <option value="Factory Maintenance">Factory Maintenance</option>
-                <option value="Factory Security">Factory Security</option>
-                <option value="Factory Admin">Factory Admin</option>
+                <option value="Factory">Factory</option>
               </select>
             </div>
 
@@ -405,6 +402,7 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
                   onChange={(e) => setDefaultShift(e.target.value)}
                 >
                   <option value="day">Day Shift (08:00–17:00)</option>
+                  <option value="extended">General Shift (09:00–20:00)</option>
                   <option value="night">Night Shift (20:00–05:00)</option>
                 </select>
               </div>
@@ -576,10 +574,7 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
                         <option value="" selected disabled>
                           -- Select Department --
                         </option>
-                        <option value="Factory Floor">Factory Floor</option>
-                        <option value="Factory Maintenance">Factory Maintenance</option>
-                        <option value="Factory Security">Factory Security</option>
-                        <option value="Factory Admin">Factory Admin</option>
+                        <option value="Factory">Factory</option>
                       </select>
                     </div>
                     <div className="form-group" style={{ marginBottom: '12px' }}>
@@ -630,6 +625,7 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
                           onChange={(e) => setEditDefaultShift(e.target.value)}
                         >
                           <option value="day">Day Shift (08:00–17:00)</option>
+                          <option value="extended">General Shift (09:00–20:00)</option>
                           <option value="night">Night Shift (20:00–05:00)</option>
                         </select>
                       </div>
