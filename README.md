@@ -143,32 +143,92 @@ See `.env.example` for all available options. Key variables:
 | `npm run lint`       | Run ESLint on all files                             |
 | `npm run preview`    | Preview production build locally                    |
 
+### Deployment & Database
+
+| Command                      | Description                                      |
+| ---------------------------- | ------------------------------------------------ |
+| `bash deploy.sh`             | Deploy latest code with automatic DB backup      |
+| `bash scripts/backup-db.sh`  | Manual database backup (to `backups/` directory) |
+| `bash scripts/restore-db.sh <backup-file>` | Restore database from backup         |
+
+**Rollback:** If deployment fails, `deploy.sh` automatically rolls back to the previous Docker image tagged `harisco-ticketing-system:rollback`.
+
 ---
+
+## 🗄️ Database Backup & Restore
+
+The SQLite database is stored in `data/database.sqlite`. Always back up before deploying or migrating.
+
+### Backup
+
+```bash
+# Automatic (included in deploy.sh)
+bash deploy.sh
+
+# Manual
+bash scripts/backup-db.sh
+# Backups are stored in backups/ with timestamps
+```
+
+### Restore
+
+```bash
+# Stop the running container
+docker compose stop harisco-ticketing-system
+
+# Restore from a specific backup
+bash scripts/restore-db.sh backups/database-20260807-120000.sqlite
+
+# Or start the container again
+docker compose start harisco-ticketing-system
+```
+
+### Important Notes
+
+- The `data/` directory is bind-mounted in Docker (`./data:/app/data`)
+- Never delete `data/` without backing up first
+- For production, schedule daily backups via cron:
+  ```bash
+  0 2 * * * cd /path/to/repo && bash scripts/backup-db.sh
+  ```
 
 ## 📁 Project Structure
 
 ```
-src/
-├── components/          # React components
-│   ├── Attendance.tsx
-│   ├── TicketList.tsx
-│   ├── TicketDetails.tsx
-│   ├── UserManagement.tsx
-│   └── ...
-├── constants.ts         # Shared constants and labels
-├── types.ts             # TypeScript type definitions
-├── utils.ts             # Utility functions
-└── App.tsx              # Main app component
-
-server/
-├── index.ts             # Express server (entry point)
-├── db.ts                # SQLite database initialization
-└── email.ts             # Email service
-
-scripts/
-├── seed-factory-users.ts # Seed script for factory users
-└── temp_add_indexes.py   # DB migration helper
-
+├── .github/
+│   ├── ISSUE_TEMPLATE/     # Issue templates (bug report, feature request)
+│   ├── PULL_REQUEST_TEMPLATE/
+│   └── dependabot.yml      # Automated dependency updates
+├── server/
+│   ├── index.ts            # Express server (entry point)
+│   ├── db.ts               # SQLite database initialization
+│   ├── routes/             # API route handlers
+│   ├── services/           # Business logic (punch processors, etc.)
+│   ├── middleware/         # Auth, rate limiting, SSE
+│   └── utils/              # Logger, helpers
+├── src/
+│   ├── components/         # React components
+│   │   ├── Attendance.tsx
+│   │   ├── TicketList.tsx
+│   │   ├── TicketDetails.tsx
+│   │   ├── UserManagement.tsx
+│   │   └── ...
+│   ├── utils/              # Shift calculations, formatters
+│   ├── constants.ts        # Shared constants and labels
+│   ├── types.ts            # TypeScript type definitions
+│   └── App.tsx             # Main app component
+├── scripts/
+│   ├── seed-factory-users.ts # Seed script for factory users
+│   ├── backup-db.sh        # Database backup script
+│   └── restore-db.sh       # Database restore script
+├── data/                   # SQLite database (bind-mounted in Docker)
+├── backups/                # Database backups
+├── logs/                   # Docker container logs
+├── dist/                   # Vite production build output
+├── Dockerfile              # Multi-stage production build
+├── docker-compose.yml      # Container orchestration
+├── deploy.sh               # Deployment script with rollback
+└── docker-start.sh         # Container entrypoint (permission fix)
 ```
 
 ---
