@@ -22,16 +22,14 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 
-# Copy backend files and built frontend
+# Copy backend files, built frontend, shared src utilities, and tsconfig
 COPY --from=builder /app/server ./server
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/src/utils ./src/utils
 COPY --from=builder /app/tsconfig*.json ./
 
 # Create directory for SQLite database volume
 RUN mkdir -p /app/data
-
-# Run as non-root user
-USER node
 
 # Expose the application port
 EXPOSE 8082
