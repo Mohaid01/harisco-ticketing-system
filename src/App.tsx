@@ -13,7 +13,6 @@ import type {
   UserRole,
 } from './types';
 
-import { ActivityLog } from './components/ActivityLog';
 import { AdminTicketDetails } from './components/AdminTicketDetails';
 import { AdminTicketList } from './components/AdminTicketList';
 import { Attendance } from './components/Attendance';
@@ -33,6 +32,7 @@ import { TicketDetails } from './components/TicketDetails';
 import { TicketList } from './components/TicketList';
 import { UserManagement } from './components/UserManagement';
 import { ADMIN_TICKET_STATUS_LABELS, APP_TITLE, STATUS_LABELS } from './constants';
+import { ActivityLog } from './tabs/ActivityLogs';
 
 function App() {
   const [token, setToken] = useState<string | null>(localStorage.getItem('harisco_token'));

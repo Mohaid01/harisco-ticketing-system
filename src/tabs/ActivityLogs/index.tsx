@@ -1,10 +1,11 @@
 import { Calendar, Play, Plus, ShieldCheck, Tag, UserCheck } from 'lucide-react';
 import React, { useMemo } from 'react';
 
-import type { AppUser, Ticket } from '../types';
+import type { AggregatedLog, AppUser, Ticket } from '../../types';
 
-import { ROLE_LABELS, TICKET_TYPE_LABELS } from '../constants';
-import { LoadingSpinner } from './LoadingSpinner';
+import { ActivityLogItem } from '../../components/ActivityLogs/ActivityLogItem';
+import { LoadingSpinner } from '../../components/LoadingSpinner';
+import { ROLE_LABELS, TICKET_TYPE_LABELS } from '../../constants';
 import './ActivityLog.css';
 
 interface ActivityLogProps {
@@ -12,16 +13,6 @@ interface ActivityLogProps {
   currentUser: AppUser;
   onSelectTicket: (ticketId: string) => void;
   loading?: boolean;
-}
-
-interface AggregatedLog {
-  id: string;
-  action: string;
-  timestamp: string;
-  performedByName: string;
-  performedByRole: string;
-  ticketId: string;
-  ticketTitle: string;
 }
 
 const getRoleLabel = (role: string) => ROLE_LABELS[role as keyof typeof ROLE_LABELS] || role;
@@ -74,38 +65,6 @@ const aggregateLogs = (tickets: Ticket[], currentUser: AppUser): AggregatedLog[]
   return logs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 };
 
-interface ActivityLogItemProps {
-  log: AggregatedLog;
-  onSelectTicket: (ticketId: string) => void;
-}
-
-const ActivityLogItem: React.FC<ActivityLogItemProps> = React.memo(({ log, onSelectTicket }) => {
-  return (
-    <div className="timeline-item" style={{ cursor: 'pointer' }} onClick={() => onSelectTicket(log.ticketId)}>
-      <div className="timeline-icon-box">{getLogIcon(log.action)}</div>
-      <div className="timeline-details">
-        <div className="timeline-header">
-          <span className="timeline-action">
-            {log.action} for <span style={{ color: 'var(--color-primary-solid)', fontWeight: 'bold' }}>{log.ticketId}</span>
-          </span>
-          <span className="timeline-time">{formatDate(log.timestamp)}</span>
-        </div>
-        <div className="timeline-meta">
-          <div className="timeline-actor">
-            Performed by: <strong>{log.performedByName}</strong>
-            <span className={`role-badge-pill role-badge-${log.performedByRole}`}>{getRoleLabel(log.performedByRole)}</span>
-          </div>
-          <div className="timeline-ticket-title" title={log.ticketTitle}>
-            &quot;{log.ticketTitle}&quot;
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-});
-
-ActivityLogItem.displayName = 'ActivityLogItem';
-
 export const ActivityLog: React.FC<ActivityLogProps> = ({ tickets, currentUser, onSelectTicket, loading = false }) => {
   const visibleLogs = useMemo(() => aggregateLogs(tickets, currentUser), [tickets, currentUser]);
 
@@ -127,7 +86,14 @@ export const ActivityLog: React.FC<ActivityLogProps> = ({ tickets, currentUser, 
           ) : (
             <>
               {visibleLogs.map((log) => (
-                <ActivityLogItem key={log.id} log={log} onSelectTicket={onSelectTicket} />
+                <ActivityLogItem
+                  key={log.id}
+                  log={log}
+                  onSelectTicket={onSelectTicket}
+                  getLogIcon={getLogIcon}
+                  formatDate={formatDate}
+                  getRoleLabel={getRoleLabel}
+                />
               ))}
               {visibleLogs.length === 0 && (
                 <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--text-secondary)' }}>
