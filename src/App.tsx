@@ -16,13 +16,13 @@ import type {
 import { AdminTicketDetails } from './components/AdminTicketDetails';
 import { AdminTicketList } from './components/AdminTicketList';
 import { Attendance } from './components/Attendance';
-import { ChangePasswordModal } from './components/ChangePasswordModal';
-import { CreateNoticeModal } from './components/CreateNoticeModal';
-import { EditNoticeModal } from './components/EditNoticeModal';
 import { FactoryUserManagement } from './components/FactoryUserManagement';
 import { LeaveManagement } from './components/LeaveManagement';
-import { NewAdminTicketModal } from './components/NewAdminTicketModal';
-import { NewTicketModal } from './components/NewTicketModal';
+import { ChangePasswordModal } from './components/Modals/ChangePasswordModal';
+import { CreateNoticeModal } from './components/Modals/CreateNoticeModal';
+import { EditNoticeModal } from './components/Modals/EditNoticeModal';
+import { NewAdminTicketModal } from './components/Modals/NewAdminTicketModal';
+import { NewTicketModal } from './components/Modals/NewTicketModal';
 import { PasswordReset } from './components/PasswordReset';
 import { Sidebar } from './components/Sidebar';
 import { SiteDutyManagement } from './components/SiteDutyManagement';
@@ -1170,7 +1170,12 @@ function App() {
               />
             )
           ) : (
-            <ActivityLog tickets={tickets} currentUser={currentUser} onSelectTicket={(id) => setSelectedTicketId(id)} loading={loading} />
+            <ActivityLog
+              tickets={tickets}
+              currentUser={currentUser}
+              onSelectTicket={(id) => setSelectedTicketId(id)}
+              loading={loading}
+            />
           )}
         </section>
       </main>

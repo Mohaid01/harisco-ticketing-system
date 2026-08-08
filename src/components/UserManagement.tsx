@@ -5,7 +5,7 @@ import type { AppUser, UserRole } from '../types';
 
 import { ROLE_LABELS } from '../constants';
 import { formatEmployeeCode } from '../utils';
-import { ResetUserPasswordModal } from './ResetUserPasswordModal';
+import { ResetUserPasswordModal } from './Modals/ResetUserPasswordModal';
 import { UserCarousel } from './UserCarousel';
 
 interface UserManagementProps {
