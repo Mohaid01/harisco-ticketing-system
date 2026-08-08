@@ -5,7 +5,7 @@ echo ""
 echo "📦 Pulling latest code..."
 echo ""
 
-git pull || { echo "❌ Git pull failed! Aborting deployment."; exit 1;; }
+git pull || { echo "❌ Git pull failed! Aborting deployment."; exit 1; }
 
 echo ""
 echo "📋 Saving current container logs..."
