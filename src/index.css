@@ -897,6 +897,7 @@ h1.page-title {
 }
 
 .form-row {
+  width: 100%;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
@@ -904,6 +905,7 @@ h1.page-title {
 
 .form-row .form-group {
   margin-bottom: 1;
+  width: 100%;
 }
 
 @media screen and (max-width: 640px) {

@@ -71,6 +71,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
     : currentUser.role === 'it' || currentUser.role === 'manager';
 
   const apiBase = isFactory ? '/api/factory/attendance' : '/api/attendance';
+  const defaultFallbackShift = isFactory ? 'extended' : 'headquarters';
 
   // State Management
   const [logs, setLogs] = useState<AttendanceLog[]>([]);
@@ -370,7 +371,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
         );
 
         const todayPunches = userLogs.filter((log) => {
-          const todayShift = getEffectiveShift(user.defaultShift || 'headquarters', shiftOverrides, todayStr);
+          const todayShift = getEffectiveShift(user.defaultShift || defaultFallbackShift, shiftOverrides, todayStr);
           return getLogShiftDate(log, todayShift, parseLogPKT) === todayStr;
         });
         let todayStatus: 'Clocked In' | 'Clocked Out' | 'Absent' | 'On Leave' | 'Site Duty' | 'Pending';
@@ -378,7 +379,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
 
         let userShiftStarted = shiftStarted;
         if (isFactory) {
-          const shift = getEffectiveShift(user.defaultShift || 'headquarters', shiftOverrides, todayStr);
+          const shift = getEffectiveShift(user.defaultShift || defaultFallbackShift, shiftOverrides, todayStr);
           const pktNow = new Date(new Date().getTime() + 5 * 60 * 60 * 1000);
           const currentH = pktNow.getUTCHours();
           const currentM = pktNow.getUTCMinutes();
@@ -445,7 +446,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
           const isHoliday = holidays.find((h) => h.date === dateStr);
 
           totalWorkDays++;
-          const dayShift = getEffectiveShift(user.defaultShift || 'headquarters', shiftOverrides, dateStr);
+          const dayShift = getEffectiveShift(user.defaultShift || defaultFallbackShift, shiftOverrides, dateStr);
           const dayPunches = userLogs.filter((log) => getLogShiftDate(log, dayShift, parseLogPKT) === dateStr);
 
           const sorted = [...dayPunches].sort((a, b) => {
@@ -498,7 +499,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
           }
         }
 
-        const todayShift = getEffectiveShift(user.defaultShift || 'headquarters', shiftOverrides, todayStr);
+        const todayShift = getEffectiveShift(user.defaultShift || defaultFallbackShift, shiftOverrides, todayStr);
 
         return {
           ...user,
@@ -608,7 +609,11 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
 
       const isHoliday = holidays.find((h) => h.date === dateStr);
 
-      const dayShift = getEffectiveShift(selectedEmployee.defaultShift || 'headquarters', shiftOverrides, dateStr);
+      const dayShift = getEffectiveShift(
+        selectedEmployee.defaultShift || defaultFallbackShift,
+        shiftOverrides,
+        dateStr
+      );
       const dayPunches = userLogs.filter((log) => getLogShiftDate(log, dayShift, parseLogPKT) === dateStr);
 
       if (dayPunches.length > 0) {
@@ -1070,7 +1075,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
         const sDay = String(day).padStart(2, '0');
         const dateStr = `${sYear}-${String(sMonth).padStart(2, '0')}-${sDay}`;
 
-        const dayShift = getEffectiveShift(emp.defaultShift || 'headquarters', shiftOverrides, dateStr);
+        const dayShift = getEffectiveShift(emp.defaultShift || defaultFallbackShift, shiftOverrides, dateStr);
         const dayPunches = userLogs.filter((log) => getLogShiftDate(log, dayShift, parseLogPKT) === dateStr);
 
         if (dayPunches.length === 0) {
@@ -1564,12 +1569,12 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                       <option value="All">All Shifts</option>
                       {isFactory ? (
                         <>
-                          <option value={SHIFTS.headquarters.label}>General Shift</option>
-                          <option value={SHIFTS.day.label}>Day Shift</option>
-                          <option value={SHIFTS.night.label}>Night Shift</option>
+                          <option value={SHIFTS.extended.label}>{SHIFTS.extended.label}</option>
+                          <option value={SHIFTS.day.label}>{SHIFTS.day.label}</option>
+                          <option value={SHIFTS.night.label}>{SHIFTS.night.label}</option>
                         </>
                       ) : (
-                        <option value={SHIFTS.headquarters.label}>General Shift</option>
+                        <option value={SHIFTS.headquarters.label}>{SHIFTS.headquarters.label}</option>
                       )}
                     </select>
                   </div>

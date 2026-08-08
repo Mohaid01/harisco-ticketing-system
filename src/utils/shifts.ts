@@ -75,6 +75,9 @@ export function getEffectiveShift(
   if (dateStr && overrides && overrides[dateStr]) {
     shiftCode = overrides[dateStr] as ShiftCode;
   }
+  if ((shiftCode as string) === 'general') {
+    shiftCode = 'extended';
+  }
   return SHIFTS[shiftCode] || SHIFTS.headquarters;
 }
 
