@@ -1913,10 +1913,10 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
           )}
 
           {/* ─────────────────── DETAILED INDIVIDUAL VIEW ─────────────────── */}
-          {viewMode === 'individual' && selectedEmployee && (
+          {viewMode === 'individual' && selectedEmployee ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
               {/* Back Navigation Bar for Managers/Admins/Executives */}
-              {(canViewAll || canViewDepartment) && (
+              {canViewAll || canViewDepartment ? (
                 <div className="btn-selector-grp">
                   <button
                     className="btn btn-secondary"
@@ -1965,6 +1965,8 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                     </select>
                   </div>
                 </div>
+              ) : (
+                <></>
               )}
 
               {/* Employee Detail Header Banner */}
@@ -2953,6 +2955,8 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                 </div>
               </div>
             </div>
+          ) : (
+            <></>
           )}
         </>
       )}
