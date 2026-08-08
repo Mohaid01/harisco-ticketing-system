@@ -20,7 +20,10 @@ export const UserCarousel: React.FC<UserCarouselProps> = ({ children, loading = 
                 <div className="skeleton" style={{ width: '100%', height: '16px' }} />
                 <div className="skeleton" style={{ width: '80%', height: '16px' }} />
               </div>
-              <div className="skeleton" style={{ width: '90px', height: '28px', borderRadius: '20px', margin: '8px auto' }} />
+              <div
+                className="skeleton"
+                style={{ width: '90px', height: '28px', borderRadius: '20px', margin: '8px auto' }}
+              />
               <div style={{ display: 'flex', gap: '8px', width: '100%', marginTop: 'auto' }}>
                 <div className="skeleton" style={{ flex: 1, height: '36px', borderRadius: '4px' }} />
                 <div className="skeleton" style={{ flex: 1, height: '36px', borderRadius: '4px' }} />

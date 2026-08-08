@@ -73,9 +73,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
               Employee ID
             </label>
             <div className="login-input-group">
-              <span className="login-input-prefix">
-                {EMPLOYEE_ID_PREFIX}
-              </span>
+              <span className="login-input-prefix">{EMPLOYEE_ID_PREFIX}</span>
               <input
                 id="login-username"
                 type="text"
@@ -110,12 +108,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
             </div>
           </div>
 
-          <button
-            id="btn-login-submit"
-            type="submit"
-            className="btn btn-primary login-submit-btn"
-            disabled={loading}
-          >
+          <button id="btn-login-submit" type="submit" className="btn btn-primary login-submit-btn" disabled={loading}>
             {loading ? 'Authenticating...' : 'Sign In'}
             {!loading && <ArrowRight size={16} />}
           </button>

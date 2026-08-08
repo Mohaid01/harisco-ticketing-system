@@ -13,12 +13,7 @@ interface NoticeCardProps {
   };
 }
 
-export const NoticeCard: React.FC<NoticeCardProps> = ({
-  notice,
-  isAdmin,
-  onEditNoticeClick,
-  getTagMeta,
-}) => {
+export const NoticeCard: React.FC<NoticeCardProps> = ({ notice, isAdmin, onEditNoticeClick, getTagMeta }) => {
   const now = new Date();
   const meta = getTagMeta(notice.type);
   const isExpired = notice.expiresAt && new Date(notice.expiresAt) <= now;
@@ -74,11 +69,7 @@ export const NoticeCard: React.FC<NoticeCardProps> = ({
           Posted by
           <div className="notice-author-info">
             {notice?.authorAvatar ? (
-              <img
-                src={notice.authorAvatar}
-                alt={notice.authorName}
-                className="notice-author-avatar"
-              />
+              <img src={notice.authorAvatar} alt={notice.authorName} className="notice-author-avatar" />
             ) : (
               <div className="notice-author-avatar-placeholder">
                 {notice.authorName
@@ -96,9 +87,7 @@ export const NoticeCard: React.FC<NoticeCardProps> = ({
             </div>
           </div>
         </span>
-        {isAdmin && onEditNoticeClick && (
-          <span className="notice-edit-hint">Click to edit notice</span>
-        )}
+        {isAdmin && onEditNoticeClick && <span className="notice-edit-hint">Click to edit notice</span>}
       </div>
     </div>
   );

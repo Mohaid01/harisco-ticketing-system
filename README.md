@@ -145,11 +145,11 @@ See `.env.example` for all available options. Key variables:
 
 ### Deployment & Database
 
-| Command                      | Description                                      |
-| ---------------------------- | ------------------------------------------------ |
-| `bash deploy.sh`             | Deploy latest code with automatic DB backup      |
-| `bash scripts/backup-db.sh`  | Manual database backup (to `backups/` directory) |
-| `bash scripts/restore-db.sh <backup-file>` | Restore database from backup         |
+| Command                                    | Description                                      |
+| ------------------------------------------ | ------------------------------------------------ |
+| `bash deploy.sh`                           | Deploy latest code with automatic DB backup      |
+| `bash scripts/backup-db.sh`                | Manual database backup (to `backups/` directory) |
+| `bash scripts/restore-db.sh <backup-file>` | Restore database from backup                     |
 
 **Rollback:** If deployment fails, `deploy.sh` automatically rolls back to the previous Docker image tagged `harisco-ticketing-system:rollback`.
 

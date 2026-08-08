@@ -109,7 +109,9 @@ export const NoticeBoard: React.FC<NoticeBoardProps> = ({
         </div>
       )}
 
-      {loading ? <LoadingSpinner type="notices" rows={4} /> : (
+      {loading ? (
+        <LoadingSpinner type="notices" rows={4} />
+      ) : (
         <div className="notice-feed">
           {sortedNotices.map((notice) => (
             <NoticeCard

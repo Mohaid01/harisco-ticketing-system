@@ -10,7 +10,13 @@ interface ActivityLogItemProps {
   getRoleLabel: (role: string) => string;
 }
 
-export const ActivityLogItem: React.FC<ActivityLogItemProps> = ({ log, onSelectTicket, getLogIcon, formatDate, getRoleLabel }) => {
+export const ActivityLogItem: React.FC<ActivityLogItemProps> = ({
+  log,
+  onSelectTicket,
+  getLogIcon,
+  formatDate,
+  getRoleLabel,
+}) => {
   return (
     <div className="timeline-item timeline-item-clickable" onClick={() => onSelectTicket(log.ticketId)}>
       <div className="timeline-icon-box">{getLogIcon(log.action)}</div>
@@ -24,7 +30,9 @@ export const ActivityLogItem: React.FC<ActivityLogItemProps> = ({ log, onSelectT
         <div className="timeline-meta">
           <div className="timeline-actor">
             Performed by: <strong>{log.performedByName}</strong>
-            <span className={`role-badge-pill role-badge-${log.performedByRole}`}>{getRoleLabel(log.performedByRole)}</span>
+            <span className={`role-badge-pill role-badge-${log.performedByRole}`}>
+              {getRoleLabel(log.performedByRole)}
+            </span>
           </div>
           <div className="timeline-ticket-title" title={log.ticketTitle}>
             &quot;{log.ticketTitle}&quot;
