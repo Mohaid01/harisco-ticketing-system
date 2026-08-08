@@ -1,3 +1,4 @@
+import { CheckCircle, Clock, XCircle } from 'lucide-react';
 import React from 'react';
 
 interface LeaveStatusBadgeProps {

@@ -5,8 +5,9 @@ import type { AppUser, LeaveApplication, LeaveCategory, LeaveStatus } from '../.
 
 import { LeaveStatusBadge } from '../../components/LeaveManagement/LeaveStatusBadge';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
+import '../../index.css';
 import { formatEmployeeCode } from '../../utils';
-import '../../components/LeaveManagement/LeaveManagement.css';
+import './LeaveManagement.css';
 
 interface LeaveManagementProps {
   currentUser: AppUser;
@@ -163,7 +164,9 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({ currentUser, t
                     {canViewAll ? (
                       <td className="leave-applicant-name">
                         {leave.userName} <br />
-                        <span className="leave-applicant-code">{formatEmployeeCode(leave.userCode || leave.userId)}</span>
+                        <span className="leave-applicant-code">
+                          {formatEmployeeCode(leave.userCode || leave.userId)}
+                        </span>
                       </td>
                     ) : (
                       <></>
@@ -172,9 +175,13 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({ currentUser, t
                     <td className="leave-duration">
                       {leave.startDate} to {leave.endDate}
                     </td>
-                    <td className="leave-reason" title={leave.reason}>{leave.reason}</td>
+                    <td className="leave-reason" title={leave.reason}>
+                      {leave.reason}
+                    </td>
                     <td className="leave-date">{new Date(leave.appliedAt).toLocaleDateString()}</td>
-                    <td><LeaveStatusBadge status={leave.status} /></td>
+                    <td>
+                      <LeaveStatusBadge status={leave.status} />
+                    </td>
                     {canManageLeaves && (
                       <td>
                         {leave.status === 'pending' && leave.userId !== currentUser.id ? (
