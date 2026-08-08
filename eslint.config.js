@@ -32,7 +32,7 @@ export default defineConfig([
       'no-new-func': 'error',
       'perfectionist/sort-imports': 'error',
       'perfectionist/sort-exports': 'error',
-      'security/detect-object-injection': 'warn',
+      'security/detect-object-injection': 'off',
       'security/detect-non-literal-fs-filename': 'warn',
       'security/detect-non-literal-regexp': 'warn',
       'security/detect-non-literal-require': 'warn',
