@@ -17,7 +17,6 @@ import { AdminTicketDetails } from './components/AdminTicketDetails';
 import { AdminTicketList } from './components/AdminTicketList';
 import { Attendance } from './components/Attendance';
 import { FactoryUserManagement } from './components/FactoryUserManagement';
-import { LeaveManagement } from './components/LeaveManagement';
 import { ChangePasswordModal } from './components/Modals/ChangePasswordModal';
 import { CreateNoticeModal } from './components/Modals/CreateNoticeModal';
 import { EditNoticeModal } from './components/Modals/EditNoticeModal';
@@ -31,6 +30,7 @@ import { TicketList } from './components/TicketList';
 import { UserManagement } from './components/UserManagement';
 import { ADMIN_TICKET_STATUS_LABELS, APP_TITLE, STATUS_LABELS } from './constants';
 import { ActivityLog } from './tabs/ActivityLogs';
+import { LeaveManagement } from './tabs/LeaveManagement';
 import { Login } from './tabs/Login';
 import { NoticeBoard } from './tabs/Noticeboard';
 
@@ -84,6 +84,10 @@ function App() {
         if (user.needsPasswordReset === 1) {
           setLoading(false);
           return;
+        }
+
+        if (user.role.includes('factory')) {
+          setActiveTab('factory_attendance');
         }
 
         // Fetch Notices

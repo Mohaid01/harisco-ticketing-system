@@ -1,10 +1,12 @@
-import { Calendar, CheckCircle, Clock, Plus, X, XCircle } from 'lucide-react';
+import { Calendar, Plus, X } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 
-import type { AppUser, LeaveApplication, LeaveCategory, LeaveStatus } from '../types';
+import type { AppUser, LeaveApplication, LeaveCategory, LeaveStatus } from '../../types';
 
-import { formatEmployeeCode } from '../utils';
-import { LoadingSpinner } from './LoadingSpinner';
+import { LeaveStatusBadge } from '../../components/LeaveManagement/LeaveStatusBadge';
+import { LoadingSpinner } from '../../components/LoadingSpinner';
+import { formatEmployeeCode } from '../../utils';
+import '../../components/LeaveManagement/LeaveManagement.css';
 
 interface LeaveManagementProps {
   currentUser: AppUser;
@@ -114,39 +116,9 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({ currentUser, t
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'approved':
-        return (
-          <span className="badge badge-closed">
-            <CheckCircle size={12} /> Approved
-          </span>
-        );
-      case 'rejected':
-        return (
-          <span className="badge badge-danger">
-            <XCircle size={12} /> Rejected
-          </span>
-        );
-      default:
-        return (
-          <span className="badge badge-m-app">
-            <Clock size={12} /> Pending
-          </span>
-        );
-    }
-  };
-
   return (
     <div>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '24px',
-        }}
-      >
+      <div className="leave-header">
         <div>
           <h1 className="page-title">Leave Management</h1>
           <p className="page-subtitle">
@@ -158,11 +130,7 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({ currentUser, t
           </p>
         </div>
         {currentUser.role !== 'executive' && (
-          <button
-            className="btn btn-primary"
-            style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
-            onClick={() => setShowApplyModal(true)}
-          >
+          <button className="btn btn-primary leave-header-btn" onClick={() => setShowApplyModal(true)}>
             <Plus size={16} /> Apply for Leave
           </button>
         )}
@@ -171,9 +139,9 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({ currentUser, t
       {loading ? (
         <LoadingSpinner type="table" rows={6} />
       ) : (
-        <div className="panel" style={{ padding: '20px' }}>
-          <h2 className="panel-title" style={{ marginBottom: '16px' }}>
-            <Calendar size={18} style={{ color: 'var(--color-primary)' }} />
+        <div className="panel leave-panel">
+          <h2 className="panel-title leave-panel-header">
+            <Calendar size={18} className="leave-panel-header-icon" />
             {canViewAll ? 'All Leave Requests' : 'Your Leave History'}
           </h2>
           <div className="table-wrapper">
@@ -193,62 +161,39 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({ currentUser, t
                 {leaves.map((leave) => (
                   <tr key={leave.id}>
                     {canViewAll ? (
-                      <td style={{ fontWeight: 600 }}>
+                      <td className="leave-applicant-name">
                         {leave.userName} <br />
-                        <span
-                          style={{
-                            fontSize: '0.75rem',
-                            color: 'var(--text-secondary)',
-                            fontWeight: 'normal',
-                          }}
-                        >
-                          {formatEmployeeCode(leave.userCode || leave.userId)}
-                        </span>
+                        <span className="leave-applicant-code">{formatEmployeeCode(leave.userCode || leave.userId)}</span>
                       </td>
                     ) : (
                       <></>
                     )}
-                    <td style={{ textTransform: 'capitalize' }}>{leave.category}</td>
-                    <td>
+                    <td className="leave-category">{leave.category}</td>
+                    <td className="leave-duration">
                       {leave.startDate} to {leave.endDate}
                     </td>
-                    <td style={{ maxWidth: '250px' }}>{leave.reason}</td>
-                    <td style={{ color: 'var(--text-secondary)' }}>{new Date(leave.appliedAt).toLocaleDateString()}</td>
-                    <td>{getStatusBadge(leave.status)}</td>
+                    <td className="leave-reason" title={leave.reason}>{leave.reason}</td>
+                    <td className="leave-date">{new Date(leave.appliedAt).toLocaleDateString()}</td>
+                    <td><LeaveStatusBadge status={leave.status} /></td>
                     {canManageLeaves && (
                       <td>
                         {leave.status === 'pending' && leave.userId !== currentUser.id ? (
-                          <div style={{ display: 'flex', gap: '8px' }} onClick={(e) => e.stopPropagation()}>
+                          <div className="leave-actions" onClick={(e) => e.stopPropagation()}>
                             <button
-                              className="btn btn-primary"
-                              style={{
-                                padding: '4px 8px',
-                                fontSize: '0.75rem',
-                              }}
+                              className="btn btn-primary leave-btn-xs"
                               onClick={() => handleUpdateStatus(leave.id, 'approved')}
                             >
                               Approve
                             </button>
                             <button
-                              className="btn btn-danger"
-                              style={{
-                                padding: '4px 8px',
-                                fontSize: '0.75rem',
-                              }}
+                              className="btn btn-danger leave-btn-xs"
                               onClick={() => handleUpdateStatus(leave.id, 'rejected')}
                             >
                               Reject
                             </button>
                           </div>
                         ) : (
-                          <span
-                            style={{
-                              fontSize: '0.75rem',
-                              color: 'var(--text-muted)',
-                            }}
-                          >
-                            Processed
-                          </span>
+                          <span className="leave-processed">Processed</span>
                         )}
                       </td>
                     )}
@@ -256,7 +201,7 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({ currentUser, t
                 ))}
                 {leaves.length === 0 && (
                   <tr>
-                    <td colSpan={canManageLeaves ? 7 : 5} style={{ textAlign: 'center', padding: '40px' }}>
+                    <td colSpan={canManageLeaves ? 7 : 5} className="leave-empty">
                       No leave applications found.
                     </td>
                   </tr>
@@ -270,38 +215,19 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({ currentUser, t
       {/* Apply Leave Modal */}
       {showApplyModal && (
         <div className="modal-overlay" onClick={() => setShowApplyModal(false)}>
-          <div className="modal-content" style={{ maxWidth: '500px' }} onClick={(e) => e.stopPropagation()}>
-            <div
-              className="panel-header"
-              style={{
-                padding: '20px 24px',
-                borderBottom: '1px solid var(--border-color)',
-                margin: 0,
-              }}
-            >
-              <h2 className="panel-title" style={{ fontSize: '1.15rem' }}>
-                Apply for Leave
-              </h2>
-              <button
-                className="btn btn-secondary"
-                style={{
-                  width: '32px',
-                  height: '32px',
-                  padding: 0,
-                  borderRadius: '50%',
-                }}
-                onClick={() => setShowApplyModal(false)}
-              >
+          <div className="modal-content modal-content-medium" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header-bar">
+              <h2 className="panel-title modal-title-sm">Apply for Leave</h2>
+              <button className="btn btn-secondary modal-close-btn-sm" onClick={() => setShowApplyModal(false)}>
                 <X size={16} />
               </button>
             </div>
             <form onSubmit={handleApply}>
-              <div style={{ padding: '24px' }}>
+              <div className="modal-body">
                 <div className="form-group">
                   <label className="form-label">Leave Category</label>
                   <select
-                    className="form-input"
-                    style={{ backgroundColor: 'var(--bg-primary)' }}
+                    className="form-input input-date-dark"
                     value={category}
                     onChange={(e) => setCategory(e.target.value as LeaveCategory)}
                     required
@@ -312,29 +238,23 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({ currentUser, t
                   </select>
                 </div>
 
-                <div style={{ display: 'flex', gap: '16px' }}>
-                  <div className="form-group" style={{ flex: 1 }}>
+                <div className="form-row">
+                  <div className="form-group form-row-item">
                     <label className="form-label">Start Date</label>
                     <input
                       type="date"
-                      className="form-input"
-                      style={{
-                        colorScheme: 'dark',
-                      }}
+                      className="form-input input-date-dark"
                       value={startDate}
                       min={todayStr}
                       onChange={(e) => setStartDate(e.target.value)}
                       required
                     />
                   </div>
-                  <div className="form-group" style={{ flex: 1 }}>
+                  <div className="form-group form-row-item">
                     <label className="form-label">End Date</label>
                     <input
                       type="date"
-                      className="form-input"
-                      style={{
-                        colorScheme: 'dark',
-                      }}
+                      className="form-input input-date-dark"
                       value={endDate}
                       min={startDate}
                       onChange={(e) => setEndDate(e.target.value)}
@@ -343,12 +263,11 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({ currentUser, t
                   </div>
                 </div>
 
-                <div className="form-group" style={{ marginBottom: 0 }}>
+                <div className="form-group form-group-last">
                   <label className="form-label">Reason</label>
                   <textarea
-                    className="form-input"
+                    className="form-input form-textarea"
                     rows={3}
-                    style={{ minHeight: '100px', resize: 'vertical' }}
                     value={reason}
                     onChange={(e) => setReason(e.target.value)}
                     placeholder="Please provide a brief reason for your leave..."
@@ -357,15 +276,7 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({ currentUser, t
                 </div>
               </div>
 
-              <div
-                style={{
-                  padding: '16px 24px',
-                  borderTop: '1px solid var(--border-color)',
-                  display: 'flex',
-                  justifyContent: 'flex-end',
-                  gap: '12px',
-                }}
-              >
+              <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={() => setShowApplyModal(false)}>
                   Cancel
                 </button>
