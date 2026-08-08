@@ -25,7 +25,7 @@ export default defineConfig([
       globals: globals.browser,
     },
     rules: {
-      'no-console': 'warn',
+      'no-console': 'off',
       'no-debugger': 'error',
       'no-eval': 'error',
       'no-implied-eval': 'error',

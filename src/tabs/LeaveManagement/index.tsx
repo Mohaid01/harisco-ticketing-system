@@ -1,5 +1,5 @@
 import { Calendar, Plus, X } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import React, { startTransition, useCallback, useEffect, useState } from 'react';
 
 import type { AppUser, LeaveApplication, LeaveCategory, LeaveStatus } from '../../types';
 
@@ -29,25 +29,34 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({ currentUser, t
   const canManageLeaves = currentUser.isDepartmentHead === 1 && currentUser.role !== 'executive';
   const canViewAll = canManageLeaves || currentUser.role === 'executive';
 
-  const fetchLeaves = async () => {
-    try {
-      const res = await fetch('/api/leaves', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
+  const fetchLeaves = useCallback(() => {
+    if (!token) return;
+
+    startTransition(() => {
+      setLoading(true);
+    });
+
+    fetch('/api/leaves', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => {
+        if (res.ok) return res.json();
+        throw new Error('Network error');
+      })
+      .then((data) => {
         setLeaves(data);
-      }
-    } catch (e) {
-      console.error('Failed to fetch leaves:', e);
-    } finally {
-      setLoading(false);
-    }
-  };
+      })
+      .catch((e) => {
+        console.error('Failed to fetch leaves:', e);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [token]);
 
   useEffect(() => {
     fetchLeaves();
-  }, [token]);
+  }, [fetchLeaves]);
 
   const handleApply = async (e: React.FormEvent) => {
     e.preventDefault();

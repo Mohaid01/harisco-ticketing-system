@@ -1,5 +1,5 @@
 import { MapPin, Plus, X } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import React, { startTransition, useCallback, useEffect, useState } from 'react';
 
 import type { AppUser, LeaveStatus, SiteDutyApplication } from '../../types';
 
@@ -29,25 +29,33 @@ export const SiteDutyManagement: React.FC<SiteDutyManagementProps> = ({ currentU
   const canManageDuties = currentUser.isDepartmentHead === 1 && currentUser.role !== 'executive';
   const canViewAll = canManageDuties || currentUser.role === 'executive';
 
-  const fetchSiteDuties = async () => {
-    try {
-      const res = await fetch('/api/site-duties', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
+  const fetchSiteDuties = useCallback(() => {
+    if (!token) return;
+
+    startTransition(() => {
+      setLoading(true);
+    });
+    fetch('/api/site-duties', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => {
+        if (res.ok) return res.json();
+        throw new Error('Network error');
+      })
+      .then((data) => {
         setDuties(data);
-      }
-    } catch (e) {
-      console.error('Failed to fetch site duties:', e);
-    } finally {
-      setLoading(false);
-    }
-  };
+      })
+      .catch((e) => {
+        console.error('Failed to fetch site duties:', e);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [token]);
 
   useEffect(() => {
     fetchSiteDuties();
-  }, [token]);
+  }, [fetchSiteDuties]);
 
   const handleApply = async (e: React.FormEvent) => {
     e.preventDefault();

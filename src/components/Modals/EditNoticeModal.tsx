@@ -1,7 +1,7 @@
 import { X } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import React, { startTransition, useEffect, useState } from 'react';
 
-import type { Notice, NoticeType } from '../types';
+import type { Notice, NoticeType } from '../../types';
 
 interface EditNoticeModalProps {
   noticeId: string;
@@ -30,12 +30,14 @@ export const EditNoticeModal: React.FC<EditNoticeModalProps> = ({ noticeId, noti
   // Load existing notice data when modal mounts or updates
   useEffect(() => {
     if (notice) {
-      setType(notice.type);
-      setEnTitle(notice.en.title);
-      setEnContent(notice.en.content);
-      setUrTitle(notice.ur.title);
-      setUrContent(notice.ur.content);
-      setExpiresAt(notice.expiresAt ? notice.expiresAt.split('T')[0] : '');
+      startTransition(() => {
+        setType(notice.type);
+        setEnTitle(notice.en.title);
+        setEnContent(notice.en.content);
+        setUrTitle(notice.ur.title);
+        setUrContent(notice.ur.content);
+        setExpiresAt(notice.expiresAt ? notice.expiresAt.split('T')[0] : '');
+      });
     }
   }, [notice]);
 

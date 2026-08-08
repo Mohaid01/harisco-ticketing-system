@@ -412,7 +412,9 @@ function App() {
   ) => {
     if (!token || !currentUser) return;
 
-    if (!window.confirm(`Update ticket ${ticketId} status to ${STATUS_LABELS[status]}?`)) {
+    const confirmMessage = ['Update ticket ', ticketId, ' status to ', STATUS_LABELS[status], '?'].join('');
+
+    if (!window.confirm(confirmMessage)) {
       return;
     }
 
@@ -630,10 +632,13 @@ function App() {
   ) => {
     if (!token || !currentUser) return;
 
-    if (!window.confirm(`Update ticket ${ticketId} status to ${ADMIN_TICKET_STATUS_LABELS[status]}?`)) {
+    const confirmMessage = ['Update ticket ', ticketId, ' status to ', ADMIN_TICKET_STATUS_LABELS[status], '?'].join(
+      ''
+    );
+
+    if (!window.confirm(confirmMessage)) {
       return;
     }
-
     try {
       const res = await fetch(`/api/admin-tickets/${ticketId}/status`, {
         method: 'POST',

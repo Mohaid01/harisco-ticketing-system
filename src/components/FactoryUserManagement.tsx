@@ -868,7 +868,7 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
                             Reset Password
                           </button>
                           <button
-                            id={`btn-delete-user-${user.id}`}
+                            id={['btn-delete-user-', user.id].join('')}
                             className="btn btn-danger"
                             style={{
                               width: '100%',
