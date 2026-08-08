@@ -1,0 +1,168 @@
+/* LoadingSpinner specific styles */
+.spinner-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px;
+  gap: 16px;
+}
+
+.spinner-circle {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border-color);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.spinner-message {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.spinner-table {
+  padding: 0;
+  overflow: hidden;
+}
+
+.spinner-table-skeleton {
+  width: 100%;
+  height: 48px;
+}
+
+.spinner-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.spinner-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.spinner-card-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  margin-bottom: 12px;
+}
+
+.spinner-card-line {
+  height: 18px;
+  margin-bottom: 8px;
+}
+
+.spinner-card-line-sm {
+  width: 160px;
+  height: 14px;
+  margin-bottom: 16px;
+}
+
+.spinner-card-pill {
+  width: 80px;
+  height: 28px;
+  border-radius: 4px;
+  margin-bottom: 16px;
+}
+
+.spinner-card-actions {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.spinner-card-btn {
+  flex: 1;
+  height: 36px;
+  border-radius: 4px;
+}
+
+.spinner-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.spinner-list-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+}
+
+.spinner-list-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.spinner-list-content {
+  flex: 1;
+}
+
+.spinner-list-line {
+  height: 16px;
+  margin-bottom: 8px;
+}
+
+.spinner-list-line-sm {
+  width: 40%;
+  height: 14px;
+}
+
+.spinner-notices {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.spinner-notice-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.spinner-notice-badge {
+  width: 120px;
+  height: 28px;
+  border-radius: 4px;
+}
+
+.spinner-notice-date {
+  width: 80px;
+  height: 14px;
+}
+
+.spinner-notice-title {
+  width: 60%;
+  height: 22px;
+  margin-bottom: 12px;
+}
+
+.spinner-notice-line {
+  height: 16px;
+  margin-bottom: 8px;
+}
+
+.spinner-notice-line-sm {
+  width: 90%;
+  height: 16px;
+  margin-bottom: 8px;
+}
+
+.spinner-notice-line-xs {
+  width: 40%;
+  height: 16px;
+}
+
+@media screen and (max-width: 768px) {
+  .spinner-container {
+    padding: 40px;
+  }
+}
