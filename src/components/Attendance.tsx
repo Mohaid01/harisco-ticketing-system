@@ -21,7 +21,7 @@ import {
   X,
   XCircle,
 } from 'lucide-react';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 import type { AppUser, AttendanceLog } from '../types';
 
@@ -146,25 +146,17 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
     }
   };
 
-  const fetchHolidays = useCallback(async () => {
-    const token = localStorage.getItem('harisco_token');
-    fetch('/api/holidays', {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((res) => {
-        if (res.ok) return res.json();
-        throw new Error('Network error');
-      })
-      .then((data) => {
-        setHolidays(data);
-      })
-      .catch((e) => {
-        console.error('Failed to fetch holidays:', e);
-      })
-      .finally(() => {
-        setRefreshing(false);
+  const fetchHolidays = async () => {
+    try {
+      const token = localStorage.getItem('harisco_token');
+      const res = await fetch('/api/holidays', {
+        headers: { Authorization: `Bearer ${token}` },
       });
-  }, []);
+      if (res.ok) setHolidays(await res.json());
+    } catch (err) {
+      console.error('Failed to fetch holidays:', err);
+    }
+  };
 
   const handleAddHoliday = async () => {
     if (!holidayDate || !holidayName.trim()) {
@@ -273,7 +265,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
     return () => {
       eventSource.close();
     };
-  }, [apiBase, fetchLogs]);
+  }, []);
 
   // Helper to parse dates correctly and convert device UTC to PKT (+5 hours)
   const parseLogPKT = (log: AttendanceLog): { date: string; time: string; timestamp: string } => {
@@ -1164,7 +1156,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
         const isHoliday = holidays.some((h) => h.date === dateStr);
 
         let expectedDayHours = 0;
-        let otHours;
+        let otHours = 0;
         let actualDayHours = 0;
 
         if (isFactory) {
@@ -1178,7 +1170,9 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
           }
           const otCalc = calculateOvertime(actualDayHours, shift, isHoliday, isSunday, isSaturday);
           otHours = otCalc.otHours;
+          expectedDayHours = otCalc.baseHours;
           if (punches.status === 'Site Duty' || punches.status === 'On Leave') {
+            actualDayHours = expectedDayHours;
             otHours = 0;
           }
         } else {
