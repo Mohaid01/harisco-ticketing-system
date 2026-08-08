@@ -24,7 +24,6 @@ import { NewAdminTicketModal } from './components/Modals/NewAdminTicketModal';
 import { NewTicketModal } from './components/Modals/NewTicketModal';
 import { PasswordReset } from './components/PasswordReset';
 import { Sidebar } from './components/Sidebar';
-import { SiteDutyManagement } from './components/SiteDutyManagement';
 import { TicketDetails } from './components/TicketDetails';
 import { TicketList } from './components/TicketList';
 import { UserManagement } from './components/UserManagement';
@@ -33,6 +32,7 @@ import { ActivityLog } from './tabs/ActivityLogs';
 import { LeaveManagement } from './tabs/LeaveManagement';
 import { Login } from './tabs/Login';
 import { NoticeBoard } from './tabs/Noticeboard';
+import { SiteDutyManagement } from './tabs/SiteDutyManagement';
 
 function App() {
   const [token, setToken] = useState<string | null>(localStorage.getItem('harisco_token'));

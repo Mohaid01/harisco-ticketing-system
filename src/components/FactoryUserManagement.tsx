@@ -301,7 +301,7 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
                   onChange={(e) => setDepartment(e.target.value)}
                   required
                 >
-                  <option value="" selected disabled>
+                  <option value="" disabled>
                     -- Select Department --
                   </option>
                   <option value="Factory">Factory</option>
