@@ -21,7 +21,7 @@ import {
   X,
   XCircle,
 } from 'lucide-react';
-import React, { startTransition, useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import type { AppUser, AttendanceLog } from '../types';
 
@@ -126,34 +126,25 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
   };
 
   // Fetch Attendance Logs from Biometric API
-  const fetchLogs = useCallback(
-    async (isSilent = false) => {
-      startTransition(() => {
-        if (!isSilent) setLoading(true);
-        else setRefreshing(true);
-      });
-
+  const fetchLogs = async (isSilent = false) => {
+    if (!isSilent) setLoading(true);
+    else setRefreshing(true);
+    try {
       const token = localStorage.getItem('harisco_token');
-      fetch(`${apiBase}`, {
+      const res = await fetch(`${apiBase}`, {
         headers: { Authorization: `Bearer ${token}` },
-      })
-        .then((res) => {
-          if (res.ok) return res.json();
-          throw new Error('Network error');
-        })
-        .then((data) => {
-          setLogs(data);
-        })
-        .catch((e) => {
-          console.error('Failed to fetch attendance logs', e);
-        })
-        .finally(() => {
-          setLoading(false);
-          setRefreshing(false);
-        });
-    },
-    [apiBase]
-  );
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setLogs(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch attendance logs:', err);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
 
   const fetchHolidays = useCallback(async () => {
     const token = localStorage.getItem('harisco_token');
