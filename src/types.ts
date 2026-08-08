@@ -62,6 +62,16 @@ export interface Ticket {
   }[];
 }
 
+export interface AggregatedLog {
+  id: string;
+  action: string;
+  timestamp: string;
+  performedByName: string;
+  performedByRole: UserRole;
+  ticketId: string;
+  ticketTitle: string;
+}
+
 // Admin Ticket Types
 export type AdminTicketCategory =
   | 'staff_issue'
