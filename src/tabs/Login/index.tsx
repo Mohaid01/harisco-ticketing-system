@@ -1,10 +1,11 @@
 import { AlertCircle, ArrowRight, Lock } from 'lucide-react';
 import React, { useState } from 'react';
 
-import type { AppUser } from '../types';
+import type { AppUser } from '../../types';
 
-import logoFull from '../assets/harisco-full-logo.png';
-import { EMPLOYEE_ID_PREFIX } from '../constants';
+import logoFull from '../../assets/harisco-full-logo.png';
+import { EMPLOYEE_ID_PREFIX } from '../../constants';
+import './Login.css';
 
 interface LoginProps {
   onLoginSuccess: (token: string, user: AppUser) => void;
@@ -60,8 +61,8 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
         <p className="login-subtitle">Sign in to raise issues regarding IT equipment.</p>
 
         {error && (
-          <div className="login-error" style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-            <AlertCircle size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
+          <div className="login-error">
+            <AlertCircle size={16} className="login-error-icon" />
             <span>{error}</span>
           </div>
         )}
@@ -71,34 +72,14 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
             <label htmlFor="login-username" className="form-label">
               Employee ID
             </label>
-            <div style={{ position: 'relative', display: 'flex' }}>
-              <span
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  padding: '0 12px',
-                  backgroundColor: 'var(--bg-secondary)',
-                  border: '1px solid var(--border-color)',
-                  borderRight: 'none',
-                  borderRadius: '8px 0 0 8px',
-                  color: 'var(--text-muted)',
-                  fontWeight: 600,
-                  fontSize: '14px',
-                  userSelect: 'none',
-                  whiteSpace: 'nowrap',
-                }}
-              >
+            <div className="login-input-group">
+              <span className="login-input-prefix">
                 {EMPLOYEE_ID_PREFIX}
               </span>
               <input
                 id="login-username"
                 type="text"
-                className="form-input"
-                style={{
-                  borderRadius: '0 8px 8px 0',
-                  backgroundColor: 'var(--bg-primary)',
-                  flex: 1,
-                }}
+                className="form-input login-input-with-prefix"
                 placeholder="12345"
                 maxLength={5}
                 value={employeeCode}
@@ -111,49 +92,28 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
             </div>
           </div>
 
-          <div className="form-group" style={{ marginBottom: '24px' }}>
+          <div className="form-group">
             <label htmlFor="login-password" className="form-label">
               Password
             </label>
-            <div style={{ position: 'relative' }}>
+            <div className="login-input-group">
               <input
                 id="login-password"
                 type="password"
-                className="form-input"
-                style={{
-                  paddingLeft: '38px',
-                  backgroundColor: 'var(--bg-primary)',
-                }}
+                className="form-input login-input-with-icon"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
-              <Lock
-                size={16}
-                style={{
-                  position: 'absolute',
-                  left: '12px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  color: 'var(--text-muted)',
-                }}
-              />
+              <Lock size={16} className="login-input-icon" />
             </div>
           </div>
 
           <button
             id="btn-login-submit"
             type="submit"
-            className="btn btn-primary"
-            style={{
-              width: '100%',
-              height: '42px',
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              gap: '8px',
-            }}
+            className="btn btn-primary login-submit-btn"
             disabled={loading}
           >
             {loading ? 'Authenticating...' : 'Sign In'}

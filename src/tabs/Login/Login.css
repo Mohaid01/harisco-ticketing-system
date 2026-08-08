@@ -1,0 +1,60 @@
+/* Login specific styles */
+.login-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.login-error-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.login-input-group {
+  position: relative;
+  display: flex;
+}
+
+.login-input-prefix {
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-right: none;
+  border-radius: 8px 0 0 8px;
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 14px;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.login-input-with-prefix {
+  border-radius: 0 8px 8px 0;
+  background-color: var(--bg-primary);
+  flex: 1;
+}
+
+.login-input-with-icon {
+  padding-left: 38px;
+  background-color: var(--bg-primary);
+}
+
+.login-input-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.login-submit-btn {
+  width: 100%;
+  height: 42px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}

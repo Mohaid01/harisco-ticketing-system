@@ -21,7 +21,6 @@ import { CreateNoticeModal } from './components/CreateNoticeModal';
 import { EditNoticeModal } from './components/EditNoticeModal';
 import { FactoryUserManagement } from './components/FactoryUserManagement';
 import { LeaveManagement } from './components/LeaveManagement';
-import { Login } from './components/Login';
 import { NewAdminTicketModal } from './components/NewAdminTicketModal';
 import { NewTicketModal } from './components/NewTicketModal';
 import { PasswordReset } from './components/PasswordReset';
@@ -32,6 +31,7 @@ import { TicketList } from './components/TicketList';
 import { UserManagement } from './components/UserManagement';
 import { ADMIN_TICKET_STATUS_LABELS, APP_TITLE, STATUS_LABELS } from './constants';
 import { ActivityLog } from './tabs/ActivityLogs';
+import { Login } from './tabs/Login';
 import { NoticeBoard } from './tabs/Noticeboard';
 
 function App() {
