@@ -1,3 +1,5 @@
+import type { AttendanceLog } from '../types';
+
 export type ShiftCode = 'headquarters' | 'day' | 'night' | 'extended';
 
 export interface ShiftDefinition {
@@ -93,8 +95,8 @@ export function hasShiftStartedForUser(shift: ShiftDefinition): boolean {
 }
 
 export function getShiftDateForPunch(punchTime: string, shift: ShiftDefinition): string {
-  const datePart = punchTime.includes(' ') ? punchTime.split(' ')[0] : punchTime.split('T')[0];
-  const timePart = punchTime.includes(' ') ? punchTime.split(' ')[1] : punchTime.split('T')[1];
+  const normalizedTime = punchTime.replace(/-T/g, 'T').replace(' ', 'T');
+  const [datePart, timePart] = normalizedTime.split('T');
   if (!timePart) return datePart;
 
   const [hour] = timePart.split(':').map(Number);
@@ -108,7 +110,17 @@ export function getShiftDateForPunch(punchTime: string, shift: ShiftDefinition):
   return datePart;
 }
 
-export function getLogShiftDate(log: { ioTime?: string; timestamp?: string }, shift: ShiftDefinition): string {
+export function getLogShiftDate(
+  log: AttendanceLog,
+  shift: ShiftDefinition,
+  parseLogPKT?: (log: AttendanceLog) => { date: string; time: string; timestamp: string }
+): string {
+  if (parseLogPKT) {
+    const parsed = parseLogPKT(log);
+    if (parsed.date) {
+      return getShiftDateForPunch(parsed.timestamp || parsed.date, shift);
+    }
+  }
   const punchTime = log.ioTime || log.timestamp || '';
   if (!punchTime) return '';
   return getShiftDateForPunch(punchTime, shift);

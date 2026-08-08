@@ -21,7 +21,7 @@ import {
   X,
   XCircle,
 } from 'lucide-react';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { startTransition, useCallback, useEffect, useMemo, useState } from 'react';
 
 import type { AppUser, AttendanceLog } from '../types';
 
@@ -126,37 +126,54 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
   };
 
   // Fetch Attendance Logs from Biometric API
-  const fetchLogs = async (isSilent = false) => {
-    if (!isSilent) setLoading(true);
-    else setRefreshing(true);
-    try {
-      const token = localStorage.getItem('harisco_token');
-      const res = await fetch(`${apiBase}`, {
-        headers: { Authorization: `Bearer ${token}` },
+  const fetchLogs = useCallback(
+    async (isSilent = false) => {
+      startTransition(() => {
+        if (!isSilent) setLoading(true);
+        else setRefreshing(true);
       });
-      if (res.ok) {
-        const data = await res.json();
-        setLogs(data);
-      }
-    } catch (err) {
-      console.error('Failed to fetch attendance logs:', err);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
 
-  const fetchHolidays = async () => {
-    try {
       const token = localStorage.getItem('harisco_token');
-      const res = await fetch('/api/holidays', {
+      fetch(`${apiBase}`, {
         headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((res) => {
+          if (res.ok) return res.json();
+          throw new Error('Network error');
+        })
+        .then((data) => {
+          setLogs(data);
+        })
+        .catch((e) => {
+          console.error('Failed to fetch attendance logs', e);
+        })
+        .finally(() => {
+          setLoading(false);
+          setRefreshing(false);
+        });
+    },
+    [apiBase]
+  );
+
+  const fetchHolidays = useCallback(async () => {
+    const token = localStorage.getItem('harisco_token');
+    fetch('/api/holidays', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => {
+        if (res.ok) return res.json();
+        throw new Error('Network error');
+      })
+      .then((data) => {
+        setHolidays(data);
+      })
+      .catch((e) => {
+        console.error('Failed to fetch holidays:', e);
+      })
+      .finally(() => {
+        setRefreshing(false);
       });
-      if (res.ok) setHolidays(await res.json());
-    } catch (err) {
-      console.error('Failed to fetch holidays:', err);
-    }
-  };
+  }, []);
 
   const handleAddHoliday = async () => {
     if (!holidayDate || !holidayName.trim()) {
@@ -354,7 +371,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
 
         const todayPunches = userLogs.filter((log) => {
           const todayShift = getEffectiveShift(user.defaultShift || 'headquarters', shiftOverrides, todayStr);
-          return getLogShiftDate(log, todayShift) === todayStr;
+          return getLogShiftDate(log, todayShift, parseLogPKT) === todayStr;
         });
         let todayStatus: 'Clocked In' | 'Clocked Out' | 'Absent' | 'On Leave' | 'Site Duty' | 'Pending';
         let isLateToday = false;
@@ -429,7 +446,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
 
           totalWorkDays++;
           const dayShift = getEffectiveShift(user.defaultShift || 'headquarters', shiftOverrides, dateStr);
-          const dayPunches = userLogs.filter((log) => getLogShiftDate(log, dayShift) === dateStr);
+          const dayPunches = userLogs.filter((log) => getLogShiftDate(log, dayShift, parseLogPKT) === dateStr);
 
           const sorted = [...dayPunches].sort((a, b) => {
             const tA = parseLogPKT(a).timestamp;
@@ -592,17 +609,9 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
       const isHoliday = holidays.find((h) => h.date === dateStr);
 
       const dayShift = getEffectiveShift(selectedEmployee.defaultShift || 'headquarters', shiftOverrides, dateStr);
-      const dayPunches = userLogs.filter((log) => getLogShiftDate(log, dayShift) === dateStr);
+      const dayPunches = userLogs.filter((log) => getLogShiftDate(log, dayShift, parseLogPKT) === dateStr);
 
-      if (isWeekend || isHoliday) {
-        list.push({
-          date: dateStr,
-          firstIn: '--',
-          lastOut: '--',
-          hours: 0,
-          status: (isHoliday ? 'Holiday' : 'Weekend') as any,
-        });
-      } else if (dayPunches.length > 0) {
+      if (dayPunches.length > 0) {
         const sorted = [...dayPunches].sort((a, b) => {
           const tA = parseLogPKT(a).timestamp;
           const tB = parseLogPKT(b).timestamp;
@@ -674,7 +683,6 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
         }
 
         const checkOutPunch = sorted.find((p) => p.status === PUNCH_STATUS.CHECK_OUT);
-
         const checkInPunch = sorted.find((p) => p.status === PUNCH_STATUS.CHECK_IN);
 
         list.push({
@@ -685,6 +693,14 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
           lastOutId: checkOutPunch ? checkOutPunch.id : undefined,
           hours: Math.round(hours * 100) / 100,
           status,
+        });
+      } else if (isWeekend || isHoliday) {
+        list.push({
+          date: dateStr,
+          firstIn: '--',
+          lastOut: '--',
+          hours: 0,
+          status: (isHoliday ? 'Holiday' : 'Weekend') as any,
         });
       } else {
         list.push({
@@ -1055,7 +1071,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
         const dateStr = `${sYear}-${String(sMonth).padStart(2, '0')}-${sDay}`;
 
         const dayShift = getEffectiveShift(emp.defaultShift || 'headquarters', shiftOverrides, dateStr);
-        const dayPunches = userLogs.filter((log) => getLogShiftDate(log, dayShift) === dateStr);
+        const dayPunches = userLogs.filter((log) => getLogShiftDate(log, dayShift, parseLogPKT) === dateStr);
 
         if (dayPunches.length === 0) {
           dateMap.set(dateStr, {
@@ -1156,7 +1172,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
         const isHoliday = holidays.some((h) => h.date === dateStr);
 
         let expectedDayHours = 0;
-        let otHours = 0;
+        let otHours;
         let actualDayHours = 0;
 
         if (isFactory) {
@@ -1170,9 +1186,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
           }
           const otCalc = calculateOvertime(actualDayHours, shift, isHoliday, isSunday, isSaturday);
           otHours = otCalc.otHours;
-          expectedDayHours = otCalc.baseHours;
           if (punches.status === 'Site Duty' || punches.status === 'On Leave') {
-            actualDayHours = expectedDayHours;
             otHours = 0;
           }
         } else {
