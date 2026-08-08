@@ -1,44 +1,14 @@
-import { AlertCircle, CheckCircle2, Eye, EyeOff, ShieldCheck } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ShieldCheck } from 'lucide-react';
 import React, { useState } from 'react';
 
-import type { AppUser } from '../types';
+import type { AppUser } from '../../types';
 
-import logoFull from '../assets/harisco-full-logo.png';
+import logoFull from '../../assets/harisco-full-logo.png';
+import '../../index.css';
+import './PasswordReset.css';
+import { PasswordToggle } from './PasswordToggle';
 
 const MIN_PASSWORD_LENGTH = 8;
-
-interface PasswordToggleProps {
-  visible: boolean;
-  onMouseDown: () => void;
-  onMouseUp: () => void;
-}
-
-const PasswordToggle: React.FC<PasswordToggleProps> = ({ visible, onMouseDown, onMouseUp }) => (
-  <button
-    type="button"
-    onMouseDown={onMouseDown}
-    onMouseUp={onMouseUp}
-    onMouseLeave={onMouseUp}
-    style={{
-      position: 'absolute',
-      right: '12px',
-      top: '50%',
-      transform: 'translateY(-50%)',
-      background: 'none',
-      border: 'none',
-      cursor: 'pointer',
-      color: 'var(--text-muted)',
-      display: 'flex',
-      alignItems: 'center',
-      padding: '4px',
-      borderRadius: '4px',
-      userSelect: 'none',
-    }}
-    aria-label={visible ? 'Hide password' : 'Show password'}
-  >
-    {visible ? <EyeOff size={16} /> : <Eye size={16} />}
-  </button>
-);
 
 interface PasswordResetProps {
   token: string;
@@ -104,28 +74,18 @@ export const PasswordReset: React.FC<PasswordResetProps> = ({ token, currentUser
           <img src={logoFull} alt="Haris & Co Logo" />
         </div>
 
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-            marginBottom: '6px',
-            justifyContent: 'center',
-          }}
-        >
-          <ShieldCheck size={20} style={{ color: 'var(--color-primary)' }} />
-          <h2 className="login-title" style={{ margin: 0 }}>
-            Set New Password
-          </h2>
+        <div className="password-reset-header">
+          <ShieldCheck size={20} className="password-reset-header-icon" />
+          <h2 className="login-title password-reset-title">Set New Password</h2>
         </div>
 
-        <p className="login-subtitle" style={{ marginBottom: '24px' }}>
+        <p className="login-subtitle password-reset-subtitle">
           Welcome, <strong>{currentUser.name}</strong>. For security, please set a new password before continuing.
         </p>
 
         {error && (
-          <div className="login-error" style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-            <AlertCircle size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
+          <div className="login-error">
+            <AlertCircle size={16} className="login-error-icon" />
             <span>{error}</span>
           </div>
         )}
@@ -135,12 +95,11 @@ export const PasswordReset: React.FC<PasswordResetProps> = ({ token, currentUser
             <label htmlFor="reset-new-password" className="form-label">
               New Password
             </label>
-            <div style={{ position: 'relative' }}>
+            <div className="password-wrapper">
               <input
                 id="reset-new-password"
                 type={showPassword ? 'text' : 'password'}
-                className="form-input"
-                style={{ paddingRight: '42px', backgroundColor: 'var(--bg-primary)' }}
+                className="form-input password-input"
                 placeholder="Minimum 8 characters"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -154,32 +113,22 @@ export const PasswordReset: React.FC<PasswordResetProps> = ({ token, currentUser
               />
             </div>
             {password.length > 0 && (
-              <p
-                style={{
-                  fontSize: '0.75rem',
-                  marginTop: '4px',
-                  color: passwordLongEnough ? 'var(--status-closed)' : 'var(--status-open)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                }}
-              >
+              <p className={`password-hint ${passwordLongEnough ? 'password-hint-success' : 'password-hint-error'}`}>
                 {passwordLongEnough ? <CheckCircle2 size={12} /> : <AlertCircle size={12} />}
                 {passwordLongEnough ? 'Length requirement met' : `At least ${MIN_PASSWORD_LENGTH} characters required`}
               </p>
             )}
           </div>
 
-          <div className="form-group" style={{ marginBottom: '24px' }}>
+          <div className="form-group">
             <label htmlFor="reset-confirm-password" className="form-label">
               Confirm Password
             </label>
-            <div style={{ position: 'relative' }}>
+            <div className="password-wrapper">
               <input
                 id="reset-confirm-password"
                 type={showConfirm ? 'text' : 'password'}
-                className="form-input"
-                style={{ paddingRight: '42px', backgroundColor: 'var(--bg-primary)' }}
+                className="form-input password-input"
                 placeholder="Re-enter your new password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
@@ -193,16 +142,7 @@ export const PasswordReset: React.FC<PasswordResetProps> = ({ token, currentUser
               />
             </div>
             {confirmPassword.length > 0 && (
-              <p
-                style={{
-                  fontSize: '0.75rem',
-                  marginTop: '4px',
-                  color: passwordsMatch ? 'var(--status-closed)' : 'var(--status-open)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                }}
-              >
+              <p className={`password-hint ${passwordsMatch ? 'password-hint-success' : 'password-hint-error'}`}>
                 {passwordsMatch ? <CheckCircle2 size={12} /> : <AlertCircle size={12} />}
                 {passwordsMatch ? 'Passwords match' : 'Passwords do not match'}
               </p>
@@ -212,15 +152,7 @@ export const PasswordReset: React.FC<PasswordResetProps> = ({ token, currentUser
           <button
             id="btn-reset-password-submit"
             type="submit"
-            className="btn btn-primary"
-            style={{
-              width: '100%',
-              height: '42px',
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              gap: '8px',
-            }}
+            className="btn btn-primary reset-submit-btn"
             disabled={loading || !passwordLongEnough || !passwordsMatch}
           >
             {loading ? 'Saving...' : 'Set Password & Continue'}
