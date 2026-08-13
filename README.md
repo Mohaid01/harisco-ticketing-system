@@ -27,7 +27,7 @@ A unified internal operations portal for ticketing, task tracker, biometric atte
 - **Leave Management** — Casual, annual, and medical leave applications with approval hierarchy
 - **Site Duty Management** — Field duty applications with department-head approval
 - **Notice Board** — Bilingual announcements with outage/maintenance/policy categories
-- **User Management** — HQ and factory user administration with role-based access
+- **User Management** — HQ and factory user administration with role-based access and offboarding
 - **Activity Logging** — Security-focused audit trails for auth events and sensitive mutations
 
 ---

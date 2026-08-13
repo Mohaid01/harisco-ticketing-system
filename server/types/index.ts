@@ -27,6 +27,10 @@ export interface DbUser {
   annualLeaves?: number;
   medicalLeaves?: number;
   defaultShift?: string;
+  is_active?: number;
+  offboarded_at?: string;
+  offboarded_by?: string;
+  offboard_reason?: string;
 }
 
 export type RequestWithId = Request & { requestId: string };
@@ -572,6 +576,14 @@ export interface ResetUserPasswordResponse {
 }
 
 export interface DeleteUserResponse {
+  message: string;
+}
+
+export interface OffboardUserRequestBody {
+  reason?: string;
+}
+
+export interface OffboardUserResponse {
   message: string;
 }
 

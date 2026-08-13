@@ -831,6 +831,25 @@ h1.page-title {
   gap: 10px;
   width: 100%;
   margin-top: auto;
+  flex-direction: column;
+}
+
+.user-card--offboarded {
+  opacity: 0.5;
+  filter: grayscale(30%);
+}
+
+.user-card-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: 0.7rem;
+  font-weight: 600;
+  background-color: rgba(244, 63, 94, 0.15);
+  color: #f43f5e;
+  border: 1px solid rgba(244, 63, 94, 0.3);
 }
 
 /* User Carousel (horizontal scroll) */
