@@ -4,11 +4,11 @@ Brief description of what this PR changes and why.
 
 ## Type of Change
 
-- Bug fix
-- New feature
-- Breaking change
-- Documentation update
-- Refactor / chore
+- [ ] Bug fix
+- [ ] New feature
+- [ ] Breaking change
+- [ ] Documentation update
+- [ ] Refactor / chore
 
 ## Checklist
 
