@@ -25,6 +25,7 @@ interface UserManagementProps {
     loginEnabled?: boolean;
   }) => void;
   onDeleteUser: (userId: string) => void;
+  onOffboardUser?: (userId: string) => void;
   onUpdateUser?: (
     userId: string,
     data: {
@@ -46,6 +47,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
   token,
   onAddUser,
   onDeleteUser,
+  onOffboardUser,
   onUpdateUser,
   loading = false,
 }) => {
@@ -450,7 +452,13 @@ export const UserManagement: React.FC<UserManagementProps> = ({
 
           <UserCarousel loading={loading}>
             {users.map((user) => (
-              <div className="user-card" key={user.id}>
+              <div
+                className={`user-card${user.is_active === 0 ? ' user-card--offboarded' : ''}`}
+                key={user.id}
+              >
+                {user.is_active === 0 && user.offboarded_at && (
+                  <div className="user-card-badge">Offboarded {user.offboarded_at}</div>
+                )}
                 {editingUserId === user.id ? (
                   <div
                     style={{
@@ -800,49 +808,72 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                         width: '100%',
                       }}
                     >
-                      <button
-                        className="btn btn-secondary"
-                        style={{
-                          width: '100%',
-                          padding: '10px 16px',
-                          fontSize: '0.85rem',
-                        }}
-                        onClick={() => startEdit(user)}
-                      >
-                        Edit User
-                      </button>
-                      {user.id !== currentUser.id && (
+                      {user.is_active === 0 ? (
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center' }}>
+                          Offboarded
+                        </span>
+                      ) : (
                         <>
                           <button
-                            id={`btn-reset-password-${user.id}`}
                             className="btn btn-secondary"
                             style={{
                               width: '100%',
                               padding: '10px 16px',
                               fontSize: '0.85rem',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: '6px',
                             }}
-                            onClick={() => setResetPasswordTarget(user)}
+                            onClick={() => startEdit(user)}
                           >
-                            <KeyRound size={14} />
-                            Reset Password
+                            Edit User
                           </button>
-                          <button
-                            id={['btn-delete-user-', user.id].join('')}
-                            className="btn btn-danger"
-                            style={{
-                              width: '100%',
-                              padding: '6px 12px',
-                              fontSize: '0.8rem',
-                            }}
-                            onClick={() => onDeleteUser(user.id)}
-                          >
-                            <Trash2 size={12} />
-                            Delete User
-                          </button>
+                          {user.id !== currentUser.id && (
+                            <>
+                              <button
+                                id={`btn-reset-password-${user.id}`}
+                                className="btn btn-secondary"
+                                style={{
+                                  width: '100%',
+                                  padding: '10px 16px',
+                                  fontSize: '0.85rem',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: '6px',
+                                }}
+                                onClick={() => setResetPasswordTarget(user)}
+                              >
+                                <KeyRound size={14} />
+                                Reset Password
+                              </button>
+                              <button
+                                className="btn btn-danger"
+                                style={{
+                                  width: '100%',
+                                  padding: '6px 12px',
+                                  fontSize: '0.8rem',
+                                }}
+                                onClick={() => {
+                                  if (window.confirm('Are you sure you want to offboard this employee?')) {
+                                    onOffboardUser?.(user.id);
+                                  }
+                                }}
+                              >
+                                Offboard Employee
+                              </button>
+                              <button
+                                id={['btn-delete-user-', user.id].join('')}
+                                className="btn btn-danger"
+                                style={{
+                                  width: '100%',
+                                  padding: '6px 12px',
+                                  fontSize: '0.8rem',
+                                }}
+                                onClick={() => onDeleteUser(user.id)}
+                              >
+                                <Trash2 size={12} />
+                                Delete User
+                              </button>
+                            </>
+                          )}
                         </>
                       )}
                     </div>

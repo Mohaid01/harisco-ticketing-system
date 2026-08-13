@@ -20,6 +20,11 @@ export function authenticateToken(req: Request, res: Response, next: NextFunctio
       return;
     }
 
+    if (decoded.is_active === 0) {
+      res.status(403).json({ error: 'Your account has been deactivated. Please contact HR.' });
+      return;
+    }
+
     (req as AuthRequest).user = decoded;
     next();
   });

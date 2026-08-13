@@ -1045,6 +1045,12 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
       timeZone: 'Asia/Karachi',
     }).format(new Date());
 
+    const periodStart = `${sYear}-${String(sMonth).padStart(2, '0')}-01`;
+    const summariesForExport = summaries.filter((emp: any) => {
+      if (!emp.offboarded_at) return true;
+      return emp.offboarded_at >= periodStart;
+    });
+
     let countSunday = 0;
     let countSaturday = 0;
     for (let day = 1; day <= daysInMonth; day++) {
@@ -1061,7 +1067,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
       Map<string, { in: string; out: string; status: string; isLate: boolean }>
     >();
 
-    for (const emp of summaries) {
+    for (const emp of summariesForExport) {
       const userLogs = logs.filter(
         (log) =>
           log.userId === emp.id ||
@@ -1154,7 +1160,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
     // Header formatting
     worksheet.getRow(1).font = { bold: true };
 
-    summaries.forEach((emp: any, index: number) => {
+    summariesForExport.forEach((emp: any, index: number) => {
       const rowData: any[] = [index + 1, emp.formattedCode || '', emp.name || ''];
 
       const dateMap = employeePunchMaps.get(emp.id);

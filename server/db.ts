@@ -194,6 +194,30 @@ export async function initDb() {
   }
 
   try {
+    await db.exec('ALTER TABLE users ADD COLUMN is_active INTEGER DEFAULT 1');
+  } catch {
+    // Column might already exist, ignore error
+  }
+
+  try {
+    await db.exec('ALTER TABLE users ADD COLUMN offboarded_at TEXT');
+  } catch {
+    // Column might already exist, ignore error
+  }
+
+  try {
+    await db.exec('ALTER TABLE users ADD COLUMN offboarded_by TEXT');
+  } catch {
+    // Column might already exist, ignore error
+  }
+
+  try {
+    await db.exec('ALTER TABLE users ADD COLUMN offboard_reason TEXT');
+  } catch {
+    // Column might already exist, ignore error
+  }
+
+  try {
     await db.exec('ALTER TABLE users ADD COLUMN casualLeaves INTEGER DEFAULT 12');
   } catch {
     // Column might already exist, ignore error
@@ -354,6 +378,30 @@ export async function initDb() {
 
   try {
     await db.exec('ALTER TABLE factory_users ADD COLUMN default_shift TEXT DEFAULT "general"');
+  } catch {
+    // Column might already exist, ignore error
+  }
+
+  try {
+    await db.exec('ALTER TABLE factory_users ADD COLUMN is_active INTEGER DEFAULT 1');
+  } catch {
+    // Column might already exist, ignore error
+  }
+
+  try {
+    await db.exec('ALTER TABLE factory_users ADD COLUMN offboarded_at TEXT');
+  } catch {
+    // Column might already exist, ignore error
+  }
+
+  try {
+    await db.exec('ALTER TABLE factory_users ADD COLUMN offboarded_by TEXT');
+  } catch {
+    // Column might already exist, ignore error
+  }
+
+  try {
+    await db.exec('ALTER TABLE factory_users ADD COLUMN offboard_reason TEXT');
   } catch {
     // Column might already exist, ignore error
   }

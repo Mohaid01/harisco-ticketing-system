@@ -860,6 +860,38 @@ function App() {
     }
   };
 
+  // Handle offboarding users (IT only)
+  const handleOffboardUser = async (userId: string) => {
+    if (!token || !currentUser) return;
+    const reason = window.prompt('Please provide a reason for offboarding this employee:');
+    if (reason === null) return;
+    try {
+      const res = await fetch(`/api/users/${userId}/offboard`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ reason: reason || '' }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || 'Failed to offboard user');
+      }
+
+      setUsers((prevUsers) =>
+        prevUsers.map((u) =>
+          u.id === userId ? { ...u, is_active: 0, offboarded_at: new Date().toISOString().split('T')[0], offboarded_by: currentUser.id, offboard_reason: reason || '' } : u
+        )
+      );
+    } catch (err) {
+      console.error(err);
+      const errMsg = err instanceof Error ? err.message : 'Error offboarding user. Please try again.';
+      alert(errMsg);
+    }
+  };
+
   // Handle updating users (IT only)
   const handleUpdateUser = async (
     userId: string,
@@ -972,6 +1004,37 @@ function App() {
     } catch (err) {
       console.error(err);
       const errMsg = err instanceof Error ? err.message : 'Error deleting factory user. Please try again.';
+      alert(errMsg);
+    }
+  };
+
+  const handleOffboardFactoryUser = async (userId: string) => {
+    if (!token || !currentUser) return;
+    const reason = window.prompt('Please provide a reason for offboarding this employee:');
+    if (reason === null) return;
+    try {
+      const res = await fetch(`/api/factory/users/${userId}/offboard`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ reason: reason || '' }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || 'Failed to offboard factory user');
+      }
+
+      setFactoryUsers((prevUsers) =>
+        prevUsers.map((u) =>
+          u.id === userId ? { ...u, is_active: 0, offboarded_at: new Date().toISOString().split('T')[0], offboarded_by: currentUser.id, offboard_reason: reason || '' } : u
+        )
+      );
+    } catch (err) {
+      console.error(err);
+      const errMsg = err instanceof Error ? err.message : 'Error offboarding factory user. Please try again.';
       alert(errMsg);
     }
   };
@@ -1134,6 +1197,7 @@ function App() {
               token={token}
               onAddUser={handleAddUser}
               onDeleteUser={handleDeleteUser}
+              onOffboardUser={handleOffboardUser}
               onUpdateUser={handleUpdateUser}
               loading={loading}
             />
@@ -1144,6 +1208,7 @@ function App() {
               token={token}
               onAddUser={handleAddFactoryUser}
               onDeleteUser={handleDeleteFactoryUser}
+              onOffboardUser={handleOffboardFactoryUser}
               onUpdateUser={handleUpdateFactoryUser}
               loading={loading}
             />
