@@ -187,6 +187,7 @@ export const AdminTicketList: React.FC<AdminTicketListProps> = ({
       <div className="dashboard-grid">
         <div
           className="stat-card"
+          onClick={() => {setStatusFilter('awaiting_admin_manager')}}
           style={{
             backgroundColor: 'rgba(245, 158, 11, 0.08)',
             borderLeft: '4px solid #f59e0b',
@@ -204,12 +205,14 @@ export const AdminTicketList: React.FC<AdminTicketListProps> = ({
 
         <div
           className="stat-card"
+          onClick = {() => {setStatusFilter('awaiting_materials')}}
           style={{
             backgroundColor: 'rgba(168, 85, 247, 0.08)',
             borderLeft: '4px solid #a855f7',
           }}
         >
-          <div className="stat-header">
+          <div className="stat-header"
+          onClick={() => {setStatusFilter('awaiting_materials')}}>
             <span className="stat-label">Awaiting Materials</span>
             <div className="stat-icon">
               <Settings size={16} />
@@ -221,6 +224,7 @@ export const AdminTicketList: React.FC<AdminTicketListProps> = ({
 
         <div
           className="stat-card"
+          onClick={() => {setStatusFilter('awaiting_technician')}}
           style={{
             backgroundColor: 'rgba(6, 182, 212, 0.08)',
             borderLeft: '4px solid #06b6d4',
@@ -238,6 +242,7 @@ export const AdminTicketList: React.FC<AdminTicketListProps> = ({
 
         <div
           className="stat-card"
+          onClick={() => {setStatusFilter('resolved')}}
           style={{
             backgroundColor: 'rgba(16, 185, 129, 0.08)',
             borderLeft: '4px solid #10b981',
@@ -255,6 +260,7 @@ export const AdminTicketList: React.FC<AdminTicketListProps> = ({
 
         <div
           className="stat-card"
+          onClick={() => {setStatusFilter('rejected')}}
           style={{
             backgroundColor: 'rgba(239, 68, 68, 0.08)',
             borderLeft: '4px solid #ef4444',
@@ -346,7 +352,7 @@ export const AdminTicketList: React.FC<AdminTicketListProps> = ({
                 backgroundColor: 'var(--bg-primary)',
               }}
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              
             >
               <option value="all">All Statuses</option>
               {ADMIN_TICKET_STATUS_OPTIONS.map((opt) => (
@@ -406,7 +412,7 @@ export const AdminTicketList: React.FC<AdminTicketListProps> = ({
                 <LoadingSpinner type="table" rows={6} />
               ) : (
                 filteredTickets.map((ticket) => (
-                  <tr key={ticket.id} onClick={() => onSelectTicket(ticket.id)}>
+                  <tr key={ticket.id} onClick={() => {onSelectTicket(ticket.id)}}>
                     <td style={{ fontWeight: 'bold', width: '90px' }}>{ticket.id}</td>
                     <td>
                       <div style={{ display: 'flex', flexDirection: 'column' }}>
