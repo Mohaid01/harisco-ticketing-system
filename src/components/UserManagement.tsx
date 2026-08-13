@@ -458,10 +458,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
 
           <UserCarousel loading={loading}>
             {users.map((user) => (
-              <div
-                className={`user-card${user.is_active === 0 ? ' user-card--offboarded' : ''}`}
-                key={user.id}
-              >
+              <div className={`user-card${user.is_active === 0 ? ' user-card--offboarded' : ''}`} key={user.id}>
                 {user.is_active === 0 && user.offboarded_at && (
                   <div className="user-card-badge">Offboarded {user.offboarded_at}</div>
                 )}

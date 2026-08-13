@@ -239,7 +239,9 @@ router.post(
 
     try {
       const db = getDb();
-      const user = await db.get<{ id: string }>('SELECT id FROM factory_users WHERE id = ? AND is_active = 1', [userId]);
+      const user = await db.get<{ id: string }>('SELECT id FROM factory_users WHERE id = ? AND is_active = 1', [
+        userId,
+      ]);
       if (!user) {
         res.status(404).json({ error: 'Active factory user not found.' });
         return;

@@ -880,7 +880,15 @@ function App() {
 
       setUsers((prevUsers) =>
         prevUsers.map((u) =>
-          u.id === userId ? { ...u, is_active: 0, offboarded_at: offboardDate, offboarded_by: currentUser.id, offboard_reason: reason } : u
+          u.id === userId
+            ? {
+                ...u,
+                is_active: 0,
+                offboarded_at: offboardDate,
+                offboarded_by: currentUser.id,
+                offboard_reason: reason,
+              }
+            : u
         )
       );
     } catch (err) {
@@ -1025,7 +1033,15 @@ function App() {
 
       setFactoryUsers((prevUsers) =>
         prevUsers.map((u) =>
-          u.id === userId ? { ...u, is_active: 0, offboarded_at: offboardDate, offboarded_by: currentUser.id, offboard_reason: reason } : u
+          u.id === userId
+            ? {
+                ...u,
+                is_active: 0,
+                offboarded_at: offboardDate,
+                offboarded_by: currentUser.id,
+                offboard_reason: reason,
+              }
+            : u
         )
       );
     } catch (err) {

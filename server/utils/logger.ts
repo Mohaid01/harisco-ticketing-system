@@ -1,4 +1,3 @@
- 
 type LogMeta = Record<string, unknown>;
 
 // Blacklist of keys that should never be written to logs in plain text
