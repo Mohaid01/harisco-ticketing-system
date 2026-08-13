@@ -283,7 +283,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
     return () => {
       eventSource.close();
     };
-  }, []);
+  }, [apiBase, fetchHolidays, fetchLogs]);
 
   // Helper to parse dates correctly and convert device UTC to PKT (+5 hours)
   const parseLogPKT = (log: AttendanceLog): { date: string; time: string; timestamp: string } => {
@@ -522,7 +522,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
           totalWorkDays,
         };
       });
-  }, [allUsers, logs, selectedMonth, holidays, shiftOverrides]);
+  }, [allUsers, logs, selectedMonth, holidays, shiftOverrides, defaultFallbackShift, isFactory, parseLogPKT]);
 
   // Filter summaries based on Search & Dropdowns
   const filteredSummaries = useMemo(() => {
@@ -712,7 +712,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
           firstIn: '--',
           lastOut: '--',
           hours: 0,
-          status: (isHoliday ? 'Holiday' : 'Weekend') as any,
+          status: (isHoliday ? 'Holiday' : 'Weekend') as string,
         });
       } else {
         const isOffboarded = selectedEmployee.offboarded_at && dateStr > selectedEmployee.offboarded_at;
@@ -721,12 +721,22 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
           firstIn: '--',
           lastOut: '--',
           hours: 0,
-          status: isOffboarded ? 'Offboarded' as const : 'No Data' as const,
+          status: isOffboarded ? ('Offboarded' as const) : ('No Data' as const),
         });
       }
     }
     return list;
-  }, [selectedEmployee, logs, selectedMonth, tick, shiftOverrides]);
+  }, [
+    selectedEmployee,
+    logs,
+    selectedMonth,
+    tick,
+    shiftOverrides,
+    defaultFallbackShift,
+    holidays,
+    isFactory,
+    parseLogPKT,
+  ]);
 
   // Today's specific shift progress calculations
   const todayShiftProgress = useMemo(() => {
@@ -787,7 +797,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
       totalHours,
       workDaysCounted,
     };
-  }, [selectedEmployeePunchLogs]);
+  }, [selectedEmployee, selectedEmployeePunchLogs, shiftOverrides]);
 
   // Render Status Badge
   const getTodayStatusBadge = (status: string) => {
@@ -2341,7 +2351,9 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                               : isOffDay
                                 ? 'rgba(255,255,255,0.02)'
                                 : 'var(--bg-secondary)',
-                            border: isOffboarded ? '1px solid rgba(244, 63, 94, 0.25)' : '1px solid var(--border-color)',
+                            border: isOffboarded
+                              ? '1px solid rgba(244, 63, 94, 0.25)'
+                              : '1px solid var(--border-color)',
                             display: 'flex',
                             flexDirection: 'column',
                             gap: '4px',
@@ -2373,7 +2385,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                             </div>
                           </div>
 
-                           {log.status !== 'Weekend' && log.status !== 'Holiday' && log.status !== 'Offboarded' && (
+                          {log.status !== 'Weekend' && log.status !== 'Holiday' && log.status !== 'Offboarded' && (
                             <div
                               style={{
                                 marginTop: 'auto',
