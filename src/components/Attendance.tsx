@@ -286,63 +286,66 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
   }, [apiBase, fetchHolidays, fetchLogs]);
 
   // Helper to parse dates correctly and convert device UTC to PKT (+5 hours)
-  const parseLogPKT = (log: AttendanceLog): { date: string; time: string; timestamp: string } => {
-    // 1. Prioritize ioTime (Already PKT: YYYY-MM-DD-THH:MM:SSZ)
-    if (log.ioTime) {
-      // Standardize "-T" to just "T" and split the date portion from the time portion
-      const replacementCharacter = mode === 'hq' ? '-T' : ' ';
-      const parts = log.ioTime.replace(replacementCharacter, 'T').split('T');
+  const parseLogPKT = useCallback(
+    (log: AttendanceLog): { date: string; time: string; timestamp: string } => {
+      // 1. Prioritize ioTime (Already PKT: YYYY-MM-DD-THH:MM:SSZ)
+      if (log.ioTime) {
+        // Standardize "-T" to just "T" and split the date portion from the time portion
+        const replacementCharacter = mode === 'hq' ? '-T' : ' ';
+        const parts = log.ioTime.replace(replacementCharacter, 'T').split('T');
 
-      if (parts.length === 2) {
-        const dateParts = parts[0].split('-');
-        const timeParts = parts[1].replace('Z', '').split(':');
+        if (parts.length === 2) {
+          const dateParts = parts[0].split('-');
+          const timeParts = parts[1].replace('Z', '').split(':');
 
-        // Ensure we have exactly [year, month, day] and [hour, minute, second]
-        if (dateParts.length === 3 && timeParts.length === 3) {
-          const yyyy = dateParts[0];
-          // Force string conversion to safely call padStart in TypeScript
-          const MM = String(dateParts[1]).padStart(2, '0');
-          const dd = String(dateParts[2]).padStart(2, '0');
-          const hh = String(timeParts[0]).padStart(2, '0');
-          const mm = String(timeParts[1]).padStart(2, '0');
-          const ss = String(timeParts[2]).padStart(2, '0');
+          // Ensure we have exactly [year, month, day] and [hour, minute, second]
+          if (dateParts.length === 3 && timeParts.length === 3) {
+            const yyyy = dateParts[0];
+            // Force string conversion to safely call padStart in TypeScript
+            const MM = String(dateParts[1]).padStart(2, '0');
+            const dd = String(dateParts[2]).padStart(2, '0');
+            const hh = String(timeParts[0]).padStart(2, '0');
+            const mm = String(timeParts[1]).padStart(2, '0');
+            const ss = String(timeParts[2]).padStart(2, '0');
 
-          const dateStr = `${yyyy}-${MM}-${dd}`;
-          const timeStr = `${hh}:${mm}:${ss}`;
+            const dateStr = `${yyyy}-${MM}-${dd}`;
+            const timeStr = `${hh}:${mm}:${ss}`;
 
-          return {
-            date: dateStr,
-            time: timeStr,
-            timestamp: `${dateStr} ${timeStr}`,
-          };
+            return {
+              date: dateStr,
+              time: timeStr,
+              timestamp: `${dateStr} ${timeStr}`,
+            };
+          }
         }
       }
-    }
 
-    // 2. Fallback to timestamp (UTC: YYYY-MM-DD HH:MM:SS)
-    const ts = log.timestamp;
-    if (!ts) return { date: '', time: '--', timestamp: '' };
+      // 2. Fallback to timestamp (UTC: YYYY-MM-DD HH:MM:SS)
+      const ts = log.timestamp;
+      if (!ts) return { date: '', time: '--', timestamp: '' };
 
-    const utcDate = new Date(ts.replace(' ', 'T') + 'Z');
-    if (isNaN(utcDate.getTime())) {
-      const parts = ts.split(' ');
-      return { date: parts[0], time: parts[1] || '--', timestamp: ts };
-    }
+      const utcDate = new Date(ts.replace(' ', 'T') + 'Z');
+      if (isNaN(utcDate.getTime())) {
+        const parts = ts.split(' ');
+        return { date: parts[0], time: parts[1] || '--', timestamp: ts };
+      }
 
-    // Convert UTC to PKT (UTC+5)
-    const pktDate = new Date(utcDate.getTime() + 5 * 60 * 60 * 1000);
-    const yyyy = pktDate.getUTCFullYear();
-    const MM = String(pktDate.getUTCMonth() + 1).padStart(2, '0');
-    const dd = String(pktDate.getUTCDate()).padStart(2, '0');
-    const hh = String(pktDate.getUTCHours()).padStart(2, '0');
-    const mm = String(pktDate.getUTCMinutes()).padStart(2, '0');
-    const ss = String(pktDate.getUTCSeconds()).padStart(2, '0');
+      // Convert UTC to PKT (UTC+5)
+      const pktDate = new Date(utcDate.getTime() + 5 * 60 * 60 * 1000);
+      const yyyy = pktDate.getUTCFullYear();
+      const MM = String(pktDate.getUTCMonth() + 1).padStart(2, '0');
+      const dd = String(pktDate.getUTCDate()).padStart(2, '0');
+      const hh = String(pktDate.getUTCHours()).padStart(2, '0');
+      const mm = String(pktDate.getUTCMinutes()).padStart(2, '0');
+      const ss = String(pktDate.getUTCSeconds()).padStart(2, '0');
 
-    const dateStr = `${yyyy}-${MM}-${dd}`;
-    const timeStr = `${hh}:${mm}:${ss}`;
+      const dateStr = `${yyyy}-${MM}-${dd}`;
+      const timeStr = `${hh}:${mm}:${ss}`;
 
-    return { date: dateStr, time: timeStr, timestamp: `${dateStr} ${timeStr}` };
-  };
+      return { date: dateStr, time: timeStr, timestamp: `${dateStr} ${timeStr}` };
+    },
+    [mode]
+  );
 
   // Determine user department
   const getUserDepartment = (user: AppUser): string => {
