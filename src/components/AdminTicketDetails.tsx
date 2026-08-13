@@ -46,7 +46,7 @@ export const AdminTicketDetails: React.FC<AdminTicketDetailsProps> = ({
     setCommentText('');
   };
 
-  const executives = allUsers.filter((u) => u.role === 'executive');
+  const executives = allUsers.filter((u) => u.role === 'executive' && u.is_active !== 0);
 
   const getStatusBadge = (status: AdminTicketStatus) => {
     switch (status) {

@@ -28,6 +28,9 @@ export interface DbUser {
   medicalLeaves?: number;
   defaultShift?: string;
   is_active?: number;
+  offboarded_at?: string;
+  offboarded_by?: string;
+  offboard_reason?: string;
 }
 
 export type RequestWithId = Request & { requestId: string };

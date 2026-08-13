@@ -290,7 +290,7 @@ function App() {
     : null;
 
   // Filter IT users for assignees dropdown
-  const itUsers = users.filter((u) => u.role === 'it');
+  const itUsers = users.filter((u) => u.role === 'it' && u.is_active !== 0);
 
   const handleLoginSuccess = (newToken: string, user: AppUser) => {
     localStorage.setItem('harisco_token', newToken);
@@ -861,10 +861,8 @@ function App() {
   };
 
   // Handle offboarding users (IT only)
-  const handleOffboardUser = async (userId: string) => {
+  const handleOffboardUser = async (userId: string, reason: string, offboardDate: string) => {
     if (!token || !currentUser) return;
-    const reason = window.prompt('Please provide a reason for offboarding this employee:');
-    if (reason === null) return;
     try {
       const res = await fetch(`/api/users/${userId}/offboard`, {
         method: 'POST',
@@ -872,7 +870,7 @@ function App() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ reason: reason || '' }),
+        body: JSON.stringify({ reason, offboarded_at: offboardDate }),
       });
 
       if (!res.ok) {
@@ -882,7 +880,7 @@ function App() {
 
       setUsers((prevUsers) =>
         prevUsers.map((u) =>
-          u.id === userId ? { ...u, is_active: 0, offboarded_at: new Date().toISOString().split('T')[0], offboarded_by: currentUser.id, offboard_reason: reason || '' } : u
+          u.id === userId ? { ...u, is_active: 0, offboarded_at: offboardDate, offboarded_by: currentUser.id, offboard_reason: reason } : u
         )
       );
     } catch (err) {
@@ -1008,10 +1006,8 @@ function App() {
     }
   };
 
-  const handleOffboardFactoryUser = async (userId: string) => {
+  const handleOffboardFactoryUser = async (userId: string, reason: string, offboardDate: string) => {
     if (!token || !currentUser) return;
-    const reason = window.prompt('Please provide a reason for offboarding this employee:');
-    if (reason === null) return;
     try {
       const res = await fetch(`/api/factory/users/${userId}/offboard`, {
         method: 'POST',
@@ -1019,7 +1015,7 @@ function App() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ reason: reason || '' }),
+        body: JSON.stringify({ reason, offboarded_at: offboardDate }),
       });
 
       if (!res.ok) {
@@ -1029,7 +1025,7 @@ function App() {
 
       setFactoryUsers((prevUsers) =>
         prevUsers.map((u) =>
-          u.id === userId ? { ...u, is_active: 0, offboarded_at: new Date().toISOString().split('T')[0], offboarded_by: currentUser.id, offboard_reason: reason || '' } : u
+          u.id === userId ? { ...u, is_active: 0, offboarded_at: offboardDate, offboarded_by: currentUser.id, offboard_reason: reason } : u
         )
       );
     } catch (err) {

@@ -359,8 +359,14 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
     const daysInMonth = new Date(sYear, sMonth, 0).getDate();
     const shiftStarted = hasShiftStartedForUser(SHIFTS.headquarters);
 
+    const monthStart = `${sYear}-${String(sMonth).padStart(2, '0')}-01`;
+
     return allUsers
-      .filter((user) => user.department !== 'Executive')
+      .filter((user) => {
+        if (user.department === 'Executive') return false;
+        if (user.offboarded_at && user.offboarded_at < monthStart) return false;
+        return true;
+      })
       .map((user) => {
         const uId = user.id;
         const formattedCode = formatEmployeeCode(user.username || user.id);
@@ -493,7 +499,8 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
               }
             }
           } else {
-            if (dateStr <= todayStr) {
+            const isOffboarded = user.offboarded_at && dateStr > user.offboarded_at;
+            if (!isOffboarded && dateStr <= todayStr) {
               daysAbsent++;
             }
           }
@@ -708,12 +715,13 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
           status: (isHoliday ? 'Holiday' : 'Weekend') as any,
         });
       } else {
+        const isOffboarded = selectedEmployee.offboarded_at && dateStr > selectedEmployee.offboarded_at;
         list.push({
           date: dateStr,
           firstIn: '--',
           lastOut: '--',
           hours: 0,
-          status: 'No Data' as const,
+          status: isOffboarded ? 'Offboarded' as const : 'No Data' as const,
         });
       }
     }
@@ -741,7 +749,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
   const individualStats = useMemo(() => {
     let present = 0;
     let absent = 0;
-    const totalHours = 0;
+    let totalHours = 0;
     let workDaysCounted = 0;
 
     const todayStr = new Intl.DateTimeFormat('en-CA', {
@@ -762,7 +770,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
         if (log.firstIn !== '--') {
           present++;
           if (log.status !== 'On Leave') {
-            // totalHours += log.hours;
+            totalHours += log.hours;
           }
         } else {
           absent++;
@@ -860,6 +868,19 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
             }}
           >
             Holiday
+          </span>
+        );
+      case 'Offboarded':
+        return (
+          <span
+            className="badge badge-type"
+            style={{
+              borderColor: 'rgba(244, 63, 94, 0.4)',
+              color: '#f43f5e',
+              backgroundColor: 'rgba(244, 63, 94, 0.1)',
+            }}
+          >
+            Offboarded
           </span>
         );
       case 'No Data':
@@ -1085,10 +1106,11 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
         const dayPunches = userLogs.filter((log) => getLogShiftDate(log, dayShift, parseLogPKT) === dateStr);
 
         if (dayPunches.length === 0) {
+          const isOffboarded = emp.offboarded_at && dateStr > emp.offboarded_at;
           dateMap.set(dateStr, {
             in: '-',
             out: '-',
-            status: 'Absent',
+            status: isOffboarded ? 'Offboarded' : 'Absent',
             isLate: false,
           });
           continue;
@@ -2301,6 +2323,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                     {selectedEmployeePunchLogs.map((log) => {
                       const dayNum = parseInt(log.date.split('-')[2], 10);
                       const isOffDay = log.status === 'Weekend' || log.status === 'Holiday';
+                      const isOffboarded = log.status === 'Offboarded';
                       const todayStr = new Intl.DateTimeFormat('en-CA', {
                         timeZone: 'Asia/Karachi',
                       }).format(new Date());
@@ -2313,8 +2336,12 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                             minHeight: '85px',
                             padding: '8px',
                             borderRadius: '8px',
-                            backgroundColor: isOffDay ? 'rgba(255,255,255,0.02)' : 'var(--bg-secondary)',
-                            border: '1px solid var(--border-color)',
+                            backgroundColor: isOffboarded
+                              ? 'rgba(244, 63, 94, 0.06)'
+                              : isOffDay
+                                ? 'rgba(255,255,255,0.02)'
+                                : 'var(--bg-secondary)',
+                            border: isOffboarded ? '1px solid rgba(244, 63, 94, 0.25)' : '1px solid var(--border-color)',
                             display: 'flex',
                             flexDirection: 'column',
                             gap: '4px',
@@ -2346,7 +2373,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                             </div>
                           </div>
 
-                          {log.status !== 'Weekend' && log.status !== 'Holiday' && (
+                           {log.status !== 'Weekend' && log.status !== 'Holiday' && log.status !== 'Offboarded' && (
                             <div
                               style={{
                                 marginTop: 'auto',

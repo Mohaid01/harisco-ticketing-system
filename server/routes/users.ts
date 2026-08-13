@@ -35,7 +35,7 @@ router.get('/', authenticateToken, async (req: AuthRequest, res: ApiResponse<Use
     }
 
     const selectFields =
-      'SELECT id, name, email, username, role, avatar, department, designation, isDepartmentHead, loginEnabled, casualLeaves, annualLeaves, medicalLeaves, is_active FROM users';
+      'SELECT id, name, email, username, role, avatar, department, designation, isDepartmentHead, loginEnabled, casualLeaves, annualLeaves, medicalLeaves, is_active, offboarded_at, offboarded_by, offboard_reason FROM users';
 
     let query = '';
     const params: (string | undefined)[] = [];
@@ -196,7 +196,7 @@ router.post(
     }
 
     const userId = String(req.params.id);
-    const { reason } = req.body;
+    const { reason, offboarded_at } = req.body;
 
     if (userId === req.user?.id) {
       res.status(400).json({
@@ -214,9 +214,10 @@ router.post(
       }
 
       const today = new Date().toISOString().split('T')[0];
+      const offboardDate = offboarded_at && offboarded_at <= today ? offboarded_at : today;
       await db.run(
         'UPDATE users SET is_active = 0, offboarded_at = ?, offboarded_by = ?, offboard_reason = ? WHERE id = ?',
-        [today, req.user?.id, reason ? reason.trim() : null, userId]
+        [offboardDate, req.user?.id, reason ? reason.trim() : null, userId]
       );
 
       res.json({ message: 'User offboarded successfully.' });
