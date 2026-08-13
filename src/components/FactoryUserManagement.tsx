@@ -26,7 +26,7 @@ interface FactoryUserManagementProps {
     defaultShift?: string;
   }) => void;
   onDeleteUser: (userId: string) => void;
-  onOffboardUser?: (userId: string) => void;
+  onOffboardUser?: (userId: string, reason: string, offboardDate: string) => void;
   onUpdateUser?: (
     userId: string,
     data: {
