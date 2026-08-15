@@ -11,8 +11,6 @@ interface NewAdminTicketModalProps {
   onSubmit: (data: { description: string; category: AdminTicketCategory }) => void;
 }
 
-// adding random comment to trigger commit
-
 export const NewAdminTicketModal: React.FC<NewAdminTicketModalProps> = ({ isOpen, onClose, onSubmit }) => {
   const [category, setCategory] = useState<AdminTicketCategory>('staff_issue');
   const [description, setDescription] = useState('');
@@ -36,7 +34,7 @@ export const NewAdminTicketModal: React.FC<NewAdminTicketModalProps> = ({ isOpen
       description: finalDescription,
     });
 
-    setCategory('new');
+    setCategory('staff_issue');
     setDescription('');
     onClose();
   };
