@@ -91,6 +91,18 @@ export const AdminTicketList: React.FC<AdminTicketListProps> = ({
             Awaiting Admin Manager
           </span>
         );
+      case 'awaiting_executive':
+        return (
+          <span
+            className="badge"
+            style={{
+              backgroundColor: 'rgba(16, 185, 129, 0.12)',
+              color: '#10b981',
+            }}
+          >
+            Awaiting Executive
+          </span>
+        );
       case 'awaiting_materials':
         return (
           <span
