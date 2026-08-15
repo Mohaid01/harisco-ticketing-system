@@ -247,12 +247,7 @@ export const AdminTicketList: React.FC<AdminTicketListProps> = ({
             borderLeft: '4px solid #a855f7',
           }}
         >
-          <div
-            className="stat-header"
-            onClick={() => {
-              setStatusFilter('awaiting_materials');
-            }}
-          >
+          <div className="stat-header">
             <span className="stat-label">Awaiting Materials</span>
             <div className="stat-icon">
               <Settings size={16} />
