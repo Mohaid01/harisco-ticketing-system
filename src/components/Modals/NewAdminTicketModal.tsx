@@ -36,7 +36,7 @@ export const NewAdminTicketModal: React.FC<NewAdminTicketModalProps> = ({ isOpen
       description: finalDescription,
     });
 
-    setCategory('staff_issue');
+    setCategory('new');
     setDescription('');
     onClose();
   };
