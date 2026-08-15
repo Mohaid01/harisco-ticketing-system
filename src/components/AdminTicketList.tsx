@@ -189,11 +189,11 @@ export const AdminTicketList: React.FC<AdminTicketListProps> = ({
           currentUser.role === 'employee' ||
           currentUser.role === 'it' ||
           currentUser.role === 'executive') && (
-            <button id="btn-raise-admin-ticket-list" className="btn btn-primary" onClick={onCreateTicketClick}>
-              <Plus size={16} />
-              Raise Admin Ticket
-            </button>
-          )}
+          <button id="btn-raise-admin-ticket-list" className="btn btn-primary" onClick={onCreateTicketClick}>
+            <Plus size={16} />
+            Raise Admin Ticket
+          </button>
+        )}
       </div>
 
       {/* Metric Cards */}
