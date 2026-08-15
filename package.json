@@ -44,7 +44,7 @@
     "@types/exceljs": "^0.5.3",
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
-    "@types/node": "^24.12.3",
+    "@types/node": "^26.2.0",
     "@types/nodemailer": "^8.0.1",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
