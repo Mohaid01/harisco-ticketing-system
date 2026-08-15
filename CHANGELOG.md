@@ -1,4 +1,4 @@
-# Changelog
+﻿# Changelog
 
 All notable changes to this project will be documented in this file.
 
@@ -31,6 +31,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Calendar offboarded status** — Days after offboard date shown as "Offboarded" in individual view
 - **Auth guard** — Inactive users blocked from login via JWT `is_active` check
 - **Ticket assignee filtering** — Offboarded users excluded from executive/IT assignee dropdowns
+- **CI checks workflow** — Automated pre-merge gates: Prettier formatting check, ESLint error check, TypeScript + Vite build, and npm audit (moderate+)
+- **CODEOWNERS** — Mandatory review enforcement for `@Harisco-it` and `@Mohaid01` on all PRs to `main`
 
 ### Changed
 
