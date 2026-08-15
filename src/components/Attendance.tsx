@@ -283,66 +283,69 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
     return () => {
       eventSource.close();
     };
-  }, []);
+  }, [apiBase, fetchHolidays, fetchLogs]);
 
   // Helper to parse dates correctly and convert device UTC to PKT (+5 hours)
-  const parseLogPKT = (log: AttendanceLog): { date: string; time: string; timestamp: string } => {
-    // 1. Prioritize ioTime (Already PKT: YYYY-MM-DD-THH:MM:SSZ)
-    if (log.ioTime) {
-      // Standardize "-T" to just "T" and split the date portion from the time portion
-      const replacementCharacter = mode === 'hq' ? '-T' : ' ';
-      const parts = log.ioTime.replace(replacementCharacter, 'T').split('T');
+  const parseLogPKT = useCallback(
+    (log: AttendanceLog): { date: string; time: string; timestamp: string } => {
+      // 1. Prioritize ioTime (Already PKT: YYYY-MM-DD-THH:MM:SSZ)
+      if (log.ioTime) {
+        // Standardize "-T" to just "T" and split the date portion from the time portion
+        const replacementCharacter = mode === 'hq' ? '-T' : ' ';
+        const parts = log.ioTime.replace(replacementCharacter, 'T').split('T');
 
-      if (parts.length === 2) {
-        const dateParts = parts[0].split('-');
-        const timeParts = parts[1].replace('Z', '').split(':');
+        if (parts.length === 2) {
+          const dateParts = parts[0].split('-');
+          const timeParts = parts[1].replace('Z', '').split(':');
 
-        // Ensure we have exactly [year, month, day] and [hour, minute, second]
-        if (dateParts.length === 3 && timeParts.length === 3) {
-          const yyyy = dateParts[0];
-          // Force string conversion to safely call padStart in TypeScript
-          const MM = String(dateParts[1]).padStart(2, '0');
-          const dd = String(dateParts[2]).padStart(2, '0');
-          const hh = String(timeParts[0]).padStart(2, '0');
-          const mm = String(timeParts[1]).padStart(2, '0');
-          const ss = String(timeParts[2]).padStart(2, '0');
+          // Ensure we have exactly [year, month, day] and [hour, minute, second]
+          if (dateParts.length === 3 && timeParts.length === 3) {
+            const yyyy = dateParts[0];
+            // Force string conversion to safely call padStart in TypeScript
+            const MM = String(dateParts[1]).padStart(2, '0');
+            const dd = String(dateParts[2]).padStart(2, '0');
+            const hh = String(timeParts[0]).padStart(2, '0');
+            const mm = String(timeParts[1]).padStart(2, '0');
+            const ss = String(timeParts[2]).padStart(2, '0');
 
-          const dateStr = `${yyyy}-${MM}-${dd}`;
-          const timeStr = `${hh}:${mm}:${ss}`;
+            const dateStr = `${yyyy}-${MM}-${dd}`;
+            const timeStr = `${hh}:${mm}:${ss}`;
 
-          return {
-            date: dateStr,
-            time: timeStr,
-            timestamp: `${dateStr} ${timeStr}`,
-          };
+            return {
+              date: dateStr,
+              time: timeStr,
+              timestamp: `${dateStr} ${timeStr}`,
+            };
+          }
         }
       }
-    }
 
-    // 2. Fallback to timestamp (UTC: YYYY-MM-DD HH:MM:SS)
-    const ts = log.timestamp;
-    if (!ts) return { date: '', time: '--', timestamp: '' };
+      // 2. Fallback to timestamp (UTC: YYYY-MM-DD HH:MM:SS)
+      const ts = log.timestamp;
+      if (!ts) return { date: '', time: '--', timestamp: '' };
 
-    const utcDate = new Date(ts.replace(' ', 'T') + 'Z');
-    if (isNaN(utcDate.getTime())) {
-      const parts = ts.split(' ');
-      return { date: parts[0], time: parts[1] || '--', timestamp: ts };
-    }
+      const utcDate = new Date(ts.replace(' ', 'T') + 'Z');
+      if (isNaN(utcDate.getTime())) {
+        const parts = ts.split(' ');
+        return { date: parts[0], time: parts[1] || '--', timestamp: ts };
+      }
 
-    // Convert UTC to PKT (UTC+5)
-    const pktDate = new Date(utcDate.getTime() + 5 * 60 * 60 * 1000);
-    const yyyy = pktDate.getUTCFullYear();
-    const MM = String(pktDate.getUTCMonth() + 1).padStart(2, '0');
-    const dd = String(pktDate.getUTCDate()).padStart(2, '0');
-    const hh = String(pktDate.getUTCHours()).padStart(2, '0');
-    const mm = String(pktDate.getUTCMinutes()).padStart(2, '0');
-    const ss = String(pktDate.getUTCSeconds()).padStart(2, '0');
+      // Convert UTC to PKT (UTC+5)
+      const pktDate = new Date(utcDate.getTime() + 5 * 60 * 60 * 1000);
+      const yyyy = pktDate.getUTCFullYear();
+      const MM = String(pktDate.getUTCMonth() + 1).padStart(2, '0');
+      const dd = String(pktDate.getUTCDate()).padStart(2, '0');
+      const hh = String(pktDate.getUTCHours()).padStart(2, '0');
+      const mm = String(pktDate.getUTCMinutes()).padStart(2, '0');
+      const ss = String(pktDate.getUTCSeconds()).padStart(2, '0');
 
-    const dateStr = `${yyyy}-${MM}-${dd}`;
-    const timeStr = `${hh}:${mm}:${ss}`;
+      const dateStr = `${yyyy}-${MM}-${dd}`;
+      const timeStr = `${hh}:${mm}:${ss}`;
 
-    return { date: dateStr, time: timeStr, timestamp: `${dateStr} ${timeStr}` };
-  };
+      return { date: dateStr, time: timeStr, timestamp: `${dateStr} ${timeStr}` };
+    },
+    [mode]
+  );
 
   // Determine user department
   const getUserDepartment = (user: AppUser): string => {
@@ -359,8 +362,14 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
     const daysInMonth = new Date(sYear, sMonth, 0).getDate();
     const shiftStarted = hasShiftStartedForUser(SHIFTS.headquarters);
 
+    const monthStart = `${sYear}-${String(sMonth).padStart(2, '0')}-01`;
+
     return allUsers
-      .filter((user) => user.department !== 'Executive')
+      .filter((user) => {
+        if (user.department === 'Executive') return false;
+        if (user.offboarded_at && user.offboarded_at < monthStart) return false;
+        return true;
+      })
       .map((user) => {
         const uId = user.id;
         const formattedCode = formatEmployeeCode(user.username || user.id);
@@ -493,7 +502,8 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
               }
             }
           } else {
-            if (dateStr <= todayStr) {
+            const isOffboarded = user.offboarded_at && dateStr > user.offboarded_at;
+            if (!isOffboarded && dateStr <= todayStr) {
               daysAbsent++;
             }
           }
@@ -515,7 +525,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
           totalWorkDays,
         };
       });
-  }, [allUsers, logs, selectedMonth, holidays, shiftOverrides]);
+  }, [allUsers, logs, selectedMonth, holidays, shiftOverrides, defaultFallbackShift, isFactory, parseLogPKT]);
 
   // Filter summaries based on Search & Dropdowns
   const filteredSummaries = useMemo(() => {
@@ -705,20 +715,31 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
           firstIn: '--',
           lastOut: '--',
           hours: 0,
-          status: (isHoliday ? 'Holiday' : 'Weekend') as any,
+          status: (isHoliday ? 'Holiday' : 'Weekend') as string,
         });
       } else {
+        const isOffboarded = selectedEmployee.offboarded_at && dateStr > selectedEmployee.offboarded_at;
         list.push({
           date: dateStr,
           firstIn: '--',
           lastOut: '--',
           hours: 0,
-          status: 'No Data' as const,
+          status: isOffboarded ? ('Offboarded' as const) : ('No Data' as const),
         });
       }
     }
     return list;
-  }, [selectedEmployee, logs, selectedMonth, tick, shiftOverrides]);
+  }, [
+    selectedEmployee,
+    logs,
+    selectedMonth,
+    tick,
+    shiftOverrides,
+    defaultFallbackShift,
+    holidays,
+    isFactory,
+    parseLogPKT,
+  ]);
 
   // Today's specific shift progress calculations
   const todayShiftProgress = useMemo(() => {
@@ -741,7 +762,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
   const individualStats = useMemo(() => {
     let present = 0;
     let absent = 0;
-    const totalHours = 0;
+    let totalHours = 0;
     let workDaysCounted = 0;
 
     const todayStr = new Intl.DateTimeFormat('en-CA', {
@@ -762,7 +783,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
         if (log.firstIn !== '--') {
           present++;
           if (log.status !== 'On Leave') {
-            // totalHours += log.hours;
+            totalHours += log.hours;
           }
         } else {
           absent++;
@@ -779,7 +800,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
       totalHours,
       workDaysCounted,
     };
-  }, [selectedEmployeePunchLogs]);
+  }, [selectedEmployee, selectedEmployeePunchLogs, shiftOverrides]);
 
   // Render Status Badge
   const getTodayStatusBadge = (status: string) => {
@@ -860,6 +881,19 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
             }}
           >
             Holiday
+          </span>
+        );
+      case 'Offboarded':
+        return (
+          <span
+            className="badge badge-type"
+            style={{
+              borderColor: 'rgba(244, 63, 94, 0.4)',
+              color: '#f43f5e',
+              backgroundColor: 'rgba(244, 63, 94, 0.1)',
+            }}
+          >
+            Offboarded
           </span>
         );
       case 'No Data':
@@ -1045,6 +1079,12 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
       timeZone: 'Asia/Karachi',
     }).format(new Date());
 
+    const periodStart = `${sYear}-${String(sMonth).padStart(2, '0')}-01`;
+    const summariesForExport = summaries.filter((emp: any) => {
+      if (!emp.offboarded_at) return true;
+      return emp.offboarded_at >= periodStart;
+    });
+
     let countSunday = 0;
     let countSaturday = 0;
     for (let day = 1; day <= daysInMonth; day++) {
@@ -1061,7 +1101,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
       Map<string, { in: string; out: string; status: string; isLate: boolean }>
     >();
 
-    for (const emp of summaries) {
+    for (const emp of summariesForExport) {
       const userLogs = logs.filter(
         (log) =>
           log.userId === emp.id ||
@@ -1079,10 +1119,11 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
         const dayPunches = userLogs.filter((log) => getLogShiftDate(log, dayShift, parseLogPKT) === dateStr);
 
         if (dayPunches.length === 0) {
+          const isOffboarded = emp.offboarded_at && dateStr > emp.offboarded_at;
           dateMap.set(dateStr, {
             in: '-',
             out: '-',
-            status: 'Absent',
+            status: isOffboarded ? 'Offboarded' : 'Absent',
             isLate: false,
           });
           continue;
@@ -1154,7 +1195,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
     // Header formatting
     worksheet.getRow(1).font = { bold: true };
 
-    summaries.forEach((emp: any, index: number) => {
+    summariesForExport.forEach((emp: any, index: number) => {
       const rowData: any[] = [index + 1, emp.formattedCode || '', emp.name || ''];
 
       const dateMap = employeePunchMaps.get(emp.id);
@@ -2295,6 +2336,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                     {selectedEmployeePunchLogs.map((log) => {
                       const dayNum = parseInt(log.date.split('-')[2], 10);
                       const isOffDay = log.status === 'Weekend' || log.status === 'Holiday';
+                      const isOffboarded = log.status === 'Offboarded';
                       const todayStr = new Intl.DateTimeFormat('en-CA', {
                         timeZone: 'Asia/Karachi',
                       }).format(new Date());
@@ -2307,8 +2349,14 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                             minHeight: '85px',
                             padding: '8px',
                             borderRadius: '8px',
-                            backgroundColor: isOffDay ? 'rgba(255,255,255,0.02)' : 'var(--bg-secondary)',
-                            border: '1px solid var(--border-color)',
+                            backgroundColor: isOffboarded
+                              ? 'rgba(244, 63, 94, 0.06)'
+                              : isOffDay
+                                ? 'rgba(255,255,255,0.02)'
+                                : 'var(--bg-secondary)',
+                            border: isOffboarded
+                              ? '1px solid rgba(244, 63, 94, 0.25)'
+                              : '1px solid var(--border-color)',
                             display: 'flex',
                             flexDirection: 'column',
                             gap: '4px',
@@ -2340,7 +2388,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                             </div>
                           </div>
 
-                          {log.status !== 'Weekend' && log.status !== 'Holiday' && (
+                          {log.status !== 'Weekend' && log.status !== 'Holiday' && log.status !== 'Offboarded' && (
                             <div
                               style={{
                                 marginTop: 'auto',

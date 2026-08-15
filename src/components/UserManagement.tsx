@@ -25,6 +25,7 @@ interface UserManagementProps {
     loginEnabled?: boolean;
   }) => void;
   onDeleteUser: (userId: string) => void;
+  onOffboardUser?: (userId: string, reason: string, offboardDate: string) => void;
   onUpdateUser?: (
     userId: string,
     data: {
@@ -46,6 +47,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
   token,
   onAddUser,
   onDeleteUser,
+  onOffboardUser,
   onUpdateUser,
   loading = false,
 }) => {
@@ -71,6 +73,12 @@ export const UserManagement: React.FC<UserManagementProps> = ({
   const [editAvatar, setEditAvatar] = useState('');
   const [editIsDepartmentHead, setEditIsDepartmentHead] = useState(false);
   const [editLoginEnabled, setEditLoginEnabled] = useState(true);
+
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  const [offboardingUserId, setOffboardingUserId] = useState<string | null>(null);
+  const [offboardReason, setOffboardReason] = useState('');
+  const [offboardDate, setOffboardDate] = useState(todayStr);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, isEdit: boolean) => {
     const file = e.target.files?.[0];
@@ -450,7 +458,10 @@ export const UserManagement: React.FC<UserManagementProps> = ({
 
           <UserCarousel loading={loading}>
             {users.map((user) => (
-              <div className="user-card" key={user.id}>
+              <div className={`user-card${user.is_active === 0 ? ' user-card--offboarded' : ''}`} key={user.id}>
+                {user.is_active === 0 && user.offboarded_at && (
+                  <div className="user-card-badge">Offboarded {user.offboarded_at}</div>
+                )}
                 {editingUserId === user.id ? (
                   <div
                     style={{
@@ -800,49 +811,124 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                         width: '100%',
                       }}
                     >
-                      <button
-                        className="btn btn-secondary"
-                        style={{
-                          width: '100%',
-                          padding: '10px 16px',
-                          fontSize: '0.85rem',
-                        }}
-                        onClick={() => startEdit(user)}
-                      >
-                        Edit User
-                      </button>
-                      {user.id !== currentUser.id && (
+                      {user.is_active === 0 ? (
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center' }}>
+                          Offboarded
+                        </span>
+                      ) : (
                         <>
                           <button
-                            id={`btn-reset-password-${user.id}`}
                             className="btn btn-secondary"
                             style={{
                               width: '100%',
                               padding: '10px 16px',
                               fontSize: '0.85rem',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: '6px',
                             }}
-                            onClick={() => setResetPasswordTarget(user)}
+                            onClick={() => startEdit(user)}
                           >
-                            <KeyRound size={14} />
-                            Reset Password
+                            Edit User
                           </button>
-                          <button
-                            id={['btn-delete-user-', user.id].join('')}
-                            className="btn btn-danger"
-                            style={{
-                              width: '100%',
-                              padding: '6px 12px',
-                              fontSize: '0.8rem',
-                            }}
-                            onClick={() => onDeleteUser(user.id)}
-                          >
-                            <Trash2 size={12} />
-                            Delete User
-                          </button>
+                          {user.id !== currentUser.id && (
+                            <>
+                              <button
+                                id={`btn-reset-password-${user.id}`}
+                                className="btn btn-secondary"
+                                style={{
+                                  width: '100%',
+                                  padding: '10px 16px',
+                                  fontSize: '0.85rem',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: '6px',
+                                }}
+                                onClick={() => setResetPasswordTarget(user)}
+                              >
+                                <KeyRound size={14} />
+                                Reset Password
+                              </button>
+                              {offboardingUserId === user.id ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                  <textarea
+                                    className="form-input"
+                                    rows={2}
+                                    placeholder="Reason for offboarding..."
+                                    value={offboardReason}
+                                    onChange={(e) => setOffboardReason(e.target.value)}
+                                    style={{ fontSize: '0.8rem', padding: '8px' }}
+                                  />
+                                  <input
+                                    type="date"
+                                    className="form-input"
+                                    value={offboardDate}
+                                    max={todayStr}
+                                    onChange={(e) => setOffboardDate(e.target.value)}
+                                    style={{ fontSize: '0.8rem', padding: '8px' }}
+                                  />
+                                  <div style={{ display: 'flex', gap: '8px' }}>
+                                    <button
+                                      className="btn btn-primary"
+                                      style={{ flex: 1, padding: '6px', fontSize: '0.75rem' }}
+                                      onClick={() => {
+                                        if (!offboardReason.trim()) {
+                                          alert('Please provide a reason.');
+                                          return;
+                                        }
+                                        onOffboardUser?.(user.id, offboardReason.trim(), offboardDate);
+                                        setOffboardingUserId(null);
+                                        setOffboardReason('');
+                                        setOffboardDate(todayStr);
+                                      }}
+                                    >
+                                      Confirm
+                                    </button>
+                                    <button
+                                      className="btn btn-secondary"
+                                      style={{ flex: 1, padding: '6px', fontSize: '0.75rem' }}
+                                      onClick={() => {
+                                        setOffboardingUserId(null);
+                                        setOffboardReason('');
+                                        setOffboardDate(todayStr);
+                                      }}
+                                    >
+                                      Cancel
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <>
+                                  <button
+                                    className="btn btn-danger"
+                                    style={{
+                                      width: '100%',
+                                      padding: '6px 12px',
+                                      fontSize: '0.8rem',
+                                    }}
+                                    onClick={() => {
+                                      setOffboardingUserId(user.id);
+                                      setOffboardReason('');
+                                      setOffboardDate(todayStr);
+                                    }}
+                                  >
+                                    Offboard Employee
+                                  </button>
+                                  <button
+                                    id={['btn-delete-user-', user.id].join('')}
+                                    className="btn btn-danger"
+                                    style={{
+                                      width: '100%',
+                                      padding: '6px 12px',
+                                      fontSize: '0.8rem',
+                                    }}
+                                    onClick={() => onDeleteUser(user.id)}
+                                  >
+                                    <Trash2 size={12} />
+                                    Delete User
+                                  </button>
+                                </>
+                              )}
+                            </>
+                          )}
                         </>
                       )}
                     </div>

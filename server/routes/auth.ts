@@ -85,6 +85,8 @@ router.post('/login', loginLimiter, async (req: ApiRequest<LoginRequestBody>, re
       needsPasswordReset: user.needsPasswordReset,
       department: user.department,
       isDepartmentHead: user.isDepartmentHead,
+      loginEnabled: user.loginEnabled,
+      is_active: user.is_active,
     };
     const token = jwt.sign(jwtPayload, JWT_SECRET, { expiresIn: '7d' });
 

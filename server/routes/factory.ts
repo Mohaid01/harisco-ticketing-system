@@ -15,6 +15,8 @@ import type {
   DeleteFactoryUserResponse,
   FactoryAttendanceLogsResponse,
   FactoryUsersResponse,
+  OffboardUserRequestBody,
+  OffboardUserResponse,
   ResetFactoryUserPasswordRequestBody,
   ResetFactoryUserPasswordResponse,
   UpdateFactoryUserRequestBody,
@@ -39,7 +41,7 @@ router.get('/users', authenticateToken, async (req: AuthRequest, res: ApiRespons
     }
 
     const selectFields =
-      'SELECT id, name, email, username, role, avatar, department, designation, isDepartmentHead, loginEnabled, default_shift as defaultShift FROM factory_users';
+      'SELECT id, name, email, username, role, avatar, department, designation, isDepartmentHead, loginEnabled, default_shift as defaultShift, is_active, offboarded_at, offboarded_by, offboard_reason FROM factory_users';
 
     let query = '';
     const params: (string | undefined)[] = [];
@@ -209,6 +211,52 @@ router.delete(
       res.json({ message: 'Factory user deleted successfully.' });
     } catch {
       res.status(500).json({ error: 'Failed to delete factory user.' });
+    }
+  }
+);
+
+// POST /api/factory/users/:id/offboard
+router.post(
+  '/users/:id/offboard',
+  authenticateToken,
+  async (req: ApiAuthRequest<OffboardUserRequestBody>, res: ApiResponse<OffboardUserResponse>) => {
+    if (!req.user || (req.user.role !== 'factory_it' && req.user.role !== 'it')) {
+      res.status(403).json({
+        error: 'Forbidden. Factory user offboarding requires Factory IT or Factory Manager role.',
+      });
+      return;
+    }
+
+    const userId = req.params.id;
+    const { reason, offboarded_at } = req.body;
+
+    if (userId === req.user?.id) {
+      res.status(400).json({
+        error: 'Cannot offboard your own logged-in account.',
+      });
+      return;
+    }
+
+    try {
+      const db = getDb();
+      const user = await db.get<{ id: string }>('SELECT id FROM factory_users WHERE id = ? AND is_active = 1', [
+        userId,
+      ]);
+      if (!user) {
+        res.status(404).json({ error: 'Active factory user not found.' });
+        return;
+      }
+
+      const today = new Date().toISOString().split('T')[0];
+      const offboardDate = offboarded_at && offboarded_at <= today ? offboarded_at : today;
+      await db.run(
+        'UPDATE factory_users SET is_active = 0, offboarded_at = ?, offboarded_by = ?, offboard_reason = ? WHERE id = ?',
+        [offboardDate, req.user?.id, reason ? reason.trim() : null, userId]
+      );
+
+      res.json({ message: 'Factory user offboarded successfully.' });
+    } catch {
+      res.status(500).json({ error: 'Failed to offboard factory user.' });
     }
   }
 );

@@ -9,6 +9,8 @@ import type {
   CreateUserResponse,
   DbUser,
   DeleteUserResponse,
+  OffboardUserRequestBody,
+  OffboardUserResponse,
   ResetUserPasswordRequestBody,
   ResetUserPasswordResponse,
   UpdateUserRequestBody,
@@ -33,7 +35,7 @@ router.get('/', authenticateToken, async (req: AuthRequest, res: ApiResponse<Use
     }
 
     const selectFields =
-      'SELECT id, name, email, username, role, avatar, department, designation, isDepartmentHead, loginEnabled, casualLeaves, annualLeaves, medicalLeaves FROM users';
+      'SELECT id, name, email, username, role, avatar, department, designation, isDepartmentHead, loginEnabled, casualLeaves, annualLeaves, medicalLeaves, is_active, offboarded_at, offboarded_by, offboard_reason FROM users';
 
     let query = '';
     const params: (string | undefined)[] = [];
@@ -180,6 +182,50 @@ router.delete('/:id', authenticateToken, async (req: AuthRequest, res: ApiRespon
     res.status(500).json({ error: 'Failed to delete user.' });
   }
 });
+
+// POST /api/users/:id/offboard
+router.post(
+  '/:id/offboard',
+  authenticateToken,
+  async (req: ApiAuthRequest<OffboardUserRequestBody>, res: ApiResponse<OffboardUserResponse>) => {
+    if (req.user?.role !== 'it') {
+      res.status(403).json({
+        error: 'Forbidden. User offboarding requires IT role.',
+      });
+      return;
+    }
+
+    const userId = String(req.params.id);
+    const { reason, offboarded_at } = req.body;
+
+    if (userId === req.user?.id) {
+      res.status(400).json({
+        error: 'Cannot offboard your own logged-in account.',
+      });
+      return;
+    }
+
+    try {
+      const db = getDb();
+      const user = await db.get<{ id: string }>('SELECT id FROM users WHERE id = ? AND is_active = 1', [userId]);
+      if (!user) {
+        res.status(404).json({ error: 'Active user not found.' });
+        return;
+      }
+
+      const today = new Date().toISOString().split('T')[0];
+      const offboardDate = offboarded_at && offboarded_at <= today ? offboarded_at : today;
+      await db.run(
+        'UPDATE users SET is_active = 0, offboarded_at = ?, offboarded_by = ?, offboard_reason = ? WHERE id = ?',
+        [offboardDate, req.user?.id, reason ? reason.trim() : null, userId]
+      );
+
+      res.json({ message: 'User offboarded successfully.' });
+    } catch {
+      res.status(500).json({ error: 'Failed to offboard user.' });
+    }
+  }
+);
 
 // POST /api/users/:id/reset-password
 router.post(

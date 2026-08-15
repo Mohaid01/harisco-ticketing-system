@@ -20,6 +20,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Admin Ticket Status Filter** — Restored the `onChange` event handler on the status filter dropdown in the Admin Ticket list view.
 
+## [Unreleased]
+
+### Added
+
+- **Employee offboarding** — Soft-delete users with `is_active` flag, preserving historical data
+- **Offboarding date picker** — Backdate offboarding with configurable effective date
+- **Offboarded user visibility** — Dimmed cards in user management with offboard date badge
+- **Attendance export filtering** — Offboarded users included only if offboarded within report month
+- **Calendar offboarded status** — Days after offboard date shown as "Offboarded" in individual view
+- **Auth guard** — Inactive users blocked from login via JWT `is_active` check
+- **Ticket assignee filtering** — Offboarded users excluded from executive/IT assignee dropdowns
+
+### Changed
+
+- User management actions: added Offboard flow alongside Reset Password and Delete
+- `DbUser` type extended with `is_active`, `offboarded_at`, `offboarded_by`, `offboard_reason`
+- Attendance summary filtering excludes users offboarded before selected month
+
+---
+
 ## [0.1.0] - 2026-08-07
 
 ### Added

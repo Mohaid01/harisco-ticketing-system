@@ -20,6 +20,10 @@ export interface AppUser {
   annualLeaves?: number;
   medicalLeaves?: number;
   defaultShift?: string;
+  is_active?: number;
+  offboarded_at?: string;
+  offboarded_by?: string;
+  offboard_reason?: string;
 }
 
 // Ticket Types
