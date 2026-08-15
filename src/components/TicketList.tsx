@@ -138,7 +138,12 @@ export const TicketList: React.FC<TicketListProps> = ({
 
       {/* Metric Cards */}
       <div className="dashboard-grid">
-        <div className="stat-card it-app">
+        <div
+          className="stat-card it-app"
+          onClick={() => {
+            setStatusFilter('awaiting_it_approval');
+          }}
+        >
           <div className="stat-header">
             <span className="stat-label">Awaiting IT</span>
             <div className="stat-icon">
@@ -149,7 +154,12 @@ export const TicketList: React.FC<TicketListProps> = ({
           <span className="stat-desc">Pending initial IT review</span>
         </div>
 
-        <div className="stat-card m-app">
+        <div
+          className="stat-card m-app"
+          onClick={() => {
+            setStatusFilter('awaiting_manager_approval');
+          }}
+        >
           <div className="stat-header">
             <span className="stat-label">Awaiting Manager</span>
             <div className="stat-icon">
@@ -160,7 +170,12 @@ export const TicketList: React.FC<TicketListProps> = ({
           <span className="stat-desc">Pending manager signoff</span>
         </div>
 
-        <div className="stat-card prog">
+        <div
+          className="stat-card prog"
+          onClick={() => {
+            setStatusFilter('open');
+          }}
+        >
           <div className="stat-header">
             <span className="stat-label">Open Tickets</span>
             <div className="stat-icon">
@@ -171,7 +186,12 @@ export const TicketList: React.FC<TicketListProps> = ({
           <span className="stat-desc">Pending assignment or action</span>
         </div>
 
-        <div className="stat-card handover">
+        <div
+          className="stat-card handover"
+          onClick={() => {
+            setStatusFilter('awaiting_handover');
+          }}
+        >
           <div className="stat-header">
             <span className="stat-label">Handover</span>
             <div className="stat-icon">
@@ -182,7 +202,12 @@ export const TicketList: React.FC<TicketListProps> = ({
           <span className="stat-desc">Awaiting employee acceptance</span>
         </div>
 
-        <div className="stat-card done">
+        <div
+          className="stat-card done"
+          onClick={() => {
+            setStatusFilter('closed');
+          }}
+        >
           <div className="stat-header">
             <span className="stat-label">Closed</span>
             <div className="stat-icon">
@@ -330,7 +355,12 @@ export const TicketList: React.FC<TicketListProps> = ({
                 <LoadingSpinner type="table" rows={6} />
               ) : (
                 filteredTickets.map((ticket) => (
-                  <tr key={ticket.id} onClick={() => onSelectTicket(ticket.id)}>
+                  <tr
+                    key={ticket.id}
+                    onClick={() => {
+                      onSelectTicket(ticket.id);
+                    }}
+                  >
                     <td style={{ fontWeight: 'bold', width: '90px' }}>{ticket.id}</td>
                     <td>
                       <div style={{ display: 'flex', flexDirection: 'column' }}>

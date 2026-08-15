@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] - 2026-08-15
+
+### Added
+
+- **Interactive status filtering** — Clicking ticket summary/metric cards in both the standard and Admin ticket list views now dynamically updates the status filter.
+- **Awaiting Executive metric card & status badge** — A new card to track the count of tickets pending executive signoff in the Admin Tickets dashboard, and a matching status badge in the admin ticket table.
+
+### Changed
+
+- **Code cleanup & formatting** — Cleaned up JSX formatting and alignment of `onClick` handlers in ticket listing components.
+
+### Fixed
+
+- **Admin Ticket Status Filter** — Restored the `onChange` event handler on the status filter dropdown in the Admin Ticket list view.
+
 ## [Unreleased]
 
 ### Added
