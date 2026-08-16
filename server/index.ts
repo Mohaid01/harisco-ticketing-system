@@ -43,7 +43,7 @@ process.on('unhandledRejection', (reason) => {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Security Headers — CSP relaxed in dev for Vite HMR inline scripts/styles
+// Security Headers — keep CSP enabled in all environments; relax directives in dev for Vite HMR
 app.use(
   helmet({
     contentSecurityPolicy:
@@ -61,7 +61,19 @@ app.use(
               frameSrc: ["'none'"],
             },
           }
-        : false,
+        : {
+            directives: {
+              defaultSrc: ["'self'"],
+              scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", 'http://localhost:5173'],
+              styleSrc: ["'self'", "'unsafe-inline'", 'http://localhost:5173'],
+              imgSrc: ["'self'", 'data:', 'https:', 'http://localhost:5173'],
+              connectSrc: ["'self'", 'http://localhost:5173', 'ws://localhost:5173', 'wss:'],
+              fontSrc: ["'self'", 'data:', 'http://localhost:5173'],
+              objectSrc: ["'none'"],
+              mediaSrc: ["'self'"],
+              frameSrc: ["'none'"],
+            },
+          },
   })
 );
 
