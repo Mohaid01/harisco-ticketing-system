@@ -1,4 +1,15 @@
-import { ArrowUpDown, CheckSquare, Clock, Filter, Plus, Search, Settings, ShieldCheck, UserCheck, User } from 'lucide-react';
+import {
+  ArrowUpDown,
+  CheckSquare,
+  Clock,
+  Filter,
+  Plus,
+  Search,
+  Settings,
+  ShieldCheck,
+  UserCheck,
+  User,
+} from 'lucide-react';
 import React, { useMemo, useState } from 'react';
 
 import type { AppUser, Ticket, TicketStatus, TicketType } from '../types';
@@ -26,7 +37,7 @@ const inputFieldStyle: React.CSSProperties = {
   padding: '6px 12px',
   backgroundColor: 'var(--bg-primary)',
   boxSizing: 'border-box',
-}
+};
 
 export const TicketList: React.FC<TicketListProps> = ({
   tickets,
@@ -42,8 +53,7 @@ export const TicketList: React.FC<TicketListProps> = ({
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<SortByOption>('newest');
   const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
-  const itUserNames = useMemo(() => users.filter((user) => user.role === 'it').map((user) => user.name)
-    , [users])
+  const itUserNames = useMemo(() => users.filter((user) => user.role === 'it').map((user) => user.name), [users]);
 
   // Filter based on user role + dropdown filters + search query
   const filteredTickets = useMemo(() => {
@@ -64,7 +74,7 @@ export const TicketList: React.FC<TicketListProps> = ({
         const matchesStatus = statusFilter === 'all' || ticket.status === statusFilter;
 
         // Dropdown assignee filter
-        const matchesAssignee = assigneeFilter === "all" || ticket.assigneeName === assigneeFilter;
+        const matchesAssignee = assigneeFilter === 'all' || ticket.assigneeName === assigneeFilter;
 
         return matchesSearch && matchesType && matchesStatus && matchesAssignee;
       })
@@ -241,15 +251,15 @@ export const TicketList: React.FC<TicketListProps> = ({
       <div className="panel" style={{ padding: '16px 20px', marginBottom: '24px' }}>
         <div
           style={{
-           display: 'grid',
-           gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-           gap: '12px',
-           width: '100%',
-           alignItems: 'center',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+            gap: '12px',
+            width: '100%',
+            alignItems: 'center',
           }}
         >
           {/* Search bar input */}
-          <div style={{ position: 'relative'}}>
+          <div style={{ position: 'relative' }}>
             <input
               id="search-tickets-input"
               type="text"
@@ -276,7 +286,7 @@ export const TicketList: React.FC<TicketListProps> = ({
           </div>
 
           {/* Ticket Type Filter */}
-          <div style={{ display: 'flex',position: 'relative', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', position: 'relative', alignItems: 'center', gap: '8px' }}>
             <Filter size={14} style={{ color: 'var(--text-muted)' }} />
             <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Type:</span>
             <select
