@@ -1,4 +1,4 @@
-﻿# Changelog
+# Changelog
 
 All notable changes to this project will be documented in this file.
 
@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **IT assignee filtering** — Added IT assignee filter in the IT tickets queue screen.
 - **Employee offboarding** — Soft-delete users with `is_active` flag, preserving historical data
 - **Offboarding date picker** — Backdate offboarding with configurable effective date
 - **Offboarded user visibility** — Dimmed cards in user management with offboard date badge
@@ -36,6 +37,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Ticket list responsiveness** — Made the ticket list screen fully responsive for mobile, tablet, and desktop views
+- **TicketList select styling refactored** — Standardized select styling via `inputFieldStyle` to eliminate duplicated styles
 - User management actions: added Offboard flow alongside Reset Password and Delete
 - `DbUser` type extended with `is_active`, `offboarded_at`, `offboarded_by`, `offboard_reason`
 - Attendance summary filtering excludes users offboarded before selected month
