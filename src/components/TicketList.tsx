@@ -1,4 +1,4 @@
-import { ArrowUpDown, CheckSquare, Clock, Filter, Plus, Search, Settings, ShieldCheck, UserCheck } from 'lucide-react';
+import { ArrowUpDown, CheckSquare, Clock, Filter, Plus, Search, Settings, ShieldCheck, UserCheck, User } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
 
 import type { AppUser, Ticket, TicketStatus, TicketType } from '../types';
@@ -18,6 +18,15 @@ interface TicketListProps {
 }
 
 type SortByOption = 'newest' | 'oldest' | 'status';
+
+const inputFieldStyle: React.CSSProperties = {
+  flex: '1',
+  width: '100%',
+  height: '38px',
+  padding: '6px 12px',
+  backgroundColor: 'var(--bg-primary)',
+  boxSizing: 'border-box',
+}
 
 export const TicketList: React.FC<TicketListProps> = ({
   tickets,
@@ -232,14 +241,15 @@ export const TicketList: React.FC<TicketListProps> = ({
       <div className="panel" style={{ padding: '16px 20px', marginBottom: '24px' }}>
         <div
           style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: '16px',
-            alignItems: 'center',
+           display: 'grid',
+           gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+           gap: '12px',
+           width: '100%',
+           alignItems: 'center',
           }}
         >
           {/* Search bar input */}
-          <div style={{ position: 'relative', flex: '1 1 220px' }}>
+          <div style={{ position: 'relative'}}>
             <input
               id="search-tickets-input"
               type="text"
@@ -266,18 +276,13 @@ export const TicketList: React.FC<TicketListProps> = ({
           </div>
 
           {/* Ticket Type Filter */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex',position: 'relative', alignItems: 'center', gap: '8px' }}>
             <Filter size={14} style={{ color: 'var(--text-muted)' }} />
             <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Type:</span>
             <select
               id="filter-type-select"
               className="form-input"
-              style={{
-                width: '150px',
-                height: '38px',
-                padding: '6px 12px',
-                backgroundColor: 'var(--bg-primary)',
-              }}
+              style={inputFieldStyle}
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
             >
@@ -291,17 +296,13 @@ export const TicketList: React.FC<TicketListProps> = ({
           </div>
 
           {/* Status Filter */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', position: 'relative', alignItems: 'center', gap: '8px' }}>
+            <User size={14} style={{ color: 'var(--text-muted)' }} />
             <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Status:</span>
             <select
               id="filter-status-select"
               className="form-input"
-              style={{
-                width: '180px',
-                height: '38px',
-                padding: '6px 12px',
-                backgroundColor: 'var(--bg-primary)',
-              }}
+              style={inputFieldStyle}
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
             >
@@ -314,17 +315,14 @@ export const TicketList: React.FC<TicketListProps> = ({
             </select>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {/* Assignee Filter */}
+          <div style={{ display: 'flex', position: 'relative', alignItems: 'center', gap: '8px' }}>
+            <UserCheck size={14} style={{ color: 'var(--text-muted)' }} />
             <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Assignee:</span>
             <select
               id="filter-assignee-select"
               className="form-input"
-              style={{
-                width: '180px',
-                height: '38px',
-                padding: '6px 12px',
-                backgroundColor: 'var(--bg-primary)',
-              }}
+              style={inputFieldStyle}
               value={assigneeFilter}
               onChange={(e) => setAssigneeFilter(e.target.value)}
             >
@@ -337,26 +335,21 @@ export const TicketList: React.FC<TicketListProps> = ({
             </select>
           </div>
 
-
           {/* Sort bar selection */}
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
-              marginLeft: 'auto',
+              // marginLeft: 'auto',
             }}
           >
             <ArrowUpDown size={14} style={{ color: 'var(--text-muted)' }} />
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Sort:</span>
             <select
               id="sort-tickets-select"
               className="form-input"
-              style={{
-                width: '130px',
-                height: '38px',
-                padding: '6px 12px',
-                backgroundColor: 'var(--bg-primary)',
-              }}
+              style={inputFieldStyle}
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as SortByOption)}
             >
