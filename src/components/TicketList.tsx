@@ -8,6 +8,7 @@ import { LoadingSpinner } from './LoadingSpinner';
 
 interface TicketListProps {
   tickets: Ticket[];
+  users: AppUser[];
   currentUser: AppUser;
   onSelectTicket: (ticketId: string) => void;
   onCreateTicketClick: () => void;
@@ -20,6 +21,7 @@ type SortByOption = 'newest' | 'oldest' | 'status';
 
 export const TicketList: React.FC<TicketListProps> = ({
   tickets,
+  users,
   currentUser,
   onSelectTicket,
   onCreateTicketClick,
@@ -30,6 +32,9 @@ export const TicketList: React.FC<TicketListProps> = ({
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<SortByOption>('newest');
+  const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
+  const itUserNames = useMemo(() => users.filter((user) => user.role === 'it').map((user) => user.name)
+    , [users])
 
   // Filter based on user role + dropdown filters + search query
   const filteredTickets = useMemo(() => {
@@ -49,8 +54,12 @@ export const TicketList: React.FC<TicketListProps> = ({
         // Dropdown status filter
         const matchesStatus = statusFilter === 'all' || ticket.status === statusFilter;
 
-        return matchesSearch && matchesType && matchesStatus;
+        // Dropdown assignee filter
+        const matchesAssignee = assigneeFilter === "all" || ticket.assigneeName === assigneeFilter;
+
+        return matchesSearch && matchesType && matchesStatus && matchesAssignee;
       })
+
       .sort((a, b) => {
         if (sortBy === 'newest') {
           return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
@@ -63,7 +72,7 @@ export const TicketList: React.FC<TicketListProps> = ({
         }
         return 0;
       });
-  }, [tickets, searchQuery, typeFilter, statusFilter, sortBy]);
+  }, [tickets, searchQuery, typeFilter, statusFilter, assigneeFilter, sortBy]);
 
   // Calculate statistics from the ROLE-filtered tickets (or all tickets? Let's use role-filtered for Employee, all for IT/Manager to make it feel specific)
   const awaitingIt = filteredTickets.filter((t) => t.status === 'awaiting_it_approval').length;
@@ -304,6 +313,30 @@ export const TicketList: React.FC<TicketListProps> = ({
               ))}
             </select>
           </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Assignee:</span>
+            <select
+              id="filter-assignee-select"
+              className="form-input"
+              style={{
+                width: '180px',
+                height: '38px',
+                padding: '6px 12px',
+                backgroundColor: 'var(--bg-primary)',
+              }}
+              value={assigneeFilter}
+              onChange={(e) => setAssigneeFilter(e.target.value)}
+            >
+              <option value="all">All Assignees</option>
+              {itUserNames.map((itUserName) => (
+                <option key={itUserName} value={itUserName}>
+                  {itUserName}
+                </option>
+              ))}
+            </select>
+          </div>
+
 
           {/* Sort bar selection */}
           <div
