@@ -55,8 +55,7 @@ export const TicketList: React.FC<TicketListProps> = ({
   const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
 
   // Get IT users for assignee filter
-  const itUserNames = useMemo(() =>
-    users.filter((user) => user.role === 'it').map((user) => user.name), [users]);
+  const itUserNames = useMemo(() => users.filter((user) => user.role === 'it').map((user) => user.name), [users]);
 
   // Filter based on user role + dropdown filters + search query
   const filteredTickets = useMemo(() => {
@@ -372,9 +371,11 @@ export const TicketList: React.FC<TicketListProps> = ({
           </div>
         </div>
       </div>
-      
+
       {/* showing tickets count */}
-      <span className="stat-desc" style={{ textAlign: 'right' }}>Showing {filteredTickets.length} of {tickets.length} tickets</span>
+      <span className="stat-desc" style={{ textAlign: 'right' }}>
+        Showing {filteredTickets.length} of {tickets.length} tickets
+      </span>
 
       {/* Ticket List Table */}
       <div className="panel" style={{ padding: 0, overflow: 'hidden' }}>
