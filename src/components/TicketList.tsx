@@ -55,7 +55,7 @@ export const TicketList: React.FC<TicketListProps> = ({
   const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
 
   // Get IT users for assignee filter
-  const itUserNames = useMemo(() => 
+  const itUserNames = useMemo(() =>
     users.filter((user) => user.role === 'it').map((user) => user.name), [users]);
 
   // Filter based on user role + dropdown filters + search query
@@ -97,11 +97,11 @@ export const TicketList: React.FC<TicketListProps> = ({
   }, [tickets, searchQuery, typeFilter, statusFilter, assigneeFilter, sortBy]);
 
   // Calculate statistics from the ROLE-filtered tickets (or all tickets? Let's use role-filtered for Employee, all for IT/Manager to make it feel specific)
-  const awaitingIt = filteredTickets.filter((t) => t.status === 'awaiting_it_approval').length;
-  const awaitingManager = filteredTickets.filter((t) => t.status === 'awaiting_manager_approval').length;
-  const open = filteredTickets.filter((t) => t.status === 'open').length;
-  const awaitingHandover = filteredTickets.filter((t) => t.status === 'awaiting_handover').length;
-  const closed = filteredTickets.filter((t) => t.status === 'closed').length;
+  const awaitingIt = tickets.filter((t) => t.status === 'awaiting_it_approval').length;
+  const awaitingManager = tickets.filter((t) => t.status === 'awaiting_manager_approval').length;
+  const open = tickets.filter((t) => t.status === 'open').length;
+  const awaitingHandover = tickets.filter((t) => t.status === 'awaiting_handover').length;
+  const closed = tickets.filter((t) => t.status === 'closed').length;
 
   const getStatusBadge = (status: TicketStatus) => {
     switch (status) {
@@ -372,6 +372,9 @@ export const TicketList: React.FC<TicketListProps> = ({
           </div>
         </div>
       </div>
+      
+      {/* showing tickets count */}
+      <span className="stat-desc" style={{ textAlign: 'right' }}>Showing {filteredTickets.length} of {tickets.length} tickets</span>
 
       {/* Ticket List Table */}
       <div className="panel" style={{ padding: 0, overflow: 'hidden' }}>
