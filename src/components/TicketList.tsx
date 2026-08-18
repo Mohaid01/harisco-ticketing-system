@@ -53,7 +53,10 @@ export const TicketList: React.FC<TicketListProps> = ({
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<SortByOption>('newest');
   const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
-  const itUserNames = useMemo(() => users.filter((user) => user.role === 'it').map((user) => user.name), [users]);
+
+  // Get IT users for assignee filter
+  const itUserNames = useMemo(() => 
+    users.filter((user) => user.role === 'it').map((user) => user.name), [users]);
 
   // Filter based on user role + dropdown filters + search query
   const filteredTickets = useMemo(() => {
@@ -351,7 +354,6 @@ export const TicketList: React.FC<TicketListProps> = ({
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
-              // marginLeft: 'auto',
             }}
           >
             <ArrowUpDown size={14} style={{ color: 'var(--text-muted)' }} />
