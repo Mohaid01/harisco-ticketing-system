@@ -118,6 +118,7 @@ export const NoticeBoard: React.FC<NoticeBoardProps> = ({
               key={notice.id}
               notice={notice}
               isAdmin={isAdmin}
+              currentUser={currentUser}
               onEditNoticeClick={onEditNoticeClick}
               getTagMeta={getTagMeta}
             />

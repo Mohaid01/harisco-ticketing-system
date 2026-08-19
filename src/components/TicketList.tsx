@@ -1,4 +1,15 @@
-import { ArrowUpDown, CheckSquare, Clock, Filter, Plus, Search, Settings, ShieldCheck, UserCheck } from 'lucide-react';
+import {
+  ArrowUpDown,
+  CheckSquare,
+  Clock,
+  Filter,
+  Plus,
+  Search,
+  Settings,
+  ShieldCheck,
+  UserCheck,
+  User,
+} from 'lucide-react';
 import React, { useMemo, useState } from 'react';
 
 import type { AppUser, Ticket, TicketStatus, TicketType } from '../types';
@@ -8,6 +19,7 @@ import { LoadingSpinner } from './LoadingSpinner';
 
 interface TicketListProps {
   tickets: Ticket[];
+  users: AppUser[];
   currentUser: AppUser;
   onSelectTicket: (ticketId: string) => void;
   onCreateTicketClick: () => void;
@@ -18,8 +30,18 @@ interface TicketListProps {
 
 type SortByOption = 'newest' | 'oldest' | 'status';
 
+const inputFieldStyle: React.CSSProperties = {
+  flex: '1',
+  width: '100%',
+  height: '38px',
+  padding: '6px 12px',
+  backgroundColor: 'var(--bg-primary)',
+  boxSizing: 'border-box',
+};
+
 export const TicketList: React.FC<TicketListProps> = ({
   tickets,
+  users,
   currentUser,
   onSelectTicket,
   onCreateTicketClick,
@@ -30,6 +52,10 @@ export const TicketList: React.FC<TicketListProps> = ({
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<SortByOption>('newest');
+  const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
+
+  // Get IT users for assignee filter
+  const itUserNames = useMemo(() => users.filter((user) => user.role === 'it').map((user) => user.name), [users]);
 
   // Filter based on user role + dropdown filters + search query
   const filteredTickets = useMemo(() => {
@@ -49,8 +75,12 @@ export const TicketList: React.FC<TicketListProps> = ({
         // Dropdown status filter
         const matchesStatus = statusFilter === 'all' || ticket.status === statusFilter;
 
-        return matchesSearch && matchesType && matchesStatus;
+        // Dropdown assignee filter
+        const matchesAssignee = assigneeFilter === 'all' || ticket.assigneeName === assigneeFilter;
+
+        return matchesSearch && matchesType && matchesStatus && matchesAssignee;
       })
+
       .sort((a, b) => {
         if (sortBy === 'newest') {
           return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
@@ -63,14 +93,14 @@ export const TicketList: React.FC<TicketListProps> = ({
         }
         return 0;
       });
-  }, [tickets, searchQuery, typeFilter, statusFilter, sortBy]);
+  }, [tickets, searchQuery, typeFilter, statusFilter, assigneeFilter, sortBy]);
 
   // Calculate statistics from the ROLE-filtered tickets (or all tickets? Let's use role-filtered for Employee, all for IT/Manager to make it feel specific)
-  const awaitingIt = filteredTickets.filter((t) => t.status === 'awaiting_it_approval').length;
-  const awaitingManager = filteredTickets.filter((t) => t.status === 'awaiting_manager_approval').length;
-  const open = filteredTickets.filter((t) => t.status === 'open').length;
-  const awaitingHandover = filteredTickets.filter((t) => t.status === 'awaiting_handover').length;
-  const closed = filteredTickets.filter((t) => t.status === 'closed').length;
+  const awaitingIt = tickets.filter((t) => t.status === 'awaiting_it_approval').length;
+  const awaitingManager = tickets.filter((t) => t.status === 'awaiting_manager_approval').length;
+  const open = tickets.filter((t) => t.status === 'open').length;
+  const awaitingHandover = tickets.filter((t) => t.status === 'awaiting_handover').length;
+  const closed = tickets.filter((t) => t.status === 'closed').length;
 
   const getStatusBadge = (status: TicketStatus) => {
     switch (status) {
@@ -223,14 +253,15 @@ export const TicketList: React.FC<TicketListProps> = ({
       <div className="panel" style={{ padding: '16px 20px', marginBottom: '24px' }}>
         <div
           style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: '16px',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+            gap: '12px',
+            width: '100%',
             alignItems: 'center',
           }}
         >
           {/* Search bar input */}
-          <div style={{ position: 'relative', flex: '1 1 220px' }}>
+          <div style={{ position: 'relative' }}>
             <input
               id="search-tickets-input"
               type="text"
@@ -257,18 +288,13 @@ export const TicketList: React.FC<TicketListProps> = ({
           </div>
 
           {/* Ticket Type Filter */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', position: 'relative', alignItems: 'center', gap: '8px' }}>
             <Filter size={14} style={{ color: 'var(--text-muted)' }} />
             <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Type:</span>
             <select
               id="filter-type-select"
               className="form-input"
-              style={{
-                width: '150px',
-                height: '38px',
-                padding: '6px 12px',
-                backgroundColor: 'var(--bg-primary)',
-              }}
+              style={inputFieldStyle}
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
             >
@@ -282,17 +308,13 @@ export const TicketList: React.FC<TicketListProps> = ({
           </div>
 
           {/* Status Filter */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', position: 'relative', alignItems: 'center', gap: '8px' }}>
+            <User size={14} style={{ color: 'var(--text-muted)' }} />
             <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Status:</span>
             <select
               id="filter-status-select"
               className="form-input"
-              style={{
-                width: '180px',
-                height: '38px',
-                padding: '6px 12px',
-                backgroundColor: 'var(--bg-primary)',
-              }}
+              style={inputFieldStyle}
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
             >
@@ -305,25 +327,40 @@ export const TicketList: React.FC<TicketListProps> = ({
             </select>
           </div>
 
+          {/* Assignee Filter */}
+          <div style={{ display: 'flex', position: 'relative', alignItems: 'center', gap: '8px' }}>
+            <UserCheck size={14} style={{ color: 'var(--text-muted)' }} />
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Assignee:</span>
+            <select
+              id="filter-assignee-select"
+              className="form-input"
+              style={inputFieldStyle}
+              value={assigneeFilter}
+              onChange={(e) => setAssigneeFilter(e.target.value)}
+            >
+              <option value="all">All Assignees</option>
+              {itUserNames.map((itUserName) => (
+                <option key={itUserName} value={itUserName}>
+                  {itUserName}
+                </option>
+              ))}
+            </select>
+          </div>
+
           {/* Sort bar selection */}
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
-              marginLeft: 'auto',
             }}
           >
             <ArrowUpDown size={14} style={{ color: 'var(--text-muted)' }} />
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Sort:</span>
             <select
               id="sort-tickets-select"
               className="form-input"
-              style={{
-                width: '130px',
-                height: '38px',
-                padding: '6px 12px',
-                backgroundColor: 'var(--bg-primary)',
-              }}
+              style={inputFieldStyle}
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as SortByOption)}
             >
@@ -334,6 +371,11 @@ export const TicketList: React.FC<TicketListProps> = ({
           </div>
         </div>
       </div>
+
+      {/* showing tickets count */}
+      <span className="stat-desc" style={{ textAlign: 'right' }}>
+        Showing {filteredTickets.length} of {tickets.length} tickets
+      </span>
 
       {/* Ticket List Table */}
       <div className="panel" style={{ padding: 0, overflow: 'hidden' }}>

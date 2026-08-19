@@ -1195,6 +1195,7 @@ function App() {
           ) : activeTab === 'tickets' ? (
             <TicketList
               tickets={tickets}
+              users={users}
               currentUser={currentUser}
               onSelectTicket={(id) => setSelectedTicketId(id)}
               onCreateTicketClick={() => setIsCreateModalOpen(true)}
