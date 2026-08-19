@@ -44,6 +44,7 @@ function App() {
   const [factoryUsers, setFactoryUsers] = useState<AppUser[]>([]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [activeTab, setActiveTab] = useState<ActiveTab>('noticeboard');
+  const [viewMode, setViewMode] = useState<'summary' | 'individual'>('summary');
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
@@ -87,7 +88,7 @@ function App() {
         }
 
         if (user.role.includes('factory')) {
-          setActiveTab('factory_attendance');
+          navigateTo('factory_attendance');
         }
 
         // Fetch Notices
@@ -144,6 +145,55 @@ function App() {
     };
 
     fetchSessionAndData();
+  }, [token]);
+
+  // Browser back/forward navigation
+  useEffect(() => {
+    const onPopState = (e: PopStateEvent) => {
+      const state = e.state;
+      if (state?.tab) {
+        setActiveTab(state.tab);
+        setViewMode(state.viewMode || 'summary');
+        setSelectedTicketId(null);
+        setSelectedAdminTicketId(null);
+      } else {
+        // Parse URL on direct load or if no state object
+        const path = window.location.pathname.replace(/^\//, '') || 'noticeboard';
+        const parts = path.split('/');
+        const tabPart = parts[0] as ActiveTab;
+        const validTabs: ActiveTab[] = ['noticeboard', 'tickets', 'admin_tickets', 'users', 'factory_users', 'attendance', 'factory_attendance', 'leaves', 'site_duties', 'activity_log'];
+        if (validTabs.includes(tabPart)) {
+          setActiveTab(tabPart);
+          if (tabPart === 'attendance' || tabPart === 'factory_attendance') {
+            setViewMode(parts[1] === 'individual' ? 'individual' : 'summary');
+          } else {
+            setViewMode('summary');
+          }
+        } else {
+          setActiveTab('noticeboard');
+          setViewMode('summary');
+        }
+        setSelectedTicketId(null);
+        setSelectedAdminTicketId(null);
+      }
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
+  // Initialize URL on first load
+  useEffect(() => {
+    if (!token) return;
+    const path = window.location.pathname.replace(/^\//, '') || 'noticeboard';
+    const parts = path.split('/');
+    const tabPart = parts[0] as ActiveTab;
+    const validTabs: ActiveTab[] = ['noticeboard', 'tickets', 'admin_tickets', 'users', 'factory_users', 'attendance', 'factory_attendance', 'leaves', 'site_duties', 'activity_log'];
+    if (validTabs.includes(tabPart)) {
+      setActiveTab(tabPart);
+      if (tabPart === 'attendance' || tabPart === 'factory_attendance') {
+        setViewMode(parts[1] === 'individual' ? 'individual' : 'summary');
+      }
+    }
   }, [token]);
 
   // SSE-based real-time updates for tickets
@@ -296,14 +346,29 @@ function App() {
     localStorage.setItem('harisco_token', newToken);
     setToken(newToken);
     setCurrentUser(user);
-    setActiveTab('noticeboard');
+    navigateTo('noticeboard');
   };
 
   const handlePasswordResetSuccess = (newToken: string, updatedUser: AppUser) => {
     localStorage.setItem('harisco_token', newToken);
     setToken(newToken);
     setCurrentUser(updatedUser);
-    setActiveTab('noticeboard');
+    navigateTo('noticeboard');
+  };
+
+  const navigateTo = (tab: ActiveTab, newViewMode?: 'summary' | 'individual') => {
+    setActiveTab(tab);
+    if (tab === 'attendance' || tab === 'factory_attendance') {
+      const vm = newViewMode || 'summary';
+      setViewMode(vm);
+      const path = vm === 'individual' ? `/${tab}/individual` : `/${tab}`;
+      window.history.pushState({ tab, viewMode: vm }, '', path);
+    } else {
+      setViewMode('summary');
+      window.history.pushState({ tab, viewMode: 'summary' }, '', `/${tab}`);
+    }
+    setSelectedTicketId(null);
+    setSelectedAdminTicketId(null);
   };
 
   // Handle Logout
@@ -317,7 +382,7 @@ function App() {
     setAdminTickets([]);
     setSelectedTicketId(null);
     setSelectedAdminTicketId(null);
-    setActiveTab('noticeboard');
+    navigateTo('noticeboard');
   };
 
   // Noticeboard-releveant API calls
@@ -612,7 +677,7 @@ function App() {
       const newTicket = await res.json();
 
       setTickets((prevTickets) => [newTicket, ...prevTickets]);
-      setActiveTab('tickets');
+      navigateTo('tickets');
       setSelectedTicketId(newTicket.id);
       setIsCreateModalOpen(false);
     } catch (err) {
@@ -732,7 +797,7 @@ function App() {
       const newTicket = await res.json();
 
       setAdminTickets((prev) => [newTicket, ...prev]);
-      setActiveTab('admin_tickets');
+      navigateTo('admin_tickets');
       setSelectedAdminTicketId(newTicket.id);
       setIsCreateAdminModalOpen(false);
     } catch (err) {
@@ -1143,11 +1208,7 @@ function App() {
       <Sidebar
         currentUser={currentUser}
         activeTab={activeTab}
-        setActiveTab={(tab) => {
-          setActiveTab(tab);
-          setSelectedTicketId(null);
-          setSelectedAdminTicketId(null);
-        }}
+        setActiveTab={(tab) => navigateTo(tab)}
         onLogout={handleLogout}
         onChangePasswordClick={() => setIsPasswordModalOpen(true)}
       />
@@ -1226,9 +1287,9 @@ function App() {
               loading={loading}
             />
           ) : activeTab === 'attendance' ? (
-            <Attendance currentUser={currentUser} allUsers={users} mode="hq" />
+            <Attendance currentUser={currentUser} allUsers={users} mode="hq" viewMode={viewMode} onViewModeChange={(mode) => navigateTo('attendance', mode)} />
           ) : activeTab === 'factory_attendance' ? (
-            <Attendance currentUser={currentUser} allUsers={factoryUsers} mode="factory" />
+            <Attendance currentUser={currentUser} allUsers={factoryUsers} mode="factory" viewMode={viewMode} onViewModeChange={(mode) => navigateTo('factory_attendance', mode)} />
           ) : activeTab === 'leaves' ? (
             <LeaveManagement currentUser={currentUser} token={token!} />
           ) : activeTab === 'site_duties' ? (
