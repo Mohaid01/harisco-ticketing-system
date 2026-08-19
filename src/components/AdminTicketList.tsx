@@ -70,12 +70,12 @@ export const AdminTicketList: React.FC<AdminTicketListProps> = ({
       });
   }, [tickets, searchQuery, categoryFilter, statusFilter, sortBy]);
 
-  const awaitingAdminManager = filteredTickets.filter((t) => t.status === 'awaiting_admin_manager').length;
-  const awaitingMaterials = filteredTickets.filter((t) => t.status === 'awaiting_materials').length;
-  const awaitingTechnician = filteredTickets.filter((t) => t.status === 'awaiting_technician').length;
-  const awaitingExecutive = filteredTickets.filter((t) => t.status === 'awaiting_executive').length;
-  const resolved = filteredTickets.filter((t) => t.status === 'resolved').length;
-  const rejected = filteredTickets.filter((t) => t.status === 'rejected').length;
+  const awaitingAdminManager = tickets.filter((t) => t.status === 'awaiting_admin_manager').length;
+  const awaitingMaterials = tickets.filter((t) => t.status === 'awaiting_materials').length;
+  const awaitingTechnician = tickets.filter((t) => t.status === 'awaiting_technician').length;
+  const awaitingExecutive = tickets.filter((t) => t.status === 'awaiting_executive').length;
+  const resolved = tickets.filter((t) => t.status === 'resolved').length;
+  const rejected = tickets.filter((t) => t.status === 'rejected').length;
 
   const getStatusBadge = (status: AdminTicketStatus) => {
     switch (status) {
