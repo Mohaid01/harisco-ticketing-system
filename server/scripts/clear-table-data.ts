@@ -2,7 +2,7 @@ import path from 'path';
 import sqlite3 from 'sqlite3';
 
 const DB_PATH = process.env.DB_PATH || path.resolve(process.cwd(), 'database.sqlite');
-const TARGET_TABLE = 'table_name';
+const TARGET_TABLE = 'factory_users';
 
 async function clearTableData() {
   console.log(`Connecting to database at: ${DB_PATH}`);
