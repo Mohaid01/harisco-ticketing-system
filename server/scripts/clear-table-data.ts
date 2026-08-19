@@ -5,9 +5,11 @@ const DB_PATH = process.env.DB_PATH || path.resolve(process.cwd(), 'database.sql
 const TARGET_TABLE = 'table_name';
 
 async function clearTableData() {
+  console.log(`Connecting to database at: ${DB_PATH}`);
   const db = new sqlite3.Database(DB_PATH);
 
-  const runQuery = (sql: string, params: unknown[] = []) => {
+  // Simple promise wrapper for database actions
+  const runQuery = (sql: string, params: any[] = []) => {
     return new Promise((resolve, reject) => {
       db.run(sql, params, function (err) {
         if (err) reject(err);
@@ -17,26 +19,34 @@ async function clearTableData() {
   };
 
   try {
+    console.log('Starting transaction...');
     await runQuery('BEGIN TRANSACTION;');
 
+    console.log(`Clearing all data from table: ${TARGET_TABLE}`);
     const sanitizedTable = TARGET_TABLE.replace(/[`"']/g, '');
-
     await runQuery(`DELETE FROM \`${sanitizedTable}\`;`);
 
+    console.log('Resetting auto-increment sequence...');
     try {
       await runQuery(`DELETE FROM sqlite_sequence WHERE name = ?;`, [TARGET_TABLE]);
     } catch (seqErr) {
-      // Ignored if sequence doesn't exist
+      console.log('Note: No auto-increment sequence found to reset.');
     }
 
+    console.log('Committing changes to disk...');
     await runQuery('COMMIT;');
-  } catch (err) {
+    console.log('Success! Table cleared completely.');
+  } catch (err: any) {
+    console.error(`Error encountered: ${err.message}`);
+    console.log('Rolling back transaction...');
     try {
       await runQuery('ROLLBACK;');
+      console.log('Rollback successful.');
     } catch (rollbackErr) {
-      // Ignored if transaction wasn't active
+      console.error('Failed to rollback (transaction may not have started).');
     }
   } finally {
+    console.log('Closing database connection.');
     db.close();
   }
 }
