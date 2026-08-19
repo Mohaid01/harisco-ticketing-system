@@ -1,59 +1,44 @@
 import path from 'path';
 import sqlite3 from 'sqlite3';
 
-import logger from '../utils/logger.ts';
-
-// === CONFIGURATION ===
 const DB_PATH = process.env.DB_PATH || path.resolve(process.cwd(), 'database.sqlite');
-const TARGET_TABLE = 'table_name'; // The table you want to empty
+const TARGET_TABLE = 'table_name';
 
-function clearTableData() {
-  // 1. Open database connection
-  const db = new sqlite3.Database(DB_PATH, (err) => {
-    if (err) {
-      logger.error('❌ Error opening database:', err.message);
-      return;
-    }
-  });
+async function clearTableData() {
+  const db = new sqlite3.Database(DB_PATH);
 
-  // 2. Serialize forces operations to run in sequential order
-  db.serialize(() => {
-    logger.info(`🧹 Clearing all rows from table "${TARGET_TABLE}"...`);
+  const runQuery = (sql: string, params: unknown[] = []) => {
+    return new Promise((resolve, reject) => {
+      db.run(sql, params, function (err) {
+        if (err) reject(err);
+        else resolve(this);
+      });
+    });
+  };
 
-    // Start manual transaction block
-    db.run('BEGIN TRANSACTION;');
+  try {
+    await runQuery('BEGIN TRANSACTION;');
 
     const sanitizedTable = TARGET_TABLE.replace(/[`"']/g, '');
-    // Empty the table data
-    db.run(`DELETE FROM \`${sanitizedTable}\`;`, (err) => {
-      if (err) {
-        logger.error(`❌ Error deleting data from ${TARGET_TABLE}:`, err.message);
-        db.run('ROLLBACK;'); // Undo everything if it fails
-        return;
-      }
-    });
 
-    // Reset auto-increment counter to 1
-    db.run(`DELETE FROM sqlite_sequence WHERE name = ?;`, [TARGET_TABLE], (err) => {
-      if (err) {
-        // We don't rollback here because some tables don't use auto-increment keys
-        logger.info(`ℹ️ Note: Auto-increment sequence not found or not reset.`);
-      }
-    });
+    await runQuery(`DELETE FROM \`${sanitizedTable}\`;`);
 
-    // Commit the changes to disk
-    db.run('COMMIT;', (err) => {
-      if (err) {
-        logger.error('❌ Failed to commit transaction:', err.message);
-      } else {
-        logger.info(`\n✅ Success! Table "${TARGET_TABLE}" is now empty.`);
-        logger.info(`ℹ️ Note: Table structure and schema are fully preserved.`);
-      }
+    try {
+      await runQuery(`DELETE FROM sqlite_sequence WHERE name = ?;`, [TARGET_TABLE]);
+    } catch (seqErr) {
+      // Ignored if sequence doesn't exist
+    }
 
-      // 3. Close connection after completion
-      db.close();
-    });
-  });
+    await runQuery('COMMIT;');
+  } catch (err) {
+    try {
+      await runQuery('ROLLBACK;');
+    } catch (rollbackErr) {
+      // Ignored if transaction wasn't active
+    }
+  } finally {
+    db.close();
+  }
 }
 
 clearTableData();
