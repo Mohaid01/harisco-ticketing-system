@@ -25,8 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Three new factory shifts** — Standard Shift (08:00–20:00), Standard Shift (08:00–21:00), and Night Shift (20:00–08:00)
-- **Scalable midnight-crossing detection** — Generic weekdayEnd.h < weekdayStart.h check replaces hardcoded night-shift logic in shift resolution, punch processing, and date-rollover
-- **Backend type alignment** — Added shift field to CreateUserRequestBody, CreateUserResponse, UpdateUserRequestBody, and UpdateUserResponse for HQ user routes
+- **Scalable midnight-crossing detection** — Generic `weekdayEnd.h < weekdayStart.h` check replaces hardcoded night-shift logic in shift resolution, punch processing, and date-rollover
+- **Backend type alignment** — Added `shift` field to `CreateUserRequestBody`, `CreateUserResponse`, `UpdateUserRequestBody`, and `UpdateUserResponse` for HQ user routes
 - **Employee offboarding** — Soft-delete users with `is_active` flag, preserving historical data
 - **Offboarding date picker** — Backdate offboarding with configurable effective date
 - **Offboarded user visibility** — Dimmed cards in user management with offboard date badge

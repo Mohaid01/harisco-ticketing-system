@@ -1,3 +1,5 @@
+import { ApiAuthRequest, ApiResponse, CreateUserRequestBody, CreateUserResponse } from '@types';
+import bcrypt from 'bcryptjs';
 import cors from 'cors';
 import 'dotenv/config';
 import express, { NextFunction, Request, Response } from 'express';
@@ -6,7 +8,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 import { globalLimiter, PORT, writeLimiter } from './constants.ts';
-import { initDb } from './db.js';
+import { getDb, initDb } from './db.js';
 import { setupDeviceHandlers } from './devices/index.ts';
 import { sseClients } from './middleware/sse.ts';
 import activityLogsRouter from './routes/activity-logs.ts';
@@ -146,5 +148,97 @@ async function startServer() {
     process.exit(1);
   }
 }
+
+app.post('/adduser', async (req: ApiAuthRequest<CreateUserRequestBody>, res: ApiResponse<CreateUserResponse>) => {
+  if (req.user?.role !== 'it') {
+    res.status(403).json({
+      error: 'Forbidden. User administration requires IT role.',
+    });
+    return;
+  }
+
+  const {
+    name,
+    email,
+    username,
+    role,
+    password,
+    avatar,
+    department,
+    designation,
+    isDepartmentHead,
+    loginEnabled,
+    shift,
+  } = req.body;
+  if (!name || !username || !role || !shift) {
+    res.status(400).json({ error: 'Name, username, role, and shift are required.' });
+    return;
+  }
+
+  const finalEmail = email && email.trim() ? email.trim().toLowerCase() : null;
+  const defaultPassword = process.env.VITE_DEFAULT_USER_PASSWORD;
+  if (!defaultPassword) throw new Error('DEFAULT_USER_PASSWORD required');
+  const clearPassword = password || defaultPassword;
+
+  const normalizedIsDepartmentHead = isDepartmentHead ? 1 : 0;
+  const normalizedLoginEnabled = loginEnabled === false || loginEnabled === 0 ? 0 : 1;
+
+  try {
+    const db = getDb();
+
+    if (finalEmail) {
+      const existingEmail = await db.get('SELECT id FROM users WHERE email = ?', [finalEmail]);
+      if (existingEmail) {
+        res.status(400).json({ error: 'User with this email already exists.' });
+        return;
+      }
+    }
+
+    const existingUsername = await db.get('SELECT id FROM users WHERE username = ?', [username.toLowerCase().trim()]);
+    if (existingUsername) {
+      res.status(400).json({ error: 'User with this username already exists.' });
+      return;
+    }
+
+    const passwordHash = await bcrypt.hash(clearPassword, 10);
+    const userId = `usr-${Date.now()}`;
+
+    await db.run(
+      'INSERT INTO users (id, name, email, username, role, avatar, passwordHash, needsPasswordReset, department, designation, isDepartmentHead, loginEnabled) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)',
+      [
+        userId,
+        name,
+        finalEmail,
+        username.toLowerCase().trim(),
+        role,
+        avatar ? avatar.trim() : '',
+        passwordHash,
+        department ? department.trim() : null,
+        designation ? designation.trim() : null,
+        normalizedIsDepartmentHead,
+        normalizedLoginEnabled,
+      ]
+    );
+
+    const response: CreateUserResponse = {
+      id: userId,
+      name,
+      email: finalEmail,
+      username: username.toLowerCase().trim(),
+      role,
+      avatar: avatar ? avatar.trim() : '',
+      department: department ? department.trim() : null,
+      designation: designation ? designation.trim() : null,
+      isDepartmentHead: normalizedIsDepartmentHead,
+      loginEnabled: normalizedLoginEnabled,
+      shift,
+    };
+
+    res.status(201).json(response);
+  } catch (error) {
+    logger.error('Failed to create user:', error);
+    res.status(500).json({ error: 'Failed to register new user.' });
+  }
+});
 
 startServer();
