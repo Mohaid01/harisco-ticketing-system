@@ -150,13 +150,6 @@ async function startServer() {
 }
 
 app.post('/adduser', async (req: ApiAuthRequest<CreateUserRequestBody>, res: ApiResponse<CreateUserResponse>) => {
-  if (req.user?.role !== 'it') {
-    res.status(403).json({
-      error: 'Forbidden. User administration requires IT role.',
-    });
-    return;
-  }
-
   const {
     name,
     email,
