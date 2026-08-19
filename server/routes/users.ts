@@ -78,21 +78,10 @@ router.post(
       return;
     }
 
-    const {
-      name,
-      email,
-      username,
-      role,
-      password,
-      avatar,
-      department,
-      designation,
-      isDepartmentHead,
-      loginEnabled,
-      shift,
-    } = req.body;
-    if (!name || !username || !role || !shift) {
-      res.status(400).json({ error: 'Name, username, role, and shift are required.' });
+    const { name, email, username, role, password, avatar, department, designation, isDepartmentHead, loginEnabled } =
+      req.body;
+    if (!name || !username || !role) {
+      res.status(400).json({ error: 'Name, username, role are required.' });
       return;
     }
 
@@ -152,7 +141,6 @@ router.post(
         designation: designation ? designation.trim() : null,
         isDepartmentHead: normalizedIsDepartmentHead,
         loginEnabled: normalizedLoginEnabled,
-        shift,
       };
 
       res.status(201).json(response);
