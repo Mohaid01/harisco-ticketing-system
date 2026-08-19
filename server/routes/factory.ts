@@ -602,7 +602,7 @@ router.put('/shift-overrides/:userId/:date', authenticateToken, async (req: Auth
     if (!canWrite)
       return res.status(403).json({ error: 'Forbidden. Employees can only override their own current day shift.' });
 
-    const validShifts = ['general', 'day', 'night', 'extended'];
+    const validShifts = ['general', 'day', 'night', 'extended', 'standard8to8', 'standard8to9', 'night8to8'];
     if (!validShifts.includes(shift)) return res.status(400).json({ error: 'Invalid shift code.' });
 
     await db.run(
