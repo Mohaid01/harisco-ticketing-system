@@ -5,7 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.1] - 2026-08-15
+## [2.1.2] - 2026-08-20
+
+### Added
+
+- **Browser navigation** - App can now be navigated using the browser navigation buttons.
+
+### Fixed
+
+- **Add User Failing** - Fixed types to properly align with the backend.
+
+## [2.1.1] - 2026-08-15
 
 ### Added
 
@@ -20,7 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Admin Ticket Status Filter** — Restored the `onChange` event handler on the status filter dropdown in the Admin Ticket list view.
 
-## [Unreleased]
+## [2.1.0]
 
 ### Added
 
@@ -40,6 +50,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Ticket assignee filtering** — Offboarded users excluded from executive/IT assignee dropdowns
 - **CI checks workflow** — Automated pre-merge gates: Prettier formatting check, ESLint error check, TypeScript + Vite build, and npm audit (moderate+)
 - **CODEOWNERS** — Mandatory review enforcement for `@Harisco-it` and `@Mohaid01` on all PRs to `main`
+- **Bug report severity** — Added Critical/High/Medium/Low severity field to bug report template for faster triage
+- **Question issue template** — New template for usage/setup questions to prevent blank issues
+- **Dependabot reviewers** — Auto-assigns `@Harisco-it` and `@Mohaid01` to all dependency update PRs
 
 ### Fixed
 
@@ -56,7 +69,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [0.1.0] - 2026-08-07
+## [2.0.0] - 2026-08-07
 
 ### Added
 
@@ -88,7 +101,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [0.0.1] - 2026-07-31
+## [1.0.0] - 2026-07-31
 
 ### Added
 

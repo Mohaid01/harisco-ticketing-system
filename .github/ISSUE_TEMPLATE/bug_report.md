@@ -23,12 +23,12 @@ What you expected to happen.
 
 What actually happened.
 
-## Environment
+## Severity
 
-- OS: [e.g. Windows 11, Ubuntu 22.04]
-- Browser: [e.g. Chrome 120, Firefox 119]
-- Node.js: [e.g. 20.x]
-- Deployment: [e.g. Docker / local dev]
+- [ ] Critical — blocks core workflow for all users, data loss, or security issue
+- [ ] High — blocks core workflow for some users, no workaround
+- [ ] Medium — degrades experience but workaround exists
+- [ ] Low — minor UI issue, typo, or cosmetic problem
 
 ## Screenshots
 
