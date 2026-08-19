@@ -24,6 +24,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Notice author editing** — Enabled notice authors to edit their own notices via a dedicated edit button.
+- **Ticket list assignee filtering** — Added assignee filter option to the main tickets list screen.
+- **Ticket list filtered count** — Display count of matching tickets showing "Showing X of Y tickets".
 - **IT assignee filtering** — Added IT assignee filter in the IT tickets queue screen.
 - **Employee offboarding** — Soft-delete users with `is_active` flag, preserving historical data
 - **Offboarding date picker** — Backdate offboarding with configurable effective date
@@ -37,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Ticket summary statistics** — Updated ticket statistic cards to count all tickets instead of only filtered tickets.
 - **Ticket list responsiveness** — Made the ticket list screen fully responsive for mobile, tablet, and desktop views
 - **TicketList select styling refactored** — Standardized select styling via `inputFieldStyle` to eliminate duplicated styles
 - User management actions: added Offboard flow alongside Reset Password and Delete
