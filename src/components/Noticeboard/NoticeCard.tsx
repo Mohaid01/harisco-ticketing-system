@@ -1,10 +1,12 @@
-import React from 'react';
+import { SquarePen } from 'lucide-react';
+import React, { useMemo } from 'react';
 
-import type { Notice, NoticeType } from '../../types';
+import type { AppUser, Notice, NoticeType } from '../../types';
 
 interface NoticeCardProps {
   notice: Notice;
   isAdmin: boolean;
+  currentUser: AppUser;
   onEditNoticeClick?: (noticeId: string) => void;
   getTagMeta: (type: NoticeType) => {
     label: string;
@@ -13,15 +15,16 @@ interface NoticeCardProps {
   };
 }
 
-export const NoticeCard: React.FC<NoticeCardProps> = ({ notice, isAdmin, onEditNoticeClick, getTagMeta }) => {
+export const NoticeCard: React.FC<NoticeCardProps> = ({ notice, isAdmin, currentUser, onEditNoticeClick, getTagMeta, }) => {
   const now = new Date();
   const meta = getTagMeta(notice.type);
   const isExpired = notice.expiresAt && new Date(notice.expiresAt) <= now;
+  const isAuthor = notice.authorName === currentUser?.name;
+  console.log(notice.authorName, currentUser?.name)
 
   return (
     <div
-      className={`notice-card notice-card-${notice.type} ${isExpired ? 'notice-card-expired' : ''} ${isAdmin && onEditNoticeClick ? 'notice-card-clickable' : ''}`}
-      onClick={() => isAdmin && onEditNoticeClick && onEditNoticeClick(notice.id)}
+      className={`notice-card notice-card-${notice.type} ${isExpired ? 'notice-card-expired' : ''} ${ (isAdmin || isAuthor) && onEditNoticeClick ? 'notice-card-clickable' : ''}`}
     >
       <div className="notice-badge-section">
         <div className="notice-badge-row">
@@ -87,7 +90,15 @@ export const NoticeCard: React.FC<NoticeCardProps> = ({ notice, isAdmin, onEditN
             </div>
           </div>
         </span>
-        {isAdmin && onEditNoticeClick && <span className="notice-edit-hint">Click to edit notice</span>}
+        {isAuthor && onEditNoticeClick && (
+          <button
+            className="btn btn-primary"
+            onClick={() => onEditNoticeClick(notice.id)}
+            title="Edit Notice"
+          >
+            <SquarePen size={20} />
+          </button>
+        )}
       </div>
     </div>
   );
