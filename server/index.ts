@@ -1,4 +1,4 @@
-import { ApiAuthRequest, ApiResponse, CreateUserRequestBody, CreateUserResponse } from '@types';
+import { ApiAuthRequest, ApiResponse, CreateFactoryUserRequestBody, CreateFactoryUserResponse } from '@types';
 import bcrypt from 'bcryptjs';
 import cors from 'cors';
 import 'dotenv/config';
@@ -149,89 +149,102 @@ async function startServer() {
   }
 }
 
-app.post('/adduser', async (req: ApiAuthRequest<CreateUserRequestBody>, res: ApiResponse<CreateUserResponse>) => {
-  const {
-    name,
-    email,
-    username,
-    role,
-    password,
-    avatar,
-    department,
-    designation,
-    isDepartmentHead,
-    loginEnabled,
-    shift,
-  } = req.body;
-  if (!name || !username || !role || !shift) {
-    res.status(400).json({ error: 'Name, username, role, and shift are required.' });
-    return;
-  }
+app.post(
+  '/addUser',
+  async (req: ApiAuthRequest<CreateFactoryUserRequestBody>, res: ApiResponse<CreateFactoryUserResponse>) => {
+    const {
+      name,
+      email,
+      username,
+      role,
+      password,
+      avatar,
+      department,
+      designation,
+      isDepartmentHead,
+      loginEnabled,
+      defaultShift,
+    } = req.body;
 
-  const finalEmail = email && email.trim() ? email.trim().toLowerCase() : null;
-  const defaultPassword = process.env.VITE_DEFAULT_USER_PASSWORD;
-  if (!defaultPassword) throw new Error('DEFAULT_USER_PASSWORD required');
-  const clearPassword = password || defaultPassword;
-
-  const normalizedIsDepartmentHead = isDepartmentHead ? 1 : 0;
-  const normalizedLoginEnabled = loginEnabled === false || loginEnabled === 0 ? 0 : 1;
-
-  try {
-    const db = getDb();
-
-    if (finalEmail) {
-      const existingEmail = await db.get('SELECT id FROM users WHERE email = ?', [finalEmail]);
-      if (existingEmail) {
-        res.status(400).json({ error: 'User with this email already exists.' });
-        return;
-      }
-    }
-
-    const existingUsername = await db.get('SELECT id FROM users WHERE username = ?', [username.toLowerCase().trim()]);
-    if (existingUsername) {
-      res.status(400).json({ error: 'User with this username already exists.' });
+    if (!name || !username || !role) {
+      res.status(400).json({ error: 'Name, username, and role are required.' });
       return;
     }
 
-    const passwordHash = await bcrypt.hash(clearPassword, 10);
-    const userId = `usr-${Date.now()}`;
+    const validFactoryRoles = ['factory_employee', 'factory_it', 'factory_manager'];
+    if (!validFactoryRoles.includes(role)) {
+      res.status(400).json({ error: 'Invalid factory role.' });
+      return;
+    }
 
-    await db.run(
-      'INSERT INTO users (id, name, email, username, role, avatar, passwordHash, needsPasswordReset, department, designation, isDepartmentHead, loginEnabled) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)',
-      [
-        userId,
-        name,
-        finalEmail,
+    const finalEmail = email && email.trim() ? email.trim().toLowerCase() : null;
+    const defaultPassword = process.env.VITE_DEFAULT_USER_PASSWORD;
+    if (!defaultPassword) throw new Error('DEFAULT_USER_PASSWORD required');
+    const clearPassword = password || defaultPassword;
+
+    const normalizedIsDepartmentHead = isDepartmentHead ? 1 : 0;
+    const normalizedLoginEnabled = loginEnabled === false || loginEnabled === 0 ? 0 : 1;
+
+    try {
+      const db = getDb();
+
+      if (finalEmail) {
+        const existingEmail = await db.get('SELECT id FROM factory_users WHERE email = ?', [finalEmail]);
+        if (existingEmail) {
+          res.status(400).json({ error: 'User with this email already exists.' });
+          return;
+        }
+      }
+
+      const existingUsername = await db.get('SELECT id FROM factory_users WHERE username = ?', [
         username.toLowerCase().trim(),
+      ]);
+      if (existingUsername) {
+        res.status(400).json({ error: 'User with this username already exists.' });
+        return;
+      }
+
+      const passwordHash = await bcrypt.hash(clearPassword, 10);
+      const userId = `usr-${Date.now()}`;
+
+      await db.run(
+        'INSERT INTO factory_users (id, name, email, username, role, avatar, passwordHash, needsPasswordReset, department, designation, isDepartmentHead, loginEnabled, default_shift) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?)',
+        [
+          userId,
+          name,
+          finalEmail,
+          username.toLowerCase().trim(),
+          role,
+          avatar ? avatar.trim() : '',
+          passwordHash,
+          department ? department.trim() : null,
+          designation ? designation.trim() : null,
+          normalizedIsDepartmentHead,
+          normalizedLoginEnabled,
+          defaultShift || 'general',
+        ]
+      );
+
+      const response: CreateFactoryUserResponse = {
+        id: userId,
+        name,
+        email: finalEmail,
+        username: username.toLowerCase().trim(),
         role,
-        avatar ? avatar.trim() : '',
-        passwordHash,
-        department ? department.trim() : null,
-        designation ? designation.trim() : null,
-        normalizedIsDepartmentHead,
-        normalizedLoginEnabled,
-      ]
-    );
+        avatar: avatar ? avatar.trim() : '',
+        department: department ? department.trim() : null,
+        designation: designation ? designation.trim() : null,
+        isDepartmentHead: normalizedIsDepartmentHead,
+        loginEnabled: normalizedLoginEnabled,
+        defaultShift: defaultShift || 'general',
+      };
 
-    const response: CreateUserResponse = {
-      id: userId,
-      name,
-      email: finalEmail,
-      username: username.toLowerCase().trim(),
-      role,
-      avatar: avatar ? avatar.trim() : '',
-      department: department ? department.trim() : null,
-      designation: designation ? designation.trim() : null,
-      isDepartmentHead: normalizedIsDepartmentHead,
-      loginEnabled: normalizedLoginEnabled,
-      shift,
-    };
-
-    res.status(201).json(response);
-  } catch (error) {
-    logger.error('Failed to create user:', error);
-    res.status(500).json({ error: 'Failed to register new user.' });
+      res.status(201).json(response);
+    } catch (error) {
+      logger.error('Failed to create factory user:', error);
+      res.status(500).json({ error: 'Failed to register new factory user.' });
+    }
   }
-});
+);
 
 startServer();
