@@ -30,7 +30,7 @@ async function clearTableData() {
     try {
       await runQuery(`DELETE FROM sqlite_sequence WHERE name = ?;`, [TARGET_TABLE]);
     } catch (seqErr) {
-      console.log('Note: No auto-increment sequence found to reset.');
+      console.log('Note: No auto-increment sequence found to reset.', seqErr);
     }
 
     console.log('Committing changes to disk...');
@@ -43,7 +43,7 @@ async function clearTableData() {
       await runQuery('ROLLBACK;');
       console.log('Rollback successful.');
     } catch (rollbackErr) {
-      console.error('Failed to rollback (transaction may not have started).');
+      console.error('Failed to rollback (transaction may not have started).', rollbackErr);
     }
   } finally {
     console.log('Closing database connection.');
