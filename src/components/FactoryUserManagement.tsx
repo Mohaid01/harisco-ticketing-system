@@ -413,7 +413,10 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
                   <option value="day">Day Shift (08:00–17:00)</option>
                   <option value="extended">General Shift (09:00–20:00)</option>
                   <option value="night">Night Shift (20:00–05:00)</option>
-                </select>
+                  <option value="standard8to8">Standard Shift (08:00–20:00)</option>
+                  <option value="standard8to9">Standard Shift (08:00–21:00)</option>
+                  <option value="night8to8">Night Shift (20:00–08:00)</option>
+                  </select>
               </div>
             </div>
 
@@ -652,7 +655,10 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
                           <option value="day">Day Shift (08:00–17:00)</option>
                           <option value="extended">General Shift (09:00–20:00)</option>
                           <option value="night">Night Shift (20:00–05:00)</option>
-                        </select>
+                          <option value="standard8to8">Standard Shift (08:00–20:00)</option>
+                          <option value="standard8to9">Standard Shift (08:00–21:00)</option>
+                          <option value="night8to8">Night Shift (20:00–08:00)</option>
+                          </select>
                       </div>
 
                       <label
