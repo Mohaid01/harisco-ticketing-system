@@ -529,6 +529,7 @@ export interface CreateUserRequestBody {
   designation?: string | null;
   isDepartmentHead?: number | boolean;
   loginEnabled?: number | boolean;
+  shift?: string;
 }
 
 export interface UpdateUserRequestBody {
@@ -539,6 +540,7 @@ export interface UpdateUserRequestBody {
   avatar?: string;
   isDepartmentHead?: number | boolean;
   loginEnabled?: number | boolean;
+  shift?: string;
 }
 
 export interface ResetUserPasswordRequestBody {
@@ -558,6 +560,7 @@ export interface CreateUserResponse {
   designation?: string | null;
   isDepartmentHead: number;
   loginEnabled: number;
+  shift?: string;
 }
 
 export interface UpdateUserResponse {
@@ -569,6 +572,7 @@ export interface UpdateUserResponse {
   avatar?: string;
   isDepartmentHead: number;
   loginEnabled: number;
+  shift?: string;
 }
 
 export interface ResetUserPasswordResponse {
@@ -580,7 +584,8 @@ export interface DeleteUserResponse {
 }
 
 export interface OffboardUserRequestBody {
-  reason?: string;
+  reason: string;
+  offboarded_at: string;
 }
 
 export interface OffboardUserResponse {

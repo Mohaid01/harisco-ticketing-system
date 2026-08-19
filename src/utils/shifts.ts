@@ -1,6 +1,6 @@
 import type { AttendanceLog } from '../types';
 
-export type ShiftCode = 'headquarters' | 'day' | 'night' | 'extended';
+export type ShiftCode = 'headquarters' | 'day' | 'night' | 'extended' | 'standard8to8' | 'standard8to9' | 'night8to8';
 
 export interface ShiftDefinition {
   code: ShiftCode;
@@ -64,6 +64,42 @@ export const SHIFTS: Record<ShiftCode, ShiftDefinition> = {
     baseHours: 11,
     maxOtHours: 0,
   },
+  standard8to8: {
+    code: 'standard8to8',
+    label: 'Standard Shift (08:00�20:00)',
+    weekdayStart: { h: 8, m: 0 },
+    weekdayEnd: { h: 20, m: 0 },
+    saturdayStart: { h: 8, m: 0 },
+    saturdayEnd: { h: 20, m: 0 },
+    sundayOff: true,
+    graceMinutes: 15,
+    baseHours: 12,
+    maxOtHours: 0,
+  },
+  standard8to9: {
+    code: 'standard8to9',
+    label: 'Standard Shift (08:00�21:00)',
+    weekdayStart: { h: 8, m: 0 },
+    weekdayEnd: { h: 21, m: 0 },
+    saturdayStart: { h: 8, m: 0 },
+    saturdayEnd: { h: 21, m: 0 },
+    sundayOff: true,
+    graceMinutes: 15,
+    baseHours: 13,
+    maxOtHours: 0,
+  },
+  night8to8: {
+    code: 'night8to8',
+    label: 'Night Shift (20:00�08:00)',
+    weekdayStart: { h: 20, m: 0 },
+    weekdayEnd: { h: 8, m: 0 },
+    saturdayStart: { h: 20, m: 0 },
+    saturdayEnd: { h: 8, m: 0 },
+    sundayOff: true,
+    graceMinutes: 15,
+    baseHours: 12,
+    maxOtHours: 0,
+  },
 };
 
 export function getEffectiveShift(
@@ -89,7 +125,8 @@ export function hasShiftStartedForUser(shift: ShiftDefinition): boolean {
   const dayOfWeek = pktNow.getUTCDay();
   const isSat = dayOfWeek === 6;
 
-  if (shift.code === 'night') {
+  const crossesMidnight = shift.weekdayEnd.h < shift.weekdayStart.h;
+  if (crossesMidnight) {
     return currentH >= shift.weekdayStart.h || currentH < shift.weekdayEnd.h;
   }
 
@@ -104,7 +141,7 @@ export function getShiftDateForPunch(punchTime: string, shift: ShiftDefinition):
 
   const [hour] = timePart.split(':').map(Number);
 
-  if (shift.code === 'night' && hour < shift.weekdayEnd.h + shift.maxOtHours + 1) {
+  if (shift.weekdayEnd.h < shift.weekdayStart.h && hour < shift.weekdayEnd.h + shift.maxOtHours + 1) {
     const prev = new Date(datePart + 'T00:00:00Z');
     prev.setUTCDate(prev.getUTCDate() - 1);
     return prev.toISOString().split('T')[0];

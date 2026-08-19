@@ -178,8 +178,10 @@ export async function processFactoryAttendancePunch(input: {
     let shiftCode = defaultShift;
     let logicalPunchDate = rawDate;
 
-    if (overrideYesterday?.shift === 'night') {
-      shiftCode = 'night';
+    const yesterdayShiftCode = overrideYesterday?.shift || defaultShift;
+    const yesterdayShift = getEffectiveShift(yesterdayShiftCode, undefined, yesterdayStr);
+    if (yesterdayShift.weekdayEnd.h < yesterdayShift.weekdayStart.h) {
+      shiftCode = yesterdayShiftCode;
       logicalPunchDate = yesterdayStr;
     } else if (overrideToday?.shift) {
       shiftCode = overrideToday.shift;
