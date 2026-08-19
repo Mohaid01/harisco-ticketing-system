@@ -15,16 +15,22 @@ interface NoticeCardProps {
   };
 }
 
-export const NoticeCard: React.FC<NoticeCardProps> = ({ notice, isAdmin, currentUser, onEditNoticeClick, getTagMeta, }) => {
+export const NoticeCard: React.FC<NoticeCardProps> = ({
+  notice,
+  isAdmin,
+  currentUser,
+  onEditNoticeClick,
+  getTagMeta,
+}) => {
   const now = new Date();
   const meta = getTagMeta(notice.type);
   const isExpired = notice.expiresAt && new Date(notice.expiresAt) <= now;
   const isAuthor = notice.authorName === currentUser?.name;
-  console.log(notice.authorName, currentUser?.name)
+  console.log(notice.authorName, currentUser?.name);
 
   return (
     <div
-      className={`notice-card notice-card-${notice.type} ${isExpired ? 'notice-card-expired' : ''} ${ (isAdmin || isAuthor) && onEditNoticeClick ? 'notice-card-clickable' : ''}`}
+      className={`notice-card notice-card-${notice.type} ${isExpired ? 'notice-card-expired' : ''} ${(isAdmin || isAuthor) && onEditNoticeClick ? 'notice-card-clickable' : ''}`}
     >
       <div className="notice-badge-section">
         <div className="notice-badge-row">
@@ -91,11 +97,7 @@ export const NoticeCard: React.FC<NoticeCardProps> = ({ notice, isAdmin, current
           </div>
         </span>
         {isAuthor && onEditNoticeClick && (
-          <button
-            className="btn btn-primary"
-            onClick={() => onEditNoticeClick(notice.id)}
-            title="Edit Notice"
-          >
+          <button className="btn btn-primary" onClick={() => onEditNoticeClick(notice.id)} title="Edit Notice">
             <SquarePen size={20} />
           </button>
         )}
