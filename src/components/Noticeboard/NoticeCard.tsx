@@ -1,5 +1,5 @@
 import { SquarePen } from 'lucide-react';
-import React, { useMemo } from 'react';
+import React from 'react';
 
 import type { AppUser, Notice, NoticeType } from '../../types';
 
