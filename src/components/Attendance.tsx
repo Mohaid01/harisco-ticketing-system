@@ -1613,6 +1613,9 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                           <option value={SHIFTS.extended.label}>{SHIFTS.extended.label}</option>
                           <option value={SHIFTS.day.label}>{SHIFTS.day.label}</option>
                           <option value={SHIFTS.night.label}>{SHIFTS.night.label}</option>
+                          <option value={SHIFTS.standard8to8.label}>{SHIFTS.standard8to8.label}</option>
+                          <option value={SHIFTS.standard8to9.label}>{SHIFTS.standard8to9.label}</option>
+                          <option value={SHIFTS.night8to8.label}>{SHIFTS.night8to8.label}</option>
                         </>
                       ) : (
                         <option value={SHIFTS.headquarters.label}>{SHIFTS.headquarters.label}</option>
@@ -2627,7 +2630,11 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                                         title="Override shift for today"
                                       >
                                         <option value="day">Day</option>
+                                        <option value="extended">General Shift (09:00–20:00)</option>
                                         <option value="night">Night</option>
+                                        <option value="standard8to8">Standard Shift (08:00–20:00)</option>
+                                        <option value="standard8to9">Standard Shift (08:00–21:00)</option>
+                                        <option value="night8to8">Night Shift (20:00–08:00)</option>
                                       </select>
                                     </div>
                                   );

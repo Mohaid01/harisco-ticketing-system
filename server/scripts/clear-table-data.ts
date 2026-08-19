@@ -5,7 +5,7 @@ import logger from '../utils/logger.ts';
 
 // === CONFIGURATION ===
 const DB_PATH = process.env.DB_PATH || path.resolve(process.cwd(), 'database.sqlite');
-const TARGET_TABLE = 'factory_users'; // The table you want to empty
+const TARGET_TABLE = 'table_name'; // The table you want to empty
 
 function clearTableData() {
   // 1. Open database connection

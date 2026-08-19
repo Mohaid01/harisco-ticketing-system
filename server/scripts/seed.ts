@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import path from 'path';
 import sqlite3 from 'sqlite3';
+import { logger } from 'utils/logger.ts';
 
 const DB_PATH = process.env.DB_PATH || path.resolve(process.cwd(), 'database.sqlite');
 
@@ -13,11 +14,10 @@ async function main() {
   const hqUsers = [
     {
       id: 'usr-1',
-      name: 'Mohid Bin Shahid',
-      email: 'mohid@harisco.com',
-      username: 'HC-00653',
+      name: 'Junaid Ameen',
+      email: 'junaid@harisco.com',
+      username: 'HC-00099',
       role: 'it',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&h=100&q=80',
       department: 'IT',
       designation: 'IT Administrator',
       isDepartmentHead: 1,
