@@ -40,6 +40,8 @@ interface AttendanceProps {
   currentUser: AppUser;
   allUsers: AppUser[];
   mode?: 'hq' | 'factory';
+  viewMode?: 'summary' | 'individual';
+  onViewModeChange?: (mode: 'summary' | 'individual') => void;
 }
 
 type ViewMode = 'summary' | 'individual';
@@ -56,7 +58,13 @@ const isTodaySundayPKT = (): boolean => {
   return pktNow.getUTCDay() === 0;
 };
 
-export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, mode = 'hq' }) => {
+export const Attendance: React.FC<AttendanceProps> = ({
+  currentUser,
+  allUsers,
+  mode = 'hq',
+  viewMode: controlledViewMode,
+  onViewModeChange,
+}) => {
   const isFactory = mode === 'factory';
 
   const canViewAll = isFactory
@@ -77,7 +85,15 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
   const [logs, setLogs] = useState<AttendanceLog[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
-  const [viewMode, setViewMode] = useState<ViewMode>(canViewAll ? 'summary' : 'individual');
+  const [internalViewMode, setInternalViewMode] = useState<ViewMode>(canViewAll ? 'summary' : 'individual');
+  const effectiveViewMode = controlledViewMode ?? internalViewMode;
+  const handleViewModeChange = (newMode: 'summary' | 'individual') => {
+    if (onViewModeChange) {
+      onViewModeChange(newMode);
+    } else {
+      setInternalViewMode(newMode);
+    }
+  };
 
   // Live tick to force recalculation of dynamic ongoing hours
   const [tick, setTick] = useState(0);
@@ -1370,27 +1386,27 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
           {canViewAll || canViewDepartment ? (
             <div className="btn-group">
               <button
-                className={`btn ${viewMode === 'summary' ? 'btn-primary' : 'btn-secondary'}`}
+                className={`btn ${effectiveViewMode === 'summary' ? 'btn-primary' : 'btn-secondary'}`}
                 style={{
                   padding: '6px 14px',
                   fontSize: '0.8rem',
                   border: 'none',
                   borderRadius: 'var(--radius-sm)',
                 }}
-                onClick={() => setViewMode('summary')}
+                onClick={() => handleViewModeChange('summary')}
               >
                 <List size={14} />
                 All Employees Summary
               </button>
               <button
-                className={`btn ${viewMode === 'individual' ? 'btn-primary' : 'btn-secondary'}`}
+                className={`btn ${effectiveViewMode === 'individual' ? 'btn-primary' : 'btn-secondary'}`}
                 style={{
                   padding: '6px 14px',
                   fontSize: '0.8rem',
                   border: 'none',
                   borderRadius: 'var(--radius-sm)',
                 }}
-                onClick={() => setViewMode('individual')}
+                onClick={() => handleViewModeChange('individual')}
               >
                 <Users size={14} />
                 Detailed Individual View
@@ -1448,7 +1464,11 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
               day: '2-digit',
             }).format(new Date());
             const todayHoliday = holidays.find((h) => h.date === todayDateStr);
-            if (viewMode === 'summary' && (canViewAll || canViewDepartment) && (isTodaySundayPKT() || todayHoliday)) {
+            if (
+              effectiveViewMode === 'summary' &&
+              (canViewAll || canViewDepartment) &&
+              (isTodaySundayPKT() || todayHoliday)
+            ) {
               const isSunday = isTodaySundayPKT();
               return (
                 <div
@@ -1505,7 +1525,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
             }
             return <></>;
           })()}
-          {viewMode === 'summary' &&
+          {effectiveViewMode === 'summary' &&
           (canViewAll || canViewDepartment) &&
           !isTodaySundayPKT() &&
           !holidays.find(
@@ -1826,7 +1846,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                           key={emp.id}
                           onClick={() => {
                             setSelectedUserId(emp.id);
-                            setViewMode('individual');
+                            handleViewModeChange('individual');
                           }}
                         >
                           <td style={{ fontWeight: 700, color: 'white' }}>{emp.formattedCode}</td>
@@ -1943,7 +1963,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                               }}
                               onClick={() => {
                                 setSelectedUserId(emp.id);
-                                setViewMode('individual');
+                                handleViewModeChange('individual');
                               }}
                             >
                               View Detailed Logs
@@ -1976,7 +1996,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
           )}
 
           {/* ─────────────────── DETAILED INDIVIDUAL VIEW ─────────────────── */}
-          {viewMode === 'individual' && selectedEmployee ? (
+          {effectiveViewMode === 'individual' && selectedEmployee ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
               {/* Back Navigation Bar for Managers/Admins/Executives */}
               {canViewAll || canViewDepartment ? (
@@ -1990,7 +2010,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                       alignItems: 'center',
                       gap: '6px',
                     }}
-                    onClick={() => setViewMode('summary')}
+                    onClick={() => handleViewModeChange('summary')}
                   >
                     <ArrowLeft size={14} />
                     Back to All Employees Summary
@@ -2129,17 +2149,21 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                             Designation: <strong style={{ color: 'white' }}>{selectedEmployee.designation}</strong>
                           </span>
                         )}
-                        <span>
-                          Role:{' '}
-                          <strong
-                            style={{
-                              color: 'white',
-                              textTransform: 'capitalize',
-                            }}
-                          >
-                            {selectedEmployee.isDepartmentHead ? 'Department Head' : selectedEmployee.role}
-                          </strong>
-                        </span>
+                        {selectedEmployee.isDepartmentHead ? (
+                          <span>
+                            Role:{' '}
+                            <strong
+                              style={{
+                                color: 'white',
+                                textTransform: 'capitalize',
+                              }}
+                            >
+                              {selectedEmployee.isDepartmentHead ? 'Department Head' : selectedEmployee.role}
+                            </strong>
+                          </span>
+                        ) : (
+                          <></>
+                        )}
                         <span>
                           Shift:{' '}
                           <strong style={{ color: 'white' }}>
