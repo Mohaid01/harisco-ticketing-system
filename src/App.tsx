@@ -663,6 +663,7 @@ function App() {
           return {
             ...t,
             status: result.status,
+            previousStatus: result.previousStatus,
             updatedAt: result.updatedAt,
             executiveId: result.executiveId || t.executiveId,
             executiveName: result.executiveName || t.executiveName,
