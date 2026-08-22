@@ -510,7 +510,7 @@ export const AdminTicketDetails: React.FC<AdminTicketDetailsProps> = ({
             </h2>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {canManagerAction && ticket.previousStatus && (
+              {canManagerAction && ticket.status !== 'awaiting_admin_manager' && (
                 <button
                   id="btn-admin-revert-status"
                   className="btn btn-secondary"
@@ -523,7 +523,10 @@ export const AdminTicketDetails: React.FC<AdminTicketDetailsProps> = ({
                   onClick={() => onRevertStatus(ticket.id)}
                 >
                   <Undo2 size={16} />
-                  Revert to {ADMIN_TICKET_STATUS_LABELS[ticket.previousStatus as AdminTicketStatus]}
+                  Revert to{' '}
+                  {ticket.previousStatus
+                    ? ADMIN_TICKET_STATUS_LABELS[ticket.previousStatus as AdminTicketStatus]
+                    : 'Open'}
                 </button>
               )}
 

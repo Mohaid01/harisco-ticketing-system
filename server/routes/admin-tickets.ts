@@ -350,9 +350,51 @@ router.post(
       }
 
       if (!ticket.previousStatus) {
-        res.status(400).json({
-          error: 'Cannot revert: no previous status available. This ticket is already in its initial state.',
-        });
+        if (ticket.status === 'awaiting_admin_manager') {
+          res.status(400).json({
+            error: 'Cannot revert: this ticket is already in its initial state.',
+          });
+          return;
+        }
+
+        const timestamp = new Date().toISOString();
+        const revertedStatus = 'awaiting_admin_manager';
+
+        await db.run(
+          'UPDATE admin_tickets SET status = ?, previousStatus = NULL, updatedAt = ? WHERE id = ?',
+          [revertedStatus, timestamp, ticketId]
+        );
+
+        const logId = `log-${Date.now()}`;
+        const newLog: DbAdminActivityLog = {
+          id: logId,
+          ticketId,
+          action: `Status reverted to ${revertedStatus}`,
+          timestamp,
+          performedByName: req.user?.name || '',
+          performedByRole: req.user?.role || 'manager',
+        };
+
+        await db.run(
+          `INSERT INTO admin_activity_logs (
+                id, ticketId, action, timestamp, performedByName, performedByRole
+              ) VALUES (?, ?, ?, ?, ?, ?)`,
+          [logId, ticketId, newLog.action, timestamp, newLog.performedByName, newLog.performedByRole]
+        );
+
+        const response: RevertAdminTicketStatusResponse = {
+          success: true,
+          status: revertedStatus,
+          previousStatus: null,
+          updatedAt: timestamp,
+          newLog,
+        };
+
+        sseClients.broadcast(
+          `data: ${JSON.stringify({ type: 'admin_ticket_update', action: 'status_reverted', data: { id: ticketId, ...response } })}\n\n`,
+          req.user?.id
+        );
+        res.json(response);
         return;
       }
 

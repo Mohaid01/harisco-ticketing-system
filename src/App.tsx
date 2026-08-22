@@ -680,13 +680,17 @@ function App() {
     if (!token || !currentUser) return;
 
     const ticket = adminTickets.find((t) => t.id === ticketId);
-    if (!ticket || !ticket.previousStatus) return;
+    if (!ticket || ticket.status === 'awaiting_admin_manager') return;
+
+    const revertTarget = ticket.previousStatus
+      ? ADMIN_TICKET_STATUS_LABELS[ticket.previousStatus as AdminTicketStatus]
+      : 'Open';
 
     const confirmMessage = [
       'Revert ticket ',
       ticketId,
       ' status back to ',
-      ADMIN_TICKET_STATUS_LABELS[ticket.previousStatus as AdminTicketStatus],
+      revertTarget,
       '?',
     ].join('');
 
