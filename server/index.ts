@@ -87,7 +87,8 @@ app.use(
   })
 );
 
-app.use(express.json({ limit: '10mb' }));
+// scope express.json() to /api routes only:
+app.use('/api', express.json({ limit: '10mb' }));
 
 // Loose global tracker applied to every endpoint under /api
 app.use('/api', globalLimiter);
