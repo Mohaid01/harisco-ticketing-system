@@ -687,13 +687,7 @@ function App() {
       ? ADMIN_TICKET_STATUS_LABELS[ticket.previousStatus as AdminTicketStatus]
       : 'Open';
 
-    const confirmMessage = [
-      'Revert ticket ',
-      ticketId,
-      ' status back to ',
-      revertTarget,
-      '?',
-    ].join('');
+    const confirmMessage = ['Revert ticket ', ticketId, ' status back to ', revertTarget, '?'].join('');
 
     if (!window.confirm(confirmMessage)) return;
 

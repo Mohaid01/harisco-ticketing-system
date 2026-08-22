@@ -3,7 +3,12 @@ import React, { useState } from 'react';
 
 import type { AdminTicket, AdminTicketCategory, AdminTicketStatus, AppUser } from '../types';
 
-import { ADMIN_TICKET_CATEGORY_LABELS, ADMIN_TICKET_CATEGORY_OPTIONS, ADMIN_TICKET_STATUS_LABELS, ROLE_LABELS } from '../constants';
+import {
+  ADMIN_TICKET_CATEGORY_LABELS,
+  ADMIN_TICKET_CATEGORY_OPTIONS,
+  ADMIN_TICKET_STATUS_LABELS,
+  ROLE_LABELS,
+} from '../constants';
 
 interface AdminTicketDetailsProps {
   ticket: AdminTicket;

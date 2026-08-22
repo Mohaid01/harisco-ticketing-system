@@ -360,10 +360,11 @@ router.post(
         const timestamp = new Date().toISOString();
         const revertedStatus = 'awaiting_admin_manager';
 
-        await db.run(
-          'UPDATE admin_tickets SET status = ?, previousStatus = NULL, updatedAt = ? WHERE id = ?',
-          [revertedStatus, timestamp, ticketId]
-        );
+        await db.run('UPDATE admin_tickets SET status = ?, previousStatus = NULL, updatedAt = ? WHERE id = ?', [
+          revertedStatus,
+          timestamp,
+          ticketId,
+        ]);
 
         const logId = `log-${Date.now()}`;
         const newLog: DbAdminActivityLog = {
@@ -401,10 +402,11 @@ router.post(
       const timestamp = new Date().toISOString();
       const revertedStatus = ticket.previousStatus;
 
-      await db.run(
-        'UPDATE admin_tickets SET status = ?, previousStatus = NULL, updatedAt = ? WHERE id = ?',
-        [revertedStatus, timestamp, ticketId]
-      );
+      await db.run('UPDATE admin_tickets SET status = ?, previousStatus = NULL, updatedAt = ? WHERE id = ?', [
+        revertedStatus,
+        timestamp,
+        ticketId,
+      ]);
 
       const logId = `log-${Date.now()}`;
       const newLog: DbAdminActivityLog = {
