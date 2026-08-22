@@ -1,9 +1,9 @@
-import { ArrowLeft, Calendar, CheckCircle2, Send, ShieldAlert, Tag, User, XCircleIcon } from 'lucide-react';
+import { ArrowLeft, Calendar, CheckCircle2, Send, ShieldAlert, Tag, Undo2, User, XCircleIcon } from 'lucide-react';
 import React, { useState } from 'react';
 
 import type { AdminTicket, AdminTicketCategory, AdminTicketStatus, AppUser } from '../types';
 
-import { ADMIN_TICKET_CATEGORY_LABELS, ADMIN_TICKET_CATEGORY_OPTIONS, ROLE_LABELS } from '../constants';
+import { ADMIN_TICKET_CATEGORY_LABELS, ADMIN_TICKET_CATEGORY_OPTIONS, ADMIN_TICKET_STATUS_LABELS, ROLE_LABELS } from '../constants';
 
 interface AdminTicketDetailsProps {
   ticket: AdminTicket;
@@ -17,6 +17,7 @@ interface AdminTicketDetailsProps {
     executiveId?: string,
     executiveName?: string
   ) => void;
+  onRevertStatus: (ticketId: string) => void;
   onAddComment: (ticketId: string, content: string) => void;
   onEditTicket?: (ticketId: string, data: { description: string; category: AdminTicketCategory }) => void;
   onDeleteTicket?: (ticketId: string) => void;
@@ -28,6 +29,7 @@ export const AdminTicketDetails: React.FC<AdminTicketDetailsProps> = ({
   allUsers,
   onBack,
   onUpdateStatus,
+  onRevertStatus,
   onAddComment,
   onEditTicket,
   onDeleteTicket,
@@ -508,6 +510,23 @@ export const AdminTicketDetails: React.FC<AdminTicketDetailsProps> = ({
             </h2>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {canManagerAction && ticket.previousStatus && (
+                <button
+                  id="btn-admin-revert-status"
+                  className="btn btn-secondary"
+                  style={{
+                    width: '100%',
+                    backgroundColor: '#f59e0b',
+                    color: 'white',
+                    border: 'none',
+                  }}
+                  onClick={() => onRevertStatus(ticket.id)}
+                >
+                  <Undo2 size={16} />
+                  Revert to {ADMIN_TICKET_STATUS_LABELS[ticket.previousStatus as AdminTicketStatus]}
+                </button>
+              )}
+
               {canManagerAction && ticket.status !== 'resolved' && ticket.status !== 'rejected' && (
                 <>
                   {ticket.status === 'awaiting_admin_manager' && (
