@@ -692,9 +692,6 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
           status = first.status;
           finalFirstIn = 'N/A';
           finalLastOut = 'N/A';
-          if (first.status === 'On Leave') {
-            hours = 0;
-          }
         }
 
         const checkOutPunch = sorted.find((p) => p.status === PUNCH_STATUS.CHECK_OUT);
@@ -782,9 +779,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
         if (log.date === todayStr && !shiftStarted && log.firstIn === '--') return;
         if (log.firstIn !== '--') {
           present++;
-          if (log.status !== 'On Leave') {
             totalHours += log.hours;
-          }
         } else {
           absent++;
         }
@@ -1012,7 +1007,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
       const isSaturday = dateObj.getUTCDay() === 6;
       const shift = getEffectiveShift(selectedEmployee?.defaultShift || 'headquarters', shiftOverrides, date);
       const start = isSaturday && shift.saturdayStart ? shift.saturdayStart : shift.weekdayStart;
-      const end = isSaturday && shift.saturdayEnd ? shift.saturdayEnd : shift.weekdayEnd;
+      const end = isSaturday && shift.saturdayEnd ? shift.saturdayEnd : {h: shift.weekdayStart.h + shift.baseHours, m: shift.weekdayStart.m };
       const checkInTime = `${String(start.h).padStart(2, '0')}:${String(start.m).padStart(2, '0')}`;
       const checkOutTime = `${String(end.h).padStart(2, '0')}:${String(end.m).padStart(2, '0')}`;
 
