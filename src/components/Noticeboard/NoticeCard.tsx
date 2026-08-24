@@ -27,7 +27,6 @@ export const NoticeCard: React.FC<NoticeCardProps> = ({
   const isExpired = notice.expiresAt && new Date(notice.expiresAt) <= now;
   const isAuthor = notice.authorName === currentUser?.name;
 
-
   return (
     <div
       className={`notice-card notice-card-${notice.type} ${isExpired ? 'notice-card-expired' : ''} ${(isAdmin || isAuthor) && onEditNoticeClick ? 'notice-card-clickable' : ''}`}
