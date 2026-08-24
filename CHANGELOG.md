@@ -44,6 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Site Duty & Leave simulated hours** — Fixed simulated check-out times and individual log calculations for "On Leave" and "Site Duty" statuses to represent exactly the shift base hours (e.g. 8 hours) instead of 8.5 hours.
 - **Factory midnight rollover** — Yesterday shift override now correctly determines midnight-crossing for punches after midnight
 
 ### Changed
