@@ -220,6 +220,7 @@ export interface DbAdminTicket {
   description: string;
   category: string;
   status: string;
+  previousStatus?: string | null;
   createdAt: string;
   updatedAt: string;
   reporterId: string;
@@ -293,6 +294,7 @@ export interface AdminTicketResponse {
   description: string;
   category: string;
   status: string;
+  previousStatus?: string | null;
   createdAt: string;
   updatedAt: string;
   reporterId: string;
@@ -323,9 +325,18 @@ export interface CreateAdminTicketResponse {
 export interface UpdateAdminTicketStatusResponse {
   success: boolean;
   status: string;
+  previousStatus?: string | null;
   updatedAt: string;
   executiveId?: string;
   executiveName?: string;
+  newLog?: AdminTicketActivityLog;
+}
+
+export interface RevertAdminTicketStatusResponse {
+  success: boolean;
+  status: string;
+  previousStatus?: string | null;
+  updatedAt: string;
   newLog?: AdminTicketActivityLog;
 }
 
