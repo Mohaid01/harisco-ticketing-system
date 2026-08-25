@@ -16,6 +16,7 @@ export interface DbUser {
   email: string;
   username: string;
   role: UserRoles;
+  authorName: string;
   avatar?: string;
   passwordHash: string;
   needsPasswordReset: number;
