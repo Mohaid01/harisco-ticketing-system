@@ -143,7 +143,6 @@ router.put(
   '/:id',
   authenticateToken,
   async (req: ApiAuthRequest<UpdateNoticeRequestBody>, res: ApiResponse<UpdateNoticeResponse>) => {
-    
     if (req.user?.role !== 'it' && req.user?.role !== 'manager' && req.user?.role !== 'executive') {
       res.status(403).json({
         error: 'Forbidden. Administrative privileges required to edit notices.',
@@ -162,10 +161,9 @@ router.put(
     try {
       const db = getDb();
       // 2. Fetch the notice from DB to check existence and ownership
-      const existingNotice = await db.get<{ authorName: string }>(
-        'SELECT authorName FROM notices WHERE id = ?',
-        [noticeId]
-      );
+      const existingNotice = await db.get<{ authorName: string }>('SELECT authorName FROM notices WHERE id = ?', [
+        noticeId,
+      ]);
       if (!existingNotice) {
         res.status(404).json({ error: 'Notice not found.' });
         return;
