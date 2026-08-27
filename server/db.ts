@@ -158,22 +158,22 @@ export async function initDb() {
   `);
 
   try {
-  await db.exec('ALTER TABLE tickets ADD COLUMN quotation REAL');
-} catch {
-  // Column might already exist, ignore error
-}
+    await db.exec('ALTER TABLE tickets ADD COLUMN quotation REAL');
+  } catch {
+    // Column might already exist, ignore error
+  }
 
-// ------------------------------------------------------------------
-// 2. MIGRATION: Update 'type' CHECK constraint for EXISTING databases
-// ------------------------------------------------------------------
-try {
-  // Check if existing table definition contains the new types (e.g., 'email')
-  const ticketTable = await db.get<{ sql: string }>(
-    "SELECT sql FROM sqlite_master WHERE type='table' AND name='tickets'"
-  );
+  // ------------------------------------------------------------------
+  // 2. MIGRATION: Update 'type' CHECK constraint for EXISTING databases
+  // ------------------------------------------------------------------
+  try {
+    // Check if existing table definition contains the new types (e.g., 'email')
+    const ticketTable = await db.get<{ sql: string }>(
+      "SELECT sql FROM sqlite_master WHERE type='table' AND name='tickets'"
+    );
 
-  if (ticketTable?.sql && (!ticketTable.sql.includes("email") || !ticketTable.sql.includes("others"))) {
-    await db.exec(`
+    if (ticketTable?.sql && (!ticketTable.sql.includes('email') || !ticketTable.sql.includes('others'))) {
+      await db.exec(`
       PRAGMA foreign_keys=OFF;
       BEGIN TRANSACTION;
 
@@ -201,10 +201,10 @@ try {
       COMMIT;
       PRAGMA foreign_keys=ON;
     `);
+    }
+  } catch (err) {
+    console.error('Failed to migrate tickets type constraint:', err);
   }
-} catch (err) {
-  console.error('Failed to migrate tickets type constraint:', err);
-}
 
   try {
     await db.exec('ALTER TABLE users ADD COLUMN needsPasswordReset INTEGER DEFAULT 1');

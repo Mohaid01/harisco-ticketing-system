@@ -16,9 +16,7 @@ import React, { useMemo, useState } from 'react';
 import type { AdminTicket, AdminTicketCategory, AdminTicketStatus, AppUser } from '../types';
 
 import { ADMIN_TICKET_CATEGORY_LABELS, ADMIN_TICKET_CATEGORY_OPTIONS, ADMIN_TICKET_STATUS_OPTIONS } from '../constants';
-import { LoadingSpinner,  } from './LoadingSpinner';
-
-
+import { LoadingSpinner } from './LoadingSpinner';
 
 interface AdminTicketListProps {
   tickets: AdminTicket[];
@@ -60,12 +58,12 @@ export const AdminTicketList: React.FC<AdminTicketListProps> = ({
 
         const matchesStatus = statusFilter === 'all' || ticket.status === statusFilter;
         // Date Range Filtering Logic
-      const ticketTime = new Date(ticket.createdAt).getTime();
-      const start = startDate ? new Date(`${startDate}T00:00:00`).getTime() : null;
-      const end = endDate ? new Date(`${endDate}T23:59:59`).getTime() : null;
+        const ticketTime = new Date(ticket.createdAt).getTime();
+        const start = startDate ? new Date(`${startDate}T00:00:00`).getTime() : null;
+        const end = endDate ? new Date(`${endDate}T23:59:59`).getTime() : null;
 
-      const matchesStartDate = !start || ticketTime >= start;
-      const matchesEndDate = !end || ticketTime <= end;
+        const matchesStartDate = !start || ticketTime >= start;
+        const matchesEndDate = !end || ticketTime <= end;
 
         return matchesSearch && matchesCategory && matchesStatus && matchesStartDate && matchesEndDate;
       })
@@ -367,52 +365,52 @@ export const AdminTicketList: React.FC<AdminTicketListProps> = ({
               }}
             />
           </div>
-           {/* Date Filter */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <CalendarIcon size={14} style={{ color: 'var(--text-muted)' }} />
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Date:</span>
-          <input
-            type="date"
-            className="form-input"
-            style={{
-              height: '38px',
-              padding: '4px 7px',
-              backgroundColor: 'var(--bg-primary)',
-              color: '#ffffff',
-              colorScheme: 'dark',
-              width: '135px',
-            }}
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-          />
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>To:</span>
-          <input
-            type="date"
-            className="form-input"
-            style={{
-            height: '38px',
-            padding: '4px 7px',
-            backgroundColor: 'var(--bg-primary)',
-            color: '#ffffff',
-            colorScheme: 'dark',
-            width: '135px',
-            }}
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-          />
-          {(startDate || endDate) && (
-            <button
-              className="btn btn-secondary"
-              style={{ padding: '6px 10px', fontSize: '0.75rem' }}
-              onClick={() => {
-                setStartDate('');
-                setEndDate('');
+          {/* Date Filter */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <CalendarIcon size={14} style={{ color: 'var(--text-muted)' }} />
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Date:</span>
+            <input
+              type="date"
+              className="form-input"
+              style={{
+                height: '38px',
+                padding: '4px 7px',
+                backgroundColor: 'var(--bg-primary)',
+                color: '#ffffff',
+                colorScheme: 'dark',
+                width: '135px',
               }}
-            >
-              Clear Dates
-            </button>
-          )}
-        </div>
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+            />
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>To:</span>
+            <input
+              type="date"
+              className="form-input"
+              style={{
+                height: '38px',
+                padding: '4px 7px',
+                backgroundColor: 'var(--bg-primary)',
+                color: '#ffffff',
+                colorScheme: 'dark',
+                width: '135px',
+              }}
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+            />
+            {(startDate || endDate) && (
+              <button
+                className="btn btn-secondary"
+                style={{ padding: '6px 10px', fontSize: '0.75rem' }}
+                onClick={() => {
+                  setStartDate('');
+                  setEndDate('');
+                }}
+              >
+                Clear Dates
+              </button>
+            )}
+          </div>
 
           {/* Category Filter */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
