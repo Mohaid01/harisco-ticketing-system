@@ -143,7 +143,7 @@ export async function initDb() {
       id TEXT PRIMARY KEY,
       title TEXT NOT NULL,
       description TEXT NOT NULL,
-      type TEXT CHECK(type IN ('hardware', 'software', 'maintenance', 'upgrade')) NOT NULL,
+      type TEXT CHECK(type IN ('hardware', 'software', 'maintenance', 'upgrade', 'email', 'others')) NOT NULL,
       status TEXT CHECK(status IN ('open', 'awaiting_it_approval', 'awaiting_manager_approval', 'awaiting_handover', 'closed')) NOT NULL,
       justification TEXT NOT NULL,
       createdAt TEXT NOT NULL,
@@ -158,10 +158,53 @@ export async function initDb() {
   `);
 
   try {
-    await db.exec('ALTER TABLE tickets ADD COLUMN quotation REAL');
-  } catch {
-    // Column might already exist, ignore error
+  await db.exec('ALTER TABLE tickets ADD COLUMN quotation REAL');
+} catch {
+  // Column might already exist, ignore error
+}
+
+// ------------------------------------------------------------------
+// 2. MIGRATION: Update 'type' CHECK constraint for EXISTING databases
+// ------------------------------------------------------------------
+try {
+  // Check if existing table definition contains the new types (e.g., 'email')
+  const ticketTable = await db.get<{ sql: string }>(
+    "SELECT sql FROM sqlite_master WHERE type='table' AND name='tickets'"
+  );
+
+  if (ticketTable?.sql && (!ticketTable.sql.includes("email") || !ticketTable.sql.includes("others"))) {
+    await db.exec(`
+      PRAGMA foreign_keys=OFF;
+      BEGIN TRANSACTION;
+
+      CREATE TABLE tickets_new (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        description TEXT NOT NULL,
+        type TEXT CHECK(type IN ('hardware', 'software', 'maintenance', 'upgrade', 'email', 'others')) NOT NULL,
+        status TEXT CHECK(status IN ('open', 'awaiting_it_approval', 'awaiting_manager_approval', 'awaiting_handover', 'closed')) NOT NULL,
+        justification TEXT NOT NULL,
+        createdAt TEXT NOT NULL,
+        updatedAt TEXT NOT NULL,
+        reporterId TEXT NOT NULL,
+        reporterName TEXT NOT NULL,
+        reporterEmail TEXT NOT NULL,
+        assigneeId TEXT,
+        assigneeName TEXT,
+        quotation REAL
+      );
+
+      INSERT INTO tickets_new SELECT * FROM tickets;
+      DROP TABLE tickets;
+      ALTER TABLE tickets_new RENAME TO tickets;
+
+      COMMIT;
+      PRAGMA foreign_keys=ON;
+    `);
   }
+} catch (err) {
+  console.error('Failed to migrate tickets type constraint:', err);
+}
 
   try {
     await db.exec('ALTER TABLE users ADD COLUMN needsPasswordReset INTEGER DEFAULT 1');

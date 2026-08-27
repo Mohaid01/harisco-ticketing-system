@@ -108,6 +108,7 @@ router.post(
   authenticateToken,
   async (req: ApiAuthRequest<CreateTicketRequestBody>, res: ApiResponse<CreateTicketResponse>) => {
     const { description, type, justification } = req.body;
+    console.log(req.body);
     if (!description || !type || !justification) {
       res.status(400).json({ error: 'Missing required ticket fields.' });
       return;

@@ -9,6 +9,7 @@ import {
   ShieldCheck,
   UserCheck,
   User,
+  ChartNoAxesCombined,
 } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
 
@@ -53,6 +54,9 @@ export const TicketList: React.FC<TicketListProps> = ({
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<SortByOption>('newest');
   const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
+  //  Add date filter 
+  const[startDate, setStartDate] = useState<string>('');
+  const[endDate, setEndDate] = useState<string>('');
 
   // Get IT users for assignee filter
   const itUserNames = useMemo(() => users.filter((user) => user.role === 'it').map((user) => user.name), [users]);
@@ -93,7 +97,7 @@ export const TicketList: React.FC<TicketListProps> = ({
         }
         return 0;
       });
-  }, [tickets, searchQuery, typeFilter, statusFilter, assigneeFilter, sortBy]);
+  }, [tickets, searchQuery, typeFilter, statusFilter, assigneeFilter, sortBy,]);
 
   // Calculate statistics from the ROLE-filtered tickets (or all tickets? Let's use role-filtered for Employee, all for IT/Manager to make it feel specific)
   const awaitingIt = tickets.filter((t) => t.status === 'awaiting_it_approval').length;
@@ -117,7 +121,7 @@ export const TicketList: React.FC<TicketListProps> = ({
           </span>
         );
       case 'awaiting_it_approval':
-        return <span className="badge badge-it-app">IT Apprv</span>;
+        return <span className="badge badge-it-app">IN Progress</span>;
       case 'awaiting_manager_approval':
         return <span className="badge badge-m-app">Mgr Apprv</span>;
       case 'awaiting_handover':
@@ -162,7 +166,7 @@ export const TicketList: React.FC<TicketListProps> = ({
         </div>
         <button id="btn-raise-ticket-list" className="btn btn-primary" onClick={onCreateTicketClick}>
           <Plus size={16} />
-          Raise Issue Ticket
+          Raise Ticket
         </button>
       </div>
 
@@ -249,128 +253,169 @@ export const TicketList: React.FC<TicketListProps> = ({
         </div>
       </div>
 
-      {/* Filter and Search Bar */}
-      <div className="panel" style={{ padding: '16px 20px', marginBottom: '24px' }}>
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-            gap: '12px',
-            width: '100%',
-            alignItems: 'center',
+     {/* Filter and Search Bar */}
+<div className="panel" style={{ padding: '16px 20px', marginBottom: '24px' }}>
+  <div
+    style={{
+      display: 'flex',
+      flexWrap: 'wrap',
+      gap: '12px 16px',
+      width: '100%',
+      alignItems: 'center',
+    }}
+  >
+    {/* Search bar input - Expands to fill available space */}
+    <div style={{ position: 'relative', flex: '1 1 240px', minWidth: '220px' }}>
+      <input
+        id="search-tickets-input"
+        type="text"
+        placeholder="Search ID, category, description..."
+        className="form-input"
+        style={{
+          width: '100%',
+          paddingLeft: '36px',
+          height: '38px',
+          backgroundColor: 'var(--bg-primary)',
+        }}
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+      />
+      <Search
+        size={16}
+        style={{
+          position: 'absolute',
+          left: '12px',
+          top: '50%',
+          transform: 'translateY(-50%)',
+          color: 'var(--text-muted)',
+        }}
+      />
+    </div>
+
+    {/* Date Range Filter Group */}
+    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+      <Filter size={14} style={{ color: 'var(--text-muted)' }} />
+      <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Date:</span>
+      <input
+        type="date"
+        className="form-input"
+        style={{
+          height: '38px',
+          padding: '4px 7px',
+          backgroundColor: 'var(--bg-primary)',
+          color: '#ffffff',
+          colorScheme: 'dark',
+          width: '135px',
+        }}
+        value={startDate}
+        onChange={(e) => setStartDate(e.target.value)}
+      />
+      <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>To:</span>
+      <input
+        type="date"
+        className="form-input"
+        style={{
+          height: '38px',
+          padding: '4px 7px',
+          backgroundColor: 'var(--bg-primary)',
+          color: '#ffffff',
+          colorScheme: 'dark',
+          width: '135px',
+        }}
+        value={endDate}
+        onChange={(e) => setEndDate(e.target.value)}
+      />
+      {(startDate || endDate) && (
+        <button
+          className="btn btn-secondary"
+          style={{ padding: '6px 10px', fontSize: '0.75rem', height: '38px', whiteSpace: 'nowrap' }}
+          onClick={() => {
+            setStartDate('');
+            setEndDate('');
           }}
         >
-          {/* Search bar input */}
-          <div style={{ position: 'relative' }}>
-            <input
-              id="search-tickets-input"
-              type="text"
-              placeholder="Search ID, category, description..."
-              className="form-input"
-              style={{
-                paddingLeft: '36px',
-                height: '38px',
-                backgroundColor: 'var(--bg-primary)',
-              }}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            <Search
-              size={16}
-              style={{
-                position: 'absolute',
-                left: '12px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                color: 'var(--text-muted)',
-              }}
-            />
-          </div>
+          Clear
+        </button>
+      )}
+    </div>
 
-          {/* Ticket Type Filter */}
-          <div style={{ display: 'flex', position: 'relative', alignItems: 'center', gap: '8px' }}>
-            <Filter size={14} style={{ color: 'var(--text-muted)' }} />
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Type:</span>
-            <select
-              id="filter-type-select"
-              className="form-input"
-              style={inputFieldStyle}
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
-            >
-              <option value="all">All Types</option>
-              {TICKET_TYPE_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </div>
+    {/* Ticket Type Filter */}
+    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: '0 0 auto' }}>
+      <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Type:</span>
+      <select
+        id="filter-type-select"
+        className="form-input"
+        style={{ ...inputFieldStyle, height: '38px' }}
+        value={typeFilter}
+        onChange={(e) => setTypeFilter(e.target.value)}
+      >
+        <option value="all">All Types</option>
+        {TICKET_TYPE_OPTIONS.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
+    </div>
 
-          {/* Status Filter */}
-          <div style={{ display: 'flex', position: 'relative', alignItems: 'center', gap: '8px' }}>
-            <User size={14} style={{ color: 'var(--text-muted)' }} />
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Status:</span>
-            <select
-              id="filter-status-select"
-              className="form-input"
-              style={inputFieldStyle}
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-            >
-              <option value="all">All Statuses</option>
-              {STATUS_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </div>
+    {/* Status Filter */}
+    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: '0 0 auto' }}>
+      <ChartNoAxesCombined size={14} style={{ color: 'var(--text-muted)' }} />
+      <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Status:</span>
+      <select
+        id="filter-status-select"
+        className="form-input"
+        style={{ ...inputFieldStyle, height: '38px' }}
+        value={statusFilter}
+        onChange={(e) => setStatusFilter(e.target.value)}
+      >
+        <option value="all">All Statuses</option>
+        {STATUS_OPTIONS.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
+    </div>
 
-          {/* Assignee Filter */}
-          <div style={{ display: 'flex', position: 'relative', alignItems: 'center', gap: '8px' }}>
-            <UserCheck size={14} style={{ color: 'var(--text-muted)' }} />
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Assignee:</span>
-            <select
-              id="filter-assignee-select"
-              className="form-input"
-              style={inputFieldStyle}
-              value={assigneeFilter}
-              onChange={(e) => setAssigneeFilter(e.target.value)}
-            >
-              <option value="all">All Assignees</option>
-              {itUserNames.map((itUserName) => (
-                <option key={itUserName} value={itUserName}>
-                  {itUserName}
-                </option>
-              ))}
-            </select>
-          </div>
+    {/* Assignee Filter */}
+    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: '0 0 auto' }}>
+      <UserCheck size={14} style={{ color: 'var(--text-muted)' }} />
+      <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Assignee:</span>
+      <select
+        id="filter-assignee-select"
+        className="form-input"
+        style={{ ...inputFieldStyle, height: '38px' }}
+        value={assigneeFilter}
+        onChange={(e) => setAssigneeFilter(e.target.value)}
+      >
+        <option value="all">All Assignees</option>
+        {itUserNames.map((itUserName) => (
+          <option key={itUserName} value={itUserName}>
+            {itUserName}
+          </option>
+        ))}
+      </select>
+    </div>
 
-          {/* Sort bar selection */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-            }}
-          >
-            <ArrowUpDown size={14} style={{ color: 'var(--text-muted)' }} />
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Sort:</span>
-            <select
-              id="sort-tickets-select"
-              className="form-input"
-              style={inputFieldStyle}
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as SortByOption)}
-            >
-              <option value="newest">Newest First</option>
-              <option value="oldest">Oldest First</option>
-              <option value="status">By Status</option>
-            </select>
-          </div>
-        </div>
-      </div>
+    {/* Sort Selection */}
+    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: '0 0 auto' }}>
+      <ArrowUpDown size={14} style={{ color: 'var(--text-muted)' }} />
+      <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Sort:</span>
+      <select
+        id="sort-tickets-select"
+        className="form-input"
+        style={{ ...inputFieldStyle, height: '38px' }}
+        value={sortBy}
+        onChange={(e) => setSortBy(e.target.value as SortByOption)}
+      >
+        <option value="newest">Newest First</option>
+        <option value="oldest">Oldest First</option>
+        <option value="status">By Status</option>
+      </select>
+    </div>
+  </div>
+</div>
 
       {/* showing tickets count */}
       <span className="stat-desc" style={{ textAlign: 'right' }}>

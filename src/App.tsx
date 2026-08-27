@@ -597,6 +597,7 @@ function App() {
   };
 
   const handleCreateTicket = async (data: { description: string; justification: string; type: TicketType }) => {
+    console.log(data);
     if (!token || !currentUser) return;
     try {
       const res = await fetch('/api/tickets', {
@@ -1213,7 +1214,7 @@ function App() {
                 fontWeight: 500,
               }}
             >
-              Harisco IT Support
+              Harisco IT Supportx
             </span>
           </div>
         </header>

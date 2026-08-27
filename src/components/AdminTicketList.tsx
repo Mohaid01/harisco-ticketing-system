@@ -8,13 +8,17 @@ import {
   Settings,
   ShieldAlert,
   XCircleIcon,
+  ChartNoAxesCombined,
+  CalendarIcon,
 } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
 
 import type { AdminTicket, AdminTicketCategory, AdminTicketStatus, AppUser } from '../types';
 
 import { ADMIN_TICKET_CATEGORY_LABELS, ADMIN_TICKET_CATEGORY_OPTIONS, ADMIN_TICKET_STATUS_OPTIONS } from '../constants';
-import { LoadingSpinner } from './LoadingSpinner';
+import { LoadingSpinner,  } from './LoadingSpinner';
+
+
 
 interface AdminTicketListProps {
   tickets: AdminTicket[];
@@ -40,6 +44,8 @@ export const AdminTicketList: React.FC<AdminTicketListProps> = ({
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<SortByOptionAdmin>('newest');
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
 
   const filteredTickets = useMemo(() => {
     return tickets
@@ -53,8 +59,15 @@ export const AdminTicketList: React.FC<AdminTicketListProps> = ({
         const matchesCategory = categoryFilter === 'all' || ticket.category === categoryFilter;
 
         const matchesStatus = statusFilter === 'all' || ticket.status === statusFilter;
+        // Date Range Filtering Logic
+      const ticketTime = new Date(ticket.createdAt).getTime();
+      const start = startDate ? new Date(`${startDate}T00:00:00`).getTime() : null;
+      const end = endDate ? new Date(`${endDate}T23:59:59`).getTime() : null;
 
-        return matchesSearch && matchesCategory && matchesStatus;
+      const matchesStartDate = !start || ticketTime >= start;
+      const matchesEndDate = !end || ticketTime <= end;
+
+        return matchesSearch && matchesCategory && matchesStatus && matchesStartDate && matchesEndDate;
       })
       .sort((a, b) => {
         if (sortBy === 'newest') {
@@ -68,7 +81,7 @@ export const AdminTicketList: React.FC<AdminTicketListProps> = ({
         }
         return 0;
       });
-  }, [tickets, searchQuery, categoryFilter, statusFilter, sortBy]);
+  }, [tickets, searchQuery, categoryFilter, statusFilter, sortBy, startDate, endDate]);
 
   const awaitingAdminManager = tickets.filter((t) => t.status === 'awaiting_admin_manager').length;
   const awaitingMaterials = tickets.filter((t) => t.status === 'awaiting_materials').length;
@@ -191,7 +204,7 @@ export const AdminTicketList: React.FC<AdminTicketListProps> = ({
           currentUser.role === 'executive') && (
           <button id="btn-raise-admin-ticket-list" className="btn btn-primary" onClick={onCreateTicketClick}>
             <Plus size={16} />
-            Raise Admin Ticket
+            Raise Ticket
           </button>
         )}
       </div>
@@ -354,6 +367,52 @@ export const AdminTicketList: React.FC<AdminTicketListProps> = ({
               }}
             />
           </div>
+           {/* Date Filter */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <CalendarIcon size={14} style={{ color: 'var(--text-muted)' }} />
+          <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Date:</span>
+          <input
+            type="date"
+            className="form-input"
+            style={{
+              height: '38px',
+              padding: '4px 7px',
+              backgroundColor: 'var(--bg-primary)',
+              color: '#ffffff',
+              colorScheme: 'dark',
+              width: '135px',
+            }}
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+          />
+          <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>To:</span>
+          <input
+            type="date"
+            className="form-input"
+            style={{
+            height: '38px',
+            padding: '4px 7px',
+            backgroundColor: 'var(--bg-primary)',
+            color: '#ffffff',
+            colorScheme: 'dark',
+            width: '135px',
+            }}
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+          />
+          {(startDate || endDate) && (
+            <button
+              className="btn btn-secondary"
+              style={{ padding: '6px 10px', fontSize: '0.75rem' }}
+              onClick={() => {
+                setStartDate('');
+                setEndDate('');
+              }}
+            >
+              Clear Dates
+            </button>
+          )}
+        </div>
 
           {/* Category Filter */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -382,6 +441,7 @@ export const AdminTicketList: React.FC<AdminTicketListProps> = ({
 
           {/* Status Filter */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <ChartNoAxesCombined size={14} style={{ color: 'var(--text-muted)' }} />
             <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Status:</span>
             <select
               id="filter-admin-status-select"

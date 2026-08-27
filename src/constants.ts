@@ -18,15 +18,21 @@ export const ROLE_LABELS: Record<UserRole, string> = {
 export const TICKET_TYPE_LABELS: Record<TicketType, string> = {
   hardware: 'Hardware Issue',
   software: 'Software Issue',
-  maintenance: 'Maintenance (Installation)',
+  email: 'Email',
+  others: 'Others',
+  maintenance: 'Maintenance',
+  installation: 'Installation',
   upgrade: 'System Upgrade',
 };
 
 export const TICKET_TYPE_OPTIONS = [
   { value: 'hardware' as TicketType, label: 'Hardware Issue' },
   { value: 'software' as TicketType, label: 'Software Issue' },
-  { value: 'maintenance' as TicketType, label: 'Maintenance (Installation)' },
+  { value: 'email' as TicketType, label: 'Email' },
+  { value: 'maintenance' as TicketType, label: 'Maintenance' },
+  { value: 'installation' as TicketType, label: 'Installation' },
   { value: 'upgrade' as TicketType, label: 'System Upgrade' },
+  { value: 'others' as TicketType, label: 'Others' },
 ];
 
 export const ADMIN_TICKET_CATEGORY_LABELS: Record<AdminTicketCategory, string> = {
@@ -105,7 +111,7 @@ export const ADMIN_TICKET_STATUS_OPTIONS = [
 
 export const STATUS_LABELS: Record<TicketStatus, string> = {
   open: 'Open / Unassigned',
-  awaiting_it_approval: 'Awaiting IT Approval',
+  awaiting_it_approval: 'IN Progress',
   awaiting_manager_approval: 'Awaiting Manager Approval',
   awaiting_handover: 'Awaiting Handover',
   closed: 'Closed',
@@ -120,7 +126,7 @@ export const STATUS_OPTIONS = [
   },
   {
     value: 'awaiting_it_approval' as TicketStatus,
-    label: 'Awaiting IT Approval',
+    label: 'IN Progress',
     color: '#f59e0b',
     bg: 'rgba(245, 158, 11, 0.12)',
   },
