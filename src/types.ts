@@ -109,6 +109,7 @@ export interface AdminTicket {
   description: string;
   category: AdminTicketCategory;
   status: AdminTicketStatus;
+  previousStatus?: string | null;
   createdAt: string;
   updatedAt: string;
   reporterId: string;

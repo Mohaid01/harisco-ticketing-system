@@ -14,6 +14,7 @@ import type {
   DbAdminComment,
   DbAdminTicket,
   DeleteAdminTicketResponse,
+  RevertAdminTicketStatusResponse,
   UpdateAdminTicketRequestBody,
   UpdateAdminTicketResponse,
   UpdateAdminTicketStatusRequestBody,
@@ -47,7 +48,7 @@ router.get('/', authenticateToken, async (req: AuthRequest, res: ApiResponse<Adm
       return res.status(401).json({ error: 'Unauthorized.' });
     }
 
-    let query = 'SELECT *, executiveId, executiveName FROM admin_tickets';
+    let query = 'SELECT *, executiveId, executiveName, previousStatus FROM admin_tickets';
     const params: (string | undefined)[] = [];
 
     if (currentUser.role === 'employee') {
@@ -234,8 +235,8 @@ router.post(
         }
 
         await db.run(
-          'UPDATE admin_tickets SET status = ?, updatedAt = ?, executiveId = ?, executiveName = ? WHERE id = ?',
-          [status, timestamp, executiveId, executiveName, ticketId]
+          'UPDATE admin_tickets SET status = ?, previousStatus = ?, updatedAt = ?, executiveId = ?, executiveName = ? WHERE id = ?',
+          [status, ticket.status, timestamp, executiveId, executiveName, ticketId]
         );
 
         const logId = `log-${Date.now()}`;
@@ -258,6 +259,7 @@ router.post(
         const response: UpdateAdminTicketStatusResponse = {
           success: true,
           status,
+          previousStatus: ticket.status,
           updatedAt: timestamp,
           executiveId,
           executiveName,
@@ -272,8 +274,8 @@ router.post(
         return;
       }
 
-      let updateQuery = 'UPDATE admin_tickets SET status = ?, updatedAt = ?';
-      const updateParams: (string | undefined)[] = [status, timestamp];
+      let updateQuery = 'UPDATE admin_tickets SET status = ?, previousStatus = ?, updatedAt = ?';
+      const updateParams: (string | undefined)[] = [status, ticket.status, timestamp];
 
       if (executiveId && executiveName) {
         updateQuery += ', executiveId = ?, executiveName = ?';
@@ -305,6 +307,7 @@ router.post(
       const response: UpdateAdminTicketStatusResponse = {
         success: true,
         status,
+        previousStatus: ticket.status,
         updatedAt: timestamp,
         executiveId: executiveId || undefined,
         executiveName: executiveName || undefined,
@@ -319,6 +322,125 @@ router.post(
     } catch (error) {
       logger.error('Failed to update admin ticket status:', error);
       res.status(500).json({ error: 'Failed to update admin ticket status.' });
+    }
+  }
+);
+
+// POST /api/admin-tickets/:id/revert-status
+router.post(
+  '/:id/revert-status',
+  authenticateToken,
+  async (req: AuthRequest, res: ApiResponse<RevertAdminTicketStatusResponse>) => {
+    if (req.user?.role !== 'manager') {
+      res.status(403).json({
+        error: 'Forbidden. Only Admin Manager can revert admin ticket status.',
+      });
+      return;
+    }
+
+    const ticketId = String(req.params.id);
+
+    try {
+      const db = getDb();
+
+      const ticket = await db.get<DbAdminTicket>('SELECT * FROM admin_tickets WHERE id = ?', [ticketId]);
+      if (!ticket) {
+        res.status(404).json({ error: 'Admin ticket not found.' });
+        return;
+      }
+
+      if (!ticket.previousStatus) {
+        if (ticket.status === 'awaiting_admin_manager') {
+          res.status(400).json({
+            error: 'Cannot revert: this ticket is already in its initial state.',
+          });
+          return;
+        }
+
+        const timestamp = new Date().toISOString();
+        const revertedStatus = 'awaiting_admin_manager';
+
+        await db.run('UPDATE admin_tickets SET status = ?, previousStatus = NULL, updatedAt = ? WHERE id = ?', [
+          revertedStatus,
+          timestamp,
+          ticketId,
+        ]);
+
+        const logId = `log-${Date.now()}`;
+        const newLog: DbAdminActivityLog = {
+          id: logId,
+          ticketId,
+          action: `Status reverted to ${revertedStatus}`,
+          timestamp,
+          performedByName: req.user?.name || '',
+          performedByRole: req.user?.role || 'manager',
+        };
+
+        await db.run(
+          `INSERT INTO admin_activity_logs (
+                id, ticketId, action, timestamp, performedByName, performedByRole
+              ) VALUES (?, ?, ?, ?, ?, ?)`,
+          [logId, ticketId, newLog.action, timestamp, newLog.performedByName, newLog.performedByRole]
+        );
+
+        const response: RevertAdminTicketStatusResponse = {
+          success: true,
+          status: revertedStatus,
+          previousStatus: null,
+          updatedAt: timestamp,
+          newLog,
+        };
+
+        sseClients.broadcast(
+          `data: ${JSON.stringify({ type: 'admin_ticket_update', action: 'status_reverted', data: { id: ticketId, ...response } })}\n\n`,
+          req.user?.id
+        );
+        res.json(response);
+        return;
+      }
+
+      const timestamp = new Date().toISOString();
+      const revertedStatus = ticket.previousStatus;
+
+      await db.run('UPDATE admin_tickets SET status = ?, previousStatus = NULL, updatedAt = ? WHERE id = ?', [
+        revertedStatus,
+        timestamp,
+        ticketId,
+      ]);
+
+      const logId = `log-${Date.now()}`;
+      const newLog: DbAdminActivityLog = {
+        id: logId,
+        ticketId,
+        action: `Status reverted to ${revertedStatus}`,
+        timestamp,
+        performedByName: req.user?.name || '',
+        performedByRole: req.user?.role || 'manager',
+      };
+
+      await db.run(
+        `INSERT INTO admin_activity_logs (
+              id, ticketId, action, timestamp, performedByName, performedByRole
+            ) VALUES (?, ?, ?, ?, ?, ?)`,
+        [logId, ticketId, newLog.action, timestamp, newLog.performedByName, newLog.performedByRole]
+      );
+
+      const response: RevertAdminTicketStatusResponse = {
+        success: true,
+        status: revertedStatus,
+        previousStatus: null,
+        updatedAt: timestamp,
+        newLog,
+      };
+
+      sseClients.broadcast(
+        `data: ${JSON.stringify({ type: 'admin_ticket_update', action: 'status_reverted', data: { id: ticketId, ...response } })}\n\n`,
+        req.user?.id
+      );
+      res.json(response);
+    } catch (error) {
+      logger.error('Failed to revert admin ticket status:', error);
+      res.status(500).json({ error: 'Failed to revert admin ticket status.' });
     }
   }
 );

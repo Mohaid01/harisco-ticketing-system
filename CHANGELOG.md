@@ -24,9 +24,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Admin ticket state reversion** — Managers can revert an admin ticket to its previous state; tickets with no recorded previous state revert to Open (awaiting_admin_manager). Revert is blocked for tickets already in their initial state.
 - **Notice author editing** — Enabled notice authors to edit their own notices via a dedicated edit button.
 - **Ticket list assignee filtering** — Added assignee filter option to the main tickets list screen.
-- **Ticket list filtered count** — Display count of matching tickets showing "Showing X of Y tickets".
+- **Ticket list filtered count** — Display count of matching tickets showing "Showing X of Y tickets" in both the standard and Admin ticket list screens.
 - **IT assignee filtering** — Added IT assignee filter in the IT tickets queue screen.
 - **Three new factory shifts** — Standard Shift (08:00–20:00), Standard Shift (08:00–21:00), and Night Shift (20:00–08:00)
 - **Scalable midnight-crossing detection** — Generic `weekdayEnd.h < weekdayStart.h` check replaces hardcoded night-shift logic in shift resolution, punch processing, and date-rollover
@@ -43,11 +44,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Site Duty & Leave simulated hours** — Fixed simulated check-out times and individual log calculations for "On Leave" and "Site Duty" statuses to represent exactly the shift base hours (e.g. 8 hours) instead of 8.5 hours.
 - **Factory midnight rollover** — Yesterday shift override now correctly determines midnight-crossing for punches after midnight
 
 ### Changed
 
-- **Ticket summary statistics** — Updated ticket statistic cards to count all tickets instead of only filtered tickets.
+- **Admin ticket schema** — Added `previousStatus` column to `admin_tickets` table and corresponding fields in `DbAdminTicket`, `AdminTicketResponse`, and client `AdminTicket` types
+- **Ticket summary statistics** — Updated ticket statistic cards to count all tickets instead of only filtered tickets in both the standard and Admin ticket list screens.
 - **Ticket list responsiveness** — Made the ticket list screen fully responsive for mobile, tablet, and desktop views
 - **TicketList select styling refactored** — Standardized select styling via `inputFieldStyle` to eliminate duplicated styles
 - User management actions: added Offboard flow alongside Reset Password and Delete

@@ -248,6 +248,7 @@ export async function initDb() {
       description TEXT NOT NULL,
       category TEXT NOT NULL,
       status TEXT CHECK(status IN ('awaiting_admin_manager', 'awaiting_materials', 'awaiting_technician', 'awaiting_executive', 'resolved', 'rejected')) NOT NULL,
+      previousStatus TEXT,
       createdAt TEXT NOT NULL,
       updatedAt TEXT NOT NULL,
       reporterId TEXT NOT NULL,
@@ -293,6 +294,18 @@ export async function initDb() {
     }
   } catch (err) {
     logger.error('admin_tickets migration check failed:', err);
+  }
+
+  // Migrate admin_tickets to add previousStatus column if missing
+  try {
+    const adminTicketsCols = await db.all<{ name: string }>('PRAGMA table_info(admin_tickets)');
+    if (!adminTicketsCols.some((c) => c.name === 'previousStatus')) {
+      logger.info('Migrating admin_tickets table to add previousStatus column...');
+      await db.exec('ALTER TABLE admin_tickets ADD COLUMN previousStatus TEXT');
+      logger.info('Added previousStatus column to admin_tickets.');
+    }
+  } catch (err) {
+    logger.error('Failed to add previousStatus column to admin_tickets:', err);
   }
 
   // Create Admin Comments Table

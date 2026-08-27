@@ -663,6 +663,7 @@ function App() {
           return {
             ...t,
             status: result.status,
+            previousStatus: result.previousStatus,
             updatedAt: result.updatedAt,
             executiveId: result.executiveId || t.executiveId,
             executiveName: result.executiveName || t.executiveName,
@@ -673,6 +674,53 @@ function App() {
     } catch (err) {
       console.error(err);
       alert('Error updating admin ticket status. Please try again.');
+    }
+  };
+
+  const handleRevertAdminTicketStatus = async (ticketId: string) => {
+    if (!token || !currentUser) return;
+
+    const ticket = adminTickets.find((t) => t.id === ticketId);
+    if (!ticket || ticket.status === 'awaiting_admin_manager') return;
+
+    const revertTarget = ticket.previousStatus
+      ? ADMIN_TICKET_STATUS_LABELS[ticket.previousStatus as AdminTicketStatus]
+      : 'Open';
+
+    const confirmMessage = ['Revert ticket ', ticketId, ' status back to ', revertTarget, '?'].join('');
+
+    if (!window.confirm(confirmMessage)) return;
+
+    try {
+      const res = await fetch(`/api/admin-tickets/${ticketId}/revert-status`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to revert admin ticket status');
+      }
+      const result = await res.json();
+
+      setAdminTickets((prev) =>
+        prev.map((t) => {
+          if (t.id !== ticketId) return t;
+          return {
+            ...t,
+            status: result.status,
+            previousStatus: result.previousStatus,
+            updatedAt: result.updatedAt,
+            activityLogs: [...t.activityLogs, result.newLog],
+          };
+        })
+      );
+    } catch (err) {
+      console.error(err);
+      alert(err instanceof Error ? err.message : 'Error reverting admin ticket status. Please try again.');
     }
   };
 
@@ -1241,6 +1289,7 @@ function App() {
                 allUsers={users}
                 onBack={() => setSelectedAdminTicketId(null)}
                 onUpdateStatus={handleUpdateAdminTicketStatus}
+                onRevertStatus={handleRevertAdminTicketStatus}
                 onAddComment={handleAddAdminComment}
                 onEditTicket={handleEditAdminTicket}
                 onDeleteTicket={handleDeleteAdminTicket}

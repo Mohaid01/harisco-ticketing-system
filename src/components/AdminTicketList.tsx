@@ -436,7 +436,6 @@ export const AdminTicketList: React.FC<AdminTicketListProps> = ({
       <span className="stat-desc" style={{ textAlign: 'right' }}>
         Showing {filteredTickets.length} of {tickets.length} tickets
       </span>
-
       {/* Ticket List Table */}
       <div className="panel" style={{ padding: 0, overflow: 'hidden' }}>
         <div className="table-wrapper">

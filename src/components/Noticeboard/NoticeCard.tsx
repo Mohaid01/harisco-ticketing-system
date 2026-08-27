@@ -26,7 +26,6 @@ export const NoticeCard: React.FC<NoticeCardProps> = ({
   const meta = getTagMeta(notice.type);
   const isExpired = notice.expiresAt && new Date(notice.expiresAt) <= now;
   const isAuthor = notice.authorName === currentUser?.name;
-  console.log(notice.authorName, currentUser?.name);
 
   return (
     <div
