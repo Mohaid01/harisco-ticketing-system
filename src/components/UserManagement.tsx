@@ -313,6 +313,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                   <option value="Staff">Staff</option>
                   <option value="Civil">Civil</option>
                   <option value="Telecom">Telecom</option>
+                  <option value="HSE">HSE</option>
                   <option value="Projects">Projects</option>
                 </select>
               </div>
@@ -585,6 +586,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                         <option value="Staff">Staff</option>
                         <option value="Civil">Civil</option>
                         <option value="Telecom">Telecom</option>
+                        <option value="HSE">HSE</option>
                         <option value="Projects">Projects</option>
                       </select>
                     </div>
