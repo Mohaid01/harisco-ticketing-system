@@ -26,8 +26,8 @@ export const SiteDutyManagement: React.FC<SiteDutyManagementProps> = ({ currentU
 
   const todayStr = new Date().toISOString().split('T')[0];
 
-  const canManageDuties = currentUser.isDepartmentHead === 1 && currentUser.role !== 'executive';
-  const canViewAll = canManageDuties || currentUser.role === 'executive';
+  const canManageDuties = currentUser.role === 'manager' || currentUser.role === 'executive' || currentUser.isDepartmentHead === 1;
+  const canViewAll = canManageDuties;
 
   const fetchSiteDuties = useCallback(() => {
     if (!token) return;

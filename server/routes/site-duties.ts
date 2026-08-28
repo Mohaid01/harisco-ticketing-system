@@ -131,13 +131,17 @@ router.put(
       duty.userId,
     ]);
     const approver = await db.get<{
+      role: string;
       isDepartmentHead: number;
       department: string | null;
-    }>('SELECT isDepartmentHead, department FROM users WHERE id = ?', [req.user?.id]);
+    }>('SELECT role, isDepartmentHead, department FROM users WHERE id = ?', [req.user?.id]);
 
-    if (!approver?.isDepartmentHead || approver.department !== applicant?.department) {
+    const isManagerOrExecutive = approver?.role === 'manager' || approver?.role === 'executive';
+    const isDeptHeadOfApplicant = approver?.isDepartmentHead && approver.department === applicant?.department;
+
+    if (!isManagerOrExecutive && !isDeptHeadOfApplicant) {
       res.status(403).json({
-        error: 'Forbidden. Only the department head can approve this site duty.',
+        error: 'Forbidden. Only managers, executives, and department heads can approve this site duty.',
       });
       return;
     }
