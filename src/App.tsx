@@ -279,7 +279,8 @@ function App() {
       .split('_')
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
-    document.title = `${tabName} | ${APP_TITLE}`;
+    const adjustedTabName = activeTab === 'noticeboard' ? 'Dashboard' : tabName;
+    document.title = `${adjustedTabName} | ${APP_TITLE}`;
   }, [activeTab, selectedTicketId, selectedAdminTicketId, tickets, adminTickets]);
 
   // Find active ticket if viewing details
@@ -1187,11 +1188,6 @@ function App() {
 
   return (
     <div className="app-container">
-      {/* Context strip */}
-      <div className="app-context-strip">
-        <span>Harisco IT Support</span>
-      </div>
-
       {/* Header navigation */}
       <Header
         currentUser={currentUser}
@@ -1207,7 +1203,6 @@ function App() {
 
       {/* Main Section */}
       <main className="main-content">
-
         {/* Dynamic page container */}
         <section className="page-body">
           {currentTicket ? (

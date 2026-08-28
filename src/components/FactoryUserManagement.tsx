@@ -396,7 +396,6 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
                 >
                   <option value="factory_employee">Employee</option>
                   <option value="factory_it">IT</option>
-                  <option value="factory_manager">Manager</option>
                 </select>
               </div>
 
