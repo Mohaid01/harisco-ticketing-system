@@ -1345,7 +1345,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.0625rem' }}>
       {/* Header Panel */}
       <div
         style={{
@@ -1353,7 +1353,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
           justifyContent: 'space-between',
           alignItems: 'center',
           flexWrap: 'wrap',
-          gap: '12px',
+          gap: '0.6375rem',
         }}
       >
         <div>
@@ -1364,13 +1364,13 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
               : 'Review your clock-in timings, total hours worked, and monthly attendance overview.'}
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '0.6375rem', alignItems: 'center' }}>
           {canViewAll || canViewDepartment ? (
             <div className="btn-group">
               <button
                 className={`btn ${viewMode === 'summary' ? 'btn-primary' : 'btn-secondary'}`}
                 style={{
-                  padding: '6px 14px',
+                  padding: '0.3188rem 0.7438rem',
                   fontSize: '0.8rem',
                   border: 'none',
                   borderRadius: 'var(--radius-sm)',
@@ -1383,7 +1383,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
               <button
                 className={`btn ${viewMode === 'individual' ? 'btn-primary' : 'btn-secondary'}`}
                 style={{
-                  padding: '6px 14px',
+                  padding: '0.3188rem 0.7438rem',
                   fontSize: '0.8rem',
                   border: 'none',
                   borderRadius: 'var(--radius-sm)',
@@ -1404,8 +1404,8 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '8px',
-                  padding: '8px 14px',
+                  gap: '0.425rem',
+                  padding: '0.425rem 0.7438rem',
                 }}
                 onClick={() => setShowHolidayModal(true)}
               >
@@ -1420,8 +1420,8 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px',
-                padding: '8px 14px',
+                gap: '0.425rem',
+                padding: '0.425rem 0.7438rem',
               }}
               onClick={() => fetchLogs(true)}
               disabled={refreshing}
@@ -1455,18 +1455,18 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                     flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    padding: '80px 40px',
-                    gap: '16px',
+                    padding: '4.25rem 2.125rem',
+                    gap: '0.85rem',
                     textAlign: 'center',
                   }}
                 >
                   <div
                     style={{
-                      width: '72px',
-                      height: '72px',
+                      width: '3.825rem',
+                      height: '3.825rem',
                       borderRadius: '50%',
                       background: 'rgba(99,102,241,0.12)',
-                      border: '1px solid rgba(99,102,241,0.2)',
+                      border: '0.0531rem solid rgba(99,102,241,0.2)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -1489,7 +1489,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                     style={{
                       fontSize: '0.95rem',
                       color: 'var(--text-secondary)',
-                      maxWidth: '380px',
+                      maxWidth: '20.1875rem',
                       margin: 0,
                       lineHeight: 1.6,
                     }}
@@ -1520,15 +1520,15 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
               style={{
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '20px',
+                gap: '1.0625rem',
               }}
             >
               {/* Search & Filter Bar */}
-              <div className="panel" style={{ padding: '16px 20px' }}>
+              <div className="panel" style={{ padding: '0.85rem 1.0625rem' }}>
                 <div
                   style={{
                     display: 'flex',
-                    gap: '16px',
+                    gap: '0.85rem',
                     flexWrap: 'wrap',
                     alignItems: 'center',
                   }}
@@ -1537,13 +1537,13 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                     style={{
                       position: 'relative',
                       flex: 1,
-                      minWidth: '260px',
+                      minWidth: '13.8125rem',
                     }}
                   >
                     <input
                       type="text"
                       className="form-input"
-                      style={{ paddingLeft: '38px', width: '100%' }}
+                      style={{ paddingLeft: '2.0188rem', width: '100%' }}
                       placeholder="Search employee by Name, Code, or ID..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
@@ -1552,7 +1552,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                       size={16}
                       style={{
                         position: 'absolute',
-                        left: '12px',
+                        left: '0.6375rem',
                         top: '50%',
                         transform: 'translateY(-50%)',
                         color: 'var(--text-muted)',
@@ -1565,14 +1565,14 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '8px',
+                      gap: '0.425rem',
                     }}
                   >
                     <Filter size={14} style={{ color: 'var(--text-muted)' }} />
                     <select
                       className="form-input"
                       style={{
-                        width: '160px',
+                        width: '8.5rem',
                         backgroundColor: 'var(--bg-primary)',
                       }}
                       value={filterDepartment}
@@ -1592,14 +1592,14 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '8px',
+                      gap: '0.425rem',
                     }}
                   >
                     <Briefcase size={14} style={{ color: 'var(--text-muted)' }} />
                     <select
                       className="form-input"
                       style={{
-                        width: '160px',
+                        width: '8.5rem',
                         backgroundColor: 'var(--bg-primary)',
                       }}
                       value={filterShift}
@@ -1626,14 +1626,14 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '8px',
+                      gap: '0.425rem',
                     }}
                   >
                     <Clock size={14} style={{ color: 'var(--text-muted)' }} />
                     <select
                       className="form-input"
                       style={{
-                        width: '160px',
+                        width: '8.5rem',
                         backgroundColor: 'var(--bg-primary)',
                       }}
                       value={filterTodayStatus}
@@ -1649,20 +1649,20 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
               </div>
 
               {/* Master Table Grid */}
-              <div className="panel" style={{ padding: '20px' }}>
+              <div className="panel" style={{ padding: '1.0625rem' }}>
                 <div className="panel-header">
                   <h2 className="panel-title">
                     <Building size={18} style={{ color: 'var(--color-primary)' }} />
                     All-Employee Attendance Table ({filteredSummaries.length})
                   </h2>
-                  <div style={{ display: 'flex', gap: '8px' }}>
+                  <div style={{ display: 'flex', gap: '0.425rem' }}>
                     <button
                       className="btn btn-secondary"
                       style={{
                         display: 'inline-flex',
                         alignItems: 'center',
-                        gap: '6px',
-                        padding: '6px 12px',
+                        gap: '0.3188rem',
+                        padding: '0.3188rem 0.6375rem',
                         fontSize: '0.75rem',
                       }}
                       onClick={() => exportToCSV(filteredSummaries)}
@@ -1679,21 +1679,21 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                   style={{
                     display: 'grid',
                     gridTemplateColumns: 'repeat(3, 1fr)',
-                    gap: '12px',
-                    marginBottom: '20px',
+                    gap: '0.6375rem',
+                    marginBottom: '1.0625rem',
                   }}
                 >
                   <div
                     onClick={() => setFilterTodayStatus('Present')}
                     style={{
-                      padding: '14px 18px',
+                      padding: '0.7438rem 0.9563rem',
                       borderRadius: 'var(--radius-md)',
                       background: 'rgba(34, 197, 94, 0.08)',
                       border:
-                        filterTodayStatus === 'Present' ? '2px solid #22c55e' : '1px solid rgba(34, 197, 94, 0.2)',
+                        filterTodayStatus === 'Present' ? '0.1063rem solid #22c55e' : '0.0531rem solid rgba(34, 197, 94, 0.2)',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '12px',
+                      gap: '0.6375rem',
                       cursor: 'pointer',
                       transition: 'all 0.2s ease',
                     }}
@@ -1714,7 +1714,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                         style={{
                           fontSize: '0.75rem',
                           color: 'var(--text-secondary)',
-                          marginTop: '2px',
+                          marginTop: '0.1063rem',
                         }}
                       >
                         Present Today
@@ -1725,13 +1725,13 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                   <div
                     onClick={() => setFilterTodayStatus('Absent')}
                     style={{
-                      padding: '14px 18px',
+                      padding: '0.7438rem 0.9563rem',
                       borderRadius: 'var(--radius-md)',
                       background: 'rgba(244, 63, 94, 0.08)',
-                      border: filterTodayStatus === 'Absent' ? '2px solid #f43f5e' : '1px solid rgba(244, 63, 94, 0.2)',
+                      border: filterTodayStatus === 'Absent' ? '0.1063rem solid #f43f5e' : '0.0531rem solid rgba(244, 63, 94, 0.2)',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '12px',
+                      gap: '0.6375rem',
                       cursor: 'pointer',
                       transition: 'all 0.2s ease',
                     }}
@@ -1752,7 +1752,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                         style={{
                           fontSize: '0.75rem',
                           color: 'var(--text-secondary)',
-                          marginTop: '2px',
+                          marginTop: '0.1063rem',
                         }}
                       >
                         Absent Today
@@ -1763,16 +1763,16 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                   <div
                     onClick={() => setFilterTodayStatus('Late Arrival')}
                     style={{
-                      padding: '14px 18px',
+                      padding: '0.7438rem 0.9563rem',
                       borderRadius: 'var(--radius-md)',
                       background: 'rgba(251, 191, 36, 0.08)',
                       border:
                         filterTodayStatus === 'Late Arrival'
-                          ? '2px solid #fbbf24'
-                          : '1px solid rgba(251, 191, 36, 0.2)',
+                          ? '0.1063rem solid #fbbf24'
+                          : '0.0531rem solid rgba(251, 191, 36, 0.2)',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '12px',
+                      gap: '0.6375rem',
                       cursor: 'pointer',
                       transition: 'all 0.2s ease',
                     }}
@@ -1793,7 +1793,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                         style={{
                           fontSize: '0.75rem',
                           color: 'var(--text-secondary)',
-                          marginTop: '2px',
+                          marginTop: '0.1063rem',
                         }}
                       >
                         Late Arrivals
@@ -1815,7 +1815,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                         <th>Days N/A</th>
                         <th>Days Absent</th>
                         <th>Total Hours (Month)</th>
-                        <th style={{ width: '120px', textAlign: 'center' }}>Action</th>
+                        <th style={{ width: '6.375rem', textAlign: 'center' }}>Action</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1833,7 +1833,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                               style={{
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: '10px',
+                                gap: '0.5313rem',
                               }}
                             >
                               {emp.avatar ? (
@@ -1841,21 +1841,21 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                                   src={emp.avatar}
                                   alt={emp.name}
                                   style={{
-                                    width: '32px',
-                                    height: '32px',
+                                    width: '1.7rem',
+                                    height: '1.7rem',
                                     borderRadius: '50%',
                                     objectFit: 'cover',
-                                    border: '1px solid var(--border-color)',
+                                    border: '0.0531rem solid var(--border-color)',
                                   }}
                                 />
                               ) : (
                                 <div
                                   style={{
-                                    width: '32px',
-                                    height: '32px',
+                                    width: '1.7rem',
+                                    height: '1.7rem',
                                     borderRadius: '50%',
                                     backgroundColor: 'var(--color-primary-glow)',
-                                    border: '1px solid var(--border-color)',
+                                    border: '0.0531rem solid var(--border-color)',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
@@ -1922,7 +1922,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                               style={{
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: '6px',
+                                gap: '0.3188rem',
                               }}
                             >
                               <Clock size={13} style={{ color: 'var(--text-muted)' }} />
@@ -1933,11 +1933,11 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                             <button
                               className="btn btn-secondary"
                               style={{
-                                padding: '4px 10px',
+                                padding: '0.2125rem 0.5313rem',
                                 fontSize: '0.75rem',
                                 display: 'inline-flex',
                                 alignItems: 'center',
-                                gap: '4px',
+                                gap: '0.2125rem',
                               }}
                               onClick={() => {
                                 setSelectedUserId(emp.id);
@@ -1956,7 +1956,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                             colSpan={9}
                             style={{
                               textAlign: 'center',
-                              padding: '40px',
+                              padding: '2.125rem',
                               color: 'var(--text-secondary)',
                             }}
                           >
@@ -1975,18 +1975,18 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
 
           {/* ─────────────────── DETAILED INDIVIDUAL VIEW ─────────────────── */}
           {viewMode === 'individual' && selectedEmployee ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.275rem' }}>
               {/* Back Navigation Bar for Managers/Admins/Executives */}
               {canViewAll || canViewDepartment ? (
                 <div className="btn-selector-grp">
                   <button
                     className="btn btn-secondary"
                     style={{
-                      padding: '6px 12px',
+                      padding: '0.3188rem 0.6375rem',
                       fontSize: '0.8rem',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '6px',
+                      gap: '0.3188rem',
                     }}
                     onClick={() => setViewMode('summary')}
                   >
@@ -1998,7 +1998,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '10px',
+                      gap: '0.5313rem',
                     }}
                   >
                     <span
@@ -2012,7 +2012,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                     <select
                       className="form-input"
                       style={{
-                        width: '220px',
+                        width: '11.6875rem',
                         backgroundColor: 'var(--bg-secondary)',
                       }}
                       value={selectedUserId}
@@ -2034,7 +2034,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
               <div
                 className="panel"
                 style={{
-                  padding: '24px',
+                  padding: '1.275rem',
                   background: 'linear-gradient(135deg, var(--bg-secondary) 0%, rgba(14, 82, 155, 0.08) 100%)',
                 }}
               >
@@ -2044,14 +2044,14 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                     justifyContent: 'space-between',
                     alignItems: 'center',
                     flexWrap: 'wrap',
-                    gap: '16px',
+                    gap: '0.85rem',
                   }}
                 >
                   <div
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '16px',
+                      gap: '0.85rem',
                     }}
                   >
                     {selectedEmployee.avatar ? (
@@ -2059,19 +2059,19 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                         src={selectedEmployee.avatar}
                         alt={selectedEmployee.name}
                         style={{
-                          width: '72px',
-                          height: '72px',
+                          width: '3.825rem',
+                          height: '3.825rem',
                           borderRadius: '50%',
                           objectFit: 'cover',
                           boxShadow: 'var(--shadow-sm)',
-                          border: '1px solid var(--border-color)',
+                          border: '0.0531rem solid var(--border-color)',
                         }}
                       />
                     ) : (
                       <div
                         style={{
-                          width: '72px',
-                          height: '72px',
+                          width: '3.825rem',
+                          height: '3.825rem',
                           borderRadius: '50%',
                           backgroundColor: 'var(--color-primary)',
                           display: 'flex',
@@ -2097,7 +2097,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                           fontSize: '1.25rem',
                           color: 'white',
                           fontWeight: 600,
-                          marginBottom: '2px',
+                          marginBottom: '0.1063rem',
                         }}
                       >
                         {selectedEmployee.name}
@@ -2105,7 +2105,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                       <div
                         style={{
                           display: 'flex',
-                          gap: '16px',
+                          gap: '0.85rem',
                           color: 'var(--text-secondary)',
                           fontSize: '0.85rem',
                           flexWrap: 'wrap',
@@ -2173,10 +2173,10 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                           display: 'flex',
                           flexDirection: 'column',
                           alignItems: 'flex-end',
-                          gap: '6px',
+                          gap: '0.3188rem',
                         }}
                       >
-                        <span className="badge badge-closed" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
+                        <span className="badge badge-closed" style={{ padding: '0.425rem 0.85rem', fontSize: '0.85rem' }}>
                           <CheckCircle size={14} /> Clocked In
                         </span>
                         <span
@@ -2194,13 +2194,13 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                           display: 'flex',
                           flexDirection: 'column',
                           alignItems: 'flex-end',
-                          gap: '6px',
+                          gap: '0.3188rem',
                         }}
                       >
                         <span
                           className="badge badge-type"
                           style={{
-                            padding: '8px 16px',
+                            padding: '0.425rem 0.85rem',
                             fontSize: '0.85rem',
                             borderColor: 'var(--border-color)',
                             color: 'var(--text-secondary)',
@@ -2223,16 +2223,16 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
               </div>
 
               {/* Monthly Calendar View (Top) */}
-              <div className="panel" style={{ padding: '20px' }}>
+              <div className="panel" style={{ padding: '1.0625rem' }}>
                 {/* Header Section - Added flexWrap and gap for mobile layout */}
                 <div
                   style={{
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    marginBottom: '16px',
+                    marginBottom: '0.85rem',
                     flexWrap: 'wrap',
-                    gap: '12px',
+                    gap: '0.6375rem',
                   }}
                 >
                   <h3
@@ -2241,7 +2241,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                       margin: 0,
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '8px',
+                      gap: '0.425rem',
                     }}
                   >
                     <Calendar size={16} style={{ color: 'var(--color-primary)' }} />
@@ -2250,9 +2250,9 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                   <select
                     className="form-input"
                     style={{
-                      padding: '6px 12px',
+                      padding: '0.3188rem 0.6375rem',
                       fontSize: '0.85rem',
-                      width: '150px',
+                      width: '7.9688rem',
                     }}
                     value={selectedMonth}
                     onChange={(e) => setSelectedMonth(e.target.value)}
@@ -2288,9 +2288,9 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                     style={{
                       display: 'grid',
                       gridTemplateColumns: 'repeat(7, 1fr)',
-                      gap: '8px',
-                      marginTop: '12px',
-                      minWidth: '750px', // Prevents columns from shrinking below readable limits
+                      gap: '0.425rem',
+                      marginTop: '0.6375rem',
+                      minWidth: '39.8438rem', // Prevents columns from shrinking below readable limits
                     }}
                   >
                     {/* Calendar Header */}
@@ -2302,7 +2302,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                           fontWeight: 600,
                           fontSize: '0.8rem',
                           color: 'var(--text-secondary)',
-                          paddingBottom: '8px',
+                          paddingBottom: '0.425rem',
                         }}
                       >
                         {d}
@@ -2322,8 +2322,8 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                           <div
                             key={`pad-${i}`}
                             style={{
-                              minHeight: '80px',
-                              borderRadius: '8px',
+                              minHeight: '4.25rem',
+                              borderRadius: '0.425rem',
                               backgroundColor: 'var(--bg-secondary)',
                               opacity: 0.3,
                             }}
@@ -2347,20 +2347,20 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                         <div
                           key={log.date}
                           style={{
-                            minHeight: '85px',
-                            padding: '8px',
-                            borderRadius: '8px',
+                            minHeight: '4.5156rem',
+                            padding: '0.425rem',
+                            borderRadius: '0.425rem',
                             backgroundColor: isOffboarded
                               ? 'rgba(244, 63, 94, 0.06)'
                               : isOffDay
                                 ? 'rgba(255,255,255,0.02)'
                                 : 'var(--bg-secondary)',
                             border: isOffboarded
-                              ? '1px solid rgba(244, 63, 94, 0.25)'
-                              : '1px solid var(--border-color)',
+                              ? '0.0531rem solid rgba(244, 63, 94, 0.25)'
+                              : '0.0531rem solid var(--border-color)',
                             display: 'flex',
                             flexDirection: 'column',
-                            gap: '4px',
+                            gap: '0.2125rem',
                           }}
                         >
                           <div
@@ -2395,7 +2395,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                                 marginTop: 'auto',
                                 display: 'flex',
                                 flexDirection: 'column',
-                                gap: '2px',
+                                gap: '0.1063rem',
                                 fontSize: '0.7rem',
                                 color: 'var(--text-secondary)',
                               }}
@@ -2407,14 +2407,14 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                                 <div
                                   style={{
                                     display: 'flex',
-                                    gap: '4px',
-                                    marginBottom: '4px',
+                                    gap: '0.2125rem',
+                                    marginBottom: '0.2125rem',
                                   }}
                                 >
                                   <button
                                     className="btn btn-secondary"
                                     style={{
-                                      padding: '2px 4px',
+                                      padding: '0.1063rem 0.2125rem',
                                       fontSize: '0.6rem',
                                       flex: 1,
                                       backgroundColor: 'var(--bg-primary)',
@@ -2430,7 +2430,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                                   <button
                                     className="btn btn-secondary"
                                     style={{
-                                      padding: '2px 4px',
+                                      padding: '0.1063rem 0.2125rem',
                                       fontSize: '0.6rem',
                                       flex: 1,
                                       backgroundColor: 'var(--bg-primary)',
@@ -2459,7 +2459,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                                   style={{
                                     display: 'flex',
                                     alignItems: 'center',
-                                    gap: '4px',
+                                    gap: '0.2125rem',
                                   }}
                                 >
                                   <span
@@ -2481,7 +2481,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                                         border: 'none',
                                         color: 'var(--color-primary)',
                                         cursor: 'pointer',
-                                        padding: '2px',
+                                        padding: '0.1063rem',
                                         display: 'flex',
                                         fontWeight: 'bold',
                                       }}
@@ -2503,7 +2503,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                                         border: 'none',
                                         color: '#f43f5e',
                                         cursor: 'pointer',
-                                        padding: '2px',
+                                        padding: '0.1063rem',
                                         display: 'inline-flex',
                                         alignItems: 'center',
                                       }}
@@ -2528,7 +2528,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                                   style={{
                                     display: 'flex',
                                     alignItems: 'center',
-                                    gap: '4px',
+                                    gap: '0.2125rem',
                                   }}
                                 >
                                   <span
@@ -2550,7 +2550,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                                         border: 'none',
                                         color: 'var(--color-primary)',
                                         cursor: 'pointer',
-                                        padding: '2px',
+                                        padding: '0.1063rem',
                                         display: 'flex',
                                         fontWeight: 'bold',
                                       }}
@@ -2572,7 +2572,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                                         border: 'none',
                                         color: '#f43f5e',
                                         cursor: 'pointer',
-                                        padding: '2px',
+                                        padding: '0.1063rem',
                                         display: 'inline-flex',
                                         alignItems: 'center',
                                       }}
@@ -2590,7 +2590,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                                   style={{
                                     display: 'flex',
                                     justifyContent: 'flex-end',
-                                    marginTop: '2px',
+                                    marginTop: '0.1063rem',
                                   }}
                                 >
                                   <span
@@ -2616,11 +2616,11 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                                   const currentShift =
                                     shiftOverrides[log.date] || selectedEmployee?.defaultShift || 'headquarters';
                                   return (
-                                    <div style={{ marginTop: '4px' }}>
+                                    <div style={{ marginTop: '0.2125rem' }}>
                                       <select
                                         id={`shift-override-${log.date}`}
                                         className="form-input"
-                                        style={{ fontSize: '0.65rem', padding: '2px 4px', height: 'auto' }}
+                                        style={{ fontSize: '0.65rem', padding: '0.1063rem 0.2125rem', height: 'auto' }}
                                         value={currentShift}
                                         onChange={(e) =>
                                           handleShiftOverride(selectedEmployee!.id, log.date, e.target.value)
@@ -2649,8 +2649,8 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
               {/* Today's Shift Progress & KPI Cards split */}
               <div className="attendance-two-col">
                 {/* Shift Progress Panel (Left) */}
-                <div className="panel" style={{ padding: '20px' }}>
-                  <h3 className="panel-title" style={{ marginBottom: '16px' }}>
+                <div className="panel" style={{ padding: '1.0625rem' }}>
+                  <h3 className="panel-title" style={{ marginBottom: '0.85rem' }}>
                     <Clock size={16} style={{ color: 'var(--color-primary)' }} />
                     Today's Shift Progress
                   </h3>
@@ -2659,8 +2659,8 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                     style={{
                       display: 'flex',
                       flexDirection: 'column',
-                      gap: '20px',
-                      marginTop: '10px',
+                      gap: '1.0625rem',
+                      marginTop: '0.5313rem',
                     }}
                   >
                     <div>
@@ -2668,7 +2668,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                         style={{
                           display: 'flex',
                           justifyContent: 'space-between',
-                          marginBottom: '6px',
+                          marginBottom: '0.3188rem',
                         }}
                       >
                         <span
@@ -2701,9 +2701,9 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                       <div
                         style={{
                           width: '100%',
-                          height: '6px',
+                          height: '0.3188rem',
                           backgroundColor: 'var(--bg-primary)',
-                          borderRadius: '3px',
+                          borderRadius: '0.1594rem',
                           overflow: 'hidden',
                         }}
                       >
@@ -2739,8 +2739,8 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
 
                     <div
                       style={{
-                        borderTop: '1px solid var(--border-color)',
-                        paddingTop: '16px',
+                        borderTop: '0.0531rem solid var(--border-color)',
+                        paddingTop: '0.85rem',
                       }}
                     >
                       <span
@@ -2749,7 +2749,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                           fontSize: '0.75rem',
                           textTransform: 'uppercase',
                           color: 'var(--text-muted)',
-                          marginBottom: '10px',
+                          marginBottom: '0.5313rem',
                           letterSpacing: '0.03em',
                         }}
                       >
@@ -2759,7 +2759,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                         style={{
                           display: 'flex',
                           flexDirection: 'column',
-                          gap: '10px',
+                          gap: '0.5313rem',
                         }}
                       >
                         <div
@@ -2816,11 +2816,11 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                     <div
                       style={{
                         backgroundColor: 'rgba(14, 82, 155, 0.04)',
-                        border: '1px solid var(--border-color)',
+                        border: '0.0531rem solid var(--border-color)',
                         borderRadius: 'var(--radius-md)',
-                        padding: '12px',
+                        padding: '0.6375rem',
                         display: 'flex',
-                        gap: '10px',
+                        gap: '0.5313rem',
                         alignItems: 'flex-start',
                       }}
                     >
@@ -2829,7 +2829,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                         style={{
                           color: 'var(--color-primary-solid)',
                           flexShrink: 0,
-                          marginTop: '2px',
+                          marginTop: '0.1063rem',
                         }}
                       />
                       <span
@@ -2877,7 +2877,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                   <div
                     className="stat-card it-app"
                     style={{
-                      borderLeft: individualStats.absent > 0 ? '4px solid #f43f5e' : '1px solid var(--border-color)',
+                      borderLeft: individualStats.absent > 0 ? '0.2125rem solid #f43f5e' : '0.0531rem solid var(--border-color)',
                     }}
                   >
                     <div className="stat-header">
@@ -2923,7 +2923,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
 
                   {/* KPI 4: Leave Balance */}
                   <div className="stat-card handover">
-                    <div className="stat-header" style={{ marginBottom: '12px' }}>
+                    <div className="stat-header" style={{ marginBottom: '0.6375rem' }}>
                       <span className="stat-label">Leave Balance</span>
                       <div
                         className="stat-icon"
@@ -2939,9 +2939,9 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                       style={{
                         display: 'grid',
                         gridTemplateColumns: '1fr 1fr 1fr',
-                        gap: '8px',
+                        gap: '0.425rem',
                         width: '100%',
-                        marginTop: '6px',
+                        marginTop: '0.3188rem',
                       }}
                     >
                       <div
@@ -3035,12 +3035,12 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
 
       {showHolidayModal ? (
         <div className="modal-overlay" onClick={() => setShowHolidayModal(false)}>
-          <div className="modal-content" style={{ maxWidth: '520px' }} onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content" style={{ maxWidth: '27.625rem' }} onClick={(e) => e.stopPropagation()}>
             <div
               className="panel-header"
               style={{
-                padding: '20px 24px',
-                borderBottom: '1px solid var(--border-color)',
+                padding: '1.0625rem 1.275rem',
+                borderBottom: '0.0531rem solid var(--border-color)',
                 margin: 0,
               }}
             >
@@ -3050,7 +3050,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                   fontSize: '1.1rem',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '8px',
+                  gap: '0.425rem',
                 }}
               >
                 <CalendarOff size={18} style={{ color: 'var(--color-primary)' }} />
@@ -3059,8 +3059,8 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
               <button
                 className="btn btn-secondary"
                 style={{
-                  width: '32px',
-                  height: '32px',
+                  width: '1.7rem',
+                  height: '1.7rem',
                   padding: 0,
                   borderRadius: '50%',
                 }}
@@ -3071,18 +3071,18 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
             </div>
             <div
               style={{
-                padding: '20px 24px',
+                padding: '1.0625rem 1.275rem',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '16px',
+                gap: '0.85rem',
               }}
             >
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: '0.425rem', alignItems: 'center' }}>
                 <input
                   type="date"
                   className="form-input"
                   style={{
-                    width: '160px',
+                    width: '8.5rem',
                     flex: '0 0 auto',
                     colorScheme: 'dark',
                   }}
@@ -3103,7 +3103,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                     flex: '0 0 auto',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '6px',
+                    gap: '0.3188rem',
                     whiteSpace: 'nowrap',
                   }}
                   onClick={handleAddHoliday}
@@ -3111,13 +3111,13 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                   <Plus size={14} /> Add
                 </button>
               </div>
-              <div style={{ marginTop: '8px' }}>
+              <div style={{ marginTop: '0.425rem' }}>
                 {holidays.length === 0 ? (
                   <p
                     style={{
                       color: 'var(--text-secondary)',
                       textAlign: 'center',
-                      padding: '24px',
+                      padding: '1.275rem',
                     }}
                   >
                     No holidays added yet.
@@ -3128,7 +3128,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                       <tr>
                         <th>Date</th>
                         <th>Name</th>
-                        <th style={{ width: '60px' }}></th>
+                        <th style={{ width: '3.1875rem' }}></th>
                       </tr>
                     </thead>
                     <tbody>
@@ -3140,7 +3140,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                             <button
                               className="btn btn-danger"
                               style={{
-                                padding: '2px 8px',
+                                padding: '0.1063rem 0.425rem',
                                 fontSize: '0.75rem',
                               }}
                               onClick={() => handleDeleteHoliday(h.date)}

@@ -4,14 +4,14 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 80px;
-  gap: 16px;
+  padding: 4.25rem;
+  gap: 0.85rem;
 }
 
 .spinner-circle {
-  width: 40px;
-  height: 40px;
-  border: 3px solid var(--border-color);
+  width: 2.125rem;
+  height: 2.125rem;
+  border: 0.1594rem solid var(--border-color);
   border-top-color: var(--color-primary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
@@ -29,74 +29,74 @@
 
 .spinner-table-skeleton {
   width: 100%;
-  height: 48px;
+  height: 2.55rem;
 }
 
 .spinner-cards {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 1.0625rem;
 }
 
 .spinner-card {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 0.6375rem;
 }
 
 .spinner-card-avatar {
-  width: 72px;
-  height: 72px;
+  width: 3.825rem;
+  height: 3.825rem;
   border-radius: 50%;
-  margin-bottom: 12px;
+  margin-bottom: 0.6375rem;
 }
 
 .spinner-card-line {
-  height: 18px;
-  margin-bottom: 8px;
+  height: 0.9563rem;
+  margin-bottom: 0.425rem;
 }
 
 .spinner-card-line-sm {
-  width: 160px;
-  height: 14px;
-  margin-bottom: 16px;
+  width: 8.5rem;
+  height: 0.7438rem;
+  margin-bottom: 0.85rem;
 }
 
 .spinner-card-pill {
-  width: 80px;
-  height: 28px;
-  border-radius: 4px;
-  margin-bottom: 16px;
+  width: 4.25rem;
+  height: 1.4875rem;
+  border-radius: 0.2125rem;
+  margin-bottom: 0.85rem;
 }
 
 .spinner-card-actions {
   display: flex;
-  gap: 8px;
+  gap: 0.425rem;
   width: 100%;
 }
 
 .spinner-card-btn {
   flex: 1;
-  height: 36px;
-  border-radius: 4px;
+  height: 1.9125rem;
+  border-radius: 0.2125rem;
 }
 
 .spinner-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 0.6375rem;
 }
 
 .spinner-list-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 0;
+  gap: 0.6375rem;
+  padding: 0.6375rem 0;
 }
 
 .spinner-list-avatar {
-  width: 44px;
-  height: 44px;
+  width: 2.3375rem;
+  height: 2.3375rem;
   border-radius: 50%;
   flex-shrink: 0;
 }
@@ -106,63 +106,63 @@
 }
 
 .spinner-list-line {
-  height: 16px;
-  margin-bottom: 8px;
+  height: 0.85rem;
+  margin-bottom: 0.425rem;
 }
 
 .spinner-list-line-sm {
   width: 40%;
-  height: 14px;
+  height: 0.7438rem;
 }
 
 .spinner-notices {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 0.85rem;
 }
 
 .spinner-notice-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 0.85rem;
 }
 
 .spinner-notice-badge {
-  width: 120px;
-  height: 28px;
-  border-radius: 4px;
+  width: 6.375rem;
+  height: 1.4875rem;
+  border-radius: 0.2125rem;
 }
 
 .spinner-notice-date {
-  width: 80px;
-  height: 14px;
+  width: 4.25rem;
+  height: 0.7438rem;
 }
 
 .spinner-notice-title {
   width: 60%;
-  height: 22px;
-  margin-bottom: 12px;
+  height: 1.1688rem;
+  margin-bottom: 0.6375rem;
 }
 
 .spinner-notice-line {
-  height: 16px;
-  margin-bottom: 8px;
+  height: 0.85rem;
+  margin-bottom: 0.425rem;
 }
 
 .spinner-notice-line-sm {
   width: 90%;
-  height: 16px;
-  margin-bottom: 8px;
+  height: 0.85rem;
+  margin-bottom: 0.425rem;
 }
 
 .spinner-notice-line-xs {
   width: 40%;
-  height: 16px;
+  height: 0.85rem;
 }
 
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 40.8rem) {
   .spinner-container {
-    padding: 40px;
+    padding: 2.125rem;
   }
 }

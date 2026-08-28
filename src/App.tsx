@@ -1156,12 +1156,12 @@ function App() {
   // Loading state skeleton screen
   if (loading) {
     return (
-      <div className="login-page" style={{ flexDirection: 'column', gap: '20px' }}>
+      <div className="login-page" style={{ flexDirection: 'column', gap: '1.0625rem' }}>
         <div
           style={{
-            width: '40px',
-            height: '40px',
-            border: '3px solid var(--border-color)',
+            width: '2.125rem',
+            height: '2.125rem',
+            border: '0.1594rem solid var(--border-color)',
             borderTopColor: 'var(--color-primary)',
             borderRadius: '50%',
             animation: 'spin 1s linear infinite',

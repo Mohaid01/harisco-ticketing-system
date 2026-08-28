@@ -63,19 +63,19 @@ export const ResetUserPasswordModal: React.FC<ResetUserPasswordModalProps> = ({
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '420px' }}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '22.3125rem' }}>
         <div
           className="panel-header"
-          style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-color)', margin: 0 }}
+          style={{ padding: '1.0625rem 1.275rem', borderBottom: '0.0531rem solid var(--border-color)', margin: 0 }}
         >
-          <h2 className="panel-title" style={{ fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <h2 className="panel-title" style={{ fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.425rem' }}>
             <KeyRound size={18} />
             Reset Password
           </h2>
           <button
             id="btn-reset-user-password-modal-close"
             className="btn btn-secondary"
-            style={{ width: '32px', height: '32px', padding: 0, borderRadius: '50%' }}
+            style={{ width: '1.7rem', height: '1.7rem', padding: 0, borderRadius: '50%' }}
             onClick={onClose}
           >
             <X size={16} />
@@ -83,8 +83,8 @@ export const ResetUserPasswordModal: React.FC<ResetUserPasswordModalProps> = ({
         </div>
 
         <form onSubmit={handleSubmit}>
-          <div style={{ padding: '24px' }}>
-            <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+          <div style={{ padding: '1.275rem' }}>
+            <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '0.85rem' }}>
               Set a temporary password for <strong style={{ color: 'var(--text-primary)' }}>{targetUser.name}</strong>.
               They will be required to change it on their next login.
             </p>
@@ -93,11 +93,11 @@ export const ResetUserPasswordModal: React.FC<ResetUserPasswordModalProps> = ({
               <div
                 style={{
                   backgroundColor: 'rgba(244, 63, 94, 0.15)',
-                  border: '1px solid rgba(244, 63, 94, 0.3)',
+                  border: '0.0531rem solid rgba(244, 63, 94, 0.3)',
                   color: '#f43f5e',
-                  padding: '10px 14px',
+                  padding: '0.5313rem 0.7438rem',
                   borderRadius: 'var(--radius-md)',
-                  marginBottom: '16px',
+                  marginBottom: '0.85rem',
                   fontSize: '0.85rem',
                 }}
               >
@@ -109,11 +109,11 @@ export const ResetUserPasswordModal: React.FC<ResetUserPasswordModalProps> = ({
               <div
                 style={{
                   backgroundColor: 'rgba(16, 185, 129, 0.15)',
-                  border: '1px solid rgba(16, 185, 129, 0.3)',
+                  border: '0.0531rem solid rgba(16, 185, 129, 0.3)',
                   color: '#10b981',
-                  padding: '10px 14px',
+                  padding: '0.5313rem 0.7438rem',
                   borderRadius: 'var(--radius-md)',
-                  marginBottom: '16px',
+                  marginBottom: '0.85rem',
                   fontSize: '0.85rem',
                 }}
               >
@@ -140,11 +140,11 @@ export const ResetUserPasswordModal: React.FC<ResetUserPasswordModalProps> = ({
 
           <div
             style={{
-              padding: '16px 24px',
-              borderTop: '1px solid var(--border-color)',
+              padding: '0.85rem 1.275rem',
+              borderTop: '0.0531rem solid var(--border-color)',
               display: 'flex',
               justifyContent: 'flex-end',
-              gap: '12px',
+              gap: '0.6375rem',
             }}
           >
             <button

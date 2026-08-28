@@ -4,17 +4,17 @@
 }
 
 .sidebar-user-avatar {
-  width: 56px;
-  height: 56px;
+  width: 2.975rem;
+  height: 2.975rem;
   border-radius: 50%;
   object-fit: cover;
-  border: 1px solid var(--border-color);
+  border: 0.0531rem solid var(--border-color);
   flex-shrink: 0;
 }
 
 .sidebar-user-avatar-fallback {
-  width: 40px;
-  height: 40px;
+  width: 2.125rem;
+  height: 2.125rem;
   border-radius: 50%;
   background-color: var(--color-primary);
   display: flex;
@@ -53,37 +53,37 @@
 .sidebar-actions {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 0.6375rem;
 }
 
 .sidebar-action-btn {
   width: 100%;
-  padding: 6px 12px;
+  padding: 0.3188rem 0.6375rem;
   font-size: 0.8rem;
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 6px;
+  gap: 0.3188rem;
 }
 
 .sidebar-reset-btn {
   background-color: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--border-color);
+  border: 0.0531rem solid var(--border-color);
   color: white;
 }
 
 .sidebar-user-section {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 0.6375rem;
 }
 
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 40.8rem) {
   .sidebar-user-section {
-    gap: 8px;
+    gap: 0.425rem;
   }
 
   .sidebar-actions {
-    gap: 8px;
+    gap: 0.425rem;
   }
 }

@@ -174,7 +174,7 @@ export const AdminTicketList: React.FC<AdminTicketListProps> = ({
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: '24px',
+          marginBottom: '1.275rem',
         }}
       >
         <div>
@@ -205,7 +205,7 @@ export const AdminTicketList: React.FC<AdminTicketListProps> = ({
           }}
           style={{
             backgroundColor: 'rgba(245, 158, 11, 0.08)',
-            borderLeft: '4px solid #f59e0b',
+            borderLeft: '0.2125rem solid #f59e0b',
           }}
         >
           <div className="stat-header">
@@ -224,7 +224,7 @@ export const AdminTicketList: React.FC<AdminTicketListProps> = ({
           }}
           style={{
             backgroundColor: 'rgba(245, 158, 11, 0.08)',
-            borderLeft: '4px solid #254487ff',
+            borderLeft: '0.2125rem solid #254487ff',
           }}
         >
           <div className="stat-header">
@@ -244,7 +244,7 @@ export const AdminTicketList: React.FC<AdminTicketListProps> = ({
           }}
           style={{
             backgroundColor: 'rgba(168, 85, 247, 0.08)',
-            borderLeft: '4px solid #a855f7',
+            borderLeft: '0.2125rem solid #a855f7',
           }}
         >
           <div className="stat-header">
@@ -264,7 +264,7 @@ export const AdminTicketList: React.FC<AdminTicketListProps> = ({
           }}
           style={{
             backgroundColor: 'rgba(6, 182, 212, 0.08)',
-            borderLeft: '4px solid #06b6d4',
+            borderLeft: '0.2125rem solid #06b6d4',
           }}
         >
           <div className="stat-header">
@@ -284,7 +284,7 @@ export const AdminTicketList: React.FC<AdminTicketListProps> = ({
           }}
           style={{
             backgroundColor: 'rgba(16, 185, 129, 0.08)',
-            borderLeft: '4px solid #10b981',
+            borderLeft: '0.2125rem solid #10b981',
           }}
         >
           <div className="stat-header">
@@ -304,7 +304,7 @@ export const AdminTicketList: React.FC<AdminTicketListProps> = ({
           }}
           style={{
             backgroundColor: 'rgba(239, 68, 68, 0.08)',
-            borderLeft: '4px solid #ef4444',
+            borderLeft: '0.2125rem solid #ef4444',
           }}
         >
           <div className="stat-header">
@@ -319,25 +319,25 @@ export const AdminTicketList: React.FC<AdminTicketListProps> = ({
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="panel" style={{ padding: '16px 20px', marginBottom: '24px' }}>
+      <div className="panel" style={{ padding: '0.85rem 1.0625rem', marginBottom: '1.275rem' }}>
         <div
           style={{
             display: 'flex',
             flexWrap: 'wrap',
-            gap: '16px',
+            gap: '0.85rem',
             alignItems: 'center',
           }}
         >
           {/* Search bar input */}
-          <div style={{ position: 'relative', flex: '1 1 220px' }}>
+          <div style={{ position: 'relative', flex: '1 1 11.6875rem' }}>
             <input
               id="search-admin-tickets-input"
               type="text"
               placeholder="Search ID, category, description..."
               className="form-input"
               style={{
-                paddingLeft: '36px',
-                height: '38px',
+                paddingLeft: '1.9125rem',
+                height: '2.0188rem',
                 backgroundColor: 'var(--bg-primary)',
               }}
               value={searchQuery}
@@ -347,7 +347,7 @@ export const AdminTicketList: React.FC<AdminTicketListProps> = ({
               size={16}
               style={{
                 position: 'absolute',
-                left: '12px',
+                left: '0.6375rem',
                 top: '50%',
                 transform: 'translateY(-50%)',
                 color: 'var(--text-muted)',
@@ -356,16 +356,16 @@ export const AdminTicketList: React.FC<AdminTicketListProps> = ({
           </div>
 
           {/* Category Filter */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.425rem' }}>
             <Filter size={14} style={{ color: 'var(--text-muted)' }} />
             <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Category:</span>
             <select
               id="filter-admin-category-select"
               className="form-input"
               style={{
-                width: '180px',
-                height: '38px',
-                padding: '6px 12px',
+                width: '9.5625rem',
+                height: '2.0188rem',
+                padding: '0.3188rem 0.6375rem',
                 backgroundColor: 'var(--bg-primary)',
               }}
               value={categoryFilter}
@@ -381,15 +381,15 @@ export const AdminTicketList: React.FC<AdminTicketListProps> = ({
           </div>
 
           {/* Status Filter */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.425rem' }}>
             <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Status:</span>
             <select
               id="filter-admin-status-select"
               className="form-input"
               style={{
-                width: '180px',
-                height: '38px',
-                padding: '6px 12px',
+                width: '9.5625rem',
+                height: '2.0188rem',
+                padding: '0.3188rem 0.6375rem',
                 backgroundColor: 'var(--bg-primary)',
               }}
               value={statusFilter}
@@ -409,7 +409,7 @@ export const AdminTicketList: React.FC<AdminTicketListProps> = ({
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '8px',
+              gap: '0.425rem',
               marginLeft: 'auto',
             }}
           >
@@ -418,9 +418,9 @@ export const AdminTicketList: React.FC<AdminTicketListProps> = ({
               id="sort-admin-tickets-select"
               className="form-input"
               style={{
-                width: '130px',
-                height: '38px',
-                padding: '6px 12px',
+                width: '6.9063rem',
+                height: '2.0188rem',
+                padding: '0.3188rem 0.6375rem',
                 backgroundColor: 'var(--bg-primary)',
               }}
               value={sortBy}
@@ -461,7 +461,7 @@ export const AdminTicketList: React.FC<AdminTicketListProps> = ({
                       onSelectTicket(ticket.id);
                     }}
                   >
-                    <td style={{ fontWeight: 'bold', width: '90px' }}>{ticket.id}</td>
+                    <td style={{ fontWeight: 'bold', width: '4.7813rem' }}>{ticket.id}</td>
                     <td>
                       <div style={{ display: 'flex', flexDirection: 'column' }}>
                         <span
@@ -471,7 +471,7 @@ export const AdminTicketList: React.FC<AdminTicketListProps> = ({
                             whiteSpace: 'nowrap',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
-                            maxWidth: '340px',
+                            maxWidth: '18.0625rem',
                           }}
                         >
                           {ticket.description}
@@ -500,7 +500,7 @@ export const AdminTicketList: React.FC<AdminTicketListProps> = ({
                     colSpan={6}
                     style={{
                       textAlign: 'center',
-                      padding: '48px',
+                      padding: '2.55rem',
                       color: 'var(--text-secondary)',
                     }}
                   >

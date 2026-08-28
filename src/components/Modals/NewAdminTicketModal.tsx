@@ -44,7 +44,7 @@ export const NewAdminTicketModal: React.FC<NewAdminTicketModalProps> = ({ isOpen
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div
           className="panel-header"
-          style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-color)', margin: 0 }}
+          style={{ padding: '1.0625rem 1.275rem', borderBottom: '0.0531rem solid var(--border-color)', margin: 0 }}
         >
           <h2 className="panel-title" style={{ fontSize: '1.15rem' }}>
             Raise Admin Ticket
@@ -52,7 +52,7 @@ export const NewAdminTicketModal: React.FC<NewAdminTicketModalProps> = ({ isOpen
           <button
             id="btn-admin-modal-close"
             className="btn btn-secondary"
-            style={{ width: '32px', height: '32px', padding: 0, borderRadius: '50%' }}
+            style={{ width: '1.7rem', height: '1.7rem', padding: 0, borderRadius: '50%' }}
             onClick={onClose}
           >
             <X size={16} />
@@ -60,16 +60,16 @@ export const NewAdminTicketModal: React.FC<NewAdminTicketModalProps> = ({ isOpen
         </div>
 
         <form onSubmit={handleSubmit}>
-          <div style={{ padding: '24px' }}>
+          <div style={{ padding: '1.275rem' }}>
             {errorMsg && (
               <div
                 style={{
                   backgroundColor: 'rgba(244, 63, 94, 0.15)',
-                  border: '1px solid rgba(244, 63, 94, 0.3)',
+                  border: '0.0531rem solid rgba(244, 63, 94, 0.3)',
                   color: '#f43f5e',
-                  padding: '10px 14px',
+                  padding: '0.5313rem 0.7438rem',
                   borderRadius: 'var(--radius-md)',
-                  marginBottom: '16px',
+                  marginBottom: '0.85rem',
                   fontSize: '0.85rem',
                 }}
               >
@@ -105,7 +105,7 @@ export const NewAdminTicketModal: React.FC<NewAdminTicketModalProps> = ({ isOpen
               <textarea
                 id="admin-ticket-description-input"
                 className="form-input"
-                style={{ minHeight: '100px', resize: 'vertical' }}
+                style={{ minHeight: '5.3125rem', resize: 'vertical' }}
                 placeholder="Describe the issue or request..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -116,11 +116,11 @@ export const NewAdminTicketModal: React.FC<NewAdminTicketModalProps> = ({ isOpen
 
           <div
             style={{
-              padding: '16px 24px',
-              borderTop: '1px solid var(--border-color)',
+              padding: '0.85rem 1.275rem',
+              borderTop: '0.0531rem solid var(--border-color)',
               display: 'flex',
               justifyContent: 'flex-end',
-              gap: '12px',
+              gap: '0.6375rem',
             }}
           >
             <button id="btn-admin-modal-cancel" type="button" className="btn btn-secondary" onClick={onClose}>
