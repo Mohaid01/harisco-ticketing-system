@@ -7,8 +7,8 @@ import {
   Search,
   Settings,
   ShieldCheck,
-  UserCheck,
   User,
+  UserCheck,
 } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
 
@@ -403,7 +403,7 @@ export const TicketList: React.FC<TicketListProps> = ({
                       onSelectTicket(ticket.id);
                     }}
                   >
-                    <td style={{ fontWeight: 'bold', width: '4.7813rem' }}>{ticket.id}</td>
+                    <td style={{ fontWeight: 'bold', width: '9rem' }}>{ticket.id}</td>
                     <td>
                       <div style={{ display: 'flex', flexDirection: 'column' }}>
                         <span

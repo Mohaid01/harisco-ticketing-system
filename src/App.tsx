@@ -23,7 +23,7 @@ import { EditNoticeModal } from './components/Modals/EditNoticeModal';
 import { NewAdminTicketModal } from './components/Modals/NewAdminTicketModal';
 import { NewTicketModal } from './components/Modals/NewTicketModal';
 import { PasswordReset } from './components/PasswordReset';
-import { Sidebar } from './components/Sidebar';
+import { Header } from './components/Sidebar';
 import { TicketDetails } from './components/TicketDetails';
 import { TicketList } from './components/TicketList';
 import { UserManagement } from './components/UserManagement';
@@ -1187,8 +1187,13 @@ function App() {
 
   return (
     <div className="app-container">
-      {/* Sidebar navigation */}
-      <Sidebar
+      {/* Context strip */}
+      <div className="app-context-strip">
+        <span>Harisco IT Support</span>
+      </div>
+
+      {/* Header navigation */}
+      <Header
         currentUser={currentUser}
         activeTab={activeTab}
         setActiveTab={(tab) => {
@@ -1202,21 +1207,6 @@ function App() {
 
       {/* Main Section */}
       <main className="main-content">
-        {/* Global header bar */}
-        <header className="app-header" style={{ justifyContent: 'space-between' }}>
-          {/* Header title or context */}
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <span
-              style={{
-                fontSize: '0.9rem',
-                color: 'var(--text-muted)',
-                fontWeight: 500,
-              }}
-            >
-              Harisco IT Support
-            </span>
-          </div>
-        </header>
 
         {/* Dynamic page container */}
         <section className="page-body">
