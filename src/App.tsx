@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type {
   ActiveTab,
@@ -34,7 +34,46 @@ import { Login } from './tabs/Login';
 import { NoticeBoard } from './tabs/Noticeboard';
 import { SiteDutyManagement } from './tabs/SiteDutyManagement';
 
-function pathToTab(pathname: string): { tab: ActiveTab; ticketId: string | null } {
+function canUserAccessTab(tab: ActiveTab, role: UserRole, department: string | undefined): boolean {
+  switch (tab) {
+    case 'noticeboard':
+      return ['it', 'employee', 'manager', 'executive'].includes(role);
+    case 'tickets':
+      return ['it', 'employee', 'manager', 'executive'].includes(role);
+    case 'admin_tickets':
+      return ['it', 'executive', 'manager', 'employee'].includes(role);
+    case 'users':
+      return role === 'it';
+    case 'activity_log':
+      return ['it', 'manager', 'executive'].includes(role) && department !== 'Staff';
+    case 'attendance':
+      return ['it', 'employee', 'manager', 'executive'].includes(role);
+    case 'leaves':
+      return ['it', 'employee', 'manager', 'executive'].includes(role);
+    case 'site_duties':
+      return ['it', 'employee', 'manager', 'executive'].includes(role) && department !== 'Staff';
+    case 'factory_users':
+      return role === 'it' || role === 'factory_it';
+    case 'factory_attendance':
+      return ['it', 'manager', 'factory_it', 'factory_manager', 'factory_employee'].includes(role);
+    default:
+      return false;
+  }
+}
+
+function getSafeFallbackTab(role: UserRole): ActiveTab {
+  if (role === 'it' || role === 'manager' || role === 'executive') return 'noticeboard';
+  if (role === 'employee') return 'noticeboard';
+  if (role === 'factory_it' || role === 'factory_manager' || role === 'factory_employee') return 'factory_attendance';
+  return 'noticeboard';
+}
+
+function pathToTab(pathname: string): {
+  tab: ActiveTab;
+  ticketId: string | null;
+  attendanceUserId?: string;
+  attendanceView?: 'summary' | 'individual';
+} {
   const trimmed = pathname.replace(/\/+$/, '');
   const parts = trimmed.split('/').filter(Boolean);
 
@@ -70,7 +109,12 @@ function pathToTab(pathname: string): { tab: ActiveTab; ticketId: string | null 
   return { tab: tabMap[base] || 'noticeboard', ticketId: null };
 }
 
-function tabToPath(tab: ActiveTab, ticketId?: string | null, attendanceView?: 'summary' | 'individual', attendanceUserId?: string): string {
+function tabToPath(
+  tab: ActiveTab,
+  ticketId?: string | null,
+  attendanceView?: 'summary' | 'individual',
+  attendanceUserId?: string
+): string {
   const base = `/${tab.replace('_', '-')}`;
   if ((tab === 'tickets' || tab === 'admin_tickets') && ticketId) {
     return `${base}/${ticketId}`;
@@ -86,12 +130,19 @@ function tabToPath(tab: ActiveTab, ticketId?: string | null, attendanceView?: 's
 }
 
 function App() {
-  const getInitialTab = (): { tab: ActiveTab; ticketId: string | null; attendanceUserId?: string; attendanceView?: 'summary' | 'individual' } => {
+  const getInitialTab = (): {
+    tab: ActiveTab;
+    ticketId: string | null;
+    attendanceUserId?: string;
+    attendanceView?: 'summary' | 'individual';
+  } => {
     if (typeof window !== 'undefined') {
       return pathToTab(window.location.pathname);
     }
     return { tab: 'noticeboard', ticketId: null };
   };
+
+  const initialTab = getInitialTab();
 
   const [token, setToken] = useState<string | null>(localStorage.getItem('harisco_token'));
   const [notices, setNotices] = useState<Notice[]>([]);
@@ -101,7 +152,6 @@ function App() {
   const [users, setUsers] = useState<AppUser[]>([]);
   const [factoryUsers, setFactoryUsers] = useState<AppUser[]>([]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
-  const initialTab = getInitialTab();
   const [activeTab, setActiveTab] = useState<ActiveTab>(initialTab.tab);
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(initialTab.ticketId);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -136,7 +186,20 @@ function App() {
     }
   };
 
-  const navigateToTab = (tab: ActiveTab, ticketId?: string | null, attendanceView?: 'summary' | 'individual', attendanceUserId?: string) => {
+  const syncUrl = useCallback(
+    (tab: ActiveTab, ticketId?: string | null, attendanceView?: 'summary' | 'individual', attendanceUserId?: string) => {
+      const path = tabToPath(tab, ticketId, attendanceView, attendanceUserId);
+      window.history.replaceState({}, '', path);
+    },
+    []
+  );
+
+  const navigateToTab = (
+    tab: ActiveTab,
+    ticketId?: string | null,
+    attendanceView?: 'summary' | 'individual',
+    attendanceUserId?: string
+  ) => {
     const path = tabToPath(tab, ticketId, attendanceView, attendanceUserId);
     window.history.pushState({}, '', path);
     setActiveTab(tab);
@@ -167,6 +230,26 @@ function App() {
     }
   };
 
+  const enforceAccessControl = useCallback(() => {
+    if (!currentUser) return;
+    const { tab } = pathToTab(window.location.pathname);
+    if (!canUserAccessTab(tab, currentUser.role, currentUser.department)) {
+      const fallback = getSafeFallbackTab(currentUser.role);
+      syncUrl(fallback);
+      setActiveTab(fallback);
+      setSelectedTicketId(null);
+      setSelectedAdminTicketId(null);
+      setAttendanceViewMode('summary');
+      setAttendanceSelectedUserId(undefined);
+    }
+  }, [currentUser, syncUrl]);
+
+  useEffect(() => {
+    if (currentUser && !loading) {
+      enforceAccessControl();
+    }
+  }, [currentUser, loading, enforceAccessControl]);
+
   const navigateToAttendanceIndividual = (userId: string) => {
     const path = tabToPath(activeTab, undefined, 'individual', userId);
     window.history.pushState({}, '', path);
@@ -185,17 +268,28 @@ function App() {
   useEffect(() => {
     const handlePopState = () => {
       const { tab, ticketId, attendanceUserId, attendanceView } = pathToTab(window.location.pathname);
-      setActiveTab(tab);
-      setSelectedTicketId(tab === 'tickets' ? ticketId : null);
-      setSelectedAdminTicketId(tab === 'admin_tickets' ? ticketId : null);
-      if (tab === 'attendance' || tab === 'factory_attendance') {
-        setAttendanceViewMode(attendanceView || 'summary');
-        setAttendanceSelectedUserId(attendanceUserId);
+      if (!currentUser || canUserAccessTab(tab, currentUser.role, currentUser.department)) {
+        setActiveTab(tab);
+        setSelectedTicketId(tab === 'tickets' ? ticketId : null);
+        setSelectedAdminTicketId(tab === 'admin_tickets' ? ticketId : null);
+        if (tab === 'attendance' || tab === 'factory_attendance') {
+          setAttendanceViewMode(attendanceView || 'summary');
+          setAttendanceSelectedUserId(attendanceUserId);
+        }
+      } else {
+        const fallback = getSafeFallbackTab(currentUser!.role);
+        const path = tabToPath(fallback);
+        window.history.replaceState({}, '', path);
+        setActiveTab(fallback);
+        setSelectedTicketId(null);
+        setSelectedAdminTicketId(null);
+        setAttendanceViewMode('summary');
+        setAttendanceSelectedUserId(undefined);
       }
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
+  }, [currentUser]);
 
   // Load session and data
   useEffect(() => {
