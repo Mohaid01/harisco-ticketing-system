@@ -1,5 +1,6 @@
 import path from 'path';
-import sqlite3 from 'sqlite';
+import { open } from 'sqlite';
+import sqlite3 from 'sqlite3';
 
 const DB_PATH = process.env.DB_PATH || path.resolve(process.cwd(), 'database.sqlite');
 
@@ -18,7 +19,7 @@ function getUtcTimestamp(y: number, m: number, d: number, timeStr: string): stri
 }
 
 async function main() {
-  const db = await sqlite.open({ filename: DB_PATH, driver: sqlite3.Database });
+  const db = await open({ filename: DB_PATH, driver: sqlite3.Database });
 
   const leaves = await db.all<{
     userId: string;
