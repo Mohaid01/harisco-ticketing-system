@@ -290,10 +290,10 @@
 .role-badge-pill {
   font-size: 0.65rem;
   font-weight: 700;
+  width: fit-content;
   text-transform: uppercase;
   padding: 0.1063rem 0.3188rem;
   border-radius: var(--radius-full);
-  display: inline-block;
   line-height: 1.3;
 }
 
