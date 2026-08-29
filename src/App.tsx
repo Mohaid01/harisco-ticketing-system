@@ -103,7 +103,7 @@ function pathToTab(pathname: string): {
     const urlParams = new URLSearchParams(window.location.search);
     const attendanceView = urlParams.get('view') as 'summary' | 'individual' | null;
     const attendanceUserId = urlParams.get('userId') || undefined;
-    return { tab: tabMap[base] || 'noticeboard', ticketId: null, attendanceUserId, attendanceView };
+    return { tab: tabMap[base] || 'noticeboard', ticketId: null, attendanceUserId, attendanceView: attendanceView || undefined };
   }
 
   return { tab: tabMap[base] || 'noticeboard', ticketId: null };
@@ -175,7 +175,7 @@ function App() {
 
   const handleAttendanceViewModeChange = (mode: 'summary' | 'individual', userId?: string) => {
     if (mode === 'individual') {
-      const targetUserId = userId || attendanceSelectedUserIdRef.current || currentUser.id;
+      const targetUserId = userId || attendanceSelectedUserIdRef.current || currentUser!.id;
       navigateToAttendanceIndividual(targetUserId);
     } else {
       navigateToAttendanceSummary();
@@ -242,7 +242,7 @@ function App() {
   const enforceAccessControl = useCallback(() => {
     if (!currentUser) return;
     const { tab } = pathToTab(window.location.pathname);
-    if (!canUserAccessTab(tab, currentUser.role, currentUser.department)) {
+    if (!canUserAccessTab(tab, currentUser.role, currentUser.department ?? undefined)) {
       const fallback = getSafeFallbackTab(currentUser.role);
       syncUrl(fallback);
       setActiveTab(fallback);
@@ -277,7 +277,7 @@ function App() {
   useEffect(() => {
     const handlePopState = () => {
       const { tab, ticketId, attendanceUserId, attendanceView } = pathToTab(window.location.pathname);
-      if (!currentUser || canUserAccessTab(tab, currentUser.role, currentUser.department)) {
+      if (!currentUser || !canUserAccessTab(tab, currentUser.role, currentUser.department ?? undefined)) {
         setActiveTab(tab);
         setSelectedTicketId(tab === 'tickets' ? ticketId : null);
         setSelectedAdminTicketId(tab === 'admin_tickets' ? ticketId : null);
