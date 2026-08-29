@@ -177,8 +177,8 @@ router.put(
 
             daysToDeduct++;
 
-            let checkInTime = '09:30:00';
-            let checkOutTime = '18:00:00';
+            let checkInTime = '09:00:00';
+            let checkOutTime = '17:00:00';
 
             if (dayOfWeek === 6) {
               checkInTime = '10:00:00';
