@@ -1483,7 +1483,11 @@ export const Attendance: React.FC<AttendanceProps> = ({
               day: '2-digit',
             }).format(new Date());
             const todayHoliday = holidays.find((h) => h.date === todayDateStr);
-            if (resolvedViewMode === 'summary' && (canViewAll || canViewDepartment) && (isTodaySundayPKT() || todayHoliday)) {
+            if (
+              resolvedViewMode === 'summary' &&
+              (canViewAll || canViewDepartment) &&
+              (isTodaySundayPKT() || todayHoliday)
+            ) {
               const isSunday = isTodaySundayPKT();
               return (
                 <div

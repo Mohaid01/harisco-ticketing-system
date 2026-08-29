@@ -162,8 +162,12 @@ function App() {
   const [adminSearchQuery, setAdminSearchQuery] = useState<string>('');
   const [selectedAdminTicketId, setSelectedAdminTicketId] = useState<string | null>(initialTab.ticketId);
   const [isCreateAdminModalOpen, setIsCreateAdminModalOpen] = useState<boolean>(false);
-  const [attendanceViewMode, setAttendanceViewMode] = useState<'summary' | 'individual'>(initialTab.attendanceView || 'summary');
-  const [attendanceSelectedUserId, setAttendanceSelectedUserId] = useState<string | undefined>(initialTab.attendanceUserId);
+  const [attendanceViewMode, setAttendanceViewMode] = useState<'summary' | 'individual'>(
+    initialTab.attendanceView || 'summary'
+  );
+  const [attendanceSelectedUserId, setAttendanceSelectedUserId] = useState<string | undefined>(
+    initialTab.attendanceUserId
+  );
   const attendanceSelectedUserIdRef = useRef(attendanceSelectedUserId);
   useEffect(() => {
     attendanceSelectedUserIdRef.current = attendanceSelectedUserId;
@@ -187,7 +191,12 @@ function App() {
   };
 
   const syncUrl = useCallback(
-    (tab: ActiveTab, ticketId?: string | null, attendanceView?: 'summary' | 'individual', attendanceUserId?: string) => {
+    (
+      tab: ActiveTab,
+      ticketId?: string | null,
+      attendanceView?: 'summary' | 'individual',
+      attendanceUserId?: string
+    ) => {
       const path = tabToPath(tab, ticketId, attendanceView, attendanceUserId);
       window.history.replaceState({}, '', path);
     },
