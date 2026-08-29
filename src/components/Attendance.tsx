@@ -40,6 +40,10 @@ interface AttendanceProps {
   currentUser: AppUser;
   allUsers: AppUser[];
   mode?: 'hq' | 'factory';
+  viewMode?: ViewMode;
+  selectedUserId?: string;
+  onViewModeChange?: (mode: ViewMode, userId?: string) => void;
+  onSelectedUserIdChange?: (userId: string) => void;
 }
 
 type ViewMode = 'summary' | 'individual';
@@ -56,7 +60,15 @@ const isTodaySundayPKT = (): boolean => {
   return pktNow.getUTCDay() === 0;
 };
 
-export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, mode = 'hq' }) => {
+export const Attendance: React.FC<AttendanceProps> = ({
+  currentUser,
+  allUsers,
+  mode = 'hq',
+  viewMode: externalViewMode,
+  selectedUserId: externalSelectedUserId,
+  onViewModeChange,
+  onSelectedUserIdChange,
+}) => {
   const isFactory = mode === 'factory';
 
   const canViewAll = isFactory
@@ -73,11 +85,26 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
   const apiBase = isFactory ? '/api/factory/attendance' : '/api/attendance';
   const defaultFallbackShift = isFactory ? 'extended' : 'headquarters';
 
+  const [internalViewMode, setInternalViewMode] = useState<ViewMode>(canViewAll ? 'summary' : 'individual');
+  const [internalSelectedUserId, setInternalSelectedUserId] = useState<string>(currentUser.id);
+
+  const resolvedViewMode = externalViewMode ?? internalViewMode;
+  const resolvedSelectedUserId = externalSelectedUserId ?? internalSelectedUserId;
+
+  const handleViewModeChange = (mode: ViewMode, userId?: string) => {
+    setInternalViewMode(mode);
+    onViewModeChange?.(mode, userId);
+  };
+
+  const handleSelectedUserIdChange = (userId: string) => {
+    setInternalSelectedUserId(userId);
+    onSelectedUserIdChange?.(userId);
+  };
+
   // State Management
   const [logs, setLogs] = useState<AttendanceLog[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
-  const [viewMode, setViewMode] = useState<ViewMode>(canViewAll ? 'summary' : 'individual');
 
   // Live tick to force recalculation of dynamic ongoing hours
   const [tick, setTick] = useState(0);
@@ -96,8 +123,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
 
   const [selectedMonth, setSelectedMonth] = useState<string>(currentYearMonth);
 
-  // Selection & Filtering
-  const [selectedUserId, setSelectedUserId] = useState<string>(currentUser.id);
+  // Filtering
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [filterDepartment, setFilterDepartment] = useState<string>('All');
   const [filterShift, setFilterShift] = useState<string>('All');
@@ -590,8 +616,8 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
 
   // Find currently selected employee for Detailed Individual view
   const selectedEmployee = useMemo(() => {
-    return employeeSummaries.find((emp) => emp.id === selectedUserId) || employeeSummaries[0];
-  }, [employeeSummaries, selectedUserId]);
+    return employeeSummaries.find((emp) => emp.id === resolvedSelectedUserId) || employeeSummaries[0];
+  }, [employeeSummaries, resolvedSelectedUserId]);
 
   // Generate punch logs for the selected month for the Calendar view
   const selectedEmployeePunchLogs = useMemo(() => {
@@ -1368,27 +1394,27 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
           {canViewAll || canViewDepartment ? (
             <div className="btn-group">
               <button
-                className={`btn ${viewMode === 'summary' ? 'btn-primary' : 'btn-secondary'}`}
+                className={`btn ${resolvedViewMode === 'summary' ? 'btn-primary' : 'btn-secondary'}`}
                 style={{
                   padding: '0.3188rem 0.7438rem',
                   fontSize: '0.8rem',
                   border: 'none',
                   borderRadius: 'var(--radius-sm)',
                 }}
-                onClick={() => setViewMode('summary')}
+                onClick={() => handleViewModeChange('summary')}
               >
                 <List size={14} />
                 All Employees Summary
               </button>
               <button
-                className={`btn ${viewMode === 'individual' ? 'btn-primary' : 'btn-secondary'}`}
+                className={`btn ${resolvedViewMode === 'individual' ? 'btn-primary' : 'btn-secondary'}`}
                 style={{
                   padding: '0.3188rem 0.7438rem',
                   fontSize: '0.8rem',
                   border: 'none',
                   borderRadius: 'var(--radius-sm)',
                 }}
-                onClick={() => setViewMode('individual')}
+                onClick={() => handleViewModeChange('individual')}
               >
                 <Users size={14} />
                 Detailed Individual View
@@ -1446,7 +1472,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
               day: '2-digit',
             }).format(new Date());
             const todayHoliday = holidays.find((h) => h.date === todayDateStr);
-            if (viewMode === 'summary' && (canViewAll || canViewDepartment) && (isTodaySundayPKT() || todayHoliday)) {
+            if (resolvedViewMode === 'summary' && (canViewAll || canViewDepartment) && (isTodaySundayPKT() || todayHoliday)) {
               const isSunday = isTodaySundayPKT();
               return (
                 <div
@@ -1503,7 +1529,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
             }
             return <></>;
           })()}
-          {viewMode === 'summary' &&
+          {resolvedViewMode === 'summary' &&
           (canViewAll || canViewDepartment) &&
           !isTodaySundayPKT() &&
           !holidays.find(
@@ -1690,7 +1716,9 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                       borderRadius: 'var(--radius-md)',
                       background: 'rgba(34, 197, 94, 0.08)',
                       border:
-                        filterTodayStatus === 'Present' ? '0.1063rem solid #22c55e' : '0.0531rem solid rgba(34, 197, 94, 0.2)',
+                        filterTodayStatus === 'Present'
+                          ? '0.1063rem solid #22c55e'
+                          : '0.0531rem solid rgba(34, 197, 94, 0.2)',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '0.6375rem',
@@ -1728,7 +1756,10 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                       padding: '0.7438rem 0.9563rem',
                       borderRadius: 'var(--radius-md)',
                       background: 'rgba(244, 63, 94, 0.08)',
-                      border: filterTodayStatus === 'Absent' ? '0.1063rem solid #f43f5e' : '0.0531rem solid rgba(244, 63, 94, 0.2)',
+                      border:
+                        filterTodayStatus === 'Absent'
+                          ? '0.1063rem solid #f43f5e'
+                          : '0.0531rem solid rgba(244, 63, 94, 0.2)',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '0.6375rem',
@@ -1823,8 +1854,8 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                         <tr
                           key={emp.id}
                           onClick={() => {
-                            setSelectedUserId(emp.id);
-                            setViewMode('individual');
+                            handleSelectedUserIdChange(emp.id);
+                            handleViewModeChange('individual', emp.id);
                           }}
                         >
                           <td style={{ fontWeight: 700, color: 'white' }}>{emp.formattedCode}</td>
@@ -1940,8 +1971,8 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                                 gap: '0.2125rem',
                               }}
                               onClick={() => {
-                                setSelectedUserId(emp.id);
-                                setViewMode('individual');
+                                handleSelectedUserIdChange(emp.id);
+                                handleViewModeChange('individual', emp.id);
                               }}
                             >
                               View Detailed Logs
@@ -1974,7 +2005,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
           )}
 
           {/* ─────────────────── DETAILED INDIVIDUAL VIEW ─────────────────── */}
-          {viewMode === 'individual' && selectedEmployee ? (
+          {resolvedViewMode === 'individual' && selectedEmployee ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.275rem' }}>
               {/* Back Navigation Bar for Managers/Admins/Executives */}
               {canViewAll || canViewDepartment ? (
@@ -1988,7 +2019,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                       alignItems: 'center',
                       gap: '0.3188rem',
                     }}
-                    onClick={() => setViewMode('summary')}
+                    onClick={() => handleViewModeChange('summary')}
                   >
                     <ArrowLeft size={14} />
                     Back to All Employees Summary
@@ -2015,8 +2046,8 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                         width: '11.6875rem',
                         backgroundColor: 'var(--bg-secondary)',
                       }}
-                      value={selectedUserId}
-                      onChange={(e) => setSelectedUserId(e.target.value)}
+                      value={resolvedSelectedUserId}
+                      onChange={(e) => handleSelectedUserIdChange(e.target.value)}
                     >
                       {employeeSummaries.map((emp) => (
                         <option key={emp.id} value={emp.id}>
@@ -2176,7 +2207,10 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                           gap: '0.3188rem',
                         }}
                       >
-                        <span className="badge badge-closed" style={{ padding: '0.425rem 0.85rem', fontSize: '0.85rem' }}>
+                        <span
+                          className="badge badge-closed"
+                          style={{ padding: '0.425rem 0.85rem', fontSize: '0.85rem' }}
+                        >
                           <CheckCircle size={14} /> Clocked In
                         </span>
                         <span
@@ -2877,7 +2911,8 @@ export const Attendance: React.FC<AttendanceProps> = ({ currentUser, allUsers, m
                   <div
                     className="stat-card it-app"
                     style={{
-                      borderLeft: individualStats.absent > 0 ? '0.2125rem solid #f43f5e' : '0.0531rem solid var(--border-color)',
+                      borderLeft:
+                        individualStats.absent > 0 ? '0.2125rem solid #f43f5e' : '0.0531rem solid var(--border-color)',
                     }}
                   >
                     <div className="stat-header">

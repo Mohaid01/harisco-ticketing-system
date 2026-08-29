@@ -853,7 +853,7 @@ h1.page-title {
   width: 100%;
 }
 
-@media screen and (max-width: 34.0rem) {
+@media screen and (max-width: 34rem) {
   .form-row {
     grid-template-columns: 1fr;
   }
@@ -874,9 +874,9 @@ h1.page-title {
   align-items: center;
   background-color: var(--bg-primary);
   background-image:
-    radial-gradient(at 0% 0%, rgba(14, 82, 155, 0.15) 0.0rem, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(14, 82, 155, 0.08) 0.0rem, transparent 50%),
-    radial-gradient(at 50% 50%, rgba(8, 13, 26, 0.8) 0.0rem, var(--bg-primary) 100%);
+    radial-gradient(at 0% 0%, rgba(14, 82, 155, 0.15) 0rem, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(14, 82, 155, 0.08) 0rem, transparent 50%),
+    radial-gradient(at 50% 50%, rgba(8, 13, 26, 0.8) 0rem, var(--bg-primary) 100%);
   position: relative;
   overflow: hidden;
 }

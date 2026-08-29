@@ -45,17 +45,14 @@ for (const file of tsxFiles) {
   let content = fs.readFileSync(file, 'utf8');
   const original = content;
 
-  content = content.replace(
-    /style=\{\{[^}]*?\b(\d+(?:\.\d+)?)px\b[^}]*?\}/g,
-    (match) => {
-      return match.replace(/\b(\d+(?:\.\d+)?)px\b/g, (m, pxStr) => {
-        const px = parseFloat(pxStr);
-        const rem = Math.round(px * FACTOR * 10000) / 10000;
-        const formatted = rem % 1 === 0 ? rem.toFixed(1) : rem.toString();
-        return `${formatted}rem`;
-      });
-    }
-  );
+  content = content.replace(/style=\{\{[^}]*?\b(\d+(?:\.\d+)?)px\b[^}]*?\}/g, (match) => {
+    return match.replace(/\b(\d+(?:\.\d+)?)px\b/g, (m, pxStr) => {
+      const px = parseFloat(pxStr);
+      const rem = Math.round(px * FACTOR * 10000) / 10000;
+      const formatted = rem % 1 === 0 ? rem.toFixed(1) : rem.toString();
+      return `${formatted}rem`;
+    });
+  });
 
   if (content !== original) {
     fs.writeFileSync(file, content);
@@ -69,20 +66,14 @@ let indexContent = fs.readFileSync(indexPath, 'utf8');
 
 if (!indexContent.includes(':root {') && !indexContent.includes('font-size: 0.85rem')) {
   // Find :root block and add font-size
-  indexContent = indexContent.replace(
-    /:root\s*\{/,
-    `:root {\n  font-size: 0.85rem;`
-  );
+  indexContent = indexContent.replace(/:root\s*\{/, `:root {\n  font-size: 0.85rem;`);
   fs.writeFileSync(indexPath, indexContent);
   console.log('Added :root font-size to index.css');
 } else if (indexContent.includes(':root {')) {
   // Check if font-size already exists in :root
   const rootMatch = indexContent.match(/:root\s*\{([^}]*)\}/s);
   if (rootMatch && !rootMatch[1].includes('font-size')) {
-    indexContent = indexContent.replace(
-      /:root\s*\{/,
-      `:root {\n  font-size: 0.85rem;`
-    );
+    indexContent = indexContent.replace(/:root\s*\{/, `:root {\n  font-size: 0.85rem;`);
     fs.writeFileSync(indexPath, indexContent);
     console.log('Added font-size to existing :root in index.css');
   }

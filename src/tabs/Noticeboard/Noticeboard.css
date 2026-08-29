@@ -111,6 +111,27 @@
   color: #ef4444;
 }
 
+.notice-content-area {
+  display: flex;
+  flex-direction: row;
+  gap: 1.275rem;
+}
+
+.notice-lang-box {
+  flex: 1;
+  min-width: 0;
+}
+
+.notice-lang-header {
+  display: block;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 0.3188rem;
+  font-weight: 600;
+}
+
 .notice-content-title {
   margin: 0 0 0.3188rem 0;
   font-size: 1.1rem;
@@ -222,5 +243,9 @@
 
   .notice-lang-box {
     padding: 0.6375rem;
+  }
+
+  .notice-content-area {
+    flex-direction: column;
   }
 }

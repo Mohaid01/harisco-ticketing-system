@@ -790,7 +790,13 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
                     </div>
 
                     <div
-                      style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '0.425rem', textAlign: 'left' }}
+                      style={{
+                        width: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.425rem',
+                        textAlign: 'left',
+                      }}
                     >
                       {user.email ? (
                         <span

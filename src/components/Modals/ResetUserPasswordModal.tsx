@@ -68,7 +68,10 @@ export const ResetUserPasswordModal: React.FC<ResetUserPasswordModalProps> = ({
           className="panel-header"
           style={{ padding: '1.0625rem 1.275rem', borderBottom: '0.0531rem solid var(--border-color)', margin: 0 }}
         >
-          <h2 className="panel-title" style={{ fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.425rem' }}>
+          <h2
+            className="panel-title"
+            style={{ fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.425rem' }}
+          >
             <KeyRound size={18} />
             Reset Password
           </h2>

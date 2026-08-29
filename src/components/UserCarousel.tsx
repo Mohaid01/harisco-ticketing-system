@@ -16,7 +16,15 @@ export const UserCarousel: React.FC<UserCarouselProps> = ({ children, loading = 
               <div className="skeleton" style={{ width: '3.825rem', height: '3.825rem', borderRadius: '50%' }} />
               <div className="skeleton" style={{ width: '6.375rem', height: '0.9563rem' }} />
               <div className="skeleton" style={{ width: '4.25rem', height: '0.7438rem' }} />
-              <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '0.425rem', marginTop: '0.425rem' }}>
+              <div
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.425rem',
+                  marginTop: '0.425rem',
+                }}
+              >
                 <div className="skeleton" style={{ width: '100%', height: '0.85rem' }} />
                 <div className="skeleton" style={{ width: '80%', height: '0.85rem' }} />
               </div>

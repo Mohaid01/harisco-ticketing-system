@@ -95,7 +95,7 @@
   text-align: right;
 }
 
-@media screen and (max-width: 34.0rem) {
+@media screen and (max-width: 34rem) {
   .timeline-meta {
     flex-direction: column;
     align-items: flex-start;
