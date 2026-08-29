@@ -88,7 +88,12 @@ export const Attendance: React.FC<AttendanceProps> = ({
   const [internalViewMode, setInternalViewMode] = useState<ViewMode>(canViewAll ? 'summary' : 'individual');
   const [internalSelectedUserId, setInternalSelectedUserId] = useState<string>(currentUser.id);
 
-  const resolvedViewMode = externalViewMode ?? internalViewMode;
+  const resolvedViewMode = (() => {
+    if (externalViewMode && (externalViewMode !== 'summary' || canViewAll)) {
+      return externalViewMode;
+    }
+    return canViewAll ? internalViewMode : 'individual';
+  })();
   const resolvedSelectedUserId = externalSelectedUserId ?? internalSelectedUserId;
 
   const handleViewModeChange = (mode: ViewMode, userId?: string) => {
@@ -100,6 +105,12 @@ export const Attendance: React.FC<AttendanceProps> = ({
     setInternalSelectedUserId(userId);
     onSelectedUserIdChange?.(userId);
   };
+
+  useEffect(() => {
+    if (!canViewAll && !externalViewMode) {
+      handleViewModeChange('individual', currentUser.id);
+    }
+  }, []);
 
   // State Management
   const [logs, setLogs] = useState<AttendanceLog[]>([]);
