@@ -31,11 +31,13 @@ async function main() {
     return;
   }
 
-  const approvedLeaves = await db.all<{
-    userId: string;
-    startDate: string;
-    endDate: string;
-  }[]>(
+  const approvedLeaves = await db.all<
+    {
+      userId: string;
+      startDate: string;
+      endDate: string;
+    }[]
+  >(
     "SELECT userId, startDate, endDate FROM leave_applications WHERE status = 'approved' ORDER BY userId ASC, appliedAt ASC"
   );
 
@@ -65,7 +67,9 @@ async function main() {
     const userLeaves = leavesByUser.get(userId);
 
     if (!userLeaves || userLeaves.length === 0) {
-      console.warn(`  SKIP user ${userId}: no approved leaves found. Cannot determine correct dates for ${badRecords.length} bad records.`);
+      console.warn(
+        `  SKIP user ${userId}: no approved leaves found. Cannot determine correct dates for ${badRecords.length} bad records.`
+      );
       totalSkipped += badRecords.length;
       totalUsersSkipped++;
       continue;
@@ -101,7 +105,9 @@ async function main() {
     }
 
     if (expectedPairs.length === 0) {
-      console.warn(`  SKIP user ${userId}: approved leaves exist but produced no working-day pairs. ${badRecords.length} bad records untouched.`);
+      console.warn(
+        `  SKIP user ${userId}: approved leaves exist but produced no working-day pairs. ${badRecords.length} bad records untouched.`
+      );
       totalSkipped += badRecords.length;
       totalUsersSkipped++;
       continue;

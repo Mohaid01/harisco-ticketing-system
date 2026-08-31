@@ -103,7 +103,12 @@ function pathToTab(pathname: string): {
     const urlParams = new URLSearchParams(window.location.search);
     const attendanceView = urlParams.get('view') as 'summary' | 'individual' | null;
     const attendanceUserId = urlParams.get('userId') || undefined;
-    return { tab: tabMap[base] || 'noticeboard', ticketId: null, attendanceUserId, attendanceView: attendanceView || undefined };
+    return {
+      tab: tabMap[base] || 'noticeboard',
+      ticketId: null,
+      attendanceUserId,
+      attendanceView: attendanceView || undefined,
+    };
   }
 
   return { tab: tabMap[base] || 'noticeboard', ticketId: null };

@@ -20,7 +20,9 @@ export function isDeviceOnline(type: 'factory' | 'hq'): boolean {
 
 function broadcastDeviceStatus(type: 'factory' | 'hq'): void {
   const online = isDeviceOnline(type);
-  sseClients.broadcast(`data: ${JSON.stringify({ type: 'device_status', device: type, online, lastHeartbeat: deviceStatus[type].lastHeartbeat })}\n\n`);
+  sseClients.broadcast(
+    `data: ${JSON.stringify({ type: 'device_status', device: type, online, lastHeartbeat: deviceStatus[type].lastHeartbeat })}\n\n`
+  );
 }
 
 let factoryStatusBroadcastTimer: ReturnType<typeof setInterval> | null = null;

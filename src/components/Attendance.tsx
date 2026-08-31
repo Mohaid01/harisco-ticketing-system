@@ -219,7 +219,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
       .catch((e) => {
         console.error('Failed to fetch holidays:', e);
       })
-       .finally(() => {
+      .finally(() => {
         setRefreshing(false);
       });
   }, []);
@@ -1451,39 +1451,45 @@ export const Attendance: React.FC<AttendanceProps> = ({
               : 'Review your clock-in timings, total hours worked, and monthly attendance overview.'}
           </p>
         </div>
-          {canViewDeviceStatus && (
-            <div
+        {canViewDeviceStatus && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.425rem',
+              padding: '0.3188rem 0.7438rem',
+              borderRadius: 'var(--radius-sm)',
+              backgroundColor: deviceOnline ? 'rgba(34,197,94,0.12)' : 'rgba(244,63,94,0.12)',
+              border: `0.0531rem solid ${deviceOnline ? 'rgba(34,197,94,0.3)' : 'rgba(244,63,94,0.3)'}`,
+              fontSize: '0.8rem',
+              fontWeight: 500,
+            }}
+          >
+            <span
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.425rem',
-                padding: '0.3188rem 0.7438rem',
-                borderRadius: 'var(--radius-sm)',
-                backgroundColor: deviceOnline ? 'rgba(34,197,94,0.12)' : 'rgba(244,63,94,0.12)',
-                border: `0.0531rem solid ${deviceOnline ? 'rgba(34,197,94,0.3)' : 'rgba(244,63,94,0.3)'}`,
-                fontSize: '0.8rem',
-                fontWeight: 500,
+                width: '0.5313rem',
+                height: '0.5313rem',
+                borderRadius: '50%',
+                backgroundColor: deviceOnline ? '#22c55e' : '#ef4444',
+                flexShrink: 0,
               }}
-            >
-              <span
-                style={{
-                  width: '0.5313rem',
-                  height: '0.5313rem',
-                  borderRadius: '50%',
-                  backgroundColor: deviceOnline ? '#22c55e' : '#ef4444',
-                  flexShrink: 0,
-                }}
-              />
-              <span style={{ color: deviceOnline ? '#22c55e' : '#ef4444' }}>
-                {deviceOnline ? 'Device Online' : deviceOnline === false ? 'Device Offline' : 'Checking device...'}
+            />
+            <span style={{ color: deviceOnline ? '#22c55e' : '#ef4444' }}>
+              {deviceOnline ? 'Device Online' : deviceOnline === false ? 'Device Offline' : 'Checking device...'}
+            </span>
+            {deviceLastHeartbeat && (
+              <span style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>
+                (last:{' '}
+                {new Date(deviceLastHeartbeat).toLocaleTimeString('en-PK', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  timeZone: 'Asia/Karachi',
+                })}
+                )
               </span>
-              {deviceLastHeartbeat && (
-                <span style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>
-                  (last: {new Date(deviceLastHeartbeat).toLocaleTimeString('en-PK', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Karachi' })})
-                </span>
-              )}
-            </div>
-          )}
+            )}
+          </div>
+        )}
         <div style={{ display: 'flex', gap: '0.6375rem', alignItems: 'center' }}>
           {canViewAll || canViewDepartment ? (
             <div className="btn-group">

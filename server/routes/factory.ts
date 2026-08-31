@@ -560,7 +560,9 @@ router.get('/attendance/stream', authenticateToken, (req: AuthRequest, res: Resp
   res.flushHeaders();
 
   const online = isDeviceOnline('factory');
-  res.write(`data: ${JSON.stringify({ type: 'device_status', device: 'factory', online, lastHeartbeat: deviceStatus.factory.lastHeartbeat })}\n\n`);
+  res.write(
+    `data: ${JSON.stringify({ type: 'device_status', device: 'factory', online, lastHeartbeat: deviceStatus.factory.lastHeartbeat })}\n\n`
+  );
 
   sseClients.add(res);
 });
@@ -574,7 +576,8 @@ router.get('/shift-overrides/:userId/:date', authenticateToken, async (req: Auth
 
     if (!currentUser) return res.status(401).json({ error: 'Unauthorized.' });
 
-    const canView = currentUser.id === userId || ['factory_it', 'factory_manager', 'manager', 'it'].includes(currentUser.role);
+    const canView =
+      currentUser.id === userId || ['factory_it', 'factory_manager', 'manager', 'it'].includes(currentUser.role);
     if (!canView) return res.status(403).json({ error: 'Forbidden.' });
 
     const override = await db.get<{ shift: string }>(

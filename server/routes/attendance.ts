@@ -219,7 +219,9 @@ router.get('/stream', authenticateToken, (req: AuthRequest, res: Response) => {
   res.flushHeaders();
 
   const online = isDeviceOnline('hq');
-  res.write(`data: ${JSON.stringify({ type: 'device_status', device: 'hq', online, lastHeartbeat: deviceStatus.hq.lastHeartbeat })}\n\n`);
+  res.write(
+    `data: ${JSON.stringify({ type: 'device_status', device: 'hq', online, lastHeartbeat: deviceStatus.hq.lastHeartbeat })}\n\n`
+  );
 
   sseClients.add(res);
 });
