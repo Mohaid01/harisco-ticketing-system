@@ -3,24 +3,24 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: 1.275rem;
 }
 
 .leave-header-btn {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 0.425rem;
 }
 
 .leave-panel {
-  padding: 20px;
+  padding: 1.0625rem;
 }
 
 .leave-panel-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 16px;
+  gap: 0.425rem;
+  margin-bottom: 0.85rem;
 }
 
 .leave-panel-header-icon {
@@ -42,7 +42,7 @@
 }
 
 .leave-reason {
-  max-width: 250px;
+  max-width: 13.2813rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -59,7 +59,7 @@
 
 .leave-empty {
   text-align: center;
-  padding: 40px;
+  padding: 2.125rem;
   color: var(--text-secondary);
 }
 
@@ -70,24 +70,24 @@
 
 .leave-actions {
   display: flex;
-  gap: 8px;
+  gap: 0.425rem;
 }
 
 .leave-btn-xs {
-  padding: 4px 8px;
+  padding: 0.2125rem 0.425rem;
   font-size: 0.75rem;
 }
 
 .modal-content-medium {
-  max-width: 500px;
+  max-width: 26.5625rem;
 }
 
 .modal-header-bar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 24px;
-  border-bottom: 1px solid var(--border-color);
+  padding: 1.0625rem 1.275rem;
+  border-bottom: 0.0531rem solid var(--border-color);
   margin: 0;
 }
 
@@ -97,8 +97,8 @@
 }
 
 .modal-close-btn-sm {
-  width: 32px;
-  height: 32px;
+  width: 1.7rem;
+  height: 1.7rem;
   padding: 0;
   border-radius: 50%;
   display: flex;
@@ -107,12 +107,12 @@
 }
 
 .modal-body {
-  padding: 24px;
+  padding: 1.275rem;
 }
 
 .form-row {
   display: flex;
-  gap: 16px;
+  gap: 0.85rem;
 }
 
 .form-row-item {
@@ -129,31 +129,31 @@
 }
 
 .form-textarea {
-  min-height: 100px;
+  min-height: 5.3125rem;
   resize: vertical;
 }
 
 .modal-footer {
   display: flex;
-  gap: 10px;
+  gap: 0.5313rem;
   justify-content: flex-end;
-  padding: 16px 24px;
-  border-top: 1px solid var(--border-color);
+  padding: 0.85rem 1.275rem;
+  border-top: 0.0531rem solid var(--border-color);
 }
 
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 40.8rem) {
   .leave-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 12px;
+    gap: 0.6375rem;
   }
 
   .leave-reason {
-    max-width: 150px;
+    max-width: 7.9688rem;
   }
 
   .form-row {
     flex-direction: column;
-    gap: 12px;
+    gap: 0.6375rem;
   }
 }

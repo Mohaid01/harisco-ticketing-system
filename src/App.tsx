@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type {
   ActiveTab,
@@ -23,7 +23,7 @@ import { EditNoticeModal } from './components/Modals/EditNoticeModal';
 import { NewAdminTicketModal } from './components/Modals/NewAdminTicketModal';
 import { NewTicketModal } from './components/Modals/NewTicketModal';
 import { PasswordReset } from './components/PasswordReset';
-import { Sidebar } from './components/Sidebar';
+import { Header } from './components/Sidebar';
 import { TicketDetails } from './components/TicketDetails';
 import { TicketList } from './components/TicketList';
 import { UserManagement } from './components/UserManagement';
@@ -34,7 +34,116 @@ import { Login } from './tabs/Login';
 import { NoticeBoard } from './tabs/Noticeboard';
 import { SiteDutyManagement } from './tabs/SiteDutyManagement';
 
+function canUserAccessTab(tab: ActiveTab, role: UserRole, department: string | undefined): boolean {
+  switch (tab) {
+    case 'noticeboard':
+      return ['it', 'employee', 'manager', 'executive'].includes(role);
+    case 'tickets':
+      return ['it', 'employee', 'manager', 'executive'].includes(role);
+    case 'admin_tickets':
+      return ['it', 'executive', 'manager', 'employee'].includes(role);
+    case 'users':
+      return role === 'it';
+    case 'activity_log':
+      return ['it', 'manager', 'executive'].includes(role) && department !== 'Staff';
+    case 'attendance':
+      return ['it', 'employee', 'manager', 'executive'].includes(role);
+    case 'leaves':
+      return ['it', 'employee', 'manager', 'executive'].includes(role);
+    case 'site_duties':
+      return ['it', 'employee', 'manager', 'executive'].includes(role) && department !== 'Staff';
+    case 'factory_users':
+      return role === 'it' || role === 'factory_it';
+    case 'factory_attendance':
+      return ['it', 'manager', 'factory_it', 'factory_manager', 'factory_employee'].includes(role);
+    default:
+      return false;
+  }
+}
+
+function getSafeFallbackTab(role: UserRole): ActiveTab {
+  if (role === 'it' || role === 'manager' || role === 'executive') return 'noticeboard';
+  if (role === 'employee') return 'noticeboard';
+  if (role === 'factory_it' || role === 'factory_manager' || role === 'factory_employee') return 'factory_attendance';
+  return 'noticeboard';
+}
+
+function pathToTab(pathname: string): {
+  tab: ActiveTab;
+  ticketId: string | null;
+  attendanceUserId?: string;
+  attendanceView?: 'summary' | 'individual';
+} {
+  const trimmed = pathname.replace(/\/+$/, '');
+  const parts = trimmed.split('/').filter(Boolean);
+
+  const tabMap: Record<string, ActiveTab> = {
+    noticeboard: 'noticeboard',
+    tickets: 'tickets',
+    'admin-tickets': 'admin_tickets',
+    users: 'users',
+    'activity-log': 'activity_log',
+    attendance: 'attendance',
+    leaves: 'leaves',
+    'site-duties': 'site_duties',
+    'factory-users': 'factory_users',
+    'factory-attendance': 'factory_attendance',
+  };
+
+  if (parts.length === 0) return { tab: 'noticeboard', ticketId: null };
+
+  const base = parts[0];
+  const ticketId = (base === 'tickets' || base === 'admin-tickets') && parts[1] ? parts[1] : null;
+
+  if (base === 'tickets' || base === 'admin-tickets') {
+    return { tab: tabMap[base] || 'noticeboard', ticketId };
+  }
+
+  if (base === 'attendance' || base === 'factory-attendance') {
+    const urlParams = new URLSearchParams(window.location.search);
+    const attendanceView = urlParams.get('view') as 'summary' | 'individual' | null;
+    const attendanceUserId = urlParams.get('userId') || undefined;
+    return { tab: tabMap[base] || 'noticeboard', ticketId: null, attendanceUserId, attendanceView: attendanceView || undefined };
+  }
+
+  return { tab: tabMap[base] || 'noticeboard', ticketId: null };
+}
+
+function tabToPath(
+  tab: ActiveTab,
+  ticketId?: string | null,
+  attendanceView?: 'summary' | 'individual',
+  attendanceUserId?: string
+): string {
+  const base = `/${tab.replace('_', '-')}`;
+  if ((tab === 'tickets' || tab === 'admin_tickets') && ticketId) {
+    return `${base}/${ticketId}`;
+  }
+  if (tab === 'attendance' || tab === 'factory_attendance') {
+    const params = new URLSearchParams();
+    if (attendanceView && attendanceView !== 'summary') params.set('view', attendanceView);
+    if (attendanceUserId) params.set('userId', attendanceUserId);
+    const query = params.toString();
+    return query ? `${base}?${query}` : base;
+  }
+  return base;
+}
+
 function App() {
+  const getInitialTab = (): {
+    tab: ActiveTab;
+    ticketId: string | null;
+    attendanceUserId?: string;
+    attendanceView?: 'summary' | 'individual';
+  } => {
+    if (typeof window !== 'undefined') {
+      return pathToTab(window.location.pathname);
+    }
+    return { tab: 'noticeboard', ticketId: null };
+  };
+
+  const initialTab = getInitialTab();
+
   const [token, setToken] = useState<string | null>(localStorage.getItem('harisco_token'));
   const [notices, setNotices] = useState<Notice[]>([]);
   const [isCreateNoticeOpen, setIsCreateNoticeOpen] = useState(false);
@@ -43,16 +152,153 @@ function App() {
   const [users, setUsers] = useState<AppUser[]>([]);
   const [factoryUsers, setFactoryUsers] = useState<AppUser[]>([]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
-  const [activeTab, setActiveTab] = useState<ActiveTab>('noticeboard');
-  const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<ActiveTab>(initialTab.tab);
+  const [selectedTicketId, setSelectedTicketId] = useState<string | null>(initialTab.ticketId);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [adminTickets, setAdminTickets] = useState<AdminTicket[]>([]);
   const [adminSearchQuery, setAdminSearchQuery] = useState<string>('');
-  const [selectedAdminTicketId, setSelectedAdminTicketId] = useState<string | null>(null);
+  const [selectedAdminTicketId, setSelectedAdminTicketId] = useState<string | null>(initialTab.ticketId);
   const [isCreateAdminModalOpen, setIsCreateAdminModalOpen] = useState<boolean>(false);
+  const [attendanceViewMode, setAttendanceViewMode] = useState<'summary' | 'individual'>(
+    initialTab.attendanceView || 'summary'
+  );
+  const [attendanceSelectedUserId, setAttendanceSelectedUserId] = useState<string | undefined>(
+    initialTab.attendanceUserId
+  );
+  const attendanceSelectedUserIdRef = useRef(attendanceSelectedUserId);
+  useEffect(() => {
+    attendanceSelectedUserIdRef.current = attendanceSelectedUserId;
+  });
+
+  const handleAttendanceViewModeChange = (mode: 'summary' | 'individual', userId?: string) => {
+    if (mode === 'individual') {
+      const targetUserId = userId || attendanceSelectedUserIdRef.current || currentUser!.id;
+      navigateToAttendanceIndividual(targetUserId);
+    } else {
+      navigateToAttendanceSummary();
+    }
+  };
+
+  const handleAttendanceSelectedUserIdChange = (userId: string) => {
+    setAttendanceSelectedUserId(userId);
+    if (attendanceViewMode === 'individual') {
+      const path = tabToPath(activeTab, undefined, 'individual', userId);
+      window.history.replaceState({}, '', path);
+    }
+  };
+
+  const syncUrl = useCallback(
+    (
+      tab: ActiveTab,
+      ticketId?: string | null,
+      attendanceView?: 'summary' | 'individual',
+      attendanceUserId?: string
+    ) => {
+      const path = tabToPath(tab, ticketId, attendanceView, attendanceUserId);
+      window.history.replaceState({}, '', path);
+    },
+    []
+  );
+
+  const navigateToTab = (
+    tab: ActiveTab,
+    ticketId?: string | null,
+    attendanceView?: 'summary' | 'individual',
+    attendanceUserId?: string
+  ) => {
+    const path = tabToPath(tab, ticketId, attendanceView, attendanceUserId);
+    window.history.pushState({}, '', path);
+    setActiveTab(tab);
+    setSelectedTicketId(tab === 'tickets' ? ticketId || null : null);
+    setSelectedAdminTicketId(tab === 'admin_tickets' ? ticketId || null : null);
+    if (tab === 'attendance' || tab === 'factory_attendance') {
+      setAttendanceViewMode(attendanceView || 'summary');
+      setAttendanceSelectedUserId(attendanceUserId);
+    }
+  };
+
+  const navigateToTicket = (tab: ActiveTab, ticketId: string) => {
+    const path = tabToPath(tab, ticketId);
+    window.history.pushState({}, '', path);
+    setActiveTab(tab);
+    setSelectedTicketId(tab === 'tickets' ? ticketId : null);
+    setSelectedAdminTicketId(tab === 'admin_tickets' ? ticketId : null);
+  };
+
+  const navigateBackToList = () => {
+    const path = tabToPath(activeTab);
+    window.history.pushState({}, '', path);
+    setSelectedTicketId(null);
+    setSelectedAdminTicketId(null);
+    if (activeTab === 'attendance' || activeTab === 'factory_attendance') {
+      setAttendanceViewMode('summary');
+      setAttendanceSelectedUserId(undefined);
+    }
+  };
+
+  const enforceAccessControl = useCallback(() => {
+    if (!currentUser) return;
+    const { tab } = pathToTab(window.location.pathname);
+    if (!canUserAccessTab(tab, currentUser.role, currentUser.department ?? undefined)) {
+      const fallback = getSafeFallbackTab(currentUser.role);
+      syncUrl(fallback);
+      setActiveTab(fallback);
+      setSelectedTicketId(null);
+      setSelectedAdminTicketId(null);
+      setAttendanceViewMode('summary');
+      setAttendanceSelectedUserId(undefined);
+    }
+  }, [currentUser, syncUrl]);
+
+  useEffect(() => {
+    if (currentUser && !loading) {
+      enforceAccessControl();
+    }
+  }, [currentUser, loading, enforceAccessControl]);
+
+  const navigateToAttendanceIndividual = (userId: string) => {
+    const path = tabToPath(activeTab, undefined, 'individual', userId);
+    window.history.pushState({}, '', path);
+    setAttendanceViewMode('individual');
+    setAttendanceSelectedUserId(userId);
+  };
+
+  const navigateToAttendanceSummary = () => {
+    const path = tabToPath(activeTab);
+    window.history.pushState({}, '', path);
+    setAttendanceViewMode('summary');
+    setAttendanceSelectedUserId(undefined);
+  };
+
+  // Sync URL with active tab for browser navigation
+  useEffect(() => {
+    const handlePopState = () => {
+      const { tab, ticketId, attendanceUserId, attendanceView } = pathToTab(window.location.pathname);
+      if (!currentUser || !canUserAccessTab(tab, currentUser.role, currentUser.department ?? undefined)) {
+        setActiveTab(tab);
+        setSelectedTicketId(tab === 'tickets' ? ticketId : null);
+        setSelectedAdminTicketId(tab === 'admin_tickets' ? ticketId : null);
+        if (tab === 'attendance' || tab === 'factory_attendance') {
+          setAttendanceViewMode(attendanceView || 'summary');
+          setAttendanceSelectedUserId(attendanceUserId);
+        }
+      } else {
+        const fallback = getSafeFallbackTab(currentUser!.role);
+        const path = tabToPath(fallback);
+        window.history.replaceState({}, '', path);
+        setActiveTab(fallback);
+        setSelectedTicketId(null);
+        setSelectedAdminTicketId(null);
+        setAttendanceViewMode('summary');
+        setAttendanceSelectedUserId(undefined);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [currentUser]);
 
   // Load session and data
   useEffect(() => {
@@ -87,7 +333,7 @@ function App() {
         }
 
         if (user.role.includes('factory')) {
-          setActiveTab('factory_attendance');
+          navigateToTab('factory_attendance');
         }
 
         // Fetch Notices
@@ -279,7 +525,8 @@ function App() {
       .split('_')
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
-    document.title = `${tabName} | ${APP_TITLE}`;
+    const adjustedTabName = activeTab === 'noticeboard' ? 'Dashboard' : tabName;
+    document.title = `${adjustedTabName} | ${APP_TITLE}`;
   }, [activeTab, selectedTicketId, selectedAdminTicketId, tickets, adminTickets]);
 
   // Find active ticket if viewing details
@@ -296,14 +543,14 @@ function App() {
     localStorage.setItem('harisco_token', newToken);
     setToken(newToken);
     setCurrentUser(user);
-    setActiveTab('noticeboard');
+    navigateToTab('noticeboard');
   };
 
   const handlePasswordResetSuccess = (newToken: string, updatedUser: AppUser) => {
     localStorage.setItem('harisco_token', newToken);
     setToken(newToken);
     setCurrentUser(updatedUser);
-    setActiveTab('noticeboard');
+    navigateToTab('noticeboard');
   };
 
   // Handle Logout
@@ -317,7 +564,7 @@ function App() {
     setAdminTickets([]);
     setSelectedTicketId(null);
     setSelectedAdminTicketId(null);
-    setActiveTab('noticeboard');
+    navigateToTab('noticeboard');
   };
 
   // Noticeboard-releveant API calls
@@ -548,7 +795,7 @@ function App() {
       if (!res.ok) throw new Error('Failed to delete ticket');
 
       setTickets((prevTickets) => prevTickets.filter((t) => t.id !== ticketId));
-      setSelectedTicketId(null);
+      navigateBackToList();
     } catch (err) {
       console.error(err);
       alert('Error deleting ticket. Please try again.');
@@ -612,8 +859,7 @@ function App() {
       const newTicket = await res.json();
 
       setTickets((prevTickets) => [newTicket, ...prevTickets]);
-      setActiveTab('tickets');
-      setSelectedTicketId(newTicket.id);
+      navigateToTicket('tickets', newTicket.id);
       setIsCreateModalOpen(false);
     } catch (err) {
       console.error(err);
@@ -780,8 +1026,7 @@ function App() {
       const newTicket = await res.json();
 
       setAdminTickets((prev) => [newTicket, ...prev]);
-      setActiveTab('admin_tickets');
-      setSelectedAdminTicketId(newTicket.id);
+      navigateToTicket('admin_tickets', newTicket.id);
       setIsCreateAdminModalOpen(false);
     } catch (err) {
       console.error(err);
@@ -838,7 +1083,7 @@ function App() {
       if (!res.ok) throw new Error('Failed to delete admin ticket');
 
       setAdminTickets((prev) => prev.filter((t) => t.id !== ticketId));
-      setSelectedAdminTicketId(null);
+      navigateBackToList();
     } catch (err) {
       console.error(err);
       alert('Error deleting admin ticket. Please try again.');
@@ -1156,12 +1401,12 @@ function App() {
   // Loading state skeleton screen
   if (loading) {
     return (
-      <div className="login-page" style={{ flexDirection: 'column', gap: '20px' }}>
+      <div className="login-page" style={{ flexDirection: 'column', gap: '1.0625rem' }}>
         <div
           style={{
-            width: '40px',
-            height: '40px',
-            border: '3px solid var(--border-color)',
+            width: '2.125rem',
+            height: '2.125rem',
+            border: '0.1594rem solid var(--border-color)',
             borderTopColor: 'var(--color-primary)',
             borderRadius: '50%',
             animation: 'spin 1s linear infinite',
@@ -1187,37 +1432,17 @@ function App() {
 
   return (
     <div className="app-container">
-      {/* Sidebar navigation */}
-      <Sidebar
+      {/* Header navigation */}
+      <Header
         currentUser={currentUser}
         activeTab={activeTab}
-        setActiveTab={(tab) => {
-          setActiveTab(tab);
-          setSelectedTicketId(null);
-          setSelectedAdminTicketId(null);
-        }}
+        setActiveTab={navigateToTab}
         onLogout={handleLogout}
         onChangePasswordClick={() => setIsPasswordModalOpen(true)}
       />
 
       {/* Main Section */}
       <main className="main-content">
-        {/* Global header bar */}
-        <header className="app-header" style={{ justifyContent: 'space-between' }}>
-          {/* Header title or context */}
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <span
-              style={{
-                fontSize: '0.9rem',
-                color: 'var(--text-muted)',
-                fontWeight: 500,
-              }}
-            >
-              Harisco IT Support
-            </span>
-          </div>
-        </header>
-
         {/* Dynamic page container */}
         <section className="page-body">
           {currentTicket ? (
@@ -1225,7 +1450,7 @@ function App() {
               ticket={currentTicket}
               currentUser={currentUser}
               itUsers={itUsers}
-              onBack={() => setSelectedTicketId(null)}
+              onBack={navigateBackToList}
               onUpdateStatus={handleUpdateStatus}
               onAssignTicket={handleAssignTicket}
               onAddComment={handleAddComment}
@@ -1245,7 +1470,7 @@ function App() {
               tickets={tickets}
               users={users}
               currentUser={currentUser}
-              onSelectTicket={(id) => setSelectedTicketId(id)}
+              onSelectTicket={(id) => navigateToTicket('tickets', id)}
               onCreateTicketClick={() => setIsCreateModalOpen(true)}
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
@@ -1274,9 +1499,25 @@ function App() {
               loading={loading}
             />
           ) : activeTab === 'attendance' ? (
-            <Attendance currentUser={currentUser} allUsers={users} mode="hq" />
+            <Attendance
+              currentUser={currentUser}
+              allUsers={users}
+              mode="hq"
+              viewMode={attendanceViewMode}
+              selectedUserId={attendanceSelectedUserId}
+              onViewModeChange={handleAttendanceViewModeChange}
+              onSelectedUserIdChange={handleAttendanceSelectedUserIdChange}
+            />
           ) : activeTab === 'factory_attendance' ? (
-            <Attendance currentUser={currentUser} allUsers={factoryUsers} mode="factory" />
+            <Attendance
+              currentUser={currentUser}
+              allUsers={factoryUsers}
+              mode="factory"
+              viewMode={attendanceViewMode}
+              selectedUserId={attendanceSelectedUserId}
+              onViewModeChange={handleAttendanceViewModeChange}
+              onSelectedUserIdChange={handleAttendanceSelectedUserIdChange}
+            />
           ) : activeTab === 'leaves' ? (
             <LeaveManagement currentUser={currentUser} token={token!} />
           ) : activeTab === 'site_duties' ? (
@@ -1287,7 +1528,7 @@ function App() {
                 ticket={currentAdminTicket}
                 currentUser={currentUser}
                 allUsers={users}
-                onBack={() => setSelectedAdminTicketId(null)}
+                onBack={navigateBackToList}
                 onUpdateStatus={handleUpdateAdminTicketStatus}
                 onRevertStatus={handleRevertAdminTicketStatus}
                 onAddComment={handleAddAdminComment}
@@ -1298,7 +1539,7 @@ function App() {
               <AdminTicketList
                 tickets={adminTickets}
                 currentUser={currentUser}
-                onSelectTicket={(id) => setSelectedAdminTicketId(id)}
+                onSelectTicket={(id) => navigateToTicket('admin_tickets', id)}
                 onCreateTicketClick={() => setIsCreateAdminModalOpen(true)}
                 searchQuery={adminSearchQuery}
                 setSearchQuery={setAdminSearchQuery}
@@ -1309,7 +1550,7 @@ function App() {
             <ActivityLog
               tickets={tickets}
               currentUser={currentUser}
-              onSelectTicket={(id) => setSelectedTicketId(id)}
+              onSelectTicket={(id) => navigateToTicket('tickets', id)}
               loading={loading}
             />
           )}

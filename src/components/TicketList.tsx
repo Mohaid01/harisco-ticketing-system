@@ -7,8 +7,8 @@ import {
   Search,
   Settings,
   ShieldCheck,
-  UserCheck,
   User,
+  UserCheck,
 } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
 
@@ -147,7 +147,7 @@ export const TicketList: React.FC<TicketListProps> = ({
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: '24px',
+          marginBottom: '1.275rem',
         }}
       >
         <div>
@@ -250,12 +250,12 @@ export const TicketList: React.FC<TicketListProps> = ({
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="panel" style={{ padding: '16px 20px', marginBottom: '24px' }}>
+      <div className="panel" style={{ padding: '0.85rem 1.0625rem', marginBottom: '1.275rem' }}>
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-            gap: '12px',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(11.6875rem, 1fr))',
+            gap: '0.6375rem',
             width: '100%',
             alignItems: 'center',
           }}
@@ -268,8 +268,8 @@ export const TicketList: React.FC<TicketListProps> = ({
               placeholder="Search ID, category, description..."
               className="form-input"
               style={{
-                paddingLeft: '36px',
-                height: '38px',
+                paddingLeft: '1.9125rem',
+                height: '2.0188rem',
                 backgroundColor: 'var(--bg-primary)',
               }}
               value={searchQuery}
@@ -279,7 +279,7 @@ export const TicketList: React.FC<TicketListProps> = ({
               size={16}
               style={{
                 position: 'absolute',
-                left: '12px',
+                left: '0.6375rem',
                 top: '50%',
                 transform: 'translateY(-50%)',
                 color: 'var(--text-muted)',
@@ -288,7 +288,7 @@ export const TicketList: React.FC<TicketListProps> = ({
           </div>
 
           {/* Ticket Type Filter */}
-          <div style={{ display: 'flex', position: 'relative', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', position: 'relative', alignItems: 'center', gap: '0.425rem' }}>
             <Filter size={14} style={{ color: 'var(--text-muted)' }} />
             <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Type:</span>
             <select
@@ -308,7 +308,7 @@ export const TicketList: React.FC<TicketListProps> = ({
           </div>
 
           {/* Status Filter */}
-          <div style={{ display: 'flex', position: 'relative', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', position: 'relative', alignItems: 'center', gap: '0.425rem' }}>
             <User size={14} style={{ color: 'var(--text-muted)' }} />
             <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Status:</span>
             <select
@@ -328,7 +328,7 @@ export const TicketList: React.FC<TicketListProps> = ({
           </div>
 
           {/* Assignee Filter */}
-          <div style={{ display: 'flex', position: 'relative', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', position: 'relative', alignItems: 'center', gap: '0.425rem' }}>
             <UserCheck size={14} style={{ color: 'var(--text-muted)' }} />
             <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Assignee:</span>
             <select
@@ -352,7 +352,7 @@ export const TicketList: React.FC<TicketListProps> = ({
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '8px',
+              gap: '0.425rem',
             }}
           >
             <ArrowUpDown size={14} style={{ color: 'var(--text-muted)' }} />
@@ -403,7 +403,7 @@ export const TicketList: React.FC<TicketListProps> = ({
                       onSelectTicket(ticket.id);
                     }}
                   >
-                    <td style={{ fontWeight: 'bold', width: '90px' }}>{ticket.id}</td>
+                    <td style={{ fontWeight: 'bold', width: '9rem' }}>{ticket.id}</td>
                     <td>
                       <div style={{ display: 'flex', flexDirection: 'column' }}>
                         <span
@@ -413,7 +413,7 @@ export const TicketList: React.FC<TicketListProps> = ({
                             whiteSpace: 'nowrap',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
-                            maxWidth: '340px',
+                            maxWidth: '18.0625rem',
                           }}
                         >
                           {ticket.description}
@@ -456,7 +456,7 @@ export const TicketList: React.FC<TicketListProps> = ({
                     colSpan={7}
                     style={{
                       textAlign: 'center',
-                      padding: '48px',
+                      padding: '2.55rem',
                       color: 'var(--text-secondary)',
                     }}
                   >

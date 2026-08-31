@@ -180,16 +180,16 @@ export const AdminTicketDetails: React.FC<AdminTicketDetailsProps> = ({
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '16px',
-          marginBottom: '24px',
+          gap: '0.85rem',
+          marginBottom: '1.275rem',
         }}
       >
         <button
           id="btn-admin-details-back"
           className="btn btn-secondary"
           style={{
-            width: '42px',
-            height: '42px',
+            width: '2.2312rem',
+            height: '2.2312rem',
             padding: 0,
             borderRadius: '50%',
           }}
@@ -203,8 +203,8 @@ export const AdminTicketDetails: React.FC<AdminTicketDetailsProps> = ({
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '8px',
-              marginBottom: '4px',
+              gap: '0.425rem',
+              marginBottom: '0.2125rem',
             }}
           >
             <span
@@ -229,26 +229,26 @@ export const AdminTicketDetails: React.FC<AdminTicketDetailsProps> = ({
       <div className="details-layout">
         {/* Left Column: Description, Comments */}
         <div>
-          <div className="panel" style={{ padding: '24px', marginBottom: '24px' }}>
+          <div className="panel" style={{ padding: '1.275rem', marginBottom: '1.275rem' }}>
             <div
               style={{
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                marginBottom: '12px',
-                borderBottom: '1px solid var(--border-color)',
-                paddingBottom: '6px',
+                marginBottom: '0.6375rem',
+                borderBottom: '0.0531rem solid var(--border-color)',
+                paddingBottom: '0.3188rem',
               }}
             >
               <h2 className="panel-title" style={{ fontSize: '0.95rem', margin: 0 }}>
                 Ticket Content
               </h2>
               {canManagerAction && !isEditing && (
-                <div style={{ display: 'flex', gap: '8px' }}>
+                <div style={{ display: 'flex', gap: '0.425rem' }}>
                   {ticket.status !== 'resolved' && (
                     <button
                       className="btn btn-secondary"
-                      style={{ padding: '4px 8px', fontSize: '0.75rem' }}
+                      style={{ padding: '0.2125rem 0.425rem', fontSize: '0.75rem' }}
                       onClick={() => setIsEditing(true)}
                     >
                       Edit Ticket
@@ -258,7 +258,7 @@ export const AdminTicketDetails: React.FC<AdminTicketDetailsProps> = ({
                     id="btn-delete-admin-ticket"
                     className="btn btn-danger"
                     style={{
-                      padding: '4px 8px',
+                      padding: '0.2125rem 0.425rem',
                       fontSize: '0.75rem',
                       backgroundColor: '#dc2626',
                       color: 'white',
@@ -277,12 +277,12 @@ export const AdminTicketDetails: React.FC<AdminTicketDetailsProps> = ({
                 style={{
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '12px',
-                  marginBottom: '24px',
+                  gap: '0.6375rem',
+                  marginBottom: '1.275rem',
                 }}
               >
                 <div>
-                  <label className="form-label" style={{ fontSize: '0.8rem', marginBottom: '4px' }}>
+                  <label className="form-label" style={{ fontSize: '0.8rem', marginBottom: '0.2125rem' }}>
                     Category
                   </label>
                   <select
@@ -298,12 +298,12 @@ export const AdminTicketDetails: React.FC<AdminTicketDetailsProps> = ({
                   </select>
                 </div>
                 <div>
-                  <label className="form-label" style={{ fontSize: '0.8rem', marginBottom: '4px' }}>
+                  <label className="form-label" style={{ fontSize: '0.8rem', marginBottom: '0.2125rem' }}>
                     Description
                   </label>
                   <textarea
                     className="form-input"
-                    style={{ minHeight: '100px' }}
+                    style={{ minHeight: '5.3125rem' }}
                     value={editDescription}
                     onChange={(e) => setEditDescription(e.target.value)}
                   />
@@ -311,7 +311,7 @@ export const AdminTicketDetails: React.FC<AdminTicketDetailsProps> = ({
                 <div
                   style={{
                     display: 'flex',
-                    gap: '8px',
+                    gap: '0.425rem',
                     justifyContent: 'flex-end',
                   }}
                 >
@@ -329,7 +329,7 @@ export const AdminTicketDetails: React.FC<AdminTicketDetailsProps> = ({
                   style={{
                     fontSize: '0.85rem',
                     fontWeight: 600,
-                    margin: '0 0 8px 0',
+                    margin: '0 0 0.425rem 0',
                   }}
                 >
                   Problem Details
@@ -340,7 +340,7 @@ export const AdminTicketDetails: React.FC<AdminTicketDetailsProps> = ({
 
             {/* Comments Thread */}
             <div className="comments-container">
-              <h2 className="panel-title" style={{ fontSize: '0.95rem', marginBottom: '16px' }}>
+              <h2 className="panel-title" style={{ fontSize: '0.95rem', marginBottom: '0.85rem' }}>
                 Conversation Threads ({ticket.comments.length})
               </h2>
 
@@ -374,8 +374,8 @@ export const AdminTicketDetails: React.FC<AdminTicketDetailsProps> = ({
                             className={`role-badge-pill role-badge-${comment.authorRole}`}
                             style={{
                               fontSize: '0.6rem',
-                              padding: '1px 6px',
-                              marginLeft: '6px',
+                              padding: '0.0531rem 0.3188rem',
+                              marginLeft: '0.3188rem',
                             }}
                           >
                             {getRoleLabel(comment.authorRole)}
@@ -391,7 +391,7 @@ export const AdminTicketDetails: React.FC<AdminTicketDetailsProps> = ({
                   <div
                     style={{
                       textAlign: 'center',
-                      padding: '24px 0',
+                      padding: '1.275rem 0',
                       color: 'var(--text-muted)',
                       fontSize: '0.85rem',
                     }}
@@ -406,7 +406,7 @@ export const AdminTicketDetails: React.FC<AdminTicketDetailsProps> = ({
                 <div
                   style={{
                     display: 'flex',
-                    gap: '14px',
+                    gap: '0.7438rem',
                     alignItems: 'flex-start',
                   }}
                 >
@@ -435,13 +435,13 @@ export const AdminTicketDetails: React.FC<AdminTicketDetailsProps> = ({
                       flex: 1,
                       display: 'flex',
                       flexDirection: 'column',
-                      gap: '10px',
+                      gap: '0.5313rem',
                     }}
                   >
                     <textarea
                       id="add-admin-comment-textarea"
                       className="form-input"
-                      style={{ minHeight: '80px', resize: 'vertical' }}
+                      style={{ minHeight: '4.25rem', resize: 'vertical' }}
                       placeholder="Enter an update or note..."
                       value={commentText}
                       onChange={(e) => setCommentText(e.target.value)}
@@ -458,7 +458,7 @@ export const AdminTicketDetails: React.FC<AdminTicketDetailsProps> = ({
                         id="btn-submit-admin-comment"
                         type="submit"
                         className="btn btn-primary"
-                        style={{ padding: '8px 16px' }}
+                        style={{ padding: '0.425rem 0.85rem' }}
                       >
                         <Send size={12} />
                         Post Update
@@ -471,8 +471,8 @@ export const AdminTicketDetails: React.FC<AdminTicketDetailsProps> = ({
           </div>
 
           {/* Ticket Activity log timeline */}
-          <div className="panel" style={{ padding: '24px' }}>
-            <h2 className="panel-title" style={{ fontSize: '0.95rem', marginBottom: '20px' }}>
+          <div className="panel" style={{ padding: '1.275rem' }}>
+            <h2 className="panel-title" style={{ fontSize: '0.95rem', marginBottom: '1.0625rem' }}>
               Workflow Activity Timeline
             </h2>
             <div className="timeline">
@@ -492,8 +492,8 @@ export const AdminTicketDetails: React.FC<AdminTicketDetailsProps> = ({
                         className={`role-badge-pill role-badge-${log.performedByRole}`}
                         style={{
                           fontSize: '0.58rem',
-                          padding: '1px 5px',
-                          marginLeft: '6px',
+                          padding: '0.0531rem 0.2656rem',
+                          marginLeft: '0.3188rem',
                         }}
                       >
                         {getRoleLabel(log.performedByRole)}
@@ -509,12 +509,12 @@ export const AdminTicketDetails: React.FC<AdminTicketDetailsProps> = ({
         {/* Right Column: Workflow Action buttons and details metadata */}
         <div>
           {/* Action Decision Control Box */}
-          <div className="panel" style={{ padding: '20px', marginBottom: '24px' }}>
-            <h2 className="panel-title" style={{ fontSize: '0.95rem', marginBottom: '16px' }}>
+          <div className="panel" style={{ padding: '1.0625rem', marginBottom: '1.275rem' }}>
+            <h2 className="panel-title" style={{ fontSize: '0.95rem', marginBottom: '0.85rem' }}>
               Approval Decisions
             </h2>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6375rem' }}>
               {canManagerAction && ticket.status !== 'awaiting_admin_manager' && (
                 <button
                   id="btn-admin-revert-status"
@@ -593,7 +593,7 @@ export const AdminTicketDetails: React.FC<AdminTicketDetailsProps> = ({
                       style={{
                         display: 'flex',
                         flexDirection: 'column',
-                        gap: '8px',
+                        gap: '0.425rem',
                       }}
                     >
                       <label
@@ -609,7 +609,7 @@ export const AdminTicketDetails: React.FC<AdminTicketDetailsProps> = ({
                         className="form-input"
                         style={{
                           backgroundColor: 'var(--bg-primary)',
-                          height: '38px',
+                          height: '2.0188rem',
                         }}
                         value={selectedExecutiveId}
                         onChange={(e) => {
@@ -722,10 +722,10 @@ export const AdminTicketDetails: React.FC<AdminTicketDetailsProps> = ({
               {(ticket.status === 'resolved' || ticket.status === 'rejected') && (
                 <div
                   style={{
-                    padding: '12px',
+                    padding: '0.6375rem',
                     textAlign: 'center',
                     backgroundColor: 'var(--bg-primary)',
-                    border: '1px solid var(--border-color)',
+                    border: '0.0531rem solid var(--border-color)',
                     borderRadius: 'var(--radius-md)',
                   }}
                 >
@@ -734,7 +734,7 @@ export const AdminTicketDetails: React.FC<AdminTicketDetailsProps> = ({
                       size={20}
                       style={{
                         color: 'red',
-                        marginBottom: '4px',
+                        marginBottom: '0.2125rem',
                       }}
                     />
                   )}
@@ -744,7 +744,7 @@ export const AdminTicketDetails: React.FC<AdminTicketDetailsProps> = ({
                       size={20}
                       style={{
                         color: '#10b981',
-                        marginBottom: '4px',
+                        marginBottom: '0.2125rem',
                       }}
                     />
                   )}
@@ -763,10 +763,10 @@ export const AdminTicketDetails: React.FC<AdminTicketDetailsProps> = ({
               {!canManagerAction && ticket.status !== 'resolved' && ticket.status !== 'rejected' && (
                 <div
                   style={{
-                    padding: '12px',
+                    padding: '0.6375rem',
                     textAlign: 'center',
                     backgroundColor: 'var(--bg-primary)',
-                    border: '1px solid var(--border-color)',
+                    border: '0.0531rem solid var(--border-color)',
                     borderRadius: 'var(--radius-md)',
                   }}
                 >
@@ -774,7 +774,7 @@ export const AdminTicketDetails: React.FC<AdminTicketDetailsProps> = ({
                     size={20}
                     style={{
                       color: 'var(--text-muted)',
-                      marginBottom: '4px',
+                      marginBottom: '0.2125rem',
                     }}
                   />
                   <p
@@ -791,12 +791,12 @@ export const AdminTicketDetails: React.FC<AdminTicketDetailsProps> = ({
           </div>
 
           {/* Ticket Information Panel */}
-          <div className="panel" style={{ padding: '20px' }}>
-            <h2 className="panel-title" style={{ fontSize: '0.95rem', marginBottom: '16px' }}>
+          <div className="panel" style={{ padding: '1.0625rem' }}>
+            <h2 className="panel-title" style={{ fontSize: '0.95rem', marginBottom: '0.85rem' }}>
               Ticket Details
             </h2>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
               {/* Category */}
               <div>
                 <span className="form-label" style={{ fontSize: '0.72rem', textTransform: 'uppercase' }}>
@@ -806,8 +806,8 @@ export const AdminTicketDetails: React.FC<AdminTicketDetailsProps> = ({
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '8px',
-                    marginTop: '4px',
+                    gap: '0.425rem',
+                    marginTop: '0.2125rem',
                   }}
                 >
                   <Tag size={16} style={{ color: 'var(--text-muted)' }} />
@@ -826,8 +826,8 @@ export const AdminTicketDetails: React.FC<AdminTicketDetailsProps> = ({
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '8px',
-                    marginTop: '4px',
+                    gap: '0.425rem',
+                    marginTop: '0.2125rem',
                   }}
                 >
                   <User size={16} style={{ color: 'var(--text-muted)' }} />
@@ -856,8 +856,8 @@ export const AdminTicketDetails: React.FC<AdminTicketDetailsProps> = ({
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '8px',
-                    marginTop: '4px',
+                    gap: '0.425rem',
+                    marginTop: '0.2125rem',
                   }}
                 >
                   <Calendar size={16} style={{ color: 'var(--text-muted)' }} />
@@ -881,8 +881,8 @@ export const AdminTicketDetails: React.FC<AdminTicketDetailsProps> = ({
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '8px',
-                    marginTop: '4px',
+                    gap: '0.425rem',
+                    marginTop: '0.2125rem',
                   }}
                 >
                   <Calendar size={16} style={{ color: 'var(--text-muted)' }} />

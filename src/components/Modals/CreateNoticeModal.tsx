@@ -63,12 +63,12 @@ export const CreateNoticeModal: React.FC<CreateNoticeModalProps> = ({ isOpen, on
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '31.875rem' }}>
         <div
           className="panel-header"
           style={{
-            padding: '20px 24px',
-            borderBottom: '1px solid var(--border-color)',
+            padding: '1.0625rem 1.275rem',
+            borderBottom: '0.0531rem solid var(--border-color)',
             margin: 0,
           }}
         >
@@ -79,8 +79,8 @@ export const CreateNoticeModal: React.FC<CreateNoticeModalProps> = ({ isOpen, on
             id="btn-create-notice-close"
             className="btn btn-secondary"
             style={{
-              width: '32px',
-              height: '32px',
+              width: '1.7rem',
+              height: '1.7rem',
               padding: 0,
               borderRadius: '50%',
             }}
@@ -91,16 +91,16 @@ export const CreateNoticeModal: React.FC<CreateNoticeModalProps> = ({ isOpen, on
         </div>
 
         <form onSubmit={handleSubmit}>
-          <div style={{ padding: '24px', maxHeight: '70vh', overflowY: 'auto' }}>
+          <div style={{ padding: '1.275rem', maxHeight: '70vh', overflowY: 'auto' }}>
             {errorMsg && (
               <div
                 style={{
                   backgroundColor: 'rgba(244, 63, 94, 0.15)',
-                  border: '1px solid rgba(244, 63, 94, 0.3)',
+                  border: '0.0531rem solid rgba(244, 63, 94, 0.3)',
                   color: '#f43f5e',
-                  padding: '10px 14px',
+                  padding: '0.5313rem 0.7438rem',
                   borderRadius: 'var(--radius-md)',
-                  marginBottom: '16px',
+                  marginBottom: '0.85rem',
                   fontSize: '0.85rem',
                 }}
               >
@@ -113,8 +113,8 @@ export const CreateNoticeModal: React.FC<CreateNoticeModalProps> = ({ isOpen, on
               style={{
                 display: 'grid',
                 gridTemplateColumns: '1fr 1fr',
-                gap: '16px',
-                marginBottom: '16px',
+                gap: '0.85rem',
+                marginBottom: '0.85rem',
               }}
             >
               <div className="form-group" style={{ marginBottom: 0 }}>
@@ -153,8 +153,8 @@ export const CreateNoticeModal: React.FC<CreateNoticeModalProps> = ({ isOpen, on
             <hr
               style={{
                 border: '0',
-                borderTop: '1px dashed var(--border-color)',
-                margin: '20px 0',
+                borderTop: '0.0531rem dashed var(--border-color)',
+                margin: '1.0625rem 0',
               }}
             />
 
@@ -163,7 +163,7 @@ export const CreateNoticeModal: React.FC<CreateNoticeModalProps> = ({ isOpen, on
               style={{
                 fontSize: '0.95rem',
                 fontWeight: 600,
-                marginBottom: '12px',
+                marginBottom: '0.6375rem',
                 color: 'var(--text-secondary)',
               }}
             >
@@ -192,7 +192,7 @@ export const CreateNoticeModal: React.FC<CreateNoticeModalProps> = ({ isOpen, on
               <textarea
                 id="notice-en-content"
                 className="form-input"
-                style={{ minHeight: '90px', resize: 'vertical' }}
+                style={{ minHeight: '4.7813rem', resize: 'vertical' }}
                 placeholder="Provide full description in English..."
                 value={enContent}
                 onChange={(e) => setEnContent(e.target.value)}
@@ -203,8 +203,8 @@ export const CreateNoticeModal: React.FC<CreateNoticeModalProps> = ({ isOpen, on
             <hr
               style={{
                 border: '0',
-                borderTop: '1px dashed var(--border-color)',
-                margin: '20px 0',
+                borderTop: '0.0531rem dashed var(--border-color)',
+                margin: '1.0625rem 0',
               }}
             />
 
@@ -213,7 +213,7 @@ export const CreateNoticeModal: React.FC<CreateNoticeModalProps> = ({ isOpen, on
               style={{
                 fontSize: '0.95rem',
                 fontWeight: 600,
-                marginBottom: '12px',
+                marginBottom: '0.6375rem',
                 color: 'var(--text-secondary)',
               }}
             >
@@ -248,7 +248,7 @@ export const CreateNoticeModal: React.FC<CreateNoticeModalProps> = ({ isOpen, on
                 id="notice-ur-content"
                 className="form-input"
                 style={{
-                  minHeight: '90px',
+                  minHeight: '4.7813rem',
                   resize: 'vertical',
                   textAlign: 'right',
                 }}
@@ -262,11 +262,11 @@ export const CreateNoticeModal: React.FC<CreateNoticeModalProps> = ({ isOpen, on
 
           <div
             style={{
-              padding: '16px 24px',
-              borderTop: '1px solid var(--border-color)',
+              padding: '0.85rem 1.275rem',
+              borderTop: '0.0531rem solid var(--border-color)',
               display: 'flex',
               justifyContent: 'flex-end',
-              gap: '12px',
+              gap: '0.6375rem',
             }}
           >
             <button id="btn-create-notice-cancel" type="button" className="btn btn-secondary" onClick={onClose}>

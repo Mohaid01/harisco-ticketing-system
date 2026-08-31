@@ -70,7 +70,7 @@ export const ActivityLog: React.FC<ActivityLogProps> = ({ tickets, currentUser, 
 
   return (
     <div>
-      <div style={{ marginBottom: '24px' }}>
+      <div style={{ marginBottom: '1.275rem' }}>
         <h1 className="page-title">Activity Logs</h1>
         <p className="page-subtitle">
           {currentUser.role === 'employee'
@@ -79,7 +79,7 @@ export const ActivityLog: React.FC<ActivityLogProps> = ({ tickets, currentUser, 
         </p>
       </div>
 
-      <div className="panel" style={{ padding: '24px' }}>
+      <div className="panel" style={{ padding: '1.275rem' }}>
         <div className="timeline">
           {loading ? (
             <LoadingSpinner type="list" rows={5} />
@@ -96,7 +96,7 @@ export const ActivityLog: React.FC<ActivityLogProps> = ({ tickets, currentUser, 
                 />
               ))}
               {visibleLogs.length === 0 && (
-                <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--text-secondary)' }}>
+                <div style={{ textAlign: 'center', padding: '2.55rem 0', color: 'var(--text-secondary)' }}>
                   No system activity has been logged yet.
                 </div>
               )}

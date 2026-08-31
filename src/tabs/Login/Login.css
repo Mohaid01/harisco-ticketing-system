@@ -2,12 +2,12 @@
 .login-error {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
+  gap: 0.425rem;
 }
 
 .login-error-icon {
   flex-shrink: 0;
-  margin-top: 2px;
+  margin-top: 0.1063rem;
 }
 
 .login-input-group {
@@ -18,32 +18,32 @@
 .login-input-prefix {
   display: flex;
   align-items: center;
-  padding: 0 12px;
+  padding: 0 0.6375rem;
   background-color: var(--bg-secondary);
-  border: 1px solid var(--border-color);
+  border: 0.0531rem solid var(--border-color);
   border-right: none;
-  border-radius: 8px 0 0 8px;
+  border-radius: 0.425rem 0 0 0.425rem;
   color: var(--text-muted);
   font-weight: 600;
-  font-size: 14px;
+  font-size: 0.7438rem;
   user-select: none;
   white-space: nowrap;
 }
 
 .login-input-with-prefix {
-  border-radius: 0 8px 8px 0;
+  border-radius: 0 0.425rem 0.425rem 0;
   background-color: var(--bg-primary);
   flex: 1;
 }
 
 .login-input-with-icon {
-  padding-left: 38px;
+  padding-left: 2.0188rem;
   background-color: var(--bg-primary);
 }
 
 .login-input-icon {
   position: absolute;
-  left: 12px;
+  left: 0.6375rem;
   top: 50%;
   transform: translateY(-50%);
   color: var(--text-muted);
@@ -52,9 +52,9 @@
 
 .login-submit-btn {
   width: 100%;
-  height: 42px;
+  height: 2.2312rem;
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 8px;
+  gap: 0.425rem;
 }

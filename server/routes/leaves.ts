@@ -177,8 +177,13 @@ router.put(
 
             daysToDeduct++;
 
-            const checkInTime = '--';
-            const checkOutTime = '--';
+            let checkInTime = '09:00:00';
+            let checkOutTime = '17:00:00';
+
+            if (dayOfWeek === 6) {
+              checkInTime = '10:00:00';
+              checkOutTime = '16:00:00';
+            }
 
             const year = d.getFullYear();
             const month = String(d.getMonth() + 1).padStart(2, '0');
