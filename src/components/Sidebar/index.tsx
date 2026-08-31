@@ -115,7 +115,7 @@ const MENU_ITEMS: MenuItem[] = [
   {
     label: 'Factory',
     icon: Factory,
-    roles: ['it', 'factory_it', 'factory_manager', 'factory_employee'],
+    roles: ['it', 'manager', 'factory_it', 'factory_manager', 'factory_employee'],
     children: [
       {
         id: 'factory_attendance',

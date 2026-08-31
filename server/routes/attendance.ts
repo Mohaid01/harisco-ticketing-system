@@ -14,6 +14,7 @@ import type {
 } from '../types/index.ts';
 
 import { getDb } from '../db.ts';
+import { deviceStatus, isDeviceOnline } from '../devices/index.ts';
 import { authenticateToken } from '../middleware/auth.ts';
 import { sseClients } from '../middleware/sse.ts';
 import logger from '../utils/logger.ts';
@@ -197,12 +198,28 @@ router.delete('/:id', authenticateToken, async (req: AuthRequest, res: ApiRespon
   }
 });
 
+// GET /api/attendance/device-status
+router.get(
+  '/device-status',
+  authenticateToken,
+  (req: AuthRequest, res: ApiResponse<{ online: boolean; lastHeartbeat: number | null }>) => {
+    if (!['it', 'manager'].includes(req.user?.role ?? '')) {
+      return res.status(403).json({ online: false, lastHeartbeat: null });
+    }
+    const online = isDeviceOnline('hq');
+    return res.json({ online, lastHeartbeat: deviceStatus.hq.lastHeartbeat });
+  }
+);
+
 // GET /api/attendance/stream
 router.get('/stream', authenticateToken, (req: AuthRequest, res: Response) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
   res.flushHeaders();
+
+  const online = isDeviceOnline('hq');
+  res.write(`data: ${JSON.stringify({ type: 'device_status', device: 'hq', online, lastHeartbeat: deviceStatus.hq.lastHeartbeat })}\n\n`);
 
   sseClients.add(res);
 });

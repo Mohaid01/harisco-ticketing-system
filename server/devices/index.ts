@@ -1,8 +1,37 @@
 import express, { Request, Response } from 'express';
 import { WebSocketServer } from 'ws';
 
+import { sseClients } from '../middleware/sse.ts';
 import { processAttendancePunch, processFactoryAttendancePunch } from '../services/punch-processors.ts';
 import logger from '../utils/logger.ts';
+
+const OFFLINE_THRESHOLD_MS = 5 * 60 * 1000;
+
+export const deviceStatus = {
+  factory: { lastHeartbeat: null as number | null },
+  hq: { lastHeartbeat: null as number | null },
+};
+
+export function isDeviceOnline(type: 'factory' | 'hq'): boolean {
+  const last = deviceStatus[type].lastHeartbeat;
+  if (last === null) return false;
+  return Date.now() - last < OFFLINE_THRESHOLD_MS;
+}
+
+function broadcastDeviceStatus(type: 'factory' | 'hq'): void {
+  const online = isDeviceOnline(type);
+  sseClients.broadcast(`data: ${JSON.stringify({ type: 'device_status', device: type, online, lastHeartbeat: deviceStatus[type].lastHeartbeat })}\n\n`);
+}
+
+let factoryStatusBroadcastTimer: ReturnType<typeof setInterval> | null = null;
+function startFactoryStatusPolling(): void {
+  if (factoryStatusBroadcastTimer) return;
+  factoryStatusBroadcastTimer = setInterval(() => {
+    if (deviceStatus.factory.lastHeartbeat !== null && !isDeviceOnline('factory')) {
+      broadcastDeviceStatus('factory');
+    }
+  }, 60_000);
+}
 
 const METHOD_MAP: Record<string, string> = {
   FP: 'Fingerprint',
@@ -41,7 +70,13 @@ export function setupDeviceHandlers(app: express.Express, server: any) {
 
     // 3. Handle Heartbeat
     if (requestCode === 'receive_cmd') {
-      logger.info(`ðŸ’“ [HEARTBEAT] Factory Attendance Device is Online.)`);
+      const wasOffline = !isDeviceOnline('factory');
+      deviceStatus.factory.lastHeartbeat = Date.now();
+      logger.info(`💓 [HEARTBEAT] Factory Attendance Device is Online.`);
+      if (wasOffline) {
+        broadcastDeviceStatus('factory');
+        startFactoryStatusPolling();
+      }
     }
 
     // 4. Handle Attendance Punch
@@ -161,12 +196,19 @@ export function setupDeviceHandlers(app: express.Express, server: any) {
 
       // 5. HEARTBEAT MANAGER
       if (rawString.includes('<Request>Heartbeat</Request>') || rawString.includes('Heartbeat')) {
-        logger.info('ðŸ’“ [SOCKET HEARTBEAT] HQ Attendance Device is online.');
+        const wasOffline = !isDeviceOnline('hq');
+        deviceStatus.hq.lastHeartbeat = Date.now();
+        logger.info('💡 [SOCKET HEARTBEAT] HQ Attendance Device is online.');
+        if (wasOffline) broadcastDeviceStatus('hq');
         const xmlHeartbeatResponse = `<?xml version="1.0"?>\r\n<Message>\r\n<Response>Heartbeat</Response>\r\n<Result>OK</Result>\r\n</Message>`;
         return ws.send(xmlHeartbeatResponse);
       }
     });
 
-    ws.on('close', () => logger.info('ðŸ”Œ [DEVICE DISCONNECTED] Channel closed.'));
+    ws.on('close', () => {
+      deviceStatus.hq.lastHeartbeat = null;
+      logger.info('🔌 [DEVICE DISCONNECTED] Channel closed.');
+      broadcastDeviceStatus('hq');
+    });
   });
 }

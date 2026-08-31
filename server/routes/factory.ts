@@ -24,6 +24,7 @@ import type {
 } from '../types/index.ts';
 
 import { getDb } from '../db.ts';
+import { deviceStatus, isDeviceOnline } from '../devices/index.ts';
 import { authenticateToken } from '../middleware/auth.ts';
 import { sseClients } from '../middleware/sse.ts';
 import logger from '../utils/logger.ts';
@@ -405,7 +406,7 @@ router.get(
       let query = '';
       const params: (string | undefined)[] = [];
 
-      if (['factory_manager', 'factory_it', 'it'].includes(currentUser.role)) {
+      if (['factory_manager', 'factory_it', 'it', 'manager'].includes(currentUser.role)) {
         query = `
           SELECT id, name, userId, ioTime, method, status, timestamp 
           FROM factory_attendance_logs 
@@ -447,9 +448,9 @@ router.post(
     req: ApiAuthRequest<AddFactoryManualAttendanceRequestBody>,
     res: ApiResponse<AddFactoryManualAttendanceResponse>
   ) => {
-    if (req.user?.role !== 'factory_manager') {
+    if (!['factory_manager', 'manager'].includes(req.user?.role ?? '')) {
       res.status(403).json({
-        error: 'Forbidden. Only Factory IT or Factory Manager can add manual attendance.',
+        error: 'Forbidden. Only Factory Manager or Manager can add manual attendance.',
       });
       return;
     }
@@ -497,9 +498,9 @@ router.delete(
   '/attendance',
   authenticateToken,
   async (req: AuthRequest, res: ApiResponse<ClearFactoryAttendanceResponse>) => {
-    if (req.user?.role !== 'factory_manager') {
+    if (!['factory_manager', 'manager'].includes(req.user?.role ?? '')) {
       res.status(403).json({
-        error: 'Forbidden. Clearing factory attendance logs requires Factory IT or Factory Manager role.',
+        error: 'Forbidden. Clearing factory attendance logs requires Factory Manager or Manager role.',
       });
       return;
     }
@@ -522,9 +523,9 @@ router.delete(
   '/attendance/:id',
   authenticateToken,
   async (req: AuthRequest, res: ApiResponse<DeleteFactoryAttendanceLogResponse>) => {
-    if (req.user?.role !== 'factory_manager') {
+    if (!['factory_manager', 'manager'].includes(req.user?.role ?? '')) {
       res.status(403).json({
-        error: 'Forbidden. Factory attendance log deletion requires Factory IT or Factory Manager role.',
+        error: 'Forbidden. Factory attendance log deletion requires Factory Manager or Manager role.',
       });
       return;
     }
@@ -558,6 +559,9 @@ router.get('/attendance/stream', authenticateToken, (req: AuthRequest, res: Resp
   res.setHeader('Connection', 'keep-alive');
   res.flushHeaders();
 
+  const online = isDeviceOnline('factory');
+  res.write(`data: ${JSON.stringify({ type: 'device_status', device: 'factory', online, lastHeartbeat: deviceStatus.factory.lastHeartbeat })}\n\n`);
+
   sseClients.add(res);
 });
 
@@ -570,7 +574,7 @@ router.get('/shift-overrides/:userId/:date', authenticateToken, async (req: Auth
 
     if (!currentUser) return res.status(401).json({ error: 'Unauthorized.' });
 
-    const canView = currentUser.id === userId || ['factory_it', 'factory_manager', 'it'].includes(currentUser.role);
+    const canView = currentUser.id === userId || ['factory_it', 'factory_manager', 'manager', 'it'].includes(currentUser.role);
     if (!canView) return res.status(403).json({ error: 'Forbidden.' });
 
     const override = await db.get<{ shift: string }>(
@@ -583,6 +587,19 @@ router.get('/shift-overrides/:userId/:date', authenticateToken, async (req: Auth
     return res.status(500).json({ error: 'Failed to fetch shift override.' });
   }
 });
+
+// GET /api/factory/attendance/device-status
+router.get(
+  '/attendance/device-status',
+  authenticateToken,
+  (req: AuthRequest, res: ApiResponse<{ online: boolean; lastHeartbeat: number | null }>) => {
+    if (!['it', 'factory_it', 'manager'].includes(req.user?.role ?? '')) {
+      return res.status(403).json({ online: false, lastHeartbeat: null });
+    }
+    const online = isDeviceOnline('factory');
+    return res.json({ online, lastHeartbeat: deviceStatus.factory.lastHeartbeat });
+  }
+);
 
 // PUT /api/factory/shift-overrides/:userId/:date
 router.put('/shift-overrides/:userId/:date', authenticateToken, async (req: AuthRequest, res) => {
@@ -598,7 +615,7 @@ router.put('/shift-overrides/:userId/:date', authenticateToken, async (req: Auth
 
     const canWrite =
       (currentUser.id === userId && date === todayStr) ||
-      ['factory_it', 'factory_manager', 'it'].includes(currentUser.role);
+      ['factory_it', 'factory_manager', 'manager', 'it'].includes(currentUser.role);
     if (!canWrite)
       return res.status(403).json({ error: 'Forbidden. Employees can only override their own current day shift.' });
 
