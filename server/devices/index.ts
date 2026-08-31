@@ -5,7 +5,7 @@ import { sseClients } from '../middleware/sse.ts';
 import { processAttendancePunch, processFactoryAttendancePunch } from '../services/punch-processors.ts';
 import logger from '../utils/logger.ts';
 
-const OFFLINE_THRESHOLD_MS = 5 * 60 * 1000;
+const OFFLINE_THRESHOLD_MS = 3 * 60 * 1000;
 
 export const deviceStatus = {
   factory: { lastHeartbeat: null as number | null },
