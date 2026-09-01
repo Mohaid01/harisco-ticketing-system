@@ -115,7 +115,7 @@ const MENU_ITEMS: MenuItem[] = [
   {
     label: 'Factory',
     icon: Factory,
-    roles: ['it', 'factory_it', 'factory_manager', 'factory_employee'],
+    roles: ['it', 'manager', 'factory_it', 'factory_manager', 'factory_employee'],
     children: [
       {
         id: 'factory_attendance',
@@ -183,7 +183,9 @@ export const Header: React.FC<HeaderProps> = ({
   const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const visibleItems = MENU_ITEMS.filter((item) => isItemVisible(item, currentUser.role, currentUser.department ?? undefined));
+  const visibleItems = MENU_ITEMS.filter((item) =>
+    isItemVisible(item, currentUser.role, currentUser.department ?? undefined)
+  );
 
   const handleTabChange = (tab: ActiveTab) => {
     setActiveTab(tab);
@@ -253,9 +255,9 @@ export const Header: React.FC<HeaderProps> = ({
             const Icon = item.icon;
             if (item.children) {
               const isOpen = openDropdown === item.label;
-                const visibleChildren = item.children.filter((child) =>
-                  isItemVisible(child, currentUser.role, currentUser.department ?? undefined)
-                );
+              const visibleChildren = item.children.filter((child) =>
+                isItemVisible(child, currentUser.role, currentUser.department ?? undefined)
+              );
               if (visibleChildren.length === 0) return null;
 
               return (

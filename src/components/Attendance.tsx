@@ -79,8 +79,14 @@ export const Attendance: React.FC<AttendanceProps> = ({
     : currentUser.role === 'it' || currentUser.role === 'manager' || currentUser.role === 'executive';
   const canViewDepartment = currentUser.isDepartmentHead;
   const canWrite = isFactory
-    ? currentUser.role === 'factory_it' || currentUser.role === 'factory_manager'
+    ? currentUser.role === 'factory_manager' || currentUser.role === 'manager'
     : currentUser.role === 'it' || currentUser.role === 'manager';
+  const canOverrideShifts = isFactory
+    ? ['factory_it', 'factory_manager', 'manager', 'it'].includes(currentUser.role)
+    : currentUser.role === 'it' || currentUser.role === 'manager';
+  const canViewDeviceStatus = isFactory
+    ? ['it', 'factory_it', 'manager'].includes(currentUser.role)
+    : ['it', 'manager'].includes(currentUser.role);
 
   const apiBase = isFactory ? '/api/factory/attendance' : '/api/attendance';
   const defaultFallbackShift = isFactory ? 'extended' : 'headquarters';
@@ -116,6 +122,11 @@ export const Attendance: React.FC<AttendanceProps> = ({
   const [logs, setLogs] = useState<AttendanceLog[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
+
+  // Device status tracking
+  const [deviceOnline, setDeviceOnline] = useState<boolean | null>(null);
+  const [deviceLastHeartbeat, setDeviceLastHeartbeat] = useState<number | null>(null);
+  const deviceStatusApiBase = isFactory ? '/api/factory/attendance' : '/api/attendance';
 
   // Live tick to force recalculation of dynamic ongoing hours
   const [tick, setTick] = useState(0);
@@ -213,6 +224,31 @@ export const Attendance: React.FC<AttendanceProps> = ({
       });
   }, []);
 
+  const fetchDeviceStatus = useCallback(() => {
+    const token = localStorage.getItem('harisco_token');
+    fetch(`${deviceStatusApiBase}/device-status`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => {
+        if (res.ok) return res.json();
+        if (res.status === 403) {
+          setDeviceOnline(false);
+          return null;
+        }
+        throw new Error('Network error');
+      })
+      .then((data) => {
+        if (data) {
+          setDeviceOnline(data.online);
+          setDeviceLastHeartbeat(data.lastHeartbeat);
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to fetch device status:', err);
+        setDeviceOnline(false);
+      });
+  }, [deviceStatusApiBase]);
+
   const handleAddHoliday = async () => {
     if (!holidayDate || !holidayName.trim()) {
       alert('Please provide both a date and a name.');
@@ -307,20 +343,34 @@ export const Attendance: React.FC<AttendanceProps> = ({
 
     eventSource.onmessage = (event) => {
       try {
-        const newLog = JSON.parse(event.data);
+        const data = JSON.parse(event.data);
+        if (data.type === 'device_status' && data.device === (isFactory ? 'factory' : 'hq')) {
+          setDeviceOnline(data.online);
+          setDeviceLastHeartbeat(data.lastHeartbeat);
+          return;
+        }
+        const newLog = data;
         setLogs((prevLogs) => {
           if (prevLogs.some((log) => log.id === newLog.id)) return prevLogs;
           return [newLog, ...prevLogs];
         });
       } catch (err) {
-        console.error('Failed to parse live attendance log', err);
+        console.error('Failed to parse live attendance event', err);
       }
     };
 
     return () => {
       eventSource.close();
     };
-  }, [apiBase, fetchHolidays, fetchLogs]);
+  }, [apiBase, fetchHolidays, fetchLogs, isFactory]);
+
+  // Device status polling (visible to IT, factory_it, manager, and HQ manager/executive)
+  useEffect(() => {
+    if (!canViewDeviceStatus) return;
+    fetchDeviceStatus();
+    const pollInterval = setInterval(fetchDeviceStatus, 60_000);
+    return () => clearInterval(pollInterval);
+  }, [canViewDeviceStatus, fetchDeviceStatus]);
 
   // Helper to parse dates correctly and convert device UTC to PKT (+5 hours)
   const parseLogPKT = useCallback(
@@ -1401,6 +1451,45 @@ export const Attendance: React.FC<AttendanceProps> = ({
               : 'Review your clock-in timings, total hours worked, and monthly attendance overview.'}
           </p>
         </div>
+        {canViewDeviceStatus && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.425rem',
+              padding: '0.3188rem 0.7438rem',
+              borderRadius: 'var(--radius-sm)',
+              backgroundColor: deviceOnline ? 'rgba(34,197,94,0.12)' : 'rgba(244,63,94,0.12)',
+              border: `0.0531rem solid ${deviceOnline ? 'rgba(34,197,94,0.3)' : 'rgba(244,63,94,0.3)'}`,
+              fontSize: '0.8rem',
+              fontWeight: 500,
+            }}
+          >
+            <span
+              style={{
+                width: '0.5313rem',
+                height: '0.5313rem',
+                borderRadius: '50%',
+                backgroundColor: deviceOnline ? '#22c55e' : '#ef4444',
+                flexShrink: 0,
+              }}
+            />
+            <span style={{ color: deviceOnline ? '#22c55e' : '#ef4444' }}>
+              {deviceOnline ? 'Device Online' : deviceOnline === false ? 'Device Offline' : 'Checking device...'}
+            </span>
+            {deviceLastHeartbeat && (
+              <span style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>
+                (last:{' '}
+                {new Date(deviceLastHeartbeat).toLocaleTimeString('en-PK', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  timeZone: 'Asia/Karachi',
+                })}
+                )
+              </span>
+            )}
+          </div>
+        )}
         <div style={{ display: 'flex', gap: '0.6375rem', alignItems: 'center' }}>
           {canViewAll || canViewDepartment ? (
             <div className="btn-group">
@@ -2655,12 +2744,12 @@ export const Attendance: React.FC<AttendanceProps> = ({
                                 <></>
                               )}
                               {isFactory &&
-                                (canWrite || currentUser.id === selectedEmployee?.id) &&
+                                (canOverrideShifts || currentUser.id === selectedEmployee?.id) &&
                                 (() => {
                                   const todayStr = new Intl.DateTimeFormat('en-CA', {
                                     timeZone: 'Asia/Karachi',
                                   }).format(new Date());
-                                  const canOverrideDate = canWrite || log.date === todayStr;
+                                  const canOverrideDate = canOverrideShifts || log.date === todayStr;
                                   if (!canOverrideDate) return null;
                                   const currentShift =
                                     shiftOverrides[log.date] || selectedEmployee?.defaultShift || 'headquarters';
