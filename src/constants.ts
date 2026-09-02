@@ -111,7 +111,7 @@ export const ADMIN_TICKET_STATUS_OPTIONS = [
 
 export const STATUS_LABELS: Record<TicketStatus, string> = {
   open: 'Open / Unassigned',
-  awaiting_it_approval: 'IN Progress',
+  awaiting_it_approval: 'In Progress',
   awaiting_manager_approval: 'Awaiting Manager Approval',
   awaiting_handover: 'Awaiting Handover',
   closed: 'Closed',
