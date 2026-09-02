@@ -162,9 +162,9 @@ export async function initDb() {
   } catch {
     // Column might already exist, ignore error
   }
-  
+
   // MIGRATION: Update 'type' CHECK constraint for EXISTING databases
-  
+
   try {
     // Check if existing table definition contains the new types (e.g., 'email')
     const ticketTable = await db.get<{ sql: string }>(
