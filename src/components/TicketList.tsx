@@ -120,7 +120,7 @@ export const TicketList: React.FC<TicketListProps> = ({
           </span>
         );
       case 'awaiting_it_approval':
-        return <span className="badge badge-it-app">IN Progress</span>;
+        return <span className="badge badge-it-app">In Progress</span>;
       case 'awaiting_manager_approval':
         return <span className="badge badge-m-app">Mgr Apprv</span>;
       case 'awaiting_handover':
