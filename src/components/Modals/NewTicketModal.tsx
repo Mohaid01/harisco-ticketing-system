@@ -45,8 +45,6 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({ isOpen, onClose,
     }
 
     setErrorMsg(null);
-    console.log(finalJustification);
-    console.log(finalDescription);
     onSubmit({
       type,
       justification: finalJustification,
