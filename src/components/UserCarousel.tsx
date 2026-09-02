@@ -9,24 +9,32 @@ interface UserCarouselProps {
 export const UserCarousel: React.FC<UserCarouselProps> = ({ children, loading = false }) => {
   if (loading) {
     return (
-      <div style={{ display: 'flex', gap: '20px', overflow: 'hidden', flex: 1 }}>
+      <div style={{ display: 'flex', gap: '1.0625rem', overflow: 'hidden', flex: 1 }}>
         {Array.from({ length: 6 }).map((_, i) => (
-          <div className="user-card" key={i} style={{ minWidth: '260px', flex: '0 0 auto' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px' }}>
-              <div className="skeleton" style={{ width: '72px', height: '72px', borderRadius: '50%' }} />
-              <div className="skeleton" style={{ width: '120px', height: '18px' }} />
-              <div className="skeleton" style={{ width: '80px', height: '14px' }} />
-              <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}>
-                <div className="skeleton" style={{ width: '100%', height: '16px' }} />
-                <div className="skeleton" style={{ width: '80%', height: '16px' }} />
+          <div className="user-card" key={i} style={{ minWidth: '13.8125rem', flex: '0 0 auto' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.7438rem' }}>
+              <div className="skeleton" style={{ width: '3.825rem', height: '3.825rem', borderRadius: '50%' }} />
+              <div className="skeleton" style={{ width: '6.375rem', height: '0.9563rem' }} />
+              <div className="skeleton" style={{ width: '4.25rem', height: '0.7438rem' }} />
+              <div
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.425rem',
+                  marginTop: '0.425rem',
+                }}
+              >
+                <div className="skeleton" style={{ width: '100%', height: '0.85rem' }} />
+                <div className="skeleton" style={{ width: '80%', height: '0.85rem' }} />
               </div>
               <div
                 className="skeleton"
-                style={{ width: '90px', height: '28px', borderRadius: '20px', margin: '8px auto' }}
+                style={{ width: '4.7813rem', height: '1.4875rem', borderRadius: '1.0625rem', margin: '0.425rem auto' }}
               />
-              <div style={{ display: 'flex', gap: '8px', width: '100%', marginTop: 'auto' }}>
-                <div className="skeleton" style={{ flex: 1, height: '36px', borderRadius: '4px' }} />
-                <div className="skeleton" style={{ flex: 1, height: '36px', borderRadius: '4px' }} />
+              <div style={{ display: 'flex', gap: '0.425rem', width: '100%', marginTop: 'auto' }}>
+                <div className="skeleton" style={{ flex: 1, height: '1.9125rem', borderRadius: '0.2125rem' }} />
+                <div className="skeleton" style={{ flex: 1, height: '1.9125rem', borderRadius: '0.2125rem' }} />
               </div>
             </div>
           </div>
@@ -43,7 +51,7 @@ export const UserCarousel: React.FC<UserCarouselProps> = ({ children, loading = 
         className="panel"
         style={{
           textAlign: 'center',
-          padding: '60px 20px',
+          padding: '3.1875rem 1.0625rem',
           color: 'var(--text-secondary)',
           flex: 1,
           display: 'flex',
@@ -52,7 +60,7 @@ export const UserCarousel: React.FC<UserCarouselProps> = ({ children, loading = 
           justifyContent: 'center',
         }}
       >
-        <Users size={40} style={{ opacity: 0.3, marginBottom: '12px' }} />
+        <Users size={40} style={{ opacity: 0.3, marginBottom: '0.6375rem' }} />
         <p style={{ margin: 0, fontSize: '0.95rem' }}>No users found.</p>
       </div>
     );

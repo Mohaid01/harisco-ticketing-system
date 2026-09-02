@@ -26,8 +26,9 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({ currentUser, t
 
   const todayStr = new Date().toISOString().split('T')[0];
 
-  const canManageLeaves = currentUser.isDepartmentHead === 1 && currentUser.role !== 'executive';
-  const canViewAll = canManageLeaves || currentUser.role === 'executive';
+  const canManageLeaves =
+    currentUser.role === 'manager' || currentUser.role === 'executive' || currentUser.isDepartmentHead === 1;
+  const canViewAll = canManageLeaves;
 
   const fetchLeaves = useCallback(() => {
     if (!token) return;

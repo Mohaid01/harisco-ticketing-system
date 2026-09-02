@@ -76,6 +76,10 @@ export async function processAttendancePunch(input: {
     status = attendStat === 'DutyOff' ? 'Check-Out' : 'Check-In';
   }
 
+  if (status === 'Ignored') {
+    return;
+  }
+
   try {
     const db = getDb();
 
@@ -141,6 +145,22 @@ export async function processFactoryAttendancePunch(input: {
 
   try {
     const db = getDb();
+
+    const lastLog = await db.get<{ ioTime: string }>(
+      'SELECT ioTime FROM factory_attendance_logs WHERE userId = ? ORDER BY id DESC LIMIT 1',
+      [userId]
+    );
+
+    if (lastLog?.ioTime) {
+      const normalize = (t: string) => (t.includes('T') ? t : t.replace(' ', 'T'));
+      const lastTime = new Date(normalize(lastLog.ioTime));
+      const currentTime = new Date(normalize(punchTime));
+      const diffMs = currentTime.getTime() - lastTime.getTime();
+      if (diffMs >= 0 && diffMs < 5 * 60 * 1000) {
+        return;
+      }
+    }
+
     const paddedId = String(userId).padStart(5, '0');
     const targetUsername = `HC-${paddedId}`;
 
@@ -226,6 +246,10 @@ export async function processFactoryAttendancePunch(input: {
       lookupError
     );
     status = attendStat === 'DutyOff' ? 'Check-Out' : 'Check-In';
+  }
+
+  if (status === 'Ignored') {
+    return;
   }
 
   try {

@@ -196,21 +196,21 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
 
   return (
     <div>
-      <div style={{ marginBottom: '24px' }}>
+      <div style={{ marginBottom: '1.275rem' }}>
         <h1 className="page-title">Factory User Management</h1>
         <p className="page-subtitle">Add and delete factory user accounts. Manage role authorizations.</p>
       </div>
 
       <div className="user-mgmt-grid">
         {/* Left Column: Add User Form */}
-        <div className="panel" style={{ padding: '24px' }}>
+        <div className="panel" style={{ padding: '1.275rem' }}>
           <h2
             className="panel-title"
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '8px',
-              marginBottom: '20px',
+              gap: '0.425rem',
+              marginBottom: '1.0625rem',
             }}
           >
             <UserPlus size={18} className="status-progress" />
@@ -221,11 +221,11 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
             <div
               style={{
                 backgroundColor: 'rgba(244, 63, 94, 0.15)',
-                border: '1px solid rgba(244, 63, 94, 0.3)',
+                border: '0.0531rem solid rgba(244, 63, 94, 0.3)',
                 color: '#f43f5e',
-                padding: '10px 12px',
+                padding: '0.5313rem 0.6375rem',
                 borderRadius: 'var(--radius-md)',
-                marginBottom: '16px',
+                marginBottom: '0.85rem',
                 fontSize: '0.85rem',
               }}
             >
@@ -337,7 +337,7 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
               <label htmlFor="factory-user-avatar-upload" className="form-label">
                 Upload Profile Picture (Optional)
               </label>
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: '0.5313rem', alignItems: 'center' }}>
                 <input
                   id="factory-user-avatar-upload"
                   type="file"
@@ -350,7 +350,7 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
                   <div
                     style={{
                       display: 'flex',
-                      gap: '8px',
+                      gap: '0.425rem',
                       alignItems: 'center',
                     }}
                   >
@@ -358,18 +358,18 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
                       src={avatar}
                       alt="Preview"
                       style={{
-                        width: '38px',
-                        height: '38px',
+                        width: '2.0188rem',
+                        height: '2.0188rem',
                         borderRadius: '50%',
                         objectFit: 'cover',
-                        border: '1px solid var(--border-color)',
+                        border: '0.0531rem solid var(--border-color)',
                       }}
                     />
                     <button
                       type="button"
                       className="btn btn-secondary"
                       style={{
-                        padding: '6px 10px',
+                        padding: '0.3188rem 0.5313rem',
                         fontSize: '0.75rem',
                         minWidth: 'unset',
                       }}
@@ -383,7 +383,7 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
             </div>
 
             <div className="form-row">
-              <div className="form-group" style={{ marginBottom: '24px' }}>
+              <div className="form-group" style={{ marginBottom: '1.275rem' }}>
                 <label htmlFor="factory-user-role-select" className="form-label">
                   System Role
                 </label>
@@ -396,11 +396,10 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
                 >
                   <option value="factory_employee">Employee</option>
                   <option value="factory_it">IT</option>
-                  <option value="factory_manager">Manager</option>
                 </select>
               </div>
 
-              <div className="form-group" style={{ marginBottom: '24px' }}>
+              <div className="form-group" style={{ marginBottom: '1.275rem' }}>
                 <label htmlFor="factory-user-shift-select" className="form-label">
                   Default Shift
                 </label>
@@ -423,10 +422,10 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
             <div
               className="form-group"
               style={{
-                marginBottom: '24px',
+                marginBottom: '1.275rem',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '10px',
+                gap: '0.5313rem',
               }}
             >
               <label
@@ -434,7 +433,7 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '8px',
+                  gap: '0.425rem',
                   cursor: 'pointer',
                 }}
               >
@@ -451,7 +450,7 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '8px',
+                  gap: '0.425rem',
                   cursor: 'pointer',
                 }}
               >
@@ -474,9 +473,9 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
         {/* Right Column: Users List Grid */}
         <div
           className="panel"
-          style={{ padding: '24px', display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}
+          style={{ padding: '1.275rem', display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}
         >
-          <h2 className="panel-title" style={{ marginBottom: '20px', flexShrink: 0 }}>
+          <h2 className="panel-title" style={{ marginBottom: '1.0625rem', flexShrink: 0 }}>
             Active Factory User Roster ({users.length})
           </h2>
 
@@ -492,7 +491,7 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
                       width: '100%',
                       display: 'flex',
                       flexDirection: 'column',
-                      gap: '10px',
+                      gap: '0.5313rem',
                     }}
                   >
                     <div className="form-group" style={{ marginBottom: '0' }}>
@@ -530,7 +529,7 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
                       <div
                         style={{
                           display: 'flex',
-                          gap: '8px',
+                          gap: '0.425rem',
                           alignItems: 'center',
                         }}
                       >
@@ -545,7 +544,7 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
                           <div
                             style={{
                               display: 'flex',
-                              gap: '4px',
+                              gap: '0.2125rem',
                               alignItems: 'center',
                             }}
                           >
@@ -553,18 +552,18 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
                               src={editAvatar}
                               alt="Edit Preview"
                               style={{
-                                width: '30px',
-                                height: '30px',
+                                width: '1.5938rem',
+                                height: '1.5938rem',
                                 borderRadius: '50%',
                                 objectFit: 'cover',
-                                border: '1px solid var(--border-color)',
+                                border: '0.0531rem solid var(--border-color)',
                               }}
                             />
                             <button
                               type="button"
                               className="btn btn-secondary"
                               style={{
-                                padding: '4px 8px',
+                                padding: '0.2125rem 0.425rem',
                                 fontSize: '0.75rem',
                                 minWidth: 'unset',
                               }}
@@ -584,7 +583,7 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
                           ...inlineLabelStyle,
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '4px',
+                          gap: '0.2125rem',
                         }}
                       >
                         <Building2 size={12} /> Department
@@ -605,14 +604,14 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
                         <option value="Factory">Factory</option>
                       </select>
                     </div>
-                    <div className="form-group" style={{ marginBottom: '12px' }}>
+                    <div className="form-group" style={{ marginBottom: '0.6375rem' }}>
                       <label
                         className="form-label"
                         style={{
                           ...inlineLabelStyle,
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '4px',
+                          gap: '0.2125rem',
                         }}
                       >
                         <Briefcase size={12} /> Designation
@@ -631,10 +630,10 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
                     <div
                       className="form-group"
                       style={{
-                        marginBottom: '12px',
+                        marginBottom: '0.6375rem',
                         display: 'flex',
                         flexDirection: 'column',
-                        gap: '8px',
+                        gap: '0.425rem',
                       }}
                     >
                       <div>
@@ -667,7 +666,7 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
                           ...inlineLabelStyle,
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '6px',
+                          gap: '0.3188rem',
                           cursor: 'pointer',
                         }}
                       >
@@ -685,7 +684,7 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
                           ...inlineLabelStyle,
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '6px',
+                          gap: '0.3188rem',
                           cursor: 'pointer',
                         }}
                       >
@@ -698,12 +697,12 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
                       </label>
                     </div>
 
-                    <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+                    <div style={{ display: 'flex', gap: '0.425rem', width: '100%' }}>
                       <button
                         className="btn btn-secondary"
                         style={{
                           flex: 1,
-                          padding: '6px 10px',
+                          padding: '0.3188rem 0.5313rem',
                           fontSize: '0.75rem',
                         }}
                         onClick={() => setEditingUserId(null)}
@@ -714,7 +713,7 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
                         className="btn btn-primary"
                         style={{
                           flex: 1,
-                          padding: '6px 10px',
+                          padding: '0.3188rem 0.5313rem',
                           fontSize: '0.75rem',
                         }}
                         onClick={() => handleSaveEdit(user.id)}
@@ -732,28 +731,28 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
                       justifyContent: 'space-between',
                       alignItems: 'center',
                       textAlign: 'center',
-                      gap: '32px',
+                      gap: '1.7rem',
                     }}
                   >
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5313rem' }}>
                       {user.avatar ? (
                         <img
                           src={user.avatar}
                           alt={user.name}
                           style={{
-                            width: '120px',
-                            height: '120px',
+                            width: '6.375rem',
+                            height: '6.375rem',
                             borderRadius: '50%',
                             objectFit: 'cover',
-                            border: '3px solid var(--border-color)',
+                            border: '0.1594rem solid var(--border-color)',
                             display: 'block',
                           }}
                         />
                       ) : (
                         <div
                           style={{
-                            width: '120px',
-                            height: '120px',
+                            width: '6.375rem',
+                            height: '6.375rem',
                             borderRadius: '50%',
                             backgroundColor: 'var(--color-primary)',
                             display: 'flex',
@@ -777,7 +776,7 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
                           width: '100%',
                           display: 'flex',
                           flexDirection: 'column',
-                          gap: '3px',
+                          gap: '0.1594rem',
                           textAlign: 'center',
                         }}
                       >
@@ -791,7 +790,13 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
                     </div>
 
                     <div
-                      style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '8px', textAlign: 'left' }}
+                      style={{
+                        width: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.425rem',
+                        textAlign: 'left',
+                      }}
                     >
                       {user.email ? (
                         <span
@@ -812,7 +817,7 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
                             fontWeight: 500,
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '8px',
+                            gap: '0.425rem',
                           }}
                         >
                           <Briefcase size={15} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
@@ -828,7 +833,7 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
                             color: 'var(--text-secondary)',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '8px',
+                            gap: '0.425rem',
                           }}
                         >
                           <Building2 size={15} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
@@ -838,7 +843,7 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
                         </span>
                       )}
 
-                      <div style={{ marginTop: '4px', display: 'flex', justifyContent: 'center' }}>
+                      <div style={{ marginTop: '0.2125rem', display: 'flex', justifyContent: 'center' }}>
                         <span className={getRoleBadgeClass(user.role)} style={{ fontSize: '0.85rem' }}>
                           {ROLE_LABELS[user.role]}
                         </span>
@@ -850,7 +855,7 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
                       style={{
                         display: 'flex',
                         flexDirection: 'column',
-                        gap: '10px',
+                        gap: '0.5313rem',
                         width: '100%',
                       }}
                     >
@@ -864,7 +869,7 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
                             className="btn btn-secondary"
                             style={{
                               width: '100%',
-                              padding: '10px 16px',
+                              padding: '0.5313rem 0.85rem',
                               fontSize: '0.85rem',
                             }}
                             onClick={() => startEdit(user)}
@@ -878,12 +883,12 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
                                 className="btn btn-secondary"
                                 style={{
                                   width: '100%',
-                                  padding: '10px 16px',
+                                  padding: '0.5313rem 0.85rem',
                                   fontSize: '0.85rem',
                                   display: 'flex',
                                   alignItems: 'center',
                                   justifyContent: 'center',
-                                  gap: '6px',
+                                  gap: '0.3188rem',
                                 }}
                                 onClick={() => setResetPasswordTarget(user)}
                               >
@@ -891,14 +896,14 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
                                 Reset Password
                               </button>
                               {offboardingUserId === user.id ? (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.425rem' }}>
                                   <textarea
                                     className="form-input"
                                     rows={2}
                                     placeholder="Reason for offboarding..."
                                     value={offboardReason}
                                     onChange={(e) => setOffboardReason(e.target.value)}
-                                    style={{ fontSize: '0.8rem', padding: '8px' }}
+                                    style={{ fontSize: '0.8rem', padding: '0.425rem' }}
                                   />
                                   <input
                                     type="date"
@@ -906,12 +911,12 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
                                     value={offboardDate}
                                     max={todayStr}
                                     onChange={(e) => setOffboardDate(e.target.value)}
-                                    style={{ fontSize: '0.8rem', padding: '8px' }}
+                                    style={{ fontSize: '0.8rem', padding: '0.425rem' }}
                                   />
-                                  <div style={{ display: 'flex', gap: '8px' }}>
+                                  <div style={{ display: 'flex', gap: '0.425rem' }}>
                                     <button
                                       className="btn btn-primary"
-                                      style={{ flex: 1, padding: '6px', fontSize: '0.75rem' }}
+                                      style={{ flex: 1, padding: '0.3188rem', fontSize: '0.75rem' }}
                                       onClick={() => {
                                         if (!offboardReason.trim()) {
                                           alert('Please provide a reason.');
@@ -927,7 +932,7 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
                                     </button>
                                     <button
                                       className="btn btn-secondary"
-                                      style={{ flex: 1, padding: '6px', fontSize: '0.75rem' }}
+                                      style={{ flex: 1, padding: '0.3188rem', fontSize: '0.75rem' }}
                                       onClick={() => {
                                         setOffboardingUserId(null);
                                         setOffboardReason('');
@@ -944,7 +949,7 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
                                     className="btn btn-danger"
                                     style={{
                                       width: '100%',
-                                      padding: '6px 12px',
+                                      padding: '0.3188rem 0.6375rem',
                                       fontSize: '0.8rem',
                                     }}
                                     onClick={() => {
@@ -960,7 +965,7 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
                                     className="btn btn-danger"
                                     style={{
                                       width: '100%',
-                                      padding: '6px 12px',
+                                      padding: '0.3188rem 0.6375rem',
                                       fontSize: '0.8rem',
                                     }}
                                     onClick={() => onDeleteUser(user.id)}

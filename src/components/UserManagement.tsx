@@ -190,21 +190,21 @@ export const UserManagement: React.FC<UserManagementProps> = ({
 
   return (
     <div>
-      <div style={{ marginBottom: '24px' }}>
+      <div style={{ marginBottom: '1.275rem' }}>
         <h1 className="page-title">User Management</h1>
         <p className="page-subtitle">Add and delete user accounts. Manage role authorizations.</p>
       </div>
 
       <div className="user-mgmt-grid">
         {/* Left Column: Add User Form */}
-        <div className="panel" style={{ padding: '24px' }}>
+        <div className="panel" style={{ padding: '1.275rem' }}>
           <h2
             className="panel-title"
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '8px',
-              marginBottom: '20px',
+              gap: '0.425rem',
+              marginBottom: '1.0625rem',
             }}
           >
             <UserPlus size={18} className="status-progress" />
@@ -215,11 +215,11 @@ export const UserManagement: React.FC<UserManagementProps> = ({
             <div
               style={{
                 backgroundColor: 'rgba(244, 63, 94, 0.15)',
-                border: '1px solid rgba(244, 63, 94, 0.3)',
+                border: '0.0531rem solid rgba(244, 63, 94, 0.3)',
                 color: '#f43f5e',
-                padding: '10px 12px',
+                padding: '0.5313rem 0.6375rem',
                 borderRadius: 'var(--radius-md)',
-                marginBottom: '16px',
+                marginBottom: '0.85rem',
                 fontSize: '0.85rem',
               }}
             >
@@ -313,6 +313,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                   <option value="Staff">Staff</option>
                   <option value="Civil">Civil</option>
                   <option value="Telecom">Telecom</option>
+                  <option value="HSE">HSE</option>
                   <option value="Projects">Projects</option>
                 </select>
               </div>
@@ -338,7 +339,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
               <label htmlFor="user-avatar-upload" className="form-label">
                 Upload Profile Picture (Optional)
               </label>
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: '0.5313rem', alignItems: 'center' }}>
                 <input
                   id="user-avatar-upload"
                   type="file"
@@ -351,7 +352,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                   <div
                     style={{
                       display: 'flex',
-                      gap: '8px',
+                      gap: '0.425rem',
                       alignItems: 'center',
                     }}
                   >
@@ -359,18 +360,18 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                       src={avatar}
                       alt="Preview"
                       style={{
-                        width: '38px',
-                        height: '38px',
+                        width: '2.0188rem',
+                        height: '2.0188rem',
                         borderRadius: '50%',
                         objectFit: 'cover',
-                        border: '1px solid var(--border-color)',
+                        border: '0.0531rem solid var(--border-color)',
                       }}
                     />
                     <button
                       type="button"
                       className="btn btn-secondary"
                       style={{
-                        padding: '6px 10px',
+                        padding: '0.3188rem 0.5313rem',
                         fontSize: '0.75rem',
                         minWidth: 'unset',
                       }}
@@ -383,7 +384,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
               </div>
             </div>
 
-            <div className="form-group" style={{ marginBottom: '24px' }}>
+            <div className="form-group" style={{ marginBottom: '1.275rem' }}>
               <label htmlFor="user-role-select" className="form-label">
                 System Role
               </label>
@@ -404,10 +405,10 @@ export const UserManagement: React.FC<UserManagementProps> = ({
             <div
               className="form-group"
               style={{
-                marginBottom: '24px',
+                marginBottom: '1.275rem',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '10px',
+                gap: '0.5313rem',
               }}
             >
               <label
@@ -415,7 +416,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '8px',
+                  gap: '0.425rem',
                   cursor: 'pointer',
                 }}
               >
@@ -432,7 +433,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '8px',
+                  gap: '0.425rem',
                   cursor: 'pointer',
                 }}
               >
@@ -450,9 +451,9 @@ export const UserManagement: React.FC<UserManagementProps> = ({
         {/* Right Column: Users List Grid */}
         <div
           className="panel"
-          style={{ padding: '24px', display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}
+          style={{ padding: '1.275rem', display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}
         >
-          <h2 className="panel-title" style={{ marginBottom: '20px', flexShrink: 0 }}>
+          <h2 className="panel-title" style={{ marginBottom: '1.0625rem', flexShrink: 0 }}>
             Active User Roster ({users.length})
           </h2>
 
@@ -468,7 +469,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                       width: '100%',
                       display: 'flex',
                       flexDirection: 'column',
-                      gap: '10px',
+                      gap: '0.5313rem',
                     }}
                   >
                     <div className="form-group" style={{ marginBottom: '0' }}>
@@ -506,7 +507,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                       <div
                         style={{
                           display: 'flex',
-                          gap: '8px',
+                          gap: '0.425rem',
                           alignItems: 'center',
                         }}
                       >
@@ -521,7 +522,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                           <div
                             style={{
                               display: 'flex',
-                              gap: '4px',
+                              gap: '0.2125rem',
                               alignItems: 'center',
                             }}
                           >
@@ -529,18 +530,18 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                               src={editAvatar}
                               alt="Edit Preview"
                               style={{
-                                width: '30px',
-                                height: '30px',
+                                width: '1.5938rem',
+                                height: '1.5938rem',
                                 borderRadius: '50%',
                                 objectFit: 'cover',
-                                border: '1px solid var(--border-color)',
+                                border: '0.0531rem solid var(--border-color)',
                               }}
                             />
                             <button
                               type="button"
                               className="btn btn-secondary"
                               style={{
-                                padding: '4px 8px',
+                                padding: '0.2125rem 0.425rem',
                                 fontSize: '0.75rem',
                                 minWidth: 'unset',
                               }}
@@ -560,7 +561,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                           ...inlineLabelStyle,
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '4px',
+                          gap: '0.2125rem',
                         }}
                       >
                         <Building2 size={12} /> Department
@@ -585,17 +586,18 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                         <option value="Staff">Staff</option>
                         <option value="Civil">Civil</option>
                         <option value="Telecom">Telecom</option>
+                        <option value="HSE">HSE</option>
                         <option value="Projects">Projects</option>
                       </select>
                     </div>
-                    <div className="form-group" style={{ marginBottom: '12px' }}>
+                    <div className="form-group" style={{ marginBottom: '0.6375rem' }}>
                       <label
                         className="form-label"
                         style={{
                           ...inlineLabelStyle,
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '4px',
+                          gap: '0.2125rem',
                         }}
                       >
                         <Briefcase size={12} /> Designation
@@ -614,10 +616,10 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                     <div
                       className="form-group"
                       style={{
-                        marginBottom: '12px',
+                        marginBottom: '0.6375rem',
                         display: 'flex',
                         flexDirection: 'column',
-                        gap: '8px',
+                        gap: '0.425rem',
                       }}
                     >
                       <label
@@ -626,7 +628,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                           ...inlineLabelStyle,
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '6px',
+                          gap: '0.3188rem',
                           cursor: 'pointer',
                         }}
                       >
@@ -644,7 +646,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                           ...inlineLabelStyle,
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '6px',
+                          gap: '0.3188rem',
                           cursor: 'pointer',
                         }}
                       >
@@ -657,12 +659,12 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                       </label>
                     </div>
 
-                    <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+                    <div style={{ display: 'flex', gap: '0.425rem', width: '100%' }}>
                       <button
                         className="btn btn-secondary"
                         style={{
                           flex: 1,
-                          padding: '6px 10px',
+                          padding: '0.3188rem 0.5313rem',
                           fontSize: '0.75rem',
                         }}
                         onClick={() => setEditingUserId(null)}
@@ -673,7 +675,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                         className="btn btn-primary"
                         style={{
                           flex: 1,
-                          padding: '6px 10px',
+                          padding: '0.3188rem 0.5313rem',
                           fontSize: '0.75rem',
                         }}
                         onClick={() => handleSaveEdit(user.id)}
@@ -689,28 +691,28 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                       flexDirection: 'column',
                       height: '100%',
                       justifyContent: 'space-between',
-                      gap: '32px',
+                      gap: '1.7rem',
                     }}
                   >
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5313rem' }}>
                       {user.avatar ? (
                         <img
                           src={user.avatar}
                           alt={user.name}
                           style={{
-                            width: '120px',
-                            height: '120px',
+                            width: '6.375rem',
+                            height: '6.375rem',
                             borderRadius: '50%',
                             objectFit: 'cover',
-                            border: '3px solid var(--border-color)',
+                            border: '0.1594rem solid var(--border-color)',
                             display: 'block',
                           }}
                         />
                       ) : (
                         <div
                           style={{
-                            width: '120px',
-                            height: '120px',
+                            width: '6.375rem',
+                            height: '6.375rem',
                             borderRadius: '50%',
                             backgroundColor: 'var(--color-primary)',
                             display: 'flex',
@@ -734,7 +736,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                           width: '100%',
                           display: 'flex',
                           flexDirection: 'column',
-                          gap: '3px',
+                          gap: '0.1594rem',
                           textAlign: 'center',
                         }}
                       >
@@ -748,7 +750,13 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                     </div>
 
                     <div
-                      style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '8px', textAlign: 'left' }}
+                      style={{
+                        width: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.425rem',
+                        textAlign: 'left',
+                      }}
                     >
                       {user.email ? (
                         <span
@@ -769,7 +777,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                             fontWeight: 500,
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '6px',
+                            gap: '0.3188rem',
                           }}
                         >
                           <Briefcase size={14} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
@@ -785,7 +793,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                             color: 'var(--text-secondary)',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '6px',
+                            gap: '0.3188rem',
                           }}
                         >
                           <Building2 size={14} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
@@ -795,7 +803,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                         </span>
                       )}
 
-                      <div style={{ marginTop: '4px', display: 'flex', justifyContent: 'center' }}>
+                      <div style={{ marginTop: '0.2125rem', display: 'flex', justifyContent: 'center' }}>
                         <span className={getRoleBadgeClass(user.role)} style={{ fontSize: '0.82rem' }}>
                           {ROLE_LABELS[user.role]}
                         </span>
@@ -807,7 +815,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                       style={{
                         display: 'flex',
                         flexDirection: 'column',
-                        gap: '10px',
+                        gap: '0.5313rem',
                         width: '100%',
                       }}
                     >
@@ -821,7 +829,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                             className="btn btn-secondary"
                             style={{
                               width: '100%',
-                              padding: '10px 16px',
+                              padding: '0.5313rem 0.85rem',
                               fontSize: '0.85rem',
                             }}
                             onClick={() => startEdit(user)}
@@ -835,12 +843,12 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                                 className="btn btn-secondary"
                                 style={{
                                   width: '100%',
-                                  padding: '10px 16px',
+                                  padding: '0.5313rem 0.85rem',
                                   fontSize: '0.85rem',
                                   display: 'flex',
                                   alignItems: 'center',
                                   justifyContent: 'center',
-                                  gap: '6px',
+                                  gap: '0.3188rem',
                                 }}
                                 onClick={() => setResetPasswordTarget(user)}
                               >
@@ -848,14 +856,14 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                                 Reset Password
                               </button>
                               {offboardingUserId === user.id ? (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.425rem' }}>
                                   <textarea
                                     className="form-input"
                                     rows={2}
                                     placeholder="Reason for offboarding..."
                                     value={offboardReason}
                                     onChange={(e) => setOffboardReason(e.target.value)}
-                                    style={{ fontSize: '0.8rem', padding: '8px' }}
+                                    style={{ fontSize: '0.8rem', padding: '0.425rem' }}
                                   />
                                   <input
                                     type="date"
@@ -863,12 +871,12 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                                     value={offboardDate}
                                     max={todayStr}
                                     onChange={(e) => setOffboardDate(e.target.value)}
-                                    style={{ fontSize: '0.8rem', padding: '8px' }}
+                                    style={{ fontSize: '0.8rem', padding: '0.425rem' }}
                                   />
-                                  <div style={{ display: 'flex', gap: '8px' }}>
+                                  <div style={{ display: 'flex', gap: '0.425rem' }}>
                                     <button
                                       className="btn btn-primary"
-                                      style={{ flex: 1, padding: '6px', fontSize: '0.75rem' }}
+                                      style={{ flex: 1, padding: '0.3188rem', fontSize: '0.75rem' }}
                                       onClick={() => {
                                         if (!offboardReason.trim()) {
                                           alert('Please provide a reason.');
@@ -884,7 +892,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                                     </button>
                                     <button
                                       className="btn btn-secondary"
-                                      style={{ flex: 1, padding: '6px', fontSize: '0.75rem' }}
+                                      style={{ flex: 1, padding: '0.3188rem', fontSize: '0.75rem' }}
                                       onClick={() => {
                                         setOffboardingUserId(null);
                                         setOffboardReason('');
@@ -901,7 +909,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                                     className="btn btn-danger"
                                     style={{
                                       width: '100%',
-                                      padding: '6px 12px',
+                                      padding: '0.3188rem 0.6375rem',
                                       fontSize: '0.8rem',
                                     }}
                                     onClick={() => {
@@ -917,7 +925,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                                     className="btn btn-danger"
                                     style={{
                                       width: '100%',
-                                      padding: '6px 12px',
+                                      padding: '0.3188rem 0.6375rem',
                                       fontSize: '0.8rem',
                                     }}
                                     onClick={() => onDeleteUser(user.id)}

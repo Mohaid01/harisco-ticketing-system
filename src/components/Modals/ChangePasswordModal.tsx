@@ -76,14 +76,14 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '450px' }}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '23.9063rem' }}>
         <div
           className="panel-header"
-          style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-color)', margin: 0 }}
+          style={{ padding: '1.0625rem 1.275rem', borderBottom: '0.0531rem solid var(--border-color)', margin: 0 }}
         >
           <h2
             className="panel-title"
-            style={{ fontSize: '1.15rem', display: 'flex', alignItems: 'center', gap: '8px' }}
+            style={{ fontSize: '1.15rem', display: 'flex', alignItems: 'center', gap: '0.425rem' }}
           >
             <Key size={18} />
             Reset Password
@@ -91,7 +91,7 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen
           <button
             id="btn-password-modal-close"
             className="btn btn-secondary"
-            style={{ width: '32px', height: '32px', padding: 0, borderRadius: '50%' }}
+            style={{ width: '1.7rem', height: '1.7rem', padding: 0, borderRadius: '50%' }}
             onClick={onClose}
           >
             <X size={16} />
@@ -99,16 +99,16 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen
         </div>
 
         <form onSubmit={handleSubmit}>
-          <div style={{ padding: '24px' }}>
+          <div style={{ padding: '1.275rem' }}>
             {errorMsg && (
               <div
                 style={{
                   backgroundColor: 'rgba(244, 63, 94, 0.15)',
-                  border: '1px solid rgba(244, 63, 94, 0.3)',
+                  border: '0.0531rem solid rgba(244, 63, 94, 0.3)',
                   color: '#f43f5e',
-                  padding: '10px 14px',
+                  padding: '0.5313rem 0.7438rem',
                   borderRadius: 'var(--radius-md)',
-                  marginBottom: '16px',
+                  marginBottom: '0.85rem',
                   fontSize: '0.85rem',
                 }}
               >
@@ -120,11 +120,11 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen
               <div
                 style={{
                   backgroundColor: 'rgba(16, 185, 129, 0.15)',
-                  border: '1px solid rgba(16, 185, 129, 0.3)',
+                  border: '0.0531rem solid rgba(16, 185, 129, 0.3)',
                   color: '#10b981',
-                  padding: '10px 14px',
+                  padding: '0.5313rem 0.7438rem',
                   borderRadius: 'var(--radius-md)',
-                  marginBottom: '16px',
+                  marginBottom: '0.85rem',
                   fontSize: '0.85rem',
                 }}
               >
@@ -177,11 +177,11 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen
 
           <div
             style={{
-              padding: '16px 24px',
-              borderTop: '1px solid var(--border-color)',
+              padding: '0.85rem 1.275rem',
+              borderTop: '0.0531rem solid var(--border-color)',
               display: 'flex',
               justifyContent: 'flex-end',
-              gap: '12px',
+              gap: '0.6375rem',
             }}
           >
             <button

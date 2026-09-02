@@ -141,11 +141,12 @@ export type ActiveTab =
   | 'site_duties';
 
 export interface MenuItems {
-  id: ActiveTab;
+  id?: ActiveTab;
   label: string;
   icon: LucideIcon;
   roles: UserRole[];
   notAllowedDepartments?: string[];
+  children?: MenuItems[];
 }
 
 // Attendance Types
