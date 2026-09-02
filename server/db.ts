@@ -202,7 +202,7 @@ export async function initDb() {
     `);
     }
   } catch (err) {
-    console.error('Failed to migrate tickets type constraint:', err);
+    logger.error('Failed to migrate tickets type constraint:', err);
   }
 
   try {
