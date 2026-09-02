@@ -260,6 +260,7 @@ function App() {
 
   useEffect(() => {
     if (currentUser && !loading) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       enforceAccessControl();
     }
   }, [currentUser, loading, enforceAccessControl]);

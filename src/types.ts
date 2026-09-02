@@ -27,7 +27,7 @@ export interface AppUser {
 }
 
 // Ticket Types
-export type TicketType = 'hardware' | 'software' | 'maintenance' | 'upgrade';
+export type TicketType = 'hardware' | 'software' | 'maintenance' | 'upgrade' | 'installation' | 'email' | 'others';
 
 export type TicketStatus =
   'open' | 'awaiting_it_approval' | 'awaiting_manager_approval' | 'awaiting_handover' | 'closed';
