@@ -1213,7 +1213,7 @@ function App() {
                 fontWeight: 500,
               }}
             >
-              Harisco IT Supportx
+              Harisco Dashboard
             </span>
           </div>
         </header>
