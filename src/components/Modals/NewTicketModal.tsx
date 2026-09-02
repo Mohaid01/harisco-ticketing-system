@@ -220,7 +220,7 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({ isOpen, onClose,
             {type === 'others' && (
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label htmlFor="ticket-description-input" className="form-label">
-                  Others Issue Description
+                  Other Issue Description
                 </label>
                 <textarea
                   id="ticket-description-input"
