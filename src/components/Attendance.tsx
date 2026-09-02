@@ -114,6 +114,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
 
   useEffect(() => {
     if (!canViewAll && !externalViewMode) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       handleViewModeChange('individual', currentUser.id);
     }
   }, []);
