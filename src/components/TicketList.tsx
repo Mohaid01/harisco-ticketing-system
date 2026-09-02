@@ -1,5 +1,6 @@
 import {
   ArrowUpDown,
+  ChartNoAxesCombined,
   CheckSquare,
   Clock,
   Filter,
@@ -7,7 +8,6 @@ import {
   Search,
   Settings,
   ShieldCheck,
-  User,
   UserCheck,
 } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
@@ -53,6 +53,9 @@ export const TicketList: React.FC<TicketListProps> = ({
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<SortByOption>('newest');
   const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
+  //  Add date filter
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
 
   // Get IT users for assignee filter
   const itUserNames = useMemo(() => users.filter((user) => user.role === 'it').map((user) => user.name), [users]);
@@ -117,7 +120,7 @@ export const TicketList: React.FC<TicketListProps> = ({
           </span>
         );
       case 'awaiting_it_approval':
-        return <span className="badge badge-it-app">IT Apprv</span>;
+        return <span className="badge badge-it-app">In Progress</span>;
       case 'awaiting_manager_approval':
         return <span className="badge badge-m-app">Mgr Apprv</span>;
       case 'awaiting_handover':
@@ -162,7 +165,7 @@ export const TicketList: React.FC<TicketListProps> = ({
         </div>
         <button id="btn-raise-ticket-list" className="btn btn-primary" onClick={onCreateTicketClick}>
           <Plus size={16} />
-          Raise Issue Ticket
+          Raise Ticket
         </button>
       </div>
 
@@ -253,23 +256,24 @@ export const TicketList: React.FC<TicketListProps> = ({
       <div className="panel" style={{ padding: '0.85rem 1.0625rem', marginBottom: '1.275rem' }}>
         <div
           style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(11.6875rem, 1fr))',
-            gap: '0.6375rem',
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: '12px 16px',
             width: '100%',
             alignItems: 'center',
           }}
         >
-          {/* Search bar input */}
-          <div style={{ position: 'relative' }}>
+          {/* Search bar input - Expands to fill available space */}
+          <div style={{ position: 'relative', flex: '1 1 240px', minWidth: '220px' }}>
             <input
               id="search-tickets-input"
               type="text"
               placeholder="Search ID, category, description..."
               className="form-input"
               style={{
-                paddingLeft: '1.9125rem',
-                height: '2.0188rem',
+                width: '100%',
+                paddingLeft: '36px',
+                height: '38px',
                 backgroundColor: 'var(--bg-primary)',
               }}
               value={searchQuery}
@@ -287,14 +291,60 @@ export const TicketList: React.FC<TicketListProps> = ({
             />
           </div>
 
-          {/* Ticket Type Filter */}
-          <div style={{ display: 'flex', position: 'relative', alignItems: 'center', gap: '0.425rem' }}>
+          {/* Date Range Filter Group */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             <Filter size={14} style={{ color: 'var(--text-muted)' }} />
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Type:</span>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Date:</span>
+            <input
+              type="date"
+              className="form-input"
+              style={{
+                height: '38px',
+                padding: '4px 7px',
+                backgroundColor: 'var(--bg-primary)',
+                color: '#ffffff',
+                colorScheme: 'dark',
+                width: '135px',
+              }}
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+            />
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>To:</span>
+            <input
+              type="date"
+              className="form-input"
+              style={{
+                height: '38px',
+                padding: '4px 7px',
+                backgroundColor: 'var(--bg-primary)',
+                color: '#ffffff',
+                colorScheme: 'dark',
+                width: '135px',
+              }}
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+            />
+            {(startDate || endDate) && (
+              <button
+                className="btn btn-secondary"
+                style={{ padding: '6px 10px', fontSize: '0.75rem', height: '38px', whiteSpace: 'nowrap' }}
+                onClick={() => {
+                  setStartDate('');
+                  setEndDate('');
+                }}
+              >
+                Clear
+              </button>
+            )}
+          </div>
+
+          {/* Ticket Type Filter */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: '0 0 auto' }}>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Type:</span>
             <select
               id="filter-type-select"
               className="form-input"
-              style={inputFieldStyle}
+              style={{ ...inputFieldStyle, height: '38px' }}
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
             >
@@ -308,13 +358,13 @@ export const TicketList: React.FC<TicketListProps> = ({
           </div>
 
           {/* Status Filter */}
-          <div style={{ display: 'flex', position: 'relative', alignItems: 'center', gap: '0.425rem' }}>
-            <User size={14} style={{ color: 'var(--text-muted)' }} />
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Status:</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: '0 0 auto' }}>
+            <ChartNoAxesCombined size={14} style={{ color: 'var(--text-muted)' }} />
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Status:</span>
             <select
               id="filter-status-select"
               className="form-input"
-              style={inputFieldStyle}
+              style={{ ...inputFieldStyle, height: '38px' }}
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
             >
@@ -328,13 +378,13 @@ export const TicketList: React.FC<TicketListProps> = ({
           </div>
 
           {/* Assignee Filter */}
-          <div style={{ display: 'flex', position: 'relative', alignItems: 'center', gap: '0.425rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: '0 0 auto' }}>
             <UserCheck size={14} style={{ color: 'var(--text-muted)' }} />
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Assignee:</span>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Assignee:</span>
             <select
               id="filter-assignee-select"
               className="form-input"
-              style={inputFieldStyle}
+              style={{ ...inputFieldStyle, height: '38px' }}
               value={assigneeFilter}
               onChange={(e) => setAssigneeFilter(e.target.value)}
             >
@@ -347,20 +397,14 @@ export const TicketList: React.FC<TicketListProps> = ({
             </select>
           </div>
 
-          {/* Sort bar selection */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.425rem',
-            }}
-          >
+          {/* Sort Selection */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: '0 0 auto' }}>
             <ArrowUpDown size={14} style={{ color: 'var(--text-muted)' }} />
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Sort:</span>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Sort:</span>
             <select
               id="sort-tickets-select"
               className="form-input"
-              style={inputFieldStyle}
+              style={{ ...inputFieldStyle, height: '38px' }}
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as SortByOption)}
             >

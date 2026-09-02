@@ -25,7 +25,7 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({ isOpen, onClose,
     const finalDescription = description.trim();
     let finalJustification = justification.trim();
 
-    if (type === 'hardware' || type === 'software') {
+    if (type === 'hardware' || type === 'software' || type === 'email' || type === 'others') {
       if (!finalDescription) {
         setErrorMsg('Details are required.');
         return;
@@ -133,8 +133,41 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({ isOpen, onClose,
                 />
               </div>
             )}
+            {type === 'email' && (
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label htmlFor="ticket-description-input" className="form-label">
+                  Email Issue Description
+                </label>
+                <textarea
+                  id="ticket-description-input"
+                  className="form-input"
+                  style={{ minHeight: '100px', resize: 'vertical' }}
+                  placeholder="Describe specific symptoms or details about this request..."
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  required
+                />
+              </div>
+            )}
 
             {type === 'maintenance' && (
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label htmlFor="ticket-description-input" className="form-label">
+                  Details
+                </label>
+                <textarea
+                  id="ticket-description-input"
+                  className="form-input"
+                  style={{ minHeight: '100px', resize: 'vertical' }}
+                  placeholder="Enter one software per line..."
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  required
+                />
+              </div>
+            )}
+
+            {type === 'installation' && (
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label htmlFor="ticket-description-input" className="form-label">
                   Software List
@@ -183,6 +216,22 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({ isOpen, onClose,
                   />
                 </div>
               </>
+            )}
+            {type === 'others' && (
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label htmlFor="ticket-description-input" className="form-label">
+                  Other Issue Description
+                </label>
+                <textarea
+                  id="ticket-description-input"
+                  className="form-input"
+                  style={{ minHeight: '100px', resize: 'vertical' }}
+                  placeholder="Describe specific symptoms or details about this request..."
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  required
+                />
+              </div>
             )}
           </div>
 

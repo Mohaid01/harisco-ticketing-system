@@ -24,6 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **New Ticket Types** — Added `email`, `installation`, and `others` options to `TicketType` with corresponding DB schema migrations and form inputs.
+- **Date Range Filters** — Integrated `From`/`To` date range filters in both standard `TicketList` and `AdminTicketList` components.
 - **Admin ticket state reversion** — Managers can revert an admin ticket to its previous state; tickets with no recorded previous state revert to Open (awaiting_admin_manager). Revert is blocked for tickets already in their initial state.
 - **Notice author editing** — Enabled notice authors to edit their own notices via a dedicated edit button.
 - **Ticket list assignee filtering** — Added assignee filter option to the main tickets list screen.
@@ -53,6 +55,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Ticket summary statistics** — Updated ticket statistic cards to count all tickets instead of only filtered tickets in both the standard and Admin ticket list screens.
 - **Ticket list responsiveness** — Made the ticket list screen fully responsive for mobile, tablet, and desktop views
 - **TicketList select styling refactored** — Standardized select styling via `inputFieldStyle` to eliminate duplicated styles
+- **Status label renaming** — Renamed the ticket status "Awaiting IT Approval" to "IN Progress" in badges and filter dropdowns.
+- **Ticket list filter UI** — Improved filter layout styling and responsiveness using flex wrap.
+- **Ticket raising action** — Simplified "Raise Issue Ticket" button label to "Raise Ticket".
 - User management actions: added Offboard flow alongside Reset Password and Delete
 - `DbUser` type extended with `is_active`, `offboarded_at`, `offboarded_by`, `offboard_reason`
 - Attendance summary filtering excludes users offboarded before selected month
