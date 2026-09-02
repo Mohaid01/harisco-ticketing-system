@@ -126,7 +126,7 @@ export const STATUS_OPTIONS = [
   },
   {
     value: 'awaiting_it_approval' as TicketStatus,
-    label: 'IN Progress',
+    label: 'In Progress',
     color: '#f59e0b',
     bg: 'rgba(245, 158, 11, 0.12)',
   },
