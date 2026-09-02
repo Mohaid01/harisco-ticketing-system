@@ -597,7 +597,6 @@ function App() {
   };
 
   const handleCreateTicket = async (data: { description: string; justification: string; type: TicketType }) => {
-    console.log(data);
     if (!token || !currentUser) return;
     try {
       const res = await fetch('/api/tickets', {
