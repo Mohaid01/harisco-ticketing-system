@@ -65,9 +65,14 @@ router.post(
   '/',
   authenticateToken,
   async (req: ApiAuthRequest<CreateLeaveRequestBody>, res: ApiResponse<CreateLeaveResponse>) => {
-    const { category, startDate, endDate, reason } = req.body;
+    const { category, startDate, endDate, reason, attachment } = req.body;
     if (!category || !startDate || !endDate || !reason) {
       res.status(400).json({ error: 'All fields are required.' });
+      return;
+    }
+
+    if (category === 'medical' && (!attachment || !attachment.trim())) {
+      res.status(400).json({ error: 'Medical certificate / attachment is required for medical leave.' });
       return;
     }
 
@@ -101,9 +106,9 @@ router.post(
 
       await db.run(
         `INSERT INTO leave_applications (
-              id, userId, userName, category, startDate, endDate, reason, status, appliedAt
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [leaveId, req.user?.id, req.user?.name, category, startDate, endDate, reason, 'pending', timestamp]
+              id, userId, userName, category, startDate, endDate, reason, attachment, status, appliedAt
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [leaveId, req.user?.id, req.user?.name, category, startDate, endDate, reason, attachment || null, 'pending', timestamp]
       );
 
       res.status(201).json({ success: true, id: leaveId });

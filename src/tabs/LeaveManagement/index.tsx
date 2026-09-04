@@ -25,6 +25,34 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({ currentUser, t
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [reason, setReason] = useState('');
+const [attachment, setAttachment] = useState<string>('');
+
+const handleAttachmentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  if (file) {
+    // Check if type starts with image
+    const isValidType = file.type.startsWith('image/');
+
+    if (!isValidType) {
+      alert('Please upload an image.');
+      e.target.value = '';
+      return;
+    }
+
+    // Size limit 15MB
+    if (file.size > 15 * 1024 * 1024) {
+      alert('Attachment size must be less than 15MB.');
+      e.target.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setAttachment(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  }
+};
 
   const todayStr = new Date().toISOString().split('T')[0];
 
@@ -68,6 +96,11 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({ currentUser, t
       return;
     }
 
+    if (category === 'medical' && !attachment) {
+      alert('Medical certificate / attachment required.');
+      return;
+    }
+
     if (startDate < todayStr) {
       alert('Start date cannot be earlier than today.');
       return;
@@ -85,7 +118,7 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({ currentUser, t
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ category, startDate, endDate, reason }),
+        body: JSON.stringify({ category, startDate, endDate, reason, attachment: category === 'medical' ? attachment : null }),
       });
 
       if (res.ok) {
@@ -94,6 +127,7 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({ currentUser, t
         setStartDate('');
         setEndDate('');
         setReason('');
+        setAttachment('');
         fetchLeaves();
       } else {
         const data = await res.json();
@@ -287,7 +321,7 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({ currentUser, t
                   </div>
                 </div>
 
-                <div className="form-group form-group-last">
+                <div className={`form-group ${category !== 'medical' ? 'form-group-last' : ''}`}>
                   <label className="form-label">Reason</label>
                   <textarea
                     className="form-input form-textarea"
@@ -298,8 +332,23 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({ currentUser, t
                     required
                   />
                 </div>
-              </div>
 
+                {/* Show upload field  */}
+                {category === 'medical' && (
+                  <div className="form-group form-group-last">
+                    <label className="form-label">
+                      Upload Medical Certificate / Attachment <span style={{ color: 'var(--color-danger)' }}>*</span>
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/*,.pdf,.doc,.docx"
+                      className="form-input form-file-input"
+                      onChange={handleAttachmentChange}
+                      required
+                    />
+                  </div>
+                )}
+              </div>
               <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={() => setShowApplyModal(false)}>
                   Cancel

@@ -522,11 +522,19 @@ export async function initDb() {
       startDate TEXT NOT NULL,
       endDate TEXT NOT NULL,
       reason TEXT NOT NULL,
+      attachment TEXT,
       status TEXT CHECK(status IN ('pending', 'approved', 'rejected')) NOT NULL,
       appliedAt TEXT NOT NULL,
       FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
     )
   `);
+
+  //migration for existing databases
+  try {
+    await db.exec('ALTER TABLE leave_applications ADD COLUMN attachment TEXT');
+  } catch {
+    // Column already exists
+  }
 
   // Create Site Duty Applications Table
   await db.exec(`

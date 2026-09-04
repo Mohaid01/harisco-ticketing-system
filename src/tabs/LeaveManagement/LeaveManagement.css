@@ -133,6 +133,33 @@
   resize: vertical;
 }
 
+.form-file-input {
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.form-file-input::file-selector-button {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+  margin-right: 12px;
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.form-file-input::file-selector-button:hover {
+  background-color: var(--color-primary);
+  border-color: var(--border-color-hover);
+  color: #ffffff;
+}
+
 .modal-footer {
   display: flex;
   gap: 0.5313rem;
