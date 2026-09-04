@@ -337,14 +337,12 @@ const handleAttachmentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                 {category === 'medical' && (
                   <div className="form-group form-group-last">
                     <label className="form-label">
-                      Upload Medical Certificate / Attachment <span style={{ color: 'var(--color-danger)' }}>*</span>
+                      Upload Medical Certificate / Attachment
                     </label>
                     <input
                       type="file"
-                      accept="image/*,.pdf,.doc,.docx"
+                      accept="image/*,.pdf"
                       className="form-input form-file-input"
-                      onChange={handleAttachmentChange}
-                      required
                     />
                   </div>
                 )}
