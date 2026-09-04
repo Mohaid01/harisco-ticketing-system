@@ -176,7 +176,6 @@ export interface LeaveApplication {
   attachment?: string | null;
   status: LeaveStatus;
   appliedAt: string;
-
 }
 
 // Site Duty Types
