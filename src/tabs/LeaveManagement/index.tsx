@@ -3,6 +3,7 @@ import React, { startTransition, useCallback, useEffect, useState } from 'react'
 
 import type { AppUser, LeaveApplication, LeaveCategory, LeaveStatus } from '../../types';
 
+import { LeaveDetailsModal } from '../../components/LeaveManagement/LeaveDetailsModal';
 import { LeaveStatusBadge } from '../../components/LeaveManagement/LeaveStatusBadge';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import '../../index.css';
@@ -19,6 +20,7 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({ currentUser, t
   const [loading, setLoading] = useState(true);
 
   const [showApplyModal, setShowApplyModal] = useState(false);
+  const [selectedLeave, setSelectedLeave] = useState<LeaveApplication | null>(null);
   const [category, setCategory] = useState<LeaveCategory>('casual');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -170,7 +172,12 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({ currentUser, t
               </thead>
               <tbody>
                 {leaves.map((leave) => (
-                  <tr key={leave.id}>
+                  <tr
+                    key={leave.id}
+                    onClick={() => setSelectedLeave(leave)}
+                    style={{ cursor: 'pointer' }}
+                    title="Click to view details"
+                  >
                     {canViewAll ? (
                       <td className="leave-applicant-name">
                         {leave.userName} <br />
@@ -305,6 +312,15 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({ currentUser, t
           </div>
         </div>
       )}
+
+      {/* Leave Details Modal */}
+      <LeaveDetailsModal
+        leave={selectedLeave}
+        currentUser={currentUser}
+        canManageLeaves={canManageLeaves}
+        onClose={() => setSelectedLeave(null)}
+        onUpdateStatus={handleUpdateStatus}
+      />
     </div>
   );
 };

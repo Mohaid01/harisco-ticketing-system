@@ -127,6 +127,7 @@ export interface LeaveApplication {
   reason: string;
   status: ApplicationStatus;
   appliedAt: string;
+  attachment?: string | null;
 }
 
 export interface SiteDutyApplication {
