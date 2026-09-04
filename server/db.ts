@@ -26,6 +26,7 @@ export async function initDb() {
   // Enable WAL mode for better concurrency (readers don't block writers, writers don't block readers)
   await db.exec('PRAGMA journal_mode = WAL');
   await db.exec('PRAGMA busy_timeout = 30000;');
+  await db.exec('PRAGMA foreign_keys = OFF');
 
   // Create Notices Table
   await db.exec(`
@@ -198,7 +199,7 @@ export async function initDb() {
       ALTER TABLE tickets_new RENAME TO tickets;
 
       COMMIT;
-      PRAGMA foreign_keys=ON;
+      PRAGMA foreign_keys=OFF;
     `);
     }
   } catch (err) {
@@ -551,6 +552,44 @@ export async function initDb() {
       FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
     )
   `);
+
+  // Self-healing migration: rebuild site_duty_applications if its FK is dangling
+  // (e.g., points to a non-existent table such as the legacy 'users_old' rename).
+  // This can happen on databases that were initialized while a users-table rename
+  // migration was mid-flight. SQLite cannot ALTER a FK in place, so we recreate.
+  try {
+    const sdFks = await db.all<{ table: string }[]>(
+      `SELECT "table" FROM pragma_foreign_key_list('site_duty_applications')`
+    );
+    const hasBadFk = sdFks.some((fk) => fk.table !== 'users');
+    if (hasBadFk) {
+      logger.warn('Rebuilding site_duty_applications to fix dangling foreign key.');
+      await db.exec(`
+        PRAGMA foreign_keys=OFF;
+        BEGIN TRANSACTION;
+        CREATE TABLE site_duty_applications_new (
+          id TEXT PRIMARY KEY,
+          userId TEXT NOT NULL,
+          userName TEXT NOT NULL,
+          siteName TEXT NOT NULL,
+          reason TEXT NOT NULL,
+          startDate TEXT NOT NULL,
+          endDate TEXT NOT NULL,
+          status TEXT CHECK(status IN ('pending', 'approved', 'rejected')) NOT NULL,
+          appliedAt TEXT NOT NULL
+        );
+        INSERT INTO site_duty_applications_new
+          SELECT id, userId, userName, siteName, reason, startDate, endDate, status, appliedAt
+          FROM site_duty_applications;
+        DROP TABLE site_duty_applications;
+        ALTER TABLE site_duty_applications_new RENAME TO site_duty_applications;
+        COMMIT;
+        PRAGMA foreign_keys=OFF;
+      `);
+    }
+  } catch (err) {
+    logger.error('Failed to repair site_duty_applications FK:', err);
+  }
 
   // Create Holidays Table
   await db.exec(`
