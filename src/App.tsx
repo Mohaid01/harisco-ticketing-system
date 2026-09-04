@@ -149,7 +149,7 @@ function App() {
 
   const initialTab = getInitialTab();
 
-  const [token, setToken] = useState<string | null>(localStorage.getItem('harisco_token'));
+  const [token, setToken,] = useState<string | null>(localStorage.getItem('harisco_token'));
   const [notices, setNotices] = useState<Notice[]>([]);
   const [isCreateNoticeOpen, setIsCreateNoticeOpen] = useState(false);
   const [selectedNoticeId, setSelectedNoticeId] = useState<string | null>(null);
@@ -208,12 +208,14 @@ function App() {
     []
   );
 
-  const navigateToTab = (
-    tab: ActiveTab,
-    ticketId?: string | null,
-    attendanceView?: 'summary' | 'individual',
-    attendanceUserId?: string
-  ) => {
+interface RouteState {
+  tab: ActiveTab;
+  ticketId?: string | null;
+  attendanceView?: 'summary' | 'individual';
+  attendanceUserId?: string;
+};
+
+const navigateToTab = ({tab, ticketId, attendanceView, attendanceUserId}: RouteState): void => {
     const path = tabToPath(tab, ticketId, attendanceView, attendanceUserId);
     window.history.pushState({}, '', path);
     setActiveTab(tab);
@@ -283,7 +285,7 @@ function App() {
   useEffect(() => {
     const handlePopState = () => {
       const { tab, ticketId, attendanceUserId, attendanceView } = pathToTab(window.location.pathname);
-      if (!currentUser || !canUserAccessTab(tab, currentUser.role, currentUser.department ?? undefined)) {
+      if (!currentUser || canUserAccessTab(tab, currentUser.role, currentUser.department ?? undefined)) {
         setActiveTab(tab);
         setSelectedTicketId(tab === 'tickets' ? ticketId : null);
         setSelectedAdminTicketId(tab === 'admin_tickets' ? ticketId : null);
@@ -339,7 +341,7 @@ function App() {
         }
 
         if (user.role.includes('factory')) {
-          navigateToTab('factory_attendance');
+          navigateToTab({tab: 'factory_attendance'});
         }
 
         // Fetch Notices
@@ -549,14 +551,14 @@ function App() {
     localStorage.setItem('harisco_token', newToken);
     setToken(newToken);
     setCurrentUser(user);
-    navigateToTab('noticeboard');
+    navigateToTab({tab: 'noticeboard'});
   };
 
   const handlePasswordResetSuccess = (newToken: string, updatedUser: AppUser) => {
     localStorage.setItem('harisco_token', newToken);
     setToken(newToken);
     setCurrentUser(updatedUser);
-    navigateToTab('noticeboard');
+    navigateToTab({tab: 'noticeboard'});
   };
 
   // Handle Logout
@@ -570,7 +572,7 @@ function App() {
     setAdminTickets([]);
     setSelectedTicketId(null);
     setSelectedAdminTicketId(null);
-    navigateToTab('noticeboard');
+    navigateToTab({tab:'noticeboard'});
   };
 
   // Noticeboard-releveant API calls

@@ -25,7 +25,7 @@ import './Sidebar.css';
 interface HeaderProps {
   currentUser: AppUser;
   activeTab: ActiveTab;
-  setActiveTab: (tab: ActiveTab) => void;
+  setActiveTab: ({ tab }: { tab: ActiveTab }) => void;
   onLogout: () => void;
   onChangePasswordClick: () => void;
 }
@@ -188,7 +188,7 @@ export const Header: React.FC<HeaderProps> = ({
   );
 
   const handleTabChange = (tab: ActiveTab) => {
-    setActiveTab(tab);
+    setActiveTab({tab});
     setOpenDropdown(null);
     setMobileMenuOpen(false);
   };
