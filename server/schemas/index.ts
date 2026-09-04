@@ -151,6 +151,7 @@ export const createLeaveSchema = z.object({
   startDate: z.string().min(1, 'Start date is required'),
   endDate: z.string().min(1, 'End date is required'),
   reason: z.string().min(1, 'Reason is required'),
+  attachment: z.string().optional().nullable(),
 });
 
 export const updateLeaveSchema = z.object({

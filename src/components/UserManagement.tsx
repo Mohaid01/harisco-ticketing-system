@@ -86,11 +86,13 @@ export const UserManagement: React.FC<UserManagementProps> = ({
       // Validate file type
       if (!file.type.startsWith('image/')) {
         alert('Please upload an image file.');
+        e.target.value = '';
         return;
       }
       // Validate file size (e.g. limit to 1MB to avoid database bloat)
       if (file.size > 1024 * 1024) {
         alert('Image size must be less than 1MB.');
+        e.target.value = '';
         return;
       }
 
@@ -344,7 +346,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                   id="user-avatar-upload"
                   type="file"
                   accept="image/*"
-                  className="form-input"
+                  className="form-input form-file-input"
                   style={{ flex: 1 }}
                   onChange={(e) => handleFileChange(e, false)}
                 />

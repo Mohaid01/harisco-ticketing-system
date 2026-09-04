@@ -125,8 +125,10 @@ export interface LeaveApplication {
   startDate: string;
   endDate: string;
   reason: string;
+  attachment?: string | null;
   status: ApplicationStatus;
   appliedAt: string;
+  attachment?: string | null;
 }
 
 export interface SiteDutyApplication {
@@ -421,6 +423,7 @@ export interface CreateLeaveRequestBody {
   startDate: string;
   endDate: string;
   reason: string;
+  attachment?: string | null;
 }
 
 export interface UpdateLeaveStatusRequestBody {
