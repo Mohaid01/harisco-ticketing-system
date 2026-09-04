@@ -25,34 +25,34 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({ currentUser, t
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [reason, setReason] = useState('');
-const [attachment, setAttachment] = useState<string>('');
+  const [attachment, setAttachment] = useState<string>('');
 
-const handleAttachmentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  const file = e.target.files?.[0];
-  if (file) {
-    // Check if type starts with image
-    const isValidType = file.type.startsWith('image/');
+  const handleAttachmentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Check if type starts with image
+      const isValidType = file.type.startsWith('image/');
 
-    if (!isValidType) {
-      alert('Please upload an image.');
-      e.target.value = '';
-      return;
+      if (!isValidType) {
+        alert('Please upload an image.');
+        e.target.value = '';
+        return;
+      }
+
+      // Size limit 15MB
+      if (file.size > 15 * 1024 * 1024) {
+        alert('Attachment size must be less than 15MB.');
+        e.target.value = '';
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAttachment(reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
-
-    // Size limit 15MB
-    if (file.size > 15 * 1024 * 1024) {
-      alert('Attachment size must be less than 15MB.');
-      e.target.value = '';
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setAttachment(reader.result as string);
-    };
-    reader.readAsDataURL(file);
-  }
-};
+  };
 
   const todayStr = new Date().toISOString().split('T')[0];
 
@@ -118,7 +118,13 @@ const handleAttachmentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ category, startDate, endDate, reason, attachment: category === 'medical' ? attachment : null }),
+        body: JSON.stringify({
+          category,
+          startDate,
+          endDate,
+          reason,
+          attachment: category === 'medical' ? attachment : null,
+        }),
       });
 
       if (res.ok) {
@@ -336,13 +342,12 @@ const handleAttachmentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                 {/* Show upload field  */}
                 {category === 'medical' && (
                   <div className="form-group form-group-last">
-                    <label className="form-label">
-                      Upload Medical Certificate / Attachment
-                    </label>
+                    <label className="form-label">Upload Medical Certificate / Attachment</label>
                     <input
                       type="file"
-                      accept="image/*,.pdf"
+                      accept="image/*"
                       className="form-input form-file-input"
+                      onChange={handleAttachmentChange}
                     />
                   </div>
                 )}

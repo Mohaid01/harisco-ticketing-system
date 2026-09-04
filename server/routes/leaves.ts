@@ -108,7 +108,18 @@ router.post(
         `INSERT INTO leave_applications (
               id, userId, userName, category, startDate, endDate, reason, attachment, status, appliedAt
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [leaveId, req.user?.id, req.user?.name, category, startDate, endDate, reason, attachment || null, 'pending', timestamp]
+        [
+          leaveId,
+          req.user?.id,
+          req.user?.name,
+          category,
+          startDate,
+          endDate,
+          reason,
+          attachment || null,
+          'pending',
+          timestamp,
+        ]
       );
 
       res.status(201).json({ success: true, id: leaveId });

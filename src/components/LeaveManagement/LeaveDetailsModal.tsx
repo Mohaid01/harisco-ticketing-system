@@ -25,8 +25,7 @@ export const LeaveDetailsModal: React.FC<LeaveDetailsModalProps> = ({
 
   if (!leave) return null;
 
-  const isPendingApproval =
-    canManageLeaves && leave.status === 'pending' && leave.userId !== currentUser.id;
+  const isPendingApproval = canManageLeaves && leave.status === 'pending' && leave.userId !== currentUser.id;
 
   return (
     <>
@@ -76,9 +75,7 @@ export const LeaveDetailsModal: React.FC<LeaveDetailsModalProps> = ({
               }}
             >
               <div>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block' }}>
-                  Applicant
-                </span>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block' }}>Applicant</span>
                 <strong style={{ fontSize: '0.9rem' }}>{leave.userName}</strong>
                 {leave.userCode && (
                   <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block' }}>
@@ -88,36 +85,26 @@ export const LeaveDetailsModal: React.FC<LeaveDetailsModalProps> = ({
               </div>
 
               <div>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block' }}>
-                  Status
-                </span>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block' }}>Status</span>
                 <div style={{ marginTop: '0.2rem' }}>
                   <LeaveStatusBadge status={leave.status} />
                 </div>
               </div>
 
               <div>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block' }}>
-                  Category
-                </span>
-                <strong style={{ fontSize: '0.85rem', textTransform: 'capitalize' }}>
-                  {leave.category} Leave
-                </strong>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block' }}>Category</span>
+                <strong style={{ fontSize: '0.85rem', textTransform: 'capitalize' }}>{leave.category} Leave</strong>
               </div>
 
               <div>
                 <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block' }}>
                   Applied On
                 </span>
-                <span style={{ fontSize: '0.85rem' }}>
-                  {new Date(leave.appliedAt).toLocaleDateString()}
-                </span>
+                <span style={{ fontSize: '0.85rem' }}>{new Date(leave.appliedAt).toLocaleDateString()}</span>
               </div>
 
               <div style={{ gridColumn: 'span 2' }}>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block' }}>
-                  Duration
-                </span>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block' }}>Duration</span>
                 <strong style={{ fontSize: '0.85rem', color: 'var(--color-primary)' }}>
                   {leave.startDate} &nbsp;to&nbsp; {leave.endDate}
                 </strong>
