@@ -24,43 +24,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **New Ticket Types** — Added `email`, `installation`, and `others` options to `TicketType` with corresponding DB schema migrations and form inputs.
+- **Attendance Device Status & RBAC Enforcement** — Added real-time attendance device connection status tracking and enforced strict role-based access control (RBAC) navigation locks.
+- **Leave Details Attachment Preview & Fullscreen Lightbox** — Added medical certificate attachment preview, file download support, and fullscreen image lightbox view for leave applications.
+- **New Ticket Types** — Added `email`, `installation`, and `others` options to `TicketType` with corresponding database schema migrations and form inputs.
 - **Date Range Filters** — Integrated `From`/`To` date range filters in both standard `TicketList` and `AdminTicketList` components.
-- **Admin ticket state reversion** — Managers can revert an admin ticket to its previous state; tickets with no recorded previous state revert to Open (awaiting_admin_manager). Revert is blocked for tickets already in their initial state.
-- **Notice author editing** — Enabled notice authors to edit their own notices via a dedicated edit button.
-- **Ticket list assignee filtering** — Added assignee filter option to the main tickets list screen.
-- **Ticket list filtered count** — Display count of matching tickets showing "Showing X of Y tickets" in both the standard and Admin ticket list screens.
-- **IT assignee filtering** — Added IT assignee filter in the IT tickets queue screen.
-- **Three new factory shifts** — Standard Shift (08:00–20:00), Standard Shift (08:00–21:00), and Night Shift (20:00–08:00)
-- **Scalable midnight-crossing detection** — Generic `weekdayEnd.h < weekdayStart.h` check replaces hardcoded night-shift logic in shift resolution, punch processing, and date-rollover
-- **Backend type alignment** — Added `shift` field to `CreateUserRequestBody`, `CreateUserResponse`, `UpdateUserRequestBody`, and `UpdateUserResponse` for HQ user routes
-- **Employee offboarding** — Soft-delete users with `is_active` flag, preserving historical data
-- **Offboarding date picker** — Backdate offboarding with configurable effective date
-- **Offboarded user visibility** — Dimmed cards in user management with offboard date badge
-- **Attendance export filtering** — Offboarded users included only if offboarded within report month
-- **Calendar offboarded status** — Days after offboard date shown as "Offboarded" in individual view
-- **Auth guard** — Inactive users blocked from login via JWT `is_active` check
-- **Ticket assignee filtering** — Offboarded users excluded from executive/IT assignee dropdowns
-- **CI checks workflow** — Automated pre-merge gates: Prettier formatting check, ESLint error check, TypeScript + Vite build, and npm audit (moderate+)
-- **CODEOWNERS** — Mandatory review enforcement for `@Harisco-it` and `@Mohaid01` on all PRs to `main`
-
-### Fixed
-
-- **Site Duty & Leave simulated hours** — Fixed simulated check-out times and individual log calculations for "On Leave" and "Site Duty" statuses to represent exactly the shift base hours (e.g. 8 hours) instead of 8.5 hours.
-- **Factory midnight rollover** — Yesterday shift override now correctly determines midnight-crossing for punches after midnight
+- **Admin Ticket State Reversion** — Managers can revert an admin ticket to its previous state; tickets with no recorded previous state revert to Open (`awaiting_admin_manager`). Revert is blocked for tickets already in their initial state.
+- **Notice Author Editing** — Enabled notice authors to edit their own notices via a dedicated edit button.
+- **Ticket List Filtering & Count** — Added assignee filtering for tickets and IT queue, along with matching ticket counters ("Showing X of Y tickets") across list screens.
+- **Factory Shifts & Scalable Midnight Crossing** — Added three factory shifts (Standard 08:00–20:00, Standard 08:00–21:00, Night 20:00–08:00) with dynamic midnight-crossing detection (`weekdayEnd.h < weekdayStart.h`).
+- **Employee Offboarding** — Soft-delete users with `is_active` flag, backdatable offboarding date picker, calendar status display, dimmed user cards, login blocking, and export filtering.
+- **CI Checks Workflow** — Automated pre-merge validation pipeline for code formatting, linting, TypeScript compilation, and security vulnerability audit.
+- **CODEOWNERS** — Mandatory review enforcement for `@Harisco-it` and `@Mohaid01` on pull requests.
 
 ### Changed
 
-- **Admin ticket schema** — Added `previousStatus` column to `admin_tickets` table and corresponding fields in `DbAdminTicket`, `AdminTicketResponse`, and client `AdminTicket` types
-- **Ticket summary statistics** — Updated ticket statistic cards to count all tickets instead of only filtered tickets in both the standard and Admin ticket list screens.
-- **Ticket list responsiveness** — Made the ticket list screen fully responsive for mobile, tablet, and desktop views
-- **TicketList select styling refactored** — Standardized select styling via `inputFieldStyle` to eliminate duplicated styles
-- **Status label renaming** — Renamed the ticket status "Awaiting IT Approval" to "IN Progress" in badges and filter dropdowns.
-- **Ticket list filter UI** — Improved filter layout styling and responsiveness using flex wrap.
-- **Ticket raising action** — Simplified "Raise Issue Ticket" button label to "Raise Ticket".
-- User management actions: added Offboard flow alongside Reset Password and Delete
-- `DbUser` type extended with `is_active`, `offboarded_at`, `offboarded_by`, `offboard_reason`
-- Attendance summary filtering excludes users offboarded before selected month
+- **Status Label Standardization** — Standardized ticket status label casing to "In Progress" across status badges, filters, and modals.
+- **Header Title Update** — Updated main navigation header text to "Dashboard".
+- **Device Polling Interval** — Adjusted attendance device background polling interval to 3 minutes for optimized device sync.
+- **Admin Ticket Schema** — Added `previousStatus` column to `admin_tickets` table and corresponding fields in data models and API response types.
+- **Ticket Summary Statistics & Responsiveness** — Updated metric cards to count all tickets regardless of active filters, and enhanced responsive styling for mobile, tablet, and desktop views.
+- **Select & Badge Styling Standardization** — Standardized select styling via `inputFieldStyle` to eliminate duplicated styles, and constrained role-badge container widths to `fit-content`.
+- **Dependency Cleanup** — Removed unused `react-datepicker` dependency.
+- **Ticket Action Label** — Simplified "Raise Issue Ticket" action button label to "Raise Ticket".
+- **User Management Types** — Extended user models with `is_active`, `offboarded_at`, `offboarded_by`, and `offboard_reason`.
+
+### Fixed
+
+- **Site Duty Foreign Key Repair** — Added self-healing database migration to repair dangling foreign key references in `site_duty_applications`.
+- **Site Duty & Leave Simulated Hours** — Fixed simulated check-out times and log calculations for "On Leave" and "Site Duty" records to match exact shift base duration (8 hours).
+- **Employee Individual Attendance View** — Fixed daily calculation and status rendering for individual employee attendance screens.
+- **Factory Midnight Rollover** — Yesterday shift override now correctly determines midnight-crossing for punches after midnight.
 
 ---
 
