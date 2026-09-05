@@ -42,10 +42,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Auth guard** — Inactive users blocked from login via JWT `is_active` check
 - **Ticket assignee filtering** — Offboarded users excluded from executive/IT assignee dropdowns
 - **CI checks workflow** — Automated pre-merge gates: Prettier formatting check, ESLint error check, TypeScript + Vite build, and npm audit (moderate+)
-- **CODEOWNERS** — Mandatory review enforcement for `@Harisco-it` and `@Mohaid01` on all PRs to `main`
+- **CODEOWNERS** — Mandatory review enforcement for `@Harisco-it` and `@Mohaid01` on all pull requests
+- **Leave Application Attachment** — Added optional attachment field support to `LeaveApplication` type definition.
+- **Backend Ticket Type Alignment** — Synchronized server `TicketTypes` union with frontend types to support `email`, `installation`, and `others`.
 
 ### Fixed
 
+- **Initial Ticket Creation Status** — Fixed `POST /api/tickets` API response to return status `open` matching the database record, ensuring newly raised tickets immediately reflect as "Open / Unassigned" without needing a page refresh.
+- **Ticket Details Content Rendering** — Fixed conditional rendering in `TicketDetails` so descriptions and software lists display properly for `installation`, `email`, and `others` ticket categories.
 - **Site Duty & Leave simulated hours** — Fixed simulated check-out times and individual log calculations for "On Leave" and "Site Duty" statuses to represent exactly the shift base hours (e.g. 8 hours) instead of 8.5 hours.
 - **Factory midnight rollover** — Yesterday shift override now correctly determines midnight-crossing for punches after midnight
 
