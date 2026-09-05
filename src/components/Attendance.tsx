@@ -906,15 +906,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
       hours: 0,
       status: isHoliday ? 'Holiday' : isWeekend ? 'Weekend' : 'No Data',
     };
-  }, [
-    selectedEmployee,
-    logs,
-    shiftOverrides,
-    defaultFallbackShift,
-    holidays,
-    parseLogPKT,
-    tick,
-  ]);
+  }, [selectedEmployee, logs, shiftOverrides, defaultFallbackShift, holidays, parseLogPKT, tick]);
 
   const individualStats = useMemo(() => {
     let present = 0;

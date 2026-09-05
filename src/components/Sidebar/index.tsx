@@ -188,7 +188,7 @@ export const Header: React.FC<HeaderProps> = ({
   );
 
   const handleTabChange = (tab: ActiveTab) => {
-    setActiveTab({tab});
+    setActiveTab({ tab });
     setOpenDropdown(null);
     setMobileMenuOpen(false);
   };

@@ -149,7 +149,7 @@ function App() {
 
   const initialTab = getInitialTab();
 
-  const [token, setToken,] = useState<string | null>(localStorage.getItem('harisco_token'));
+  const [token, setToken] = useState<string | null>(localStorage.getItem('harisco_token'));
   const [notices, setNotices] = useState<Notice[]>([]);
   const [isCreateNoticeOpen, setIsCreateNoticeOpen] = useState(false);
   const [selectedNoticeId, setSelectedNoticeId] = useState<string | null>(null);
@@ -208,14 +208,14 @@ function App() {
     []
   );
 
-interface RouteState {
-  tab: ActiveTab;
-  ticketId?: string | null;
-  attendanceView?: 'summary' | 'individual';
-  attendanceUserId?: string;
-};
+  interface RouteState {
+    tab: ActiveTab;
+    ticketId?: string | null;
+    attendanceView?: 'summary' | 'individual';
+    attendanceUserId?: string;
+  }
 
-const navigateToTab = ({tab, ticketId, attendanceView, attendanceUserId}: RouteState): void => {
+  const navigateToTab = ({ tab, ticketId, attendanceView, attendanceUserId }: RouteState): void => {
     const path = tabToPath(tab, ticketId, attendanceView, attendanceUserId);
     window.history.pushState({}, '', path);
     setActiveTab(tab);
@@ -341,7 +341,7 @@ const navigateToTab = ({tab, ticketId, attendanceView, attendanceUserId}: RouteS
         }
 
         if (user.role.includes('factory')) {
-          navigateToTab({tab: 'factory_attendance'});
+          navigateToTab({ tab: 'factory_attendance' });
         }
 
         // Fetch Notices
@@ -551,14 +551,14 @@ const navigateToTab = ({tab, ticketId, attendanceView, attendanceUserId}: RouteS
     localStorage.setItem('harisco_token', newToken);
     setToken(newToken);
     setCurrentUser(user);
-    navigateToTab({tab: 'noticeboard'});
+    navigateToTab({ tab: 'noticeboard' });
   };
 
   const handlePasswordResetSuccess = (newToken: string, updatedUser: AppUser) => {
     localStorage.setItem('harisco_token', newToken);
     setToken(newToken);
     setCurrentUser(updatedUser);
-    navigateToTab({tab: 'noticeboard'});
+    navigateToTab({ tab: 'noticeboard' });
   };
 
   // Handle Logout
@@ -572,7 +572,7 @@ const navigateToTab = ({tab, ticketId, attendanceView, attendanceUserId}: RouteS
     setAdminTickets([]);
     setSelectedTicketId(null);
     setSelectedAdminTicketId(null);
-    navigateToTab({tab:'noticeboard'});
+    navigateToTab({ tab: 'noticeboard' });
   };
 
   // Noticeboard-releveant API calls
