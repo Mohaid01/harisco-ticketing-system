@@ -128,7 +128,6 @@ export interface LeaveApplication {
   attachment?: string | null;
   status: ApplicationStatus;
   appliedAt: string;
-  attachment?: string | null;
 }
 
 export interface SiteDutyApplication {
