@@ -828,21 +828,93 @@ export const Attendance: React.FC<AttendanceProps> = ({
 
   // Today's specific shift progress calculations
   const todayShiftProgress = useMemo(() => {
-    if (!selectedEmployeePunchLogs.length) return { hours: 0, firstIn: '--', lastOut: '--' };
+    if (!selectedEmployee) return { hours: 0, firstIn: '--', lastOut: '--', status: 'No Data' };
 
     const todayStr = new Intl.DateTimeFormat('en-CA', {
       timeZone: 'Asia/Karachi',
     }).format(new Date());
 
-    const todayLog = selectedEmployeePunchLogs.find((r) => r.date === todayStr);
+    const uId = selectedEmployee.id;
+    const formattedCode = selectedEmployee.formattedCode;
+    const userLogs = logs.filter(
+      (log) =>
+        log.userId === uId ||
+        log.userId === selectedEmployee.username ||
+        formatEmployeeCode(log.userId) === formattedCode
+    );
+
+    const todayShift = getEffectiveShift(
+      selectedEmployee.defaultShift || defaultFallbackShift,
+      shiftOverrides,
+      todayStr
+    );
+    const todayPunches = userLogs.filter((log) => getLogShiftDate(log, todayShift, parseLogPKT) === todayStr);
+
+    if (todayPunches.length > 0) {
+      const sorted = [...todayPunches].sort((a, b) => {
+        const tA = parseLogPKT(a).timestamp;
+        const tB = parseLogPKT(b).timestamp;
+        return tA.localeCompare(tB);
+      });
+
+      const first = sorted[0];
+      const last = sorted.length > 1 ? sorted[sorted.length - 1] : null;
+
+      const firstInTime = parseLogPKT(first).time;
+      const lastOutTime = last ? parseLogPKT(last).time : '--';
+
+      let hours = 0;
+      const firstStr = parseLogPKT(first).timestamp;
+      const fDate = new Date(firstStr.replace(' ', 'T'));
+
+      if (last) {
+        const lastStr = parseLogPKT(last).timestamp;
+        const lDate = new Date(lastStr.replace(' ', 'T'));
+        if (!isNaN(fDate.getTime()) && !isNaN(lDate.getTime())) {
+          hours = (lDate.getTime() - fDate.getTime()) / (1000 * 60 * 60);
+        }
+      } else {
+        const currDate = new Date();
+        if (!isNaN(fDate.getTime())) {
+          hours = Math.max(0, (currDate.getTime() - fDate.getTime()) / (1000 * 60 * 60));
+        }
+      }
+
+      let finalFirstIn = firstInTime;
+      let finalLastOut = lastOutTime;
+
+      if (first.status === 'Site Duty' || first.status === 'On Leave') {
+        finalFirstIn = 'N/A';
+        finalLastOut = 'N/A';
+      }
+
+      return {
+        firstIn: finalFirstIn,
+        lastOut: finalLastOut,
+        hours: Math.round(hours * 100) / 100,
+        status: selectedEmployee.todayStatus || 'Present',
+      };
+    }
+
+    const isHoliday = holidays.find((h) => h.date === todayStr);
+    const pktNow = new Date(new Date().getTime() + 5 * 60 * 60 * 1000);
+    const isWeekend = pktNow.getUTCDay() === 0;
 
     return {
-      firstIn: todayLog ? todayLog.firstIn : '--',
-      lastOut: todayLog ? todayLog.lastOut : '--',
-      hours: todayLog ? todayLog.hours : 0,
-      status: todayLog ? todayLog.status : 'No Data',
+      firstIn: '--',
+      lastOut: '--',
+      hours: 0,
+      status: isHoliday ? 'Holiday' : isWeekend ? 'Weekend' : 'No Data',
     };
-  }, [selectedEmployeePunchLogs, tick]);
+  }, [
+    selectedEmployee,
+    logs,
+    shiftOverrides,
+    defaultFallbackShift,
+    holidays,
+    parseLogPKT,
+    tick,
+  ]);
 
   const individualStats = useMemo(() => {
     let present = 0;
