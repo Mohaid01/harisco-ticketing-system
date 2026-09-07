@@ -1202,12 +1202,13 @@ function App() {
     userId: string,
     data: {
       name: string;
-      email: string | null;
+      email?: string | null;
       department?: string | null;
       designation?: string | null;
       avatar?: string | null;
-      isDepartmentHead?: boolean;
-      loginEnabled?: boolean;
+      role?: string | null;
+      isDepartmentHead: boolean;
+      loginEnabled: boolean;
     }
   ) => {
     if (!token || !currentUser) return;
@@ -1237,6 +1238,7 @@ function App() {
                 department: updatedUser.department,
                 designation: updatedUser.designation,
                 avatar: updatedUser.avatar,
+                role: updatedUser.role,
                 isDepartmentHead: updatedUser.isDepartmentHead,
                 loginEnabled: updatedUser.loginEnabled,
               }
