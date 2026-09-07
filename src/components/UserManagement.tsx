@@ -74,7 +74,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
   const [editAvatar, setEditAvatar] = useState('');
   const [editIsDepartmentHead, setEditIsDepartmentHead] = useState(false);
   const [editLoginEnabled, setEditLoginEnabled] = useState(true);
-  const[editRole,setEditRole] = useState('');
+  const [editRole, setEditRole] = useState('');
 
   const todayStr = new Date().toISOString().split('T')[0];
 
@@ -161,7 +161,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
         department: editDepartment.trim() || null,
         designation: editDesignation.trim() || null,
         avatar: editAvatar || null,
-        role: editRole as UserRole || null,
+        role: (editRole as UserRole) || null,
         isDepartmentHead: editIsDepartmentHead,
         loginEnabled: editLoginEnabled,
       });

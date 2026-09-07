@@ -288,7 +288,7 @@ router.put(
       return;
     }
 
-       if (!role || !role.trim()) {
+    if (!role || !role.trim()) {
       res.status(400).json({ error: 'Role is required.' });
       return;
     }
@@ -327,7 +327,7 @@ router.put(
           role,
           userId,
         ]
-);
+      );
 
       if (result.changes === 0) {
         res.status(404).json({ error: 'User not found.' });
