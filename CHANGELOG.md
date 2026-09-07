@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **User Role Management** — Added the ability to update and change roles for active users within the User Edit interface.
 - **New Ticket Types** — Added `email`, `installation`, and `others` options to `TicketType` with corresponding DB schema migrations and form inputs.
 - **Date Range Filters** — Integrated `From`/`To` date range filters in both standard `TicketList` and `AdminTicketList` components.
 - **Admin ticket state reversion** — Managers can revert an admin ticket to its previous state; tickets with no recorded previous state revert to Open (awaiting_admin_manager). Revert is blocked for tickets already in their initial state.
