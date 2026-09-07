@@ -25,13 +25,7 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({ isOpen, onClose,
     const finalDescription = description.trim();
     let finalJustification = justification.trim();
 
-    if (
-      type === 'hardware' ||
-      type === 'software' ||
-      type === 'email' ||
-      type === 'others' ||
-      type === 'installation'
-    ) {
+    if (type === 'hardware' || type === 'software' || type === 'email' || type === 'others') {
       if (!finalDescription) {
         setErrorMsg('Details are required.');
         return;

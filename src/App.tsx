@@ -208,14 +208,12 @@ function App() {
     []
   );
 
-  interface RouteState {
-    tab: ActiveTab;
-    ticketId?: string | null;
-    attendanceView?: 'summary' | 'individual';
-    attendanceUserId?: string;
-  }
-
-  const navigateToTab = ({ tab, ticketId, attendanceView, attendanceUserId }: RouteState): void => {
+ const navigateToTab = (
+    tab: ActiveTab,
+    ticketId?: string | null,
+    attendanceView?: 'summary' | 'individual',
+    attendanceUserId?: string
+  ) => {
     const path = tabToPath(tab, ticketId, attendanceView, attendanceUserId);
     window.history.pushState({}, '', path);
     setActiveTab(tab);
@@ -285,10 +283,13 @@ function App() {
   useEffect(() => {
     const handlePopState = () => {
       const { tab, ticketId, attendanceUserId, attendanceView } = pathToTab(window.location.pathname);
-      if (!currentUser || canUserAccessTab(tab, currentUser.role, currentUser.department ?? undefined)) {
-        setActiveTab(tab);
+       if (!currentUser || !canUserAccessTab(tab, currentUser.role, currentUser.department ?? undefined)) { setActiveTab(tab);
         setSelectedTicketId(tab === 'tickets' ? ticketId : null);
         setSelectedAdminTicketId(tab === 'admin_tickets' ? ticketId : null);
+         if (tab === 'attendance' || tab === 'factory_attendance') {
+          setAttendanceViewMode(attendanceView || 'summary');
+          setAttendanceSelectedUserId(attendanceUserId);
+        }
         if (tab === 'attendance' || tab === 'factory_attendance') {
           setAttendanceViewMode(attendanceView || 'summary');
           setAttendanceSelectedUserId(attendanceUserId);
@@ -341,8 +342,7 @@ function App() {
         }
 
         if (user.role.includes('factory')) {
-          navigateToTab({ tab: 'factory_attendance' });
-        }
+ navigateToTab('factory_attendance');        }
 
         // Fetch Notices
         const noticesRes = await fetch('/api/notices', {
@@ -551,15 +551,13 @@ function App() {
     localStorage.setItem('harisco_token', newToken);
     setToken(newToken);
     setCurrentUser(user);
-    navigateToTab({ tab: 'noticeboard' });
-  };
+    navigateToTab('noticeboard');  };
 
   const handlePasswordResetSuccess = (newToken: string, updatedUser: AppUser) => {
     localStorage.setItem('harisco_token', newToken);
     setToken(newToken);
     setCurrentUser(updatedUser);
-    navigateToTab({ tab: 'noticeboard' });
-  };
+    navigateToTab('noticeboard');  };
 
   // Handle Logout
   const handleLogout = () => {
@@ -572,8 +570,7 @@ function App() {
     setAdminTickets([]);
     setSelectedTicketId(null);
     setSelectedAdminTicketId(null);
-    navigateToTab({ tab: 'noticeboard' });
-  };
+    navigateToTab('noticeboard');  };
 
   // Noticeboard-releveant API calls
 

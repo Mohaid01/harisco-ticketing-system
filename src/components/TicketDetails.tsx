@@ -316,10 +316,7 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
             ) : (
               <>
                 {/* Conditional Details Based on Ticket Type */}
-                {(ticket.type === 'hardware' ||
-                  ticket.type === 'software' ||
-                  ticket.type === 'email' ||
-                  ticket.type === 'others') && (
+                {(ticket.type === 'hardware' || ticket.type === 'software') && (
                   <>
                     <h3
                       style={{
@@ -328,17 +325,13 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
                         margin: '0 0 0.425rem 0',
                       }}
                     >
-                      {ticket.type === 'email'
-                        ? 'Email Issue Details'
-                        : ticket.type === 'others'
-                          ? 'Issue Details'
-                          : 'Problem Details'}
+                      Problem Details
                     </h3>
                     <div className="desc-card">{ticket.description}</div>
                   </>
                 )}
 
-                {(ticket.type === 'maintenance' || ticket.type === 'installation') && (
+                {ticket.type === 'maintenance' && (
                   <>
                     <h3
                       style={{

@@ -195,7 +195,7 @@ router.post(
         title: ticketId,
         description,
         type,
-        status: 'open',
+        status: 'awaiting_it_approval',
         justification,
         createdAt: timestamp,
         updatedAt: timestamp,

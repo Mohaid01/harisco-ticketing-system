@@ -144,7 +144,7 @@ export async function initDb() {
       id TEXT PRIMARY KEY,
       title TEXT NOT NULL,
       description TEXT NOT NULL,
-      type TEXT CHECK(type IN ('hardware', 'software', 'maintenance', 'upgrade', 'email', 'installation', 'others')) NOT NULL,
+      type TEXT CHECK(type IN ('hardware', 'software', 'maintenance', 'upgrade', 'email', 'others')) NOT NULL,
       status TEXT CHECK(status IN ('open', 'awaiting_it_approval', 'awaiting_manager_approval', 'awaiting_handover', 'closed')) NOT NULL,
       justification TEXT NOT NULL,
       createdAt TEXT NOT NULL,
@@ -167,17 +167,12 @@ export async function initDb() {
   // MIGRATION: Update 'type' CHECK constraint for EXISTING databases
 
   try {
-    // Check if existing table definition contains all types (e.g., 'email', 'others', 'installation')
+    // Check if existing table definition contains the new types (e.g., 'email')
     const ticketTable = await db.get<{ sql: string }>(
       "SELECT sql FROM sqlite_master WHERE type='table' AND name='tickets'"
     );
 
-    if (
-      ticketTable?.sql &&
-      (!ticketTable.sql.includes('email') ||
-        !ticketTable.sql.includes('others') ||
-        !ticketTable.sql.includes('installation'))
-    ) {
+    if (ticketTable?.sql && (!ticketTable.sql.includes('email') || !ticketTable.sql.includes('others'))) {
       await db.exec(`
       PRAGMA foreign_keys=OFF;
       BEGIN TRANSACTION;
@@ -186,7 +181,7 @@ export async function initDb() {
         id TEXT PRIMARY KEY,
         title TEXT NOT NULL,
         description TEXT NOT NULL,
-        type TEXT CHECK(type IN ('hardware', 'software', 'maintenance', 'upgrade', 'email', 'installation', 'others')) NOT NULL,
+        type TEXT CHECK(type IN ('hardware', 'software', 'maintenance', 'upgrade', 'email', 'others')) NOT NULL,
         status TEXT CHECK(status IN ('open', 'awaiting_it_approval', 'awaiting_manager_approval', 'awaiting_handover', 'closed')) NOT NULL,
         justification TEXT NOT NULL,
         createdAt TEXT NOT NULL,
@@ -204,9 +199,8 @@ export async function initDb() {
       ALTER TABLE tickets_new RENAME TO tickets;
 
       COMMIT;
-      PRAGMA foreign_keys=ON;
+      PRAGMA foreign_keys=OFF;
     `);
-      logger.info('Migrated tickets table type CHECK constraint to include installation, email, and others.');
     }
   } catch (err) {
     logger.error('Failed to migrate tickets type constraint:', err);
