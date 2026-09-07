@@ -208,7 +208,7 @@ function App() {
     []
   );
 
- const navigateToTab = (
+  const navigateToTab = (
     tab: ActiveTab,
     ticketId?: string | null,
     attendanceView?: 'summary' | 'individual',
@@ -283,10 +283,11 @@ function App() {
   useEffect(() => {
     const handlePopState = () => {
       const { tab, ticketId, attendanceUserId, attendanceView } = pathToTab(window.location.pathname);
-       if (!currentUser || !canUserAccessTab(tab, currentUser.role, currentUser.department ?? undefined)) { setActiveTab(tab);
+      if (!currentUser || !canUserAccessTab(tab, currentUser.role, currentUser.department ?? undefined)) {
+        setActiveTab(tab);
         setSelectedTicketId(tab === 'tickets' ? ticketId : null);
         setSelectedAdminTicketId(tab === 'admin_tickets' ? ticketId : null);
-         if (tab === 'attendance' || tab === 'factory_attendance') {
+        if (tab === 'attendance' || tab === 'factory_attendance') {
           setAttendanceViewMode(attendanceView || 'summary');
           setAttendanceSelectedUserId(attendanceUserId);
         }
@@ -342,7 +343,8 @@ function App() {
         }
 
         if (user.role.includes('factory')) {
- navigateToTab('factory_attendance');        }
+          navigateToTab('factory_attendance');
+        }
 
         // Fetch Notices
         const noticesRes = await fetch('/api/notices', {
@@ -551,13 +553,15 @@ function App() {
     localStorage.setItem('harisco_token', newToken);
     setToken(newToken);
     setCurrentUser(user);
-    navigateToTab('noticeboard');  };
+    navigateToTab('noticeboard');
+  };
 
   const handlePasswordResetSuccess = (newToken: string, updatedUser: AppUser) => {
     localStorage.setItem('harisco_token', newToken);
     setToken(newToken);
     setCurrentUser(updatedUser);
-    navigateToTab('noticeboard');  };
+    navigateToTab('noticeboard');
+  };
 
   // Handle Logout
   const handleLogout = () => {
@@ -570,7 +574,8 @@ function App() {
     setAdminTickets([]);
     setSelectedTicketId(null);
     setSelectedAdminTicketId(null);
-    navigateToTab('noticeboard');  };
+    navigateToTab('noticeboard');
+  };
 
   // Noticeboard-releveant API calls
 
