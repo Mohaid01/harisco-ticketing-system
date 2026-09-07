@@ -173,6 +173,7 @@ export interface LeaveApplication {
   startDate: string;
   endDate: string;
   reason: string;
+  attachment?: string | null;
   status: LeaveStatus;
   appliedAt: string;
 }
