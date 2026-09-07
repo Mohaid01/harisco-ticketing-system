@@ -570,7 +570,6 @@ function App() {
     setCurrentUser(null);
     setTickets([]);
     setUsers([]);
-    setFactoryUsers([]);
     setAdminTickets([]);
     setSelectedTicketId(null);
     setSelectedAdminTicketId(null);
