@@ -32,10 +32,11 @@ interface UserManagementProps {
       name: string;
       email: string | null;
       department?: string | null;
+      role: UserRole | null;
       designation?: string | null;
       avatar?: string | null;
-      isDepartmentHead?: boolean;
-      loginEnabled?: boolean;
+      isDepartmentHead: boolean;
+      loginEnabled: boolean;
     }
   ) => void;
   loading?: boolean;
@@ -73,6 +74,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
   const [editAvatar, setEditAvatar] = useState('');
   const [editIsDepartmentHead, setEditIsDepartmentHead] = useState(false);
   const [editLoginEnabled, setEditLoginEnabled] = useState(true);
+  const[editRole,setEditRole] = useState('');
 
   const todayStr = new Date().toISOString().split('T')[0];
 
@@ -159,6 +161,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
         department: editDepartment.trim() || null,
         designation: editDesignation.trim() || null,
         avatar: editAvatar || null,
+        role: editRole as UserRole || null,
         isDepartmentHead: editIsDepartmentHead,
         loginEnabled: editLoginEnabled,
       });
@@ -588,6 +591,37 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                         <option value="Telecom">Telecom</option>
                         <option value="HSE">HSE</option>
                         <option value="Projects">Projects</option>
+                      </select>
+                    </div>
+                    <div className="form-group" style={{ marginBottom: '0.6375rem' }}>
+                      <label
+                        className="form-label"
+                        style={{
+                          ...inlineLabelStyle,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.2125rem',
+                        }}
+                      >
+                        <Briefcase size={12} /> Role
+                      </label>
+                      <select
+                        className="form-input"
+                        style={{
+                          ...inlineInputStyle,
+                          backgroundColor: 'var(--bg-primary)',
+                        }}
+                        value={editRole}
+                        onChange={(e) => setEditRole(e.target.value)}
+                        required
+                      >
+                        <option value="" selected disabled>
+                          -- Select Role --
+                        </option>
+                        <option value="it">IT</option>
+                        <option value="employee">Employee</option>
+                        <option value="manager">Manager</option>
+                        <option value="executive">Executive</option>
                       </select>
                     </div>
                     <div className="form-group" style={{ marginBottom: '0.6375rem' }}>
