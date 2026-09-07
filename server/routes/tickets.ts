@@ -195,7 +195,6 @@ router.post(
         title: ticketId,
         description,
         type,
-        status: 'open',
         justification,
         createdAt: timestamp,
         updatedAt: timestamp,
