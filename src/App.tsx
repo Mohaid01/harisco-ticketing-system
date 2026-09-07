@@ -291,10 +291,6 @@ function App() {
           setAttendanceViewMode(attendanceView || 'summary');
           setAttendanceSelectedUserId(attendanceUserId);
         }
-        if (tab === 'attendance' || tab === 'factory_attendance') {
-          setAttendanceViewMode(attendanceView || 'summary');
-          setAttendanceSelectedUserId(attendanceUserId);
-        }
       } else {
         const fallback = getSafeFallbackTab(currentUser!.role);
         const path = tabToPath(fallback);
@@ -570,6 +566,7 @@ function App() {
     setCurrentUser(null);
     setTickets([]);
     setUsers([]);
+    setFactoryUsers([]);
     setAdminTickets([]);
     setSelectedTicketId(null);
     setSelectedAdminTicketId(null);
