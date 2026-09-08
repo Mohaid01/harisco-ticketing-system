@@ -4,7 +4,7 @@ import { IncomingMessage } from 'http';
 
 type UserRoles = 'it' | 'employee' | 'manager' | 'executive' | 'factory_employee' | 'factory_it' | 'factory_manager';
 
-type TicketTypes = 'hardware' | 'software' | 'maintenance' | 'upgrade';
+type TicketTypes = 'hardware' | 'software' | 'maintenance' | 'upgrade' | 'installation' | 'email' | 'others';
 
 type LeaveCategories = 'annual' | 'casual' | 'medical';
 

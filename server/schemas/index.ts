@@ -66,13 +66,13 @@ export const updateFactoryUserSchema = z.object({
 // Ticket schemas
 export const createTicketSchema = z.object({
   description: z.string().min(1, 'Description is required'),
-  type: z.enum(['hardware', 'software', 'maintenance', 'upgrade']),
+  type: z.enum(['hardware', 'software', 'maintenance', 'upgrade', 'email', 'installation', 'others']),
   justification: z.string().min(1, 'Justification is required'),
 });
 
 export const updateTicketSchema = z.object({
   description: z.string().min(1, 'Description is required').optional(),
-  type: z.enum(['hardware', 'software', 'maintenance', 'upgrade']).optional(),
+  type: z.enum(['hardware', 'software', 'maintenance', 'upgrade', 'email', 'installation', 'others']).optional(),
   justification: z.string().min(1, 'Justification is required').optional(),
 });
 
