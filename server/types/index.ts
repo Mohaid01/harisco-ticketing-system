@@ -125,6 +125,7 @@ export interface LeaveApplication {
   startDate: string;
   endDate: string;
   reason: string;
+  attachment?: string | null;
   status: ApplicationStatus;
   appliedAt: string;
 }
@@ -421,6 +422,7 @@ export interface CreateLeaveRequestBody {
   startDate: string;
   endDate: string;
   reason: string;
+  attachment?: string | null;
 }
 
 export interface UpdateLeaveStatusRequestBody {
@@ -548,6 +550,7 @@ export interface UpdateUserRequestBody {
   email?: string;
   department?: string | null;
   designation?: string | null;
+  role: string;
   avatar?: string;
   isDepartmentHead?: number | boolean;
   loginEnabled?: number | boolean;
@@ -580,6 +583,7 @@ export interface UpdateUserResponse {
   email: string | null;
   department: string | null;
   designation: string | null;
+  role: string | null;
   avatar?: string;
   isDepartmentHead: number;
   loginEnabled: number;

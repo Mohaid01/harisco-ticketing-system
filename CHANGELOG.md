@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **User Role Management** — Added the ability to update and change roles for active users within the User Edit interface.
 - **Interactive status filtering** — Clicking ticket summary/metric cards in both the standard and Admin ticket list views now dynamically updates the status filter.
 - **Awaiting Executive metric card & status badge** — A new card to track the count of tickets pending executive signoff in the Admin Tickets dashboard, and a matching status badge in the admin ticket table.
 
@@ -24,7 +25,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **New Ticket Types** — Added `email`, `installation`, and `others` options to `TicketType` with corresponding DB schema migrations and form inputs.
+- **Attendance Device Status & RBAC Enforcement** — Added real-time attendance device connection status tracking and enforced strict role-based access control (RBAC) navigation locks.
+- **Leave Details Attachment Preview & Fullscreen Lightbox** — Added medical certificate attachment preview, file download support, and fullscreen image lightbox view for leave applications.
+- **New Ticket Types** — Added `email`, `installation`, and `others` options to `TicketType` with corresponding database schema migrations and form inputs.
 - **Date Range Filters** — Integrated `From`/`To` date range filters in both standard `TicketList` and `AdminTicketList` components.
 - **Admin ticket state reversion** — Managers can revert an admin ticket to its previous state; tickets with no recorded previous state revert to Open (awaiting_admin_manager). Revert is blocked for tickets already in their initial state.
 - **Notice author editing** — Enabled notice authors to edit their own notices via a dedicated edit button.
@@ -46,25 +49,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Leave Application Attachment** — Added optional attachment field support to `LeaveApplication` type definition.
 - **Backend Ticket Type Alignment** — Synchronized server `TicketTypes` union with frontend types to support `email`, `installation`, and `others`.
 
-### Fixed
+### Changed
 
 - **Initial Ticket Creation Status** — Fixed `POST /api/tickets` API response to return status `open` matching the database record, ensuring newly raised tickets immediately reflect as "Open / Unassigned" without needing a page refresh.
 - **Ticket Details Content Rendering** — Fixed conditional rendering in `TicketDetails` so descriptions and software lists display properly for `installation`, `email`, and `others` ticket categories.
 - **Site Duty & Leave simulated hours** — Fixed simulated check-out times and individual log calculations for "On Leave" and "Site Duty" statuses to represent exactly the shift base hours (e.g. 8 hours) instead of 8.5 hours.
 - **Factory midnight rollover** — Yesterday shift override now correctly determines midnight-crossing for punches after midnight
+- **Status Label Standardization** — Standardized ticket status label casing to "In Progress" across status badges, filters, and modals.
+- **Header Title Update** — Updated main navigation header text to "Dashboard".
+- **Device Polling Interval** — Adjusted attendance device background polling interval to 3 minutes for optimized device sync.
+- **Admin Ticket Schema** — Added `previousStatus` column to `admin_tickets` table and corresponding fields in data models and API response types.
+- **Ticket Summary Statistics & Responsiveness** — Updated metric cards to count all tickets regardless of active filters, and enhanced responsive styling for mobile, tablet, and desktop views.
+- **Select & Badge Styling Standardization** — Standardized select styling via `inputFieldStyle` to eliminate duplicated styles, and constrained role-badge container widths to `fit-content`.
+- **Dependency Cleanup** — Removed unused `react-datepicker` dependency.
+- **Ticket Action Label** — Simplified "Raise Issue Ticket" action button label to "Raise Ticket".
+- **User Management Types** — Extended user models with `is_active`, `offboarded_at`, `offboarded_by`, and `offboard_reason`.
 
-### Changed
+### Fixed
 
-- **Admin ticket schema** — Added `previousStatus` column to `admin_tickets` table and corresponding fields in `DbAdminTicket`, `AdminTicketResponse`, and client `AdminTicket` types
-- **Ticket summary statistics** — Updated ticket statistic cards to count all tickets instead of only filtered tickets in both the standard and Admin ticket list screens.
-- **Ticket list responsiveness** — Made the ticket list screen fully responsive for mobile, tablet, and desktop views
-- **TicketList select styling refactored** — Standardized select styling via `inputFieldStyle` to eliminate duplicated styles
-- **Status label renaming** — Renamed the ticket status "Awaiting IT Approval" to "IN Progress" in badges and filter dropdowns.
-- **Ticket list filter UI** — Improved filter layout styling and responsiveness using flex wrap.
-- **Ticket raising action** — Simplified "Raise Issue Ticket" button label to "Raise Ticket".
-- User management actions: added Offboard flow alongside Reset Password and Delete
-- `DbUser` type extended with `is_active`, `offboarded_at`, `offboarded_by`, `offboard_reason`
-- Attendance summary filtering excludes users offboarded before selected month
+- **Site Duty Foreign Key Repair** — Added self-healing database migration to repair dangling foreign key references in `site_duty_applications`.
+- **Site Duty & Leave Simulated Hours** — Fixed simulated check-out times and log calculations for "On Leave" and "Site Duty" records to match exact shift base duration (8 hours).
+- **Employee Individual Attendance View** — Fixed daily calculation and status rendering for individual employee attendance screens.
+- **Factory Midnight Rollover** — Yesterday shift override now correctly determines midnight-crossing for punches after midnight.
 
 ---
 

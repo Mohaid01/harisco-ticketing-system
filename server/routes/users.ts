@@ -281,10 +281,15 @@ router.put(
     }
 
     const userId = String(req.params.id);
-    const { name, email, department, designation, avatar, isDepartmentHead, loginEnabled } = req.body;
+    const { name, email, department, designation, avatar, isDepartmentHead, loginEnabled, role } = req.body;
 
     if (!name || !name.trim()) {
       res.status(400).json({ error: 'Name is required.' });
+      return;
+    }
+
+    if (!role || !role.trim()) {
+      res.status(400).json({ error: 'Role is required.' });
       return;
     }
 
@@ -310,7 +315,7 @@ router.put(
       }
 
       const result = await db.run(
-        'UPDATE users SET name = ?, email = ?, department = ?, designation = ?, avatar = ?, isDepartmentHead = ?, loginEnabled = ? WHERE id = ?',
+        'UPDATE users SET name = ?, email = ?, department = ?, designation = ?, avatar = ?, isDepartmentHead = ?, loginEnabled = ?, role = ? WHERE id = ?',
         [
           name.trim(),
           finalEmail,
@@ -319,6 +324,7 @@ router.put(
           avatar ? avatar.trim() : '',
           normalizedIsDepartmentHead,
           normalizedLoginEnabled,
+          role,
           userId,
         ]
       );
@@ -337,6 +343,7 @@ router.put(
         avatar: avatar ? avatar.trim() : '',
         isDepartmentHead: normalizedIsDepartmentHead,
         loginEnabled: normalizedLoginEnabled,
+        role: role || null,
       };
 
       res.json(response);
