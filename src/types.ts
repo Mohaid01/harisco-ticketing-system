@@ -132,6 +132,7 @@ export type ActiveTab =
   | 'noticeboard'
   | 'tickets'
   | 'admin_tickets'
+  | 'hse_tickets'
   | 'users'
   | 'factory_users'
   | 'activity_log'
@@ -194,6 +195,65 @@ export interface SiteDutyApplication {
 
 // Notice Types
 export type NoticeType = 'outage' | 'maintenance' | 'policy' | 'general';
+
+// HSE Ticket Types
+export type HSECategory =
+  | 'human_resource'
+  | 'hardware_equipment'
+  | 'printed_material'
+  | 'electrical_hazard'
+  | 'general_hse'
+  | 'fire_prevention'
+  | 'hse_audit'
+  | 'ppe'
+  | 'sop_issuance'
+  | 'hse_presentation'
+  | 'third_party_cert'
+  | 'trainings'
+  | 'environmental'
+  | 'demos_drills';
+
+export type HSEStatus =
+  | 'open' | 'escalated' | 'in_progress' | 'rejected' | 'closed';
+
+export interface HSEComment {
+  id: string;
+  ticketId: string;
+  authorId: string;
+  authorName: string;
+  authorRole: UserRole;
+  content: string;
+  createdAt: string;
+}
+
+export interface HSEActivityLog {
+  id: string;
+  ticketId: string;
+  action: string;
+  timestamp: string;
+  performedByName: string;
+  performedByRole: UserRole;
+}
+
+export interface HSETicket {
+  id: string;
+  description: string;
+  category: HSECategory;
+  status: HSEStatus;
+  justification?: string;
+  createdAt: string;
+  updatedAt: string;
+  reporterId: string;
+  reporterName: string;
+  reporterEmail: string;
+  assigneeId?: string;
+  assigneeName?: string;
+  executiveId?: string;
+  executiveName?: string;
+  previousStatus?: string | null;
+  comments: HSEComment[];
+  activityLogs: HSEActivityLog[];
+}
 
 // Notice Interface with explicit language block payloads
 export interface Notice {

@@ -211,3 +211,48 @@ export const updateNoticeSchema = z.object({
 export const resetUserPasswordSchema = z.object({
   newPassword: z.string().min(4, 'Password must be at least 4 characters'),
 });
+
+// HSE Ticket schemas
+export const createHSETicketSchema = z.object({
+  description: z.string().min(1, 'Description is required'),
+  category: z.enum([
+    'human_resource',
+    'hardware_equipment',
+    'printed_material',
+    'electrical_hazard',
+    'general_hse',
+    'fire_prevention',
+    'hse_audit',
+    'ppe',
+    'sop_issuance',
+    'hse_presentation',
+    'third_party_cert',
+    'trainings',
+    'environmental',
+    'demos_drills',
+  ]),
+  justification: z.string().optional(),
+});
+
+export const updateHSEStatusSchema = z.object({
+  status: z.enum(['open', 'escalated', 'in_progress', 'rejected', 'closed']),
+  actionMessage: z.string().min(1, 'Action message is required'),
+  executiveId: z.string().optional().nullable(),
+  executiveName: z.string().optional().nullable(),
+  assigneeId: z.string().optional().nullable(),
+  assigneeName: z.string().optional().nullable(),
+  justification: z.string().optional(),
+});
+
+export const hseTicketCommentSchema = z.object({
+  content: z.string().min(1, 'Comment cannot be empty'),
+});
+
+export const assignHSETicketSchema = z.object({
+  assigneeId: z.string().min(1, 'Assignee ID is required'),
+  assigneeName: z.string().min(1, 'Assignee name is required'),
+});
+
+export const revertHSEStatusSchema = z.object({
+  actionMessage: z.string().min(1, 'Action message is required'),
+});

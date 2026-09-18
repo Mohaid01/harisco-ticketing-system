@@ -798,3 +798,173 @@ export interface DeleteFactoryAttendanceLogResponse {
 }
 
 export type FactoryAttendanceLogsResponse = AttendanceLog[];
+
+// HSE Ticket Types
+export type HSECategory =
+  | 'human_resource'
+  | 'hardware_equipment'
+  | 'printed_material'
+  | 'electrical_hazard'
+  | 'general_hse'
+  | 'fire_prevention'
+  | 'hse_audit'
+  | 'ppe'
+  | 'sop_issuance'
+  | 'hse_presentation'
+  | 'third_party_cert'
+  | 'trainings'
+  | 'environmental'
+  | 'demos_drills';
+
+export type HSEStatus =
+  | 'open' | 'escalated' | 'in_progress' | 'rejected' | 'closed';
+
+export interface DbHSETicket {
+  id: string;
+  description: string;
+  category: string;
+  status: string;
+  justification: string;
+  createdAt: string;
+  updatedAt: string;
+  reporterId: string;
+  reporterName: string;
+  reporterEmail: string;
+  assigneeId: string | null;
+  assigneeName: string | null;
+  executiveId: string | null;
+  executiveName: string | null;
+  previousStatus: string | null;
+}
+
+export interface DbHSEComment {
+  id: string;
+  ticketId: string;
+  authorId: string;
+  authorName: string;
+  authorRole: string;
+  content: string;
+  createdAt: string;
+}
+
+export interface DbHSEActivityLog {
+  id: string;
+  ticketId: string;
+  action: string;
+  timestamp: string;
+  performedByName: string;
+  performedByRole: string;
+}
+
+export interface CreateHSETicketRequestBody {
+  description: string;
+  category: string;
+  justification?: string;
+}
+
+export interface UpdateHSEStatusRequestBody {
+  status: string;
+  actionMessage: string;
+  executiveId?: string;
+  executiveName?: string;
+  assigneeId?: string;
+  assigneeName?: string;
+  quotation?: number | null;
+}
+
+export interface AddHSECommentRequestBody {
+  content: string;
+}
+
+export interface AssignHSETicketRequestBody {
+  assigneeId: string;
+  assigneeName: string;
+}
+
+export interface AssignHSETicketResponse {
+  success: boolean;
+  assigneeId: string;
+  assigneeName: string;
+  status: string;
+  updatedAt: string;
+  newLog: DbHSEActivityLog;
+}
+
+export interface RevertHSEStatusRequestBody {
+  actionMessage: string;
+}
+
+export interface HSETicketResponse {
+  id: string;
+  description: string;
+  category: string;
+  status: string;
+  justification: string;
+  createdAt: string;
+  updatedAt: string;
+  reporterId: string;
+  reporterName: string;
+  reporterEmail: string;
+  assigneeId: string | null;
+  assigneeName: string | null;
+  executiveId: string | null;
+  executiveName: string | null;
+  previousStatus: string | null;
+  comments: DbHSEComment[];
+  activityLogs: DbHSEActivityLog[];
+}
+
+export type HSETicketsResponse = HSETicketResponse[];
+
+export interface CreateHSETicketResponse {
+  id: string;
+  description: string;
+  category: string;
+  status: string;
+  justification: string;
+  createdAt: string;
+  updatedAt: string;
+  reporterId: string;
+  reporterName: string;
+  reporterEmail: string;
+  assigneeId: string | null;
+  assigneeName: string | null;
+  executiveId: string | null;
+  executiveName: string | null;
+  previousStatus: string | null;
+  comments: DbHSEComment[];
+  activityLogs: DbHSEActivityLog[];
+}
+
+export interface UpdateHSEStatusResponse {
+  success: boolean;
+  status: string;
+  previousStatus: string | null;
+  updatedAt: string;
+  executiveId: string | null;
+  executiveName: string | null;
+  newLog: DbHSEActivityLog;
+}
+
+export interface AddHSECommentResponse {
+  id: string;
+  ticketId: string;
+  authorId: string;
+  authorName: string;
+  authorRole: string;
+  content: string;
+  createdAt: string;
+}
+
+export interface DeleteHSETicketResponse {
+  success: boolean;
+  message: string;
+}
+
+export interface RevertHSEStatusResponse {
+  success: boolean;
+  status: string;
+  previousStatus: string | null;
+  updatedAt: string;
+  newLog: DbHSEActivityLog;
+}

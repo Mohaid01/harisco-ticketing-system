@@ -1,4 +1,4 @@
-import type { AdminTicketCategory, AdminTicketStatus, AppUser, TicketStatus, TicketType, UserRole } from './types';
+import type { AdminTicketCategory, AdminTicketStatus, AppUser, HSECategory, HSEStatus, TicketStatus, TicketType, UserRole } from './types';
 
 // Brand Configuration
 export const PRIMARY_COLOR = '#0e529b';
@@ -192,5 +192,81 @@ export const INITIAL_USERS: AppUser[] = [
     name: 'James Harrison',
     email: 'james.h@harisco.com',
     role: 'employee',
+  },
+];
+
+// HSE Ticket Constants
+export const HSE_CATEGORY_LABELS: Record<HSECategory, string> = {
+  human_resource: 'Human Resource Requirement',
+  hardware_equipment: 'Hardware Equipment Requirement',
+  printed_material: 'Printed Material Requirement',
+  electrical_hazard: 'Electrical Hazard',
+  general_hse: 'General HSE Issue',
+  fire_prevention: 'Fire Prevention',
+  hse_audit: 'HSE Audit',
+  ppe: 'PPEs',
+  sop_issuance: 'Issuance of SOPs, Plans, Procedures, Formats & Reports',
+  hse_presentation: 'HSE Presentation',
+  third_party_cert: 'Third Party Certification',
+  trainings: 'Trainings',
+  environmental: 'Environmental',
+  demos_drills: 'Demos and Drills',
+};
+
+export const HSE_CATEGORY_OPTIONS = [
+  { value: 'human_resource' as HSECategory, label: 'Human Resource Requirement' },
+  { value: 'hardware_equipment' as HSECategory, label: 'Hardware Equipment Requirement' },
+  { value: 'printed_material' as HSECategory, label: 'Printed Material Requirement' },
+  { value: 'electrical_hazard' as HSECategory, label: 'Electrical Hazard' },
+  { value: 'general_hse' as HSECategory, label: 'General HSE Issue' },
+  { value: 'fire_prevention' as HSECategory, label: 'Fire Prevention' },
+  { value: 'hse_audit' as HSECategory, label: 'HSE Audit' },
+  { value: 'ppe' as HSECategory, label: 'PPEs' },
+  { value: 'sop_issuance' as HSECategory, label: 'Issuance of SOPs, Plans, Procedures, Formats & Reports' },
+  { value: 'hse_presentation' as HSECategory, label: 'HSE Presentation' },
+  { value: 'third_party_cert' as HSECategory, label: 'Third Party Certification' },
+  { value: 'trainings' as HSECategory, label: 'Trainings' },
+  { value: 'environmental' as HSECategory, label: 'Environmental' },
+  { value: 'demos_drills' as HSECategory, label: 'Demos and Drills' },
+];
+
+export const HSE_STATUS_LABELS: Record<HSEStatus, string> = {
+  open: 'Open',
+  escalated: 'Escalated',
+  in_progress: 'In Progress',
+  rejected: 'Rejected',
+  closed: 'Closed',
+};
+
+export const HSE_STATUS_OPTIONS = [
+  {
+    value: 'open' as HSEStatus,
+    label: 'Open',
+    color: '#0e529b',
+    bg: 'rgba(14, 82, 155, 0.12)',
+  },
+  {
+    value: 'escalated' as HSEStatus,
+    label: 'Escalated',
+    color: '#f59e0b',
+    bg: 'rgba(245, 158, 11, 0.12)',
+  },
+  {
+    value: 'in_progress' as HSEStatus,
+    label: 'In Progress',
+    color: '#06b6d4',
+    bg: 'rgba(6, 182, 212, 0.12)',
+  },
+  {
+    value: 'rejected' as HSEStatus,
+    label: 'Rejected',
+    color: '#ef4444',
+    bg: 'rgba(239, 68, 68, 0.12)',
+  },
+  {
+    value: 'closed' as HSEStatus,
+    label: 'Closed',
+    color: '#10b981',
+    bg: 'rgba(16, 185, 129, 0.12)',
   },
 ];

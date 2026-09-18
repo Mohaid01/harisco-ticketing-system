@@ -6,6 +6,9 @@ import type {
   AdminTicketCategory,
   AdminTicketStatus,
   AppUser,
+  HSECategory,
+  HSEStatus,
+  HSETicket,
   Notice,
   Ticket,
   TicketStatus,
@@ -17,17 +20,20 @@ import { AdminTicketDetails } from './components/AdminTicketDetails';
 import { AdminTicketList } from './components/AdminTicketList';
 import { Attendance } from './components/Attendance';
 import { FactoryUserManagement } from './components/FactoryUserManagement';
+import { HSETicketDetails } from './components/HSETicketDetails';
+import { HSETicketList } from './components/HSETicketList';
 import { ChangePasswordModal } from './components/Modals/ChangePasswordModal';
 import { CreateNoticeModal } from './components/Modals/CreateNoticeModal';
 import { EditNoticeModal } from './components/Modals/EditNoticeModal';
 import { NewAdminTicketModal } from './components/Modals/NewAdminTicketModal';
+import { NewHSETicketModal } from './components/Modals/NewHSETicketModal';
 import { NewTicketModal } from './components/Modals/NewTicketModal';
 import { PasswordReset } from './components/PasswordReset';
 import { Header } from './components/Sidebar';
 import { TicketDetails } from './components/TicketDetails';
 import { TicketList } from './components/TicketList';
 import { UserManagement } from './components/UserManagement';
-import { ADMIN_TICKET_STATUS_LABELS, APP_TITLE, STATUS_LABELS } from './constants';
+import { ADMIN_TICKET_STATUS_LABELS, APP_TITLE, HSE_STATUS_LABELS, STATUS_LABELS } from './constants';
 import { ActivityLog } from './tabs/ActivityLogs';
 import { LeaveManagement } from './tabs/LeaveManagement';
 import { Login } from './tabs/Login';
@@ -42,6 +48,8 @@ function canUserAccessTab(tab: ActiveTab, role: UserRole, department: string | u
       return ['it', 'employee', 'manager', 'executive'].includes(role);
     case 'admin_tickets':
       return ['it', 'executive', 'manager', 'employee'].includes(role);
+    case 'hse_tickets':
+      return role === 'executive' || department === 'HSE';
     case 'users':
       return role === 'it';
     case 'activity_log':
@@ -81,6 +89,7 @@ function pathToTab(pathname: string): {
     noticeboard: 'noticeboard',
     tickets: 'tickets',
     'admin-tickets': 'admin_tickets',
+    'hse-tickets': 'hse_tickets',
     users: 'users',
     'activity-log': 'activity_log',
     attendance: 'attendance',
@@ -121,7 +130,7 @@ function tabToPath(
   attendanceUserId?: string
 ): string {
   const base = `/${tab.replace('_', '-')}`;
-  if ((tab === 'tickets' || tab === 'admin_tickets') && ticketId) {
+  if ((tab === 'tickets' || tab === 'admin_tickets' || tab === 'hse_tickets') && ticketId) {
     return `${base}/${ticketId}`;
   }
   if (tab === 'attendance' || tab === 'factory_attendance') {
@@ -167,6 +176,10 @@ function App() {
   const [adminSearchQuery, setAdminSearchQuery] = useState<string>('');
   const [selectedAdminTicketId, setSelectedAdminTicketId] = useState<string | null>(initialTab.ticketId);
   const [isCreateAdminModalOpen, setIsCreateAdminModalOpen] = useState<boolean>(false);
+  const [hseTickets, setHseTickets] = useState<HSETicket[]>([]);
+  const [selectedHSETicketId, setSelectedHSETicketId] = useState<string | null>(null);
+  const [hseSearchQuery, setHseSearchQuery] = useState<string>('');
+  const [isCreateHSEModalOpen, setIsCreateHSEModalOpen] = useState<boolean>(false);
   const [attendanceViewMode, setAttendanceViewMode] = useState<'summary' | 'individual'>(
     initialTab.attendanceView || 'summary'
   );
@@ -231,8 +244,9 @@ function App() {
     const path = tabToPath(tab, ticketId);
     window.history.pushState({}, '', path);
     setActiveTab(tab);
-    setSelectedTicketId(tab === 'tickets' ? ticketId : null);
-    setSelectedAdminTicketId(tab === 'admin_tickets' ? ticketId : null);
+    if (tab === 'tickets') setSelectedTicketId(ticketId);
+    if (tab === 'admin_tickets') setSelectedAdminTicketId(ticketId);
+    if (tab === 'hse_tickets') setSelectedHSETicketId(ticketId);
   };
 
   const navigateBackToList = () => {
@@ -240,6 +254,7 @@ function App() {
     window.history.pushState({}, '', path);
     setSelectedTicketId(null);
     setSelectedAdminTicketId(null);
+    setSelectedHSETicketId(null);
     if (activeTab === 'attendance' || activeTab === 'factory_attendance') {
       setAttendanceViewMode('summary');
       setAttendanceSelectedUserId(undefined);
@@ -369,6 +384,15 @@ function App() {
         if (adminTicketsRes.ok) {
           const adminTicketsData = await adminTicketsRes.json();
           setAdminTickets(adminTicketsData);
+        }
+
+        // Fetch HSE tickets
+        const hseTicketsRes = await fetch('/api/hse-tickets', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (hseTicketsRes.ok) {
+          const hseTicketsData = await hseTicketsRes.json();
+          setHseTickets(hseTicketsData);
         }
 
         // Fetch users
@@ -511,10 +535,74 @@ function App() {
     return () => eventSource.close();
   }, [token]);
 
+  // SSE-based real-time updates for HSE tickets
+  useEffect(() => {
+    if (!token) return;
+
+    const eventSource = new EventSource(`/api/hse-tickets/stream?token=${token}`);
+
+    eventSource.onopen = () => {
+      console.log('[SSE] HSE ticket stream connected');
+    };
+
+    eventSource.onerror = (err) => {
+      console.error('[SSE] HSE ticket stream error:', err);
+    };
+
+    eventSource.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+        if (msg.type !== 'hse_ticket_update') return;
+
+        setHseTickets((prev) => {
+          switch (msg.action) {
+            case 'created':
+              return [msg.data, ...prev];
+            case 'status_changed':
+            case 'updated': {
+              const idx = prev.findIndex((t) => t.id === msg.data.id);
+              if (idx === -1) return prev;
+              const updated = [...prev];
+              updated[idx] = { ...updated[idx], ...msg.data };
+              return updated;
+            }
+            case 'commented': {
+              const idx = prev.findIndex((t) => t.id === msg.data.ticketId);
+              if (idx === -1) return prev;
+              const updated = [...prev];
+              updated[idx] = {
+                ...updated[idx],
+                comments: [...updated[idx].comments, msg.data.comment],
+                updatedAt: msg.data.comment.createdAt,
+              };
+              return updated;
+            }
+            case 'deleted':
+              return prev.filter((t) => t.id !== msg.data.ticketId);
+            default:
+              return prev;
+          }
+        });
+      } catch {
+        // ignore malformed messages
+      }
+    };
+
+    return () => eventSource.close();
+  }, [token]);
+
   // Synchronize document title for SEO
   useEffect(() => {
     if (selectedAdminTicketId) {
       const ticket = adminTickets.find((t) => t.id === selectedAdminTicketId);
+      if (ticket) {
+        document.title = `${ticket.id} | ${APP_TITLE}`;
+        return;
+      }
+    }
+
+    if (selectedHSETicketId) {
+      const ticket = hseTickets.find((t) => t.id === selectedHSETicketId);
       if (ticket) {
         document.title = `${ticket.id} | ${APP_TITLE}`;
         return;
@@ -544,8 +632,15 @@ function App() {
     ? adminTickets.find((t) => t.id === selectedAdminTicketId) || null
     : null;
 
+  const currentHSETicket = selectedHSETicketId
+    ? hseTickets.find((t) => t.id === selectedHSETicketId) || null
+    : null;
+
   // Filter IT users for assignees dropdown
   const itUsers = users.filter((u) => u.role === 'it' && u.is_active !== 0);
+
+  // Filter HSE users for assignees dropdown
+  const hseUsers = users.filter((u) => u.department === 'HSE' && u.is_active !== 0);
 
   const handleLoginSuccess = (newToken: string, user: AppUser) => {
     localStorage.setItem('harisco_token', newToken);
@@ -1098,6 +1193,186 @@ function App() {
     }
   };
 
+  // HSE Ticket handlers
+
+  const handleCreateHSETicket = async (data: { description: string; category: HSECategory; justification?: string }) => {
+    if (!token || !currentUser) return;
+    try {
+      const res = await fetch('/api/hse-tickets', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!res.ok) throw new Error('Failed to raise HSE ticket');
+      const newTicket = await res.json();
+
+      setHseTickets((prev) => [newTicket, ...prev]);
+      navigateToTicket('hse_tickets', newTicket.id);
+      setIsCreateHSEModalOpen(false);
+    } catch (err) {
+      console.error(err);
+      alert('Error raising HSE ticket. Please try again.');
+    }
+  };
+
+  const handleUpdateHSEStatus = async (
+    ticketId: string,
+    status: HSEStatus,
+    actionMessage: string,
+    executiveId?: string,
+    executiveName?: string
+  ) => {
+    if (!token || !currentUser) return;
+
+    const confirmMessage = ['Update HSE ticket ', ticketId, ' status to ', HSE_STATUS_LABELS[status] || status, '?'].join('');
+
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
+    try {
+      const res = await fetch(`/api/hse-tickets/${ticketId}/status`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status, actionMessage, executiveId, executiveName }),
+      });
+
+      if (!res.ok) throw new Error('Failed to update HSE ticket status');
+      const result = await res.json();
+
+      const newComment = {
+        id: `c-sys-${Date.now()}`,
+        ticketId,
+        authorId: 'system',
+        authorName: 'System Log',
+        authorRole: 'it' as UserRole,
+        avatar: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=100&h=100&q=80',
+        content: `Workflow updated to status: ${HSE_STATUS_LABELS[status] || status}.`,
+        createdAt: new Date().toISOString(),
+      };
+
+      setHseTickets((prevTickets) =>
+        prevTickets.map((t) => {
+          if (t.id !== ticketId) return t;
+          return {
+            ...t,
+            status: result.status,
+            updatedAt: result.updatedAt,
+            executiveId: result.executiveId || t.executiveId,
+            executiveName: result.executiveName || t.executiveName,
+            previousStatus: result.previousStatus ?? t.previousStatus,
+            comments: [...t.comments, newComment],
+            activityLogs: [...t.activityLogs, result.newLog],
+          };
+        })
+      );
+    } catch (err) {
+      console.error(err);
+      alert('Error updating HSE ticket status. Please try again.');
+    }
+  };
+
+  const handleAssignHSETicket = async (ticketId: string, assigneeId: string, assigneeName: string) => {
+    if (!token || !currentUser) return;
+    try {
+      const res = await fetch(`/api/hse-tickets/${ticketId}/assign`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ assigneeId, assigneeName }),
+      });
+
+      if (!res.ok) throw new Error('Failed to assign HSE ticket');
+      const result = await res.json();
+
+      setHseTickets((prevTickets) =>
+        prevTickets.map((t) => {
+          if (t.id !== ticketId) return t;
+          return {
+            ...t,
+            assigneeId: result.assigneeId,
+            assigneeName: result.assigneeName,
+            status: result.status,
+            updatedAt: result.updatedAt,
+            activityLogs: [...t.activityLogs, result.newLog],
+          };
+        })
+      );
+    } catch (err) {
+      console.error(err);
+      alert('Error assigning HSE ticket. Please try again.');
+    }
+  };
+
+  const handleAddHSEComment = async (ticketId: string, content: string) => {
+    if (!token || !currentUser) return;
+    try {
+      const res = await fetch(`/api/hse-tickets/${ticketId}/comments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ content }),
+      });
+
+      if (!res.ok) throw new Error('Failed to add comment');
+      const newComment = await res.json();
+
+      const newLog = {
+        id: `log-${Date.now()}`,
+        ticketId,
+        action: 'Comment added',
+        timestamp: new Date().toISOString(),
+        performedByName: currentUser.name,
+        performedByRole: currentUser.role,
+      };
+
+      setHseTickets((prevTickets) =>
+        prevTickets.map((t) => {
+          if (t.id !== ticketId) return t;
+          return {
+            ...t,
+            comments: [...t.comments, newComment],
+            updatedAt: newComment.createdAt,
+            activityLogs: [...t.activityLogs, newLog],
+          };
+        })
+      );
+    } catch (err) {
+      console.error(err);
+      alert('Error posting comment. Please try again.');
+    }
+  };
+
+  const handleDeleteHSETicket = async (ticketId: string) => {
+    if (!token || !currentUser) return;
+    try {
+      const res = await fetch(`/api/hse-tickets/${ticketId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) throw new Error('Failed to delete HSE ticket');
+
+      setHseTickets((prevTickets) => prevTickets.filter((t) => t.id !== ticketId));
+      navigateBackToList();
+    } catch (err) {
+      console.error(err);
+      alert('Error deleting HSE ticket. Please try again.');
+    }
+  };
+
   // User-relevant API calls
 
   const handleAddUser = async (data: {
@@ -1556,6 +1831,29 @@ function App() {
                 loading={loading}
               />
             )
+          ) : activeTab === 'hse_tickets' ? (
+            currentHSETicket ? (
+              <HSETicketDetails
+                ticket={currentHSETicket}
+                currentUser={currentUser}
+                hseUsers={hseUsers}
+                onBack={navigateBackToList}
+                onUpdateStatus={handleUpdateHSEStatus}
+                onAssignTicket={handleAssignHSETicket}
+                onAddComment={handleAddHSEComment}
+                onDeleteTicket={handleDeleteHSETicket}
+              />
+            ) : (
+              <HSETicketList
+                tickets={hseTickets}
+                currentUser={currentUser}
+                onSelectTicket={(id) => navigateToTicket('hse_tickets', id)}
+                onCreateTicketClick={() => setIsCreateHSEModalOpen(true)}
+                searchQuery={hseSearchQuery}
+                setSearchQuery={setHseSearchQuery}
+                loading={loading}
+              />
+            )
           ) : (
             <ActivityLog
               tickets={tickets}
@@ -1598,6 +1896,15 @@ function App() {
         onClose={() => setIsCreateAdminModalOpen(false)}
         onSubmit={handleCreateAdminTicket}
       />
+
+      {/* HSE Ticket Creation Modal dialog */}
+      {isCreateHSEModalOpen && (
+        <NewHSETicketModal
+          isOpen={isCreateHSEModalOpen}
+          onClose={() => setIsCreateHSEModalOpen(false)}
+          onSubmit={handleCreateHSETicket}
+        />
+      )}
 
       {/* Change Password Modal */}
       {token && (
