@@ -22,7 +22,7 @@ export const NoticeBoard: React.FC<NoticeBoardProps> = ({
   onEditNoticeClick,
   loading = false,
 }) => {
-  const isAdmin = currentUser.role !== 'employee';
+  const isAdmin = currentUser.role !== 'employee' || currentUser.isDepartmentHead;
   const [activeTab, setActiveTab] = useState<'active' | 'archive'>('active');
   const now = new Date();
 
@@ -118,6 +118,7 @@ export const NoticeBoard: React.FC<NoticeBoardProps> = ({
               key={notice.id}
               notice={notice}
               isAdmin={isAdmin}
+              isDepartmentHead={currentUser.isDepartmentHead}
               currentUser={currentUser}
               onEditNoticeClick={onEditNoticeClick}
               getTagMeta={getTagMeta}
