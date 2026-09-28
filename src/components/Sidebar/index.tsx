@@ -8,6 +8,7 @@ import {
   MapPin,
   Menu,
   Settings2,
+  ShieldCheck,
   Ticket,
   UserCheck,
   Users,
@@ -25,7 +26,7 @@ import './Sidebar.css';
 interface HeaderProps {
   currentUser: AppUser;
   activeTab: ActiveTab;
-  setActiveTab: (tab: ActiveTab) => void;
+  setActiveTab: ({ tab }: { tab: ActiveTab }) => void;
   onLogout: () => void;
   onChangePasswordClick: () => void;
 }
@@ -63,6 +64,13 @@ const MENU_ITEMS: MenuItem[] = [
         label: 'Admin',
         icon: Activity,
         roles: ['it', 'executive', 'manager', 'employee'],
+      },
+      {
+        id: 'hse_tickets',
+        label: 'HSE',
+        icon: ShieldCheck,
+        roles: ['it', 'employee', 'manager', 'executive'],
+        notAllowedDepartments: ['Staff'],
       },
     ],
   },
@@ -188,7 +196,7 @@ export const Header: React.FC<HeaderProps> = ({
   );
 
   const handleTabChange = (tab: ActiveTab) => {
-    setActiveTab(tab);
+    setActiveTab({ tab });
     setOpenDropdown(null);
     setMobileMenuOpen(false);
   };

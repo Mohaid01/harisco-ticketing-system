@@ -144,7 +144,7 @@ export async function initDb() {
       id TEXT PRIMARY KEY,
       title TEXT NOT NULL,
       description TEXT NOT NULL,
-      type TEXT CHECK(type IN ('hardware', 'software', 'maintenance', 'upgrade', 'email', 'others')) NOT NULL,
+      type TEXT CHECK(type IN ('hardware', 'software', 'maintenance', 'upgrade', 'email', 'installation', 'others')) NOT NULL,
       status TEXT CHECK(status IN ('open', 'awaiting_it_approval', 'awaiting_manager_approval', 'awaiting_handover', 'closed')) NOT NULL,
       justification TEXT NOT NULL,
       createdAt TEXT NOT NULL,
@@ -167,12 +167,17 @@ export async function initDb() {
   // MIGRATION: Update 'type' CHECK constraint for EXISTING databases
 
   try {
-    // Check if existing table definition contains the new types (e.g., 'email')
+    // Check if existing table definition contains all types (e.g., 'email', 'others', 'installation')
     const ticketTable = await db.get<{ sql: string }>(
       "SELECT sql FROM sqlite_master WHERE type='table' AND name='tickets'"
     );
 
-    if (ticketTable?.sql && (!ticketTable.sql.includes('email') || !ticketTable.sql.includes('others'))) {
+    if (
+      ticketTable?.sql &&
+      (!ticketTable.sql.includes('email') ||
+        !ticketTable.sql.includes('others') ||
+        !ticketTable.sql.includes('installation'))
+    ) {
       await db.exec(`
       PRAGMA foreign_keys=OFF;
       BEGIN TRANSACTION;
@@ -181,7 +186,7 @@ export async function initDb() {
         id TEXT PRIMARY KEY,
         title TEXT NOT NULL,
         description TEXT NOT NULL,
-        type TEXT CHECK(type IN ('hardware', 'software', 'maintenance', 'upgrade', 'email', 'others')) NOT NULL,
+        type TEXT CHECK(type IN ('hardware', 'software', 'maintenance', 'upgrade', 'email', 'installation', 'others')) NOT NULL,
         status TEXT CHECK(status IN ('open', 'awaiting_it_approval', 'awaiting_manager_approval', 'awaiting_handover', 'closed')) NOT NULL,
         justification TEXT NOT NULL,
         createdAt TEXT NOT NULL,
@@ -199,8 +204,9 @@ export async function initDb() {
       ALTER TABLE tickets_new RENAME TO tickets;
 
       COMMIT;
-      PRAGMA foreign_keys=OFF;
+      PRAGMA foreign_keys=ON;
     `);
+      logger.info('Migrated tickets table type CHECK constraint to include installation, email, and others.');
     }
   } catch (err) {
     logger.error('Failed to migrate tickets type constraint:', err);
@@ -341,7 +347,7 @@ export async function initDb() {
 
   // Migrate admin_tickets to add previousStatus column if missing
   try {
-    const adminTicketsCols = await db.all<{ name: string }>('PRAGMA table_info(admin_tickets)');
+    const adminTicketsCols = await db.all<{ name: string }[]>('PRAGMA table_info(admin_tickets)');
     if (!adminTicketsCols.some((c) => c.name === 'previousStatus')) {
       logger.info('Migrating admin_tickets table to add previousStatus column...');
       await db.exec('ALTER TABLE admin_tickets ADD COLUMN previousStatus TEXT');
@@ -350,6 +356,54 @@ export async function initDb() {
   } catch (err) {
     logger.error('Failed to add previousStatus column to admin_tickets:', err);
   }
+
+  // Create HSE Tickets Table
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS hse_tickets (
+      id TEXT PRIMARY KEY,
+      description TEXT NOT NULL,
+      category TEXT NOT NULL,
+      status TEXT CHECK(status IN ('open', 'escalated', 'in_progress', 'rejected', 'closed')) NOT NULL,
+      justification TEXT,
+      createdAt TEXT NOT NULL,
+      updatedAt TEXT NOT NULL,
+      reporterId TEXT NOT NULL,
+      reporterName TEXT NOT NULL,
+      reporterEmail TEXT NOT NULL,
+      assigneeId TEXT,
+      assigneeName TEXT,
+      executiveId TEXT,
+      executiveName TEXT,
+      previousStatus TEXT
+    )
+  `);
+
+  // Create HSE Comments Table
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS hse_comments (
+      id TEXT PRIMARY KEY,
+      ticketId TEXT NOT NULL,
+      authorId TEXT NOT NULL,
+      authorName TEXT NOT NULL,
+      authorRole TEXT NOT NULL,
+      content TEXT NOT NULL,
+      createdAt TEXT NOT NULL,
+      FOREIGN KEY (ticketId) REFERENCES hse_tickets(id) ON DELETE CASCADE
+    )
+  `);
+
+  // Create HSE Activity Logs Table
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS hse_activity_logs (
+      id TEXT PRIMARY KEY,
+      ticketId TEXT NOT NULL,
+      action TEXT NOT NULL,
+      timestamp TEXT NOT NULL,
+      performedByName TEXT NOT NULL,
+      performedByRole TEXT NOT NULL,
+      FOREIGN KEY (ticketId) REFERENCES hse_tickets(id) ON DELETE CASCADE
+    )
+  `);
 
   // Create Admin Comments Table
   await db.exec(`

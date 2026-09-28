@@ -1,9 +1,7 @@
 import {
   ArrowLeft,
-  Award,
   Calendar,
   CheckCircle2,
-  FileText,
   Send,
   ShieldAlert,
   Tag,
@@ -12,50 +10,37 @@ import {
 } from 'lucide-react';
 import React, { useState } from 'react';
 
-import type { AppUser, Ticket, TicketStatus, TicketType } from '../types';
+import type { AppUser, HSEStatus, HSETicket } from '../types';
 
-import { ROLE_LABELS, TICKET_TYPE_LABELS, TICKET_TYPE_OPTIONS } from '../constants';
+import { HSE_CATEGORY_LABELS, ROLE_LABELS } from '../constants';
 
-interface TicketDetailsProps {
-  ticket: Ticket;
+interface HSETicketDetailsProps {
+  ticket: HSETicket;
   currentUser: AppUser;
-  itUsers: AppUser[];
+  hseUsers: AppUser[];
   onBack: () => void;
-  onUpdateStatus: (ticketId: string, status: TicketStatus, actionMessage: string, quotation?: number) => void;
+  onUpdateStatus: (ticketId: string, status: HSEStatus, actionMessage: string, executiveId?: string, executiveName?: string) => void;
   onAssignTicket: (ticketId: string, assigneeId: string, assigneeName: string) => void;
   onAddComment: (ticketId: string, content: string) => void;
-  onEditTicket?: (ticketId: string, data: { description: string; type: TicketType; justification: string }) => void;
   onDeleteTicket?: (ticketId: string) => void;
 }
 
-export const TicketDetails: React.FC<TicketDetailsProps> = ({
+export const HSETicketDetails: React.FC<HSETicketDetailsProps> = ({
   ticket,
   currentUser,
-  itUsers,
+  hseUsers,
   onBack,
   onUpdateStatus,
   onAssignTicket,
   onAddComment,
-  onEditTicket,
   onDeleteTicket,
 }) => {
   const [commentText, setCommentText] = useState('');
-  const [quotationAmount, setQuotationAmount] = useState<string>('');
 
-  const [isEditing, setIsEditing] = useState(false);
-  const [editDescription, setEditDescription] = useState(ticket.description);
-  const [editJustification, setEditJustification] = useState(ticket.justification);
-  const [editType, setEditType] = useState(ticket.type);
+  const isHSEUser = currentUser.department === 'HSE';
+  const isExecutive = currentUser.role === 'executive';
 
-  // Submit comment
-  const handleSubmitComment = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!commentText.trim()) return;
-    onAddComment(ticket.id, commentText);
-    setCommentText('');
-  };
-
-  const getStatusBadge = (status: TicketStatus) => {
+  const getStatusBadge = (status: HSEStatus) => {
     switch (status) {
       case 'open':
         return (
@@ -66,17 +51,57 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
               color: '#0e529b',
             }}
           >
-            Open / Unassigned
+            Open
           </span>
         );
-      case 'awaiting_it_approval':
-        return <span className="badge badge-it-app">In Progress</span>;
-      case 'awaiting_manager_approval':
-        return <span className="badge badge-m-app">Awaiting Manager</span>;
-      case 'awaiting_handover':
-        return <span className="badge badge-handover">Handover Ready</span>;
+      case 'escalated':
+        return (
+          <span
+            className="badge"
+            style={{
+              backgroundColor: 'rgba(245, 158, 11, 0.12)',
+              color: '#f59e0b',
+            }}
+          >
+            Escalated
+          </span>
+        );
+      case 'in_progress':
+        return (
+          <span
+            className="badge"
+            style={{
+              backgroundColor: 'rgba(6, 182, 212, 0.12)',
+              color: '#06b6d4',
+            }}
+          >
+            In Progress
+          </span>
+        );
+      case 'rejected':
+        return (
+          <span
+            className="badge"
+            style={{
+              backgroundColor: 'rgba(239, 68, 68, 0.12)',
+              color: '#ef4444',
+            }}
+          >
+            Rejected
+          </span>
+        );
       case 'closed':
-        return <span className="badge badge-closed">Closed</span>;
+        return (
+          <span
+            className="badge badge-closed"
+            style={{
+              backgroundColor: 'rgba(16, 185, 129, 0.12)',
+              color: '#10b981',
+            }}
+          >
+            Closed
+          </span>
+        );
     }
   };
 
@@ -95,44 +120,25 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
     });
   };
 
-  // RBAC Action checks
-  const isAssignedEngineer = currentUser.role === 'it' && ticket.assigneeId === currentUser.id;
-  const canItApprove = isAssignedEngineer && ticket.status === 'awaiting_it_approval';
+  const canAssignOrEscalate = isHSEUser && ticket.status === 'open';
+  const canApproveOrReject = (isHSEUser || isExecutive) && ticket.status === 'escalated';
+  const canClose =
+    ticket.assigneeId === currentUser.id && ticket.status === 'in_progress';
 
-  const canManagerApprove = currentUser.role === 'manager' && ticket.status === 'awaiting_manager_approval';
-
-  const canItClose = isAssignedEngineer && ticket.status === 'awaiting_it_approval';
-
-  const handleItResolve = () => {
-    onUpdateStatus(ticket.id, 'closed', 'Resolved by IT in-house');
+  const handleEscalate = () => {
+    onUpdateStatus(ticket.id, 'escalated', 'Escalated to HSE Executive for review');
   };
 
-  const handleItEscalateWithQuotation = () => {
-    if (!quotationAmount) {
-      alert('Please provide a quotation amount before escalating.');
-      return;
-    }
-    onUpdateStatus(
-      ticket.id,
-      'awaiting_manager_approval',
-      `Approved by IT - Escalated to Manager with Quotation: Rs ${quotationAmount}`,
-      Number(quotationAmount)
-    );
+  const handleApprove = () => {
+    onUpdateStatus(ticket.id, 'in_progress', 'Approved by HSE Executive');
   };
 
-  const handleManagerApprove = () => {
-    onUpdateStatus(ticket.id, 'awaiting_it_approval', 'Approved by Manager - Awaiting IT Closure');
+  const handleReject = () => {
+    onUpdateStatus(ticket.id, 'rejected', 'Rejected by HSE Executive');
   };
 
-  const handleSaveEdit = () => {
-    if (onEditTicket) {
-      onEditTicket(ticket.id, {
-        description: editDescription,
-        type: editType,
-        justification: editJustification,
-      });
-    }
-    setIsEditing(false);
+  const handleClose = () => {
+    onUpdateStatus(ticket.id, 'closed', 'Closed by HSE Handler');
   };
 
   const handleDeleteClick = () => {
@@ -152,7 +158,6 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
 
   return (
     <div>
-      {/* Detail Header / Back navigation */}
       <div
         style={{
           display: 'flex',
@@ -197,14 +202,12 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
             {getStatusBadge(ticket.status)}
           </div>
           <h1 className="page-title" style={{ fontSize: '1.4rem', marginBottom: 0 }}>
-            {TICKET_TYPE_LABELS[ticket.type]}
+            {HSE_CATEGORY_LABELS[ticket.category]}
           </h1>
         </div>
       </div>
 
-      {/* Two columns details grid */}
       <div className="details-layout">
-        {/* Left Column: Description, Justification, Comments */}
         <div>
           <div className="panel" style={{ padding: '1.275rem', marginBottom: '1.275rem' }}>
             <div
@@ -220,189 +223,50 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
               <h2 className="panel-title" style={{ fontSize: '0.95rem', margin: 0 }}>
                 Ticket Content
               </h2>
-              {currentUser.role === 'it' && !isEditing && (
-                <div style={{ display: 'flex', gap: '0.425rem' }}>
-                  {ticket.status !== 'closed' && (
-                    <button
-                      className="btn btn-secondary"
-                      style={{ padding: '0.2125rem 0.425rem', fontSize: '0.75rem' }}
-                      onClick={() => setIsEditing(true)}
-                    >
-                      Edit Ticket
-                    </button>
-                  )}
-                  <button
-                    id="btn-delete-ticket"
-                    className="btn btn-danger"
-                    style={{
-                      padding: '0.2125rem 0.425rem',
-                      fontSize: '0.75rem',
-                      backgroundColor: '#dc2626',
-                      color: 'white',
-                      border: 'none',
-                    }}
-                    onClick={handleDeleteClick}
-                  >
-                    Delete Ticket
-                  </button>
-                </div>
+              {isHSEUser && ticket.status !== 'closed' && onDeleteTicket && (
+                <button
+                  id="btn-delete-ticket"
+                  className="btn btn-danger"
+                  style={{
+                    padding: '0.2125rem 0.425rem',
+                    fontSize: '0.75rem',
+                    backgroundColor: '#dc2626',
+                    color: 'white',
+                    border: 'none',
+                  }}
+                  onClick={handleDeleteClick}
+                >
+                  Delete Ticket
+                </button>
               )}
             </div>
 
-            {isEditing ? (
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '0.6375rem',
-                  marginBottom: '1.275rem',
-                }}
-              >
-                <div>
-                  <label className="form-label" style={{ fontSize: '0.8rem', marginBottom: '0.2125rem' }}>
-                    Category Type
-                  </label>
-                  <select
-                    className="form-input"
-                    value={editType}
-                    onChange={(e) => setEditType(e.target.value as TicketType)}
-                  >
-                    {TICKET_TYPE_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="form-label" style={{ fontSize: '0.8rem', marginBottom: '0.2125rem' }}>
-                    Description
-                  </label>
-                  <textarea
-                    className="form-input"
-                    style={{ minHeight: '5.3125rem' }}
-                    value={editDescription}
-                    onChange={(e) => setEditDescription(e.target.value)}
-                  />
-                </div>
-                {editType === 'upgrade' && (
-                  <div>
-                    <label className="form-label" style={{ fontSize: '0.8rem', marginBottom: '0.2125rem' }}>
-                      Justification
-                    </label>
-                    <textarea
-                      className="form-input"
-                      style={{ minHeight: '4.25rem' }}
-                      value={editJustification}
-                      onChange={(e) => setEditJustification(e.target.value)}
-                    />
-                  </div>
-                )}
-                <div
+            <h3
+              style={{
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                margin: '0 0 0.425rem 0',
+              }}
+            >
+              Issue Details
+            </h3>
+            <div className="desc-card">{ticket.description}</div>
+
+            {ticket.justification && (
+              <>
+                <h3
                   style={{
-                    display: 'flex',
-                    gap: '0.425rem',
-                    justifyContent: 'flex-end',
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                    margin: '1rem 0 0.425rem 0',
                   }}
                 >
-                  <button className="btn btn-secondary" onClick={() => setIsEditing(false)}>
-                    Cancel
-                  </button>
-                  <button className="btn btn-primary" onClick={handleSaveEdit}>
-                    Save Changes
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <>
-                {/* Conditional Details Based on Ticket Type */}
-                {(ticket.type === 'hardware' ||
-                  ticket.type === 'software' ||
-                  ticket.type === 'email' ||
-                  ticket.type === 'others') && (
-                  <>
-                    <h3
-                      style={{
-                        fontSize: '0.85rem',
-                        fontWeight: 600,
-                        margin: '0 0 0.425rem 0',
-                      }}
-                    >
-                      {ticket.type === 'email'
-                        ? 'Email Issue Details'
-                        : ticket.type === 'others'
-                          ? 'Issue Details'
-                          : 'Problem Details'}
-                    </h3>
-                    <div className="desc-card">{ticket.description}</div>
-                  </>
-                )}
-
-                {(ticket.type === 'maintenance' || ticket.type === 'installation') && (
-                  <>
-                    <h3
-                      style={{
-                        fontSize: '0.85rem',
-                        fontWeight: 600,
-                        margin: '0 0 0.425rem 0',
-                      }}
-                    >
-                      Software List
-                    </h3>
-                    <div className="desc-card">
-                      <ul style={{ paddingLeft: '1.0625rem', margin: 0 }}>
-                        {ticket.description.split('\n').map((software, index) => (
-                          <li key={index} style={{ marginBottom: '0.2125rem' }}>
-                            {software}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </>
-                )}
-
-                {ticket.type === 'upgrade' && (
-                  <>
-                    <h3
-                      style={{
-                        fontSize: '0.85rem',
-                        fontWeight: 600,
-                        margin: '0 0 0.425rem 0',
-                      }}
-                    >
-                      What to Upgrade
-                    </h3>
-                    <div className="desc-card" style={{ marginBottom: '1.0625rem' }}>
-                      <ul style={{ paddingLeft: '1.0625rem', margin: 0 }}>
-                        {ticket.description.split('\n').map((item, index) => (
-                          <li key={index} style={{ marginBottom: '0.2125rem' }}>
-                            {item}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    <div className="justification-card">
-                      <span className="justification-title">
-                        <FileText size={14} />
-                        Justifications
-                      </span>
-                      <p
-                        style={{
-                          color: 'var(--text-primary)',
-                          fontSize: '0.9rem',
-                          marginTop: '0.425rem',
-                        }}
-                      >
-                        {ticket.justification}
-                      </p>
-                    </div>
-                  </>
-                )}
+                  Justification
+                </h3>
+                <div className="desc-card">{ticket.justification}</div>
               </>
             )}
 
-            {/* Comments Thread */}
             <div className="comments-container">
               <h2 className="panel-title" style={{ fontSize: '0.95rem', marginBottom: '0.85rem' }}>
                 Conversation Threads ({ticket.comments.length})
@@ -465,7 +329,6 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
                 )}
               </div>
 
-              {/* Add Comment */}
               {currentUser.role !== 'executive' && (
                 <div
                   style={{
@@ -494,7 +357,12 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
                       .slice(0, 2)}
                   </div>
                   <form
-                    onSubmit={handleSubmitComment}
+                    onSubmit={(e: React.FormEvent) => {
+                      e.preventDefault();
+                      if (!commentText.trim()) return;
+                      onAddComment(ticket.id, commentText);
+                      setCommentText('');
+                    }}
                     style={{
                       flex: 1,
                       display: 'flex',
@@ -510,10 +378,11 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
                       value={commentText}
                       onChange={(e) => setCommentText(e.target.value)}
                       onKeyDown={(e) => {
-                        // Check for Ctrl + Enter or Cmd + Enter (for Mac users)
                         if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                          e.preventDefault(); // Prevents a newline from being added
-                          handleSubmitComment(e); // Submits the form
+                          e.preventDefault();
+                          if (!commentText.trim()) return;
+                          onAddComment(ticket.id, commentText);
+                          setCommentText('');
                         }
                       }}
                     />
@@ -534,7 +403,6 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
             </div>
           </div>
 
-          {/* Ticket Activity log timeline */}
           <div className="panel" style={{ padding: '1.275rem' }}>
             <h2 className="panel-title" style={{ fontSize: '0.95rem', marginBottom: '1.0625rem' }}>
               Workflow Activity Timeline
@@ -570,87 +438,106 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
           </div>
         </div>
 
-        {/* Right Column: Workflow Action buttons and details metadata */}
         <div>
-          {/* Action Decision Control Box */}
           <div className="panel" style={{ padding: '1.0625rem', marginBottom: '1.275rem' }}>
             <h2 className="panel-title" style={{ fontSize: '0.95rem', marginBottom: '0.85rem' }}>
               Approval Decisions
             </h2>
 
-            {/* Workflow actions triggers */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6375rem' }}>
-              {canItApprove && (
+              {canAssignOrEscalate && (
                 <>
-                  <button
-                    id="btn-it-resolve"
-                    className="btn btn-success"
-                    style={{ width: '100%' }}
-                    onClick={handleItResolve}
-                  >
-                    <CheckCircle2 size={16} />
-                    Mark as Resolved
-                  </button>
-
-                  {ticket.quotation === undefined ||
-                    (ticket.quotation === null && (
-                      <div
+                  {hseUsers.length > 0 && (
+                    <div
+                      style={{
+                        marginBottom: '0.6375rem',
+                        paddingTop: '0.6375rem',
+                        borderTop: '0.0531rem solid var(--border-color)',
+                      }}
+                    >
+                      <label
+                        htmlFor="assignee-select-hse-details"
+                        className="form-label"
                         style={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '0.425rem',
-                          marginTop: '0.6375rem',
-                          borderTop: '0.0531rem solid var(--border-color)',
-                          paddingTop: '0.6375rem',
+                          fontSize: '0.78rem',
+                          textTransform: 'uppercase',
+                          marginBottom: '0.3188rem',
                         }}
                       >
-                        <label
-                          htmlFor="quotation-input"
-                          className="form-label"
-                          style={{ fontSize: '0.8rem', marginBottom: 0 }}
-                        >
-                          Quotation Amount (Rs)
-                        </label>
-                        <input
-                          id="quotation-input"
-                          type="number"
-                          className="form-input"
-                          placeholder="Enter amount"
-                          value={quotationAmount}
-                          onChange={(e) => setQuotationAmount(e.target.value)}
-                        />
-                        <button
-                          id="btn-it-escalate"
-                          className="btn btn-success"
-                          style={{ width: '100%' }}
-                          onClick={handleItEscalateWithQuotation}
-                        >
-                          <CheckCircle2 size={16} />
-                          Submit Quotation & Escalate
-                        </button>
-                      </div>
-                    ))}
+                        Assign To
+                      </label>
+                      <select
+                        id="assignee-select-hse-details"
+                        className="form-input"
+                        style={{ backgroundColor: 'var(--bg-primary)' }}
+                        value=""
+                        onChange={(e) => {
+                          const sel = hseUsers.find((u) => u.id === e.target.value);
+                          if (sel) {
+                            onAssignTicket(ticket.id, sel.id, sel.name);
+                          }
+                        }}
+                      >
+                        <option value="" disabled>
+                          -- Select HSE Handler --
+                        </option>
+                        {hseUsers.map((user) => (
+                          <option key={user.id} value={user.id}>
+                            {user.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  <button
+                    id="btn-hse-escalate"
+                    className="btn btn-warning"
+                    style={{ width: '100%' }}
+                    onClick={handleEscalate}
+                  >
+                    <ShieldAlert size={16} />
+                    Escalate to Executive
+                  </button>
                 </>
               )}
 
-              {canManagerApprove && (
+              {canApproveOrReject && (
+                <>
+                  <button
+                    id="btn-hse-approve"
+                    className="btn btn-success"
+                    style={{ width: '100%' }}
+                    onClick={handleApprove}
+                  >
+                    <CheckCircle2 size={16} />
+                    Approve
+                  </button>
+                  <button
+                    id="btn-hse-reject"
+                    className="btn btn-danger"
+                    style={{ width: '100%' }}
+                    onClick={handleReject}
+                  >
+                    <ShieldAlert size={16} />
+                    Reject
+                  </button>
+                </>
+              )}
+
+              {canClose && (
                 <button
-                  id="btn-manager-approve"
+                  id="btn-hse-close"
                   className="btn btn-success"
-                  style={{
-                    width: '100%',
-                    backgroundColor: 'var(--status-manager-approval)',
-                    color: 'white',
-                    border: 'none',
-                  }}
-                  onClick={handleManagerApprove}
+                  style={{ width: '100%' }}
+                  onClick={handleClose}
                 >
-                  <Award size={16} />
-                  Manager Approve Ticket
+                  <CheckCircle2 size={16} />
+                  Close Ticket
                 </button>
               )}
 
-              {!canItApprove && !canManagerApprove && !canItClose && (
+              {!canAssignOrEscalate && !canApproveOrReject && !canClose && (
                 <div
                   style={{
                     padding: '0.6375rem',
@@ -673,70 +560,24 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
                       color: 'var(--text-secondary)',
                     }}
                   >
-                    {ticket.status === 'closed'
-                      ? 'This ticket is closed. No further workflow transitions are possible.'
+                    {ticket.status === 'closed' || ticket.status === 'rejected'
+                      ? 'This ticket is closed/rejected. No further actions are possible.'
                       : 'No actions currently required for your role.'}
                   </p>
                 </div>
               )}
             </div>
-
-            {/* Assignee modification dropdown for IT users only */}
-            {currentUser.role === 'it' && ticket.status !== 'closed' && (
-              <div
-                style={{
-                  marginTop: '1.0625rem',
-                  paddingTop: '0.85rem',
-                  borderTop: '0.0531rem solid var(--border-color)',
-                }}
-              >
-                <label
-                  htmlFor="assignee-select-details"
-                  className="form-label"
-                  style={{
-                    fontSize: '0.78rem',
-                    textTransform: 'uppercase',
-                    marginBottom: '0.3188rem',
-                  }}
-                >
-                  Assign Support Engineer
-                </label>
-                <select
-                  id="assignee-select-details"
-                  className="form-input"
-                  style={{ backgroundColor: 'var(--bg-primary)' }}
-                  value={ticket.assigneeId || ''}
-                  onChange={(e) => {
-                    const sel = itUsers.find((u) => u.id === e.target.value);
-                    if (sel) {
-                      onAssignTicket(ticket.id, sel.id, sel.name);
-                    }
-                  }}
-                >
-                  <option value="" disabled>
-                    -- Select IT Assignee --
-                  </option>
-                  {itUsers.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
           </div>
 
-          {/* Ticket Information Panel */}
           <div className="panel" style={{ padding: '1.0625rem' }}>
             <h2 className="panel-title" style={{ fontSize: '0.95rem', marginBottom: '0.85rem' }}>
-              Ticket Details
+              Ticket Information
             </h2>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-              {/* Type Category */}
               <div>
                 <span className="form-label" style={{ fontSize: '0.72rem', textTransform: 'uppercase' }}>
-                  Category Type
+                  Category
                 </span>
                 <div
                   style={{
@@ -747,31 +588,12 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
                   }}
                 >
                   <Tag size={16} style={{ color: 'var(--text-muted)' }} />
-                  <span style={{ fontSize: '0.88rem', fontWeight: 600 }}>{TICKET_TYPE_LABELS[ticket.type]}</span>
+                  <span style={{ fontSize: '0.88rem', fontWeight: 600 }}>
+                    {HSE_CATEGORY_LABELS[ticket.category]}
+                  </span>
                 </div>
               </div>
 
-              {/* Quotation */}
-              {ticket.quotation !== undefined && ticket.quotation !== null && (
-                <div>
-                  <span className="form-label" style={{ fontSize: '0.72rem', textTransform: 'uppercase' }}>
-                    Quotation Amount
-                  </span>
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.425rem',
-                      marginTop: '0.2125rem',
-                    }}
-                  >
-                    <Tag size={16} style={{ color: 'var(--text-muted)' }} />
-                    <span style={{ fontSize: '0.88rem', fontWeight: 600 }}>Rs {ticket.quotation}</span>
-                  </div>
-                </div>
-              )}
-
-              {/* Reporter details */}
               <div>
                 <span className="form-label" style={{ fontSize: '0.72rem', textTransform: 'uppercase' }}>
                   Raised By
@@ -799,10 +621,9 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
                 </div>
               </div>
 
-              {/* Support Assignee details */}
               <div>
                 <span className="form-label" style={{ fontSize: '0.72rem', textTransform: 'uppercase' }}>
-                  Assigned Engineer
+                  Assigned To
                 </span>
                 <div
                   style={{
@@ -819,7 +640,27 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
                 </div>
               </div>
 
-              {/* Date Created */}
+              {ticket.executiveName && (
+                <div>
+                  <span className="form-label" style={{ fontSize: '0.72rem', textTransform: 'uppercase' }}>
+                    Reviewed By
+                  </span>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.425rem',
+                      marginTop: '0.2125rem',
+                    }}
+                  >
+                    <User size={16} style={{ color: 'var(--text-muted)' }} />
+                    <span style={{ fontSize: '0.88rem', fontWeight: 600 }}>
+                      {ticket.executiveName}
+                    </span>
+                  </div>
+                </div>
+              )}
+
               <div>
                 <span className="form-label" style={{ fontSize: '0.72rem', textTransform: 'uppercase' }}>
                   Date Created
@@ -844,7 +685,6 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
                 </div>
               </div>
 
-              {/* Date Updated */}
               <div>
                 <span className="form-label" style={{ fontSize: '0.72rem', textTransform: 'uppercase' }}>
                   Last Activity
