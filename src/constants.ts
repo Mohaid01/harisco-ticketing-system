@@ -1,4 +1,13 @@
-import type { AdminTicketCategory, AdminTicketStatus, AppUser, HSECategory, HSEStatus, TicketStatus, TicketType, UserRole } from './types';
+import type {
+  AdminTicketCategory,
+  AdminTicketStatus,
+  AppUser,
+  HSECategory,
+  HSEStatus,
+  TicketStatus,
+  TicketType,
+  UserRole,
+} from './types';
 
 // Brand Configuration
 export const PRIMARY_COLOR = '#0e529b';

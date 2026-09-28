@@ -211,10 +211,7 @@ router.post(
 router.post(
   '/:id/status',
   authenticateToken,
-  async (
-    req: ApiAuthRequest<UpdateHSEStatusRequestBody>,
-    res: ApiResponse<UpdateHSEStatusResponse>
-  ) => {
+  async (req: ApiAuthRequest<UpdateHSEStatusRequestBody>, res: ApiResponse<UpdateHSEStatusResponse>) => {
     const ticketId = String(req.params.id);
     const { status, actionMessage, executiveId, executiveName } = req.body;
 
@@ -293,11 +290,7 @@ router.post(
           ticketId,
         ]);
       } else {
-        await db.run('UPDATE hse_tickets SET status = ?, updatedAt = ? WHERE id = ?', [
-          newStatus,
-          timestamp,
-          ticketId,
-        ]);
+        await db.run('UPDATE hse_tickets SET status = ?, updatedAt = ? WHERE id = ?', [newStatus, timestamp, ticketId]);
       }
 
       const logId = `log-${Date.now()}`;
@@ -397,13 +390,13 @@ router.post(
   '/:id/assign',
   authenticateToken,
   async (req: ApiAuthRequest<AssignHSETicketRequestBody>, res: ApiResponse<AssignHSETicketResponse>) => {
-  if (!isHSEUser(req.user)) {
-    res.status(403).json({ error: 'Forbidden. Only HSE Department can assign HSE tickets.' });
-    return;
-  }
+    if (!isHSEUser(req.user)) {
+      res.status(403).json({ error: 'Forbidden. Only HSE Department can assign HSE tickets.' });
+      return;
+    }
 
-  const ticketId = String(req.params.id);
-  const { assigneeId, assigneeName } = req.body;
+    const ticketId = String(req.params.id);
+    const { assigneeId, assigneeName } = req.body;
 
     if (!assigneeId || !assigneeName) {
       res.status(400).json({ error: 'AssigneeId and assigneeName are required.' });

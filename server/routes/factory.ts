@@ -464,14 +464,6 @@ router.post(
     try {
       const db = getDb();
 
-      const holiday = await db.get('SELECT name FROM holidays WHERE date = ?', [date]);
-      if (holiday) {
-        res.status(400).json({
-          error: `Cannot mark attendance on a gazetted holiday: ${holiday.name}.`,
-        });
-        return;
-      }
-
       const ioTime = `${date} ${time}:00`;
 
       const user = await db.get('SELECT name FROM factory_users WHERE id = ?', [userId]);

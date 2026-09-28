@@ -816,8 +816,7 @@ export type HSECategory =
   | 'environmental'
   | 'demos_drills';
 
-export type HSEStatus =
-  | 'open' | 'escalated' | 'in_progress' | 'rejected' | 'closed';
+export type HSEStatus = 'open' | 'escalated' | 'in_progress' | 'rejected' | 'closed';
 
 export interface DbHSETicket {
   id: string;

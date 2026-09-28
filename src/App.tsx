@@ -632,9 +632,7 @@ function App() {
     ? adminTickets.find((t) => t.id === selectedAdminTicketId) || null
     : null;
 
-  const currentHSETicket = selectedHSETicketId
-    ? hseTickets.find((t) => t.id === selectedHSETicketId) || null
-    : null;
+  const currentHSETicket = selectedHSETicketId ? hseTickets.find((t) => t.id === selectedHSETicketId) || null : null;
 
   // Filter IT users for assignees dropdown
   const itUsers = users.filter((u) => u.role === 'it' && u.is_active !== 0);
@@ -1195,7 +1193,11 @@ function App() {
 
   // HSE Ticket handlers
 
-  const handleCreateHSETicket = async (data: { description: string; category: HSECategory; justification?: string }) => {
+  const handleCreateHSETicket = async (data: {
+    description: string;
+    category: HSECategory;
+    justification?: string;
+  }) => {
     if (!token || !currentUser) return;
     try {
       const res = await fetch('/api/hse-tickets', {
@@ -1228,7 +1230,13 @@ function App() {
   ) => {
     if (!token || !currentUser) return;
 
-    const confirmMessage = ['Update HSE ticket ', ticketId, ' status to ', HSE_STATUS_LABELS[status] || status, '?'].join('');
+    const confirmMessage = [
+      'Update HSE ticket ',
+      ticketId,
+      ' status to ',
+      HSE_STATUS_LABELS[status] || status,
+      '?',
+    ].join('');
 
     if (!window.confirm(confirmMessage)) {
       return;

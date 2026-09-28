@@ -23,7 +23,7 @@ export const SHIFTS: Record<ShiftCode, ShiftDefinition> = {
     weekdayEnd: { h: 18, m: 0 },
     saturdayStart: { h: 10, m: 0 },
     saturdayEnd: { h: 16, m: 0 },
-    sundayOff: true,
+    sundayOff: false,
     graceMinutes: 30,
     baseHours: 8,
     maxOtHours: 0,
@@ -35,7 +35,7 @@ export const SHIFTS: Record<ShiftCode, ShiftDefinition> = {
     weekdayEnd: { h: 17, m: 0 },
     saturdayStart: { h: 8, m: 0 },
     saturdayEnd: { h: 17, m: 0 },
-    sundayOff: true,
+    sundayOff: false,
     graceMinutes: 15,
     baseHours: 9,
     maxOtHours: 3,
@@ -47,7 +47,7 @@ export const SHIFTS: Record<ShiftCode, ShiftDefinition> = {
     weekdayEnd: { h: 5, m: 0 },
     saturdayStart: { h: 20, m: 0 },
     saturdayEnd: { h: 5, m: 0 },
-    sundayOff: true,
+    sundayOff: false,
     graceMinutes: 15,
     baseHours: 9,
     maxOtHours: 3,
@@ -59,7 +59,7 @@ export const SHIFTS: Record<ShiftCode, ShiftDefinition> = {
     weekdayEnd: { h: 20, m: 0 },
     saturdayStart: { h: 9, m: 0 },
     saturdayEnd: { h: 20, m: 0 },
-    sundayOff: true,
+    sundayOff: false,
     graceMinutes: 15,
     baseHours: 11,
     maxOtHours: 0,
@@ -71,7 +71,7 @@ export const SHIFTS: Record<ShiftCode, ShiftDefinition> = {
     weekdayEnd: { h: 20, m: 0 },
     saturdayStart: { h: 8, m: 0 },
     saturdayEnd: { h: 20, m: 0 },
-    sundayOff: true,
+    sundayOff: false,
     graceMinutes: 15,
     baseHours: 12,
     maxOtHours: 0,
@@ -83,7 +83,7 @@ export const SHIFTS: Record<ShiftCode, ShiftDefinition> = {
     weekdayEnd: { h: 21, m: 0 },
     saturdayStart: { h: 8, m: 0 },
     saturdayEnd: { h: 21, m: 0 },
-    sundayOff: true,
+    sundayOff: false,
     graceMinutes: 15,
     baseHours: 13,
     maxOtHours: 0,
@@ -95,7 +95,7 @@ export const SHIFTS: Record<ShiftCode, ShiftDefinition> = {
     weekdayEnd: { h: 8, m: 0 },
     saturdayStart: { h: 20, m: 0 },
     saturdayEnd: { h: 8, m: 0 },
-    sundayOff: true,
+    sundayOff: false,
     graceMinutes: 15,
     baseHours: 12,
     maxOtHours: 0,
@@ -175,8 +175,6 @@ export function isLateArrival(
   const dayOfWeek = date.getUTCDay(); // 0=Sun, 6=Sat
   const isSaturday = dayOfWeek === 6;
   const isSunday = dayOfWeek === 0;
-
-  if (isSunday && shift.sundayOff) return false;
 
   let start = shift.weekdayStart;
   if (isSaturday && shift.saturdayStart) {
