@@ -53,10 +53,7 @@ export const HSETicketList: React.FC<HSETicketListProps> = ({
   const [endDate, setEndDate] = useState<string>('');
 
   const hseUserNames = useMemo(
-    () =>
-      currentUser.department === 'HSE'
-        ? tickets.map((t) => t.assigneeName).filter(Boolean)
-        : [],
+    () => (currentUser.department === 'HSE' ? tickets.map((t) => t.assigneeName).filter(Boolean) : []),
     [tickets, currentUser.department]
   );
 
