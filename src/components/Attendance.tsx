@@ -1542,12 +1542,12 @@ export const Attendance: React.FC<AttendanceProps> = ({
         <>
           {/* ─────────────────── ALL EMPLOYEES SUMMARY VIEW ─────────────────── */}
           {(() => {
-            const todayHoliday = null;
+            const todayHoliday: { name: string } | null = null;
             if (
               !isFactory &&
               resolvedViewMode === 'summary' &&
               (canViewAll || canViewDepartment) &&
-              (isTodaySundayPKT() || todayHoliday)
+              (isTodaySundayPKT() || todayHoliday !== null)
             ) {
               const isSunday = isTodaySundayPKT();
               return (
@@ -1585,7 +1585,9 @@ export const Attendance: React.FC<AttendanceProps> = ({
                       margin: 0,
                     }}
                   >
-                    {isSunday ? "It's the Weekend!" : `Gazetted Holiday — ${todayHoliday?.name}`}
+                    {isSunday
+                      ? "It's the Weekend!"
+                      : `Gazetted Holiday — ${(todayHoliday as { name: string } | null)?.name}`}
                   </h2>
                   <p
                     style={{
