@@ -37,13 +37,13 @@ router.post('/login', loginLimiter, async (req: ApiRequest<LoginRequestBody>, re
     const normalizedUsername = username.toLowerCase().trim();
 
     let user = await db.get<DbUser>(
-      'SELECT id, name, email, username, role, avatar, passwordHash, needsPasswordReset, department, designation, isDepartmentHead, loginEnabled, casualLeaves, annualLeaves, medicalLeaves FROM users WHERE LOWER(username) = ?',
+      'SELECT id, name, email, username, role, avatar, passwordHash, needsPasswordReset, department, designation, isDepartmentHead, loginEnabled, is_active, casualLeaves, annualLeaves, medicalLeaves FROM users WHERE LOWER(username) = ? AND is_active = 1',
       [normalizedUsername]
     );
 
     if (!user) {
       user = await db.get<DbUser>(
-        'SELECT id, name, email, username, role, avatar, passwordHash, needsPasswordReset, department, designation, isDepartmentHead, loginEnabled, NULL as casualLeaves, NULL as annualLeaves, NULL as medicalLeaves FROM factory_users WHERE LOWER(username) = ?',
+        'SELECT id, name, email, username, role, avatar, passwordHash, needsPasswordReset, department, designation, isDepartmentHead, loginEnabled, is_active, NULL as casualLeaves, NULL as annualLeaves, NULL as medicalLeaves FROM factory_users WHERE LOWER(username) = ? AND is_active = 1',
         [normalizedUsername]
       );
     }
@@ -55,6 +55,18 @@ router.post('/login', loginLimiter, async (req: ApiRequest<LoginRequestBody>, re
         userAgent: req.headers['user-agent'],
       });
       res.status(401).json({ error: 'Invalid username or password.' });
+      return;
+    }
+
+    if (!user.is_active) {
+      logger.security('Login blocked - account inactive/offboarded', {
+        userId: user.id,
+        username: user.username,
+        ip: req.ip,
+      });
+      res.status(403).json({
+        error: 'Your account has been deactivated. Please contact HR.',
+      });
       return;
     }
 

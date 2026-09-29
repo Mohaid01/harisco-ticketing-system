@@ -79,7 +79,12 @@ router.post(
   '/',
   authenticateToken,
   async (req: ApiAuthRequest<CreateNoticeRequestBody>, res: ApiResponse<CreateNoticeResponse>) => {
-    if (req.user?.role !== 'it' && req.user?.role !== 'manager' && req.user?.role !== 'executive') {
+    if (
+      req.user?.role !== 'it' &&
+      req.user?.role !== 'manager' &&
+      req.user?.role !== 'executive' &&
+      !req.user?.isDepartmentHead
+    ) {
       res.status(403).json({
         error: 'Forbidden. Administrative privileges required to post notices.',
       });
@@ -143,7 +148,12 @@ router.put(
   '/:id',
   authenticateToken,
   async (req: ApiAuthRequest<UpdateNoticeRequestBody>, res: ApiResponse<UpdateNoticeResponse>) => {
-    if (req.user?.role !== 'it' && req.user?.role !== 'manager' && req.user?.role !== 'executive') {
+    if (
+      req.user?.role !== 'it' &&
+      req.user?.role !== 'manager' &&
+      req.user?.role !== 'executive' &&
+      !req.user?.isDepartmentHead
+    ) {
       res.status(403).json({
         error: 'Forbidden. Administrative privileges required to edit notices.',
       });
@@ -188,7 +198,12 @@ router.put(
 
 // DELETE /api/notices/:id
 router.delete('/:id', authenticateToken, async (req: AuthRequest, res: ApiResponse<DeleteNoticeResponse>) => {
-  if (req.user?.role !== 'it' && req.user?.role !== 'manager' && req.user?.role !== 'executive') {
+  if (
+    req.user?.role !== 'it' &&
+    req.user?.role !== 'manager' &&
+    req.user?.role !== 'executive' &&
+    !req.user?.isDepartmentHead
+  ) {
     res.status(403).json({
       error: 'Forbidden. Administrative privileges required to delete notices.',
     });

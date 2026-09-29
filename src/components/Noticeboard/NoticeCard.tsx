@@ -5,7 +5,8 @@ import type { AppUser, Notice, NoticeType } from '../../types';
 
 interface NoticeCardProps {
   notice: Notice;
-  isAdmin: boolean;
+  isAdmin: any;
+  isDepartmentHead: any;
   currentUser: AppUser;
   onEditNoticeClick?: (noticeId: string) => void;
   getTagMeta: (type: NoticeType) => {
