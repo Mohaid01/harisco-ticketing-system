@@ -174,7 +174,6 @@ export function isLateArrival(
   const [hour, min] = checkInTime.split(':').map(Number);
   const dayOfWeek = date.getUTCDay(); // 0=Sun, 6=Sat
   const isSaturday = dayOfWeek === 6;
-  const isSunday = dayOfWeek === 0;
 
   let start = shift.weekdayStart;
   if (isSaturday && shift.saturdayStart) {

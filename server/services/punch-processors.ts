@@ -255,11 +255,6 @@ export async function processFactoryAttendancePunch(input: {
   try {
     const db = getDb();
 
-    const scanDateStr = punchTime.includes(' ')
-      ? punchTime.split(' ')[0]
-      : punchTime.includes('T')
-        ? punchTime.split('T')[0]
-        : punchTime;
     const insertResult = await db.run(
       `INSERT INTO factory_attendance_logs 
       (name, userId, ioTime, method, status, timestamp) 

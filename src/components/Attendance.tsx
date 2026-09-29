@@ -1542,12 +1542,6 @@ export const Attendance: React.FC<AttendanceProps> = ({
         <>
           {/* ─────────────────── ALL EMPLOYEES SUMMARY VIEW ─────────────────── */}
           {(() => {
-            const todayDateStr = new Intl.DateTimeFormat('en-CA', {
-              timeZone: 'Asia/Karachi',
-              year: 'numeric',
-              month: '2-digit',
-              day: '2-digit',
-            }).format(new Date());
             const todayHoliday = null;
             if (
               !isFactory &&
