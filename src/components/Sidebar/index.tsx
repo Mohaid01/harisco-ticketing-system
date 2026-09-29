@@ -285,7 +285,7 @@ export const Header: React.FC<HeaderProps> = ({
             if (item.children) {
               const isOpen = openDropdown === item.label;
               const visibleChildren = item.children.filter((child) =>
-                isItemVisible(child, currentUser.role, currentUser.department ?? undefined)
+                isItemVisible(child, currentUser.role, currentUser.department ?? undefined, screenOverrideFlags)
               );
               if (visibleChildren.length === 0) return null;
 
@@ -484,7 +484,7 @@ export const Header: React.FC<HeaderProps> = ({
                 const Icon = item.icon;
                 if (item.children) {
                   const visibleChildren = item.children.filter((child) =>
-                    isItemVisible(child, currentUser.role, currentUser.department ?? undefined)
+                    isItemVisible(child, currentUser.role, currentUser.department ?? undefined, screenOverrideFlags)
                   );
                   if (visibleChildren.length === 0) return null;
 
