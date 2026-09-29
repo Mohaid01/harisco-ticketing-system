@@ -11,7 +11,6 @@ import CVReviewSummary from './components/CVReviewSummary';
 import RepeaterSection from './components/RepeaterSection';
 import { clearDraft, loadDraft, saveDraft } from './utils/draftStorage';
 import { blobToBase64, downloadPdf, generateApplicationPdf } from './utils/pdfGenerator';
-
 import './CVGenerator.css';
 
 interface CVGeneratorProps {

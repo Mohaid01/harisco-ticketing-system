@@ -1,8 +1,6 @@
-import React from 'react';
-
 import { motion } from 'framer-motion';
-
 import { Plus, Trash2 } from 'lucide-react';
+import React from 'react';
 
 import CVInput from './CVInput';
 

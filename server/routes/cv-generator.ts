@@ -3,8 +3,8 @@ import { Router } from 'express';
 import type { ApiAuthRequest } from '../types/index.ts';
 
 import { getDb } from '../db.ts';
-import { authenticateToken } from '../middleware/auth.ts';
 import { sendEmailWithAttachment } from '../email.ts';
+import { authenticateToken } from '../middleware/auth.ts';
 import logger from '../utils/logger.ts';
 
 const router = Router();

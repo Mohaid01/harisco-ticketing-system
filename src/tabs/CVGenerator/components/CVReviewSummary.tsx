@@ -1,6 +1,5 @@
-import React from 'react';
-
 import { Award, Briefcase, FileText, Globe, GraduationCap, Laptop, Pencil, User, Users } from 'lucide-react';
+import React from 'react';
 
 import type { ExperienceRow, FormData, RepeaterRow } from '../types';
 
