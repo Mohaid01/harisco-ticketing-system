@@ -5,20 +5,17 @@ import {
   Briefcase,
   Building,
   Calendar,
-  CalendarOff,
   CheckCircle,
   ChevronRight,
   Clock,
   FileText,
   Filter,
   List,
-  Plus,
   RefreshCw,
   Search,
   Trash2,
   TrendingUp,
   Users,
-  X,
   XCircle,
 } from 'lucide-react';
 import React, { startTransition, useCallback, useEffect, useMemo, useState } from 'react';
@@ -152,12 +149,6 @@ export const Attendance: React.FC<AttendanceProps> = ({
   const [filterShift, setFilterShift] = useState<string>('All');
   const [filterTodayStatus, setFilterTodayStatus] = useState<string>('All');
 
-  // Holidays
-  const [holidays, setHolidays] = useState<{ date: string; name: string }[]>([]);
-  const [showHolidayModal, setShowHolidayModal] = useState(false);
-  const [holidayDate, setHolidayDate] = useState('');
-  const [holidayName, setHolidayName] = useState('');
-
   // Shift overrides (Factory only): maps dateStr -> shift code
   const [shiftOverrides, setShiftOverrides] = useState<Record<string, string>>({});
 
@@ -205,26 +196,6 @@ export const Attendance: React.FC<AttendanceProps> = ({
     [apiBase]
   );
 
-  const fetchHolidays = useCallback(async () => {
-    const token = localStorage.getItem('harisco_token');
-    fetch('/api/holidays', {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((res) => {
-        if (res.ok) return res.json();
-        throw new Error('Network error');
-      })
-      .then((data) => {
-        setHolidays(data);
-      })
-      .catch((e) => {
-        console.error('Failed to fetch holidays:', e);
-      })
-      .finally(() => {
-        setRefreshing(false);
-      });
-  }, []);
-
   const fetchDeviceStatus = useCallback(() => {
     const token = localStorage.getItem('harisco_token');
     fetch(`${deviceStatusApiBase}/device-status`, {
@@ -249,40 +220,6 @@ export const Attendance: React.FC<AttendanceProps> = ({
         setDeviceOnline(false);
       });
   }, [deviceStatusApiBase]);
-
-  const handleAddHoliday = async () => {
-    if (!holidayDate || !holidayName.trim()) {
-      alert('Please provide both a date and a name.');
-      return;
-    }
-    const token = localStorage.getItem('harisco_token');
-    const res = await fetch('/api/holidays', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ date: holidayDate, name: holidayName.trim() }),
-    });
-    if (res.ok) {
-      setHolidayDate('');
-      setHolidayName('');
-      fetchHolidays();
-    } else {
-      const d = await res.json();
-      alert(d.error || 'Failed to add holiday.');
-    }
-  };
-
-  const handleDeleteHoliday = async (date: string) => {
-    if (!window.confirm(`Remove holiday on ${date}?`)) return;
-    const token = localStorage.getItem('harisco_token');
-    await fetch(`/api/holidays/${date}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    fetchHolidays();
-  };
 
   const handleDeletePunchOut = async (logId: number, dateStr: string) => {
     const confirmMessage = ['Are you sure you want to delete the punch out (second punch) for ', dateStr, '?'].join('');
@@ -334,7 +271,6 @@ export const Attendance: React.FC<AttendanceProps> = ({
 
   useEffect(() => {
     fetchLogs();
-    fetchHolidays();
 
     const token = localStorage.getItem('harisco_token');
     if (!token) return;
@@ -363,7 +299,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
     return () => {
       eventSource.close();
     };
-  }, [apiBase, fetchHolidays, fetchLogs, isFactory]);
+  }, [apiBase, fetchLogs, isFactory]);
 
   // Device status polling (visible to IT, factory_it, manager, and HQ manager/executive)
   useEffect(() => {
@@ -452,6 +388,12 @@ export const Attendance: React.FC<AttendanceProps> = ({
 
     const monthStart = `${sYear}-${String(sMonth).padStart(2, '0')}-01`;
 
+    const sundayCount = isFactory
+      ? Array.from({ length: daysInMonth }, (_, d) => new Date(sYear, sMonth - 1, d + 1).getUTCDay() === 0).filter(
+          Boolean
+        ).length
+      : 0;
+
     return allUsers
       .filter((user) => {
         if (user.department === 'Executive') return false;
@@ -535,12 +477,12 @@ export const Attendance: React.FC<AttendanceProps> = ({
         let totalHours = 0;
         let totalWorkDays = 0;
         let daysNotAvailable = 0;
+        let missedDays = 0;
 
         for (let day = 1; day <= daysInMonth; day++) {
           const tempDate = new Date(Date.UTC(sYear, sMonth - 1, day));
           const dateStr = `${sYear}-${String(sMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
           const isWeekend = tempDate.getUTCDay() === 0;
-          const isHoliday = holidays.find((h) => h.date === dateStr);
 
           totalWorkDays++;
           const dayShift = getEffectiveShift(user.defaultShift || defaultFallbackShift, shiftOverrides, dateStr);
@@ -567,7 +509,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
             continue;
           }
 
-          if (isWeekend || isHoliday) {
+          if (isFactory ? false : isWeekend) {
             daysPresent++;
             continue;
           }
@@ -592,7 +534,12 @@ export const Attendance: React.FC<AttendanceProps> = ({
           } else {
             const isOffboarded = user.offboarded_at && dateStr > user.offboarded_at;
             if (!isOffboarded && dateStr <= todayStr) {
-              daysAbsent++;
+              if (isFactory && missedDays < sundayCount) {
+                daysPresent++;
+                missedDays++;
+              } else {
+                daysAbsent++;
+              }
             }
           }
         }
@@ -613,7 +560,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
           totalWorkDays,
         };
       });
-  }, [allUsers, logs, selectedMonth, holidays, shiftOverrides, defaultFallbackShift, isFactory, parseLogPKT]);
+  }, [allUsers, logs, selectedMonth, shiftOverrides, defaultFallbackShift, isFactory, parseLogPKT]);
 
   // Filter summaries based on Search & Dropdowns
   const filteredSummaries = useMemo(() => {
@@ -705,8 +652,6 @@ export const Attendance: React.FC<AttendanceProps> = ({
       const dateStr = `${sYear}-${String(sMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       const isWeekend = tempDate.getUTCDay() === 0; // Only Sunday is off
 
-      const isHoliday = holidays.find((h) => h.date === dateStr);
-
       const dayShift = getEffectiveShift(
         selectedEmployee.defaultShift || defaultFallbackShift,
         shiftOverrides,
@@ -794,13 +739,13 @@ export const Attendance: React.FC<AttendanceProps> = ({
           hours: Math.round(hours * 100) / 100,
           status,
         });
-      } else if (isWeekend || isHoliday) {
+      } else if (!isFactory && isWeekend) {
         list.push({
           date: dateStr,
           firstIn: '--',
           lastOut: '--',
           hours: 0,
-          status: (isHoliday ? 'Holiday' : 'Weekend') as string,
+          status: 'Weekend' as string,
         });
       } else {
         const isOffboarded = selectedEmployee.offboarded_at && dateStr > selectedEmployee.offboarded_at;
@@ -814,17 +759,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
       }
     }
     return list;
-  }, [
-    selectedEmployee,
-    logs,
-    selectedMonth,
-    tick,
-    shiftOverrides,
-    defaultFallbackShift,
-    holidays,
-    isFactory,
-    parseLogPKT,
-  ]);
+  }, [selectedEmployee, logs, selectedMonth, tick, shiftOverrides, defaultFallbackShift, isFactory, parseLogPKT]);
 
   // Today's specific shift progress calculations
   const todayShiftProgress = useMemo(() => {
@@ -896,7 +831,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
       };
     }
 
-    const isHoliday = holidays.find((h) => h.date === todayStr);
+    const isHoliday = null;
     const pktNow = new Date(new Date().getTime() + 5 * 60 * 60 * 1000);
     const isWeekend = pktNow.getUTCDay() === 0;
 
@@ -906,7 +841,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
       hours: 0,
       status: isHoliday ? 'Holiday' : isWeekend ? 'Weekend' : 'No Data',
     };
-  }, [selectedEmployee, logs, shiftOverrides, defaultFallbackShift, holidays, parseLogPKT, tick]);
+  }, [selectedEmployee, logs, shiftOverrides, defaultFallbackShift, parseLogPKT, tick]);
 
   const individualStats = useMemo(() => {
     let present = 0;
@@ -1073,12 +1008,6 @@ export const Attendance: React.FC<AttendanceProps> = ({
 
   const handleAddManualPunch = async (date: string, type: 'Check-In' | 'Check-Out') => {
     if (!canWrite) return;
-
-    const dateHoliday = holidays.find((h) => h.date === date);
-    if (dateHoliday) {
-      alert(`Cannot add manual punch on a gazetted holiday (${dateHoliday.name}).`);
-      return;
-    }
 
     const shift = isFactory
       ? getEffectiveShift(selectedEmployee?.defaultShift || 'headquarters', shiftOverrides, date)
@@ -1365,7 +1294,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
         const dayOfWeek = tempDate.getUTCDay();
         const isSunday = dayOfWeek === 0;
         const isSaturday = dayOfWeek === 6;
-        const isHoliday = holidays.some((h) => h.date === dateStr);
+        const isHoliday = false;
 
         let expectedDayHours = 0;
         let otHours;
@@ -1439,7 +1368,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
           const isSaturday = dayOfWeek === 6;
           const sDay = String(day).padStart(2, '0');
           const dateStr = `${sYear}-${String(sMonth).padStart(2, '0')}-${sDay}`;
-          const isHoliday = holidays.some((h) => h.date === dateStr);
+          const isHoliday = false;
           const shift = getEffectiveShift(emp.defaultShift || 'headquarters', shiftOverrides, dateStr);
           if (!isHoliday && !(isSunday && shift.sundayOff)) {
             empExpectedHours += isSaturday && shift.code === 'headquarters' ? 6 : shift.baseHours;
@@ -1589,23 +1518,6 @@ export const Attendance: React.FC<AttendanceProps> = ({
             <></>
           )}
           <div className="btn-group">
-            {canWrite ? (
-              <button
-                className="btn btn-secondary"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.425rem',
-                  padding: '0.425rem 0.7438rem',
-                }}
-                onClick={() => setShowHolidayModal(true)}
-              >
-                <CalendarOff size={14} />
-                Holidays
-              </button>
-            ) : (
-              <></>
-            )}
             <button
               className="btn btn-secondary"
               style={{
@@ -1630,17 +1542,12 @@ export const Attendance: React.FC<AttendanceProps> = ({
         <>
           {/* ─────────────────── ALL EMPLOYEES SUMMARY VIEW ─────────────────── */}
           {(() => {
-            const todayDateStr = new Intl.DateTimeFormat('en-CA', {
-              timeZone: 'Asia/Karachi',
-              year: 'numeric',
-              month: '2-digit',
-              day: '2-digit',
-            }).format(new Date());
-            const todayHoliday = holidays.find((h) => h.date === todayDateStr);
+            const todayHoliday: { name: string } | null = null;
             if (
+              !isFactory &&
               resolvedViewMode === 'summary' &&
               (canViewAll || canViewDepartment) &&
-              (isTodaySundayPKT() || todayHoliday)
+              (isTodaySundayPKT() || todayHoliday !== null)
             ) {
               const isSunday = isTodaySundayPKT();
               return (
@@ -1678,7 +1585,9 @@ export const Attendance: React.FC<AttendanceProps> = ({
                       margin: 0,
                     }}
                   >
-                    {isSunday ? "It's the Weekend!" : `Gazetted Holiday — ${todayHoliday?.name}`}
+                    {isSunday
+                      ? "It's the Weekend!"
+                      : `Gazetted Holiday — ${(todayHoliday as { name: string } | null)?.name}`}
                   </h2>
                   <p
                     style={{
@@ -1698,19 +1607,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
             }
             return <></>;
           })()}
-          {resolvedViewMode === 'summary' &&
-          (canViewAll || canViewDepartment) &&
-          !isTodaySundayPKT() &&
-          !holidays.find(
-            (h) =>
-              h.date ===
-              new Intl.DateTimeFormat('en-CA', {
-                timeZone: 'Asia/Karachi',
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-              }).format(new Date())
-          ) ? (
+          {resolvedViewMode === 'summary' && (canViewAll || canViewDepartment) && !isTodaySundayPKT() ? (
             <div
               style={{
                 display: 'flex',
@@ -3237,133 +3134,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
         </>
       )}
 
-      {showHolidayModal ? (
-        <div className="modal-overlay" onClick={() => setShowHolidayModal(false)}>
-          <div className="modal-content" style={{ maxWidth: '27.625rem' }} onClick={(e) => e.stopPropagation()}>
-            <div
-              className="panel-header"
-              style={{
-                padding: '1.0625rem 1.275rem',
-                borderBottom: '0.0531rem solid var(--border-color)',
-                margin: 0,
-              }}
-            >
-              <h2
-                className="panel-title"
-                style={{
-                  fontSize: '1.1rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.425rem',
-                }}
-              >
-                <CalendarOff size={18} style={{ color: 'var(--color-primary)' }} />
-                Gazetted Holidays
-              </h2>
-              <button
-                className="btn btn-secondary"
-                style={{
-                  width: '1.7rem',
-                  height: '1.7rem',
-                  padding: 0,
-                  borderRadius: '50%',
-                }}
-                onClick={() => setShowHolidayModal(false)}
-              >
-                <X size={16} />
-              </button>
-            </div>
-            <div
-              style={{
-                padding: '1.0625rem 1.275rem',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.85rem',
-              }}
-            >
-              <div style={{ display: 'flex', gap: '0.425rem', alignItems: 'center' }}>
-                <input
-                  type="date"
-                  className="form-input"
-                  style={{
-                    width: '8.5rem',
-                    flex: '0 0 auto',
-                    colorScheme: 'dark',
-                  }}
-                  value={holidayDate}
-                  onChange={(e) => setHolidayDate(e.target.value)}
-                />
-                <input
-                  type="text"
-                  className="form-input"
-                  style={{ flex: 1, minWidth: 0 }}
-                  placeholder="Holiday name (e.g. Eid ul Fitr)"
-                  value={holidayName}
-                  onChange={(e) => setHolidayName(e.target.value)}
-                />
-                <button
-                  className="btn btn-primary"
-                  style={{
-                    flex: '0 0 auto',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.3188rem',
-                    whiteSpace: 'nowrap',
-                  }}
-                  onClick={handleAddHoliday}
-                >
-                  <Plus size={14} /> Add
-                </button>
-              </div>
-              <div style={{ marginTop: '0.425rem' }}>
-                {holidays.length === 0 ? (
-                  <p
-                    style={{
-                      color: 'var(--text-secondary)',
-                      textAlign: 'center',
-                      padding: '1.275rem',
-                    }}
-                  >
-                    No holidays added yet.
-                  </p>
-                ) : (
-                  <table className="data-table">
-                    <thead>
-                      <tr>
-                        <th>Date</th>
-                        <th>Name</th>
-                        <th style={{ width: '3.1875rem' }}></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {holidays.map((h) => (
-                        <tr key={h.date}>
-                          <td style={{ fontVariantNumeric: 'tabular-nums' }}>{h.date}</td>
-                          <td>{h.name}</td>
-                          <td>
-                            <button
-                              className="btn btn-danger"
-                              style={{
-                                padding: '0.1063rem 0.425rem',
-                                fontSize: '0.75rem',
-                              }}
-                              onClick={() => handleDeleteHoliday(h.date)}
-                            >
-                              Remove
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <></>
-      )}
+      {/* No holidays UI — holidays disconnected from factory operations */}
 
       <style>{`
         @keyframes spin {

@@ -5,6 +5,7 @@ import {
   Calendar,
   ChevronDown,
   Factory,
+  FileText,
   MapPin,
   Menu,
   Settings2,
@@ -29,6 +30,7 @@ interface HeaderProps {
   setActiveTab: ({ tab }: { tab: ActiveTab }) => void;
   onLogout: () => void;
   onChangePasswordClick: () => void;
+  cvGeneratorAllowed: boolean;
 }
 
 interface MenuItem {
@@ -37,6 +39,7 @@ interface MenuItem {
   icon: React.ElementType;
   roles: UserRole[];
   notAllowedDepartments?: string[];
+  requiresScreenOverride?: boolean;
   children?: MenuItem[];
 }
 
@@ -118,6 +121,13 @@ const MENU_ITEMS: MenuItem[] = [
         roles: ['it', 'employee', 'manager', 'executive'],
         notAllowedDepartments: ['Staff'],
       },
+      {
+        id: 'cv_generator',
+        label: 'CV Generator',
+        icon: FileText,
+        roles: ['it', 'employee', 'manager', 'executive'],
+        requiresScreenOverride: true,
+      },
     ],
   },
   {
@@ -141,11 +151,17 @@ const MENU_ITEMS: MenuItem[] = [
   },
 ];
 
-function isItemVisible(item: MenuItem, userRole: UserRole, userDepartment: string | undefined): boolean {
+function isItemVisible(
+  item: MenuItem,
+  userRole: UserRole,
+  userDepartment: string | undefined,
+  screenOverrideFlags: Record<string, boolean> = {}
+): boolean {
   if (!item.roles.includes(userRole)) return false;
   if (item.notAllowedDepartments?.includes(userDepartment ?? 'unknown')) return false;
+  if (item.requiresScreenOverride && !screenOverrideFlags[item.id ?? '']) return false;
   if (item.children) {
-    return item.children.some((child) => isItemVisible(child, userRole, userDepartment));
+    return item.children.some((child) => isItemVisible(child, userRole, userDepartment, screenOverrideFlags));
   }
   return true;
 }
@@ -182,6 +198,7 @@ export const Header: React.FC<HeaderProps> = ({
   setActiveTab,
   onLogout,
   onChangePasswordClick,
+  cvGeneratorAllowed,
 }) => {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [currentDate, setCurrentDate] = useState(formatDate(new Date()));
@@ -191,8 +208,12 @@ export const Header: React.FC<HeaderProps> = ({
   const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  const screenOverrideFlags: Record<string, boolean> = {
+    cv_generator: cvGeneratorAllowed,
+  };
+
   const visibleItems = MENU_ITEMS.filter((item) =>
-    isItemVisible(item, currentUser.role, currentUser.department ?? undefined)
+    isItemVisible(item, currentUser.role, currentUser.department ?? undefined, screenOverrideFlags)
   );
 
   const handleTabChange = (tab: ActiveTab) => {

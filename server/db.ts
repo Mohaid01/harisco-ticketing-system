@@ -653,6 +653,21 @@ export async function initDb() {
     )
   `);
 
+  // Create Screen Overrides Table — generic per-screen user access grants
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS screen_overrides (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      screen_name TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      granted_by TEXT NOT NULL,
+      granted_at TEXT NOT NULL,
+      UNIQUE(screen_name, user_id)
+    )
+  `);
+
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_screen_overrides_screen ON screen_overrides(screen_name)');
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_screen_overrides_user ON screen_overrides(user_id)');
+
   // Seed initial admin user if table is empty
   const userCount = await db.get<{ count: number }>('SELECT COUNT(*) as count FROM users');
   if (userCount && userCount.count === 0) {

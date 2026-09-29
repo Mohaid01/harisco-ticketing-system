@@ -1,0 +1,105 @@
+import { Router } from 'express';
+
+import type { ApiAuthRequest } from '../types/index.ts';
+
+import { getDb } from '../db.ts';
+import { sendEmailWithAttachment } from '../email.ts';
+import { authenticateToken } from '../middleware/auth.ts';
+import logger from '../utils/logger.ts';
+
+const router = Router();
+
+interface SendCVRequestBody {
+  candidateName: string;
+  candidateEmail?: string;
+  pdfBase64: string;
+  fileName: string;
+}
+
+// POST /api/cv-generator/send
+// Emails a generated CV PDF to IT users (same SMTP as ticket notifications)
+router.post('/send', authenticateToken, async (req: ApiAuthRequest<SendCVRequestBody>, res) => {
+  const currentUser = req.user;
+  if (!currentUser) {
+    return res.status(401).json({ error: 'Unauthorized. User data missing.' });
+  }
+
+  const { candidateName, candidateEmail, pdfBase64, fileName } = req.body;
+
+  if (!candidateName || !pdfBase64 || !fileName) {
+    return res.status(400).json({ error: 'Missing required fields: candidateName, pdfBase64, fileName.' });
+  }
+
+  try {
+    const db = getDb();
+
+    // Fetch IT users who have email addresses — same pattern as ticket notifications
+    const itUsers = await db.all<{ email: string; name: string }[]>(
+      "SELECT email, name FROM users WHERE role = 'it' AND email IS NOT NULL AND email != '' AND is_active = 1"
+    );
+
+    // Escape user-provided values to prevent HTML injection
+    const escapeHtml = (s: string): string =>
+      s
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+
+    const subject = `[CV Application] ${escapeHtml(candidateName)}`;
+    const body = `
+<!DOCTYPE html>
+<html>
+<body style="font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.6; color: #333;">
+  <h2 style="color: #0e529b;">New CV Application Received</h2>
+  <p>A new CV application has been generated and is attached to this email.</p>
+  <table style="border-collapse: collapse; margin: 20px 0;">
+    <tr><td style="padding: 4px 12px; border: 1px solid #ddd;"><strong>Candidate Name:</strong></td><td style="padding: 4px 12px; border: 1px solid #ddd;">${escapeHtml(candidateName)}</td></tr>
+    ${candidateEmail ? `<tr><td style="padding: 4px 12px; border: 1px solid #ddd;"><strong>Email:</strong></td><td style="padding: 4px 12px; border: 1px solid #ddd;">${escapeHtml(candidateEmail)}</td></tr>` : ''}
+    <tr><td style="padding: 4px 12px; border: 1px solid #ddd;"><strong>Submitted By:</strong></td><td style="padding: 4px 12px; border: 1px solid #ddd;">${escapeHtml(currentUser.name)}</td></tr>
+    <tr><td style="padding: 4px 12px; border: 1px solid #ddd;"><strong>Date:</strong></td><td style="padding: 4px 12px; border: 1px solid #ddd;">${new Date().toLocaleString()}</td></tr>
+  </table>
+  <p>Please review the attached PDF for full details.</p>
+  <p style="color: #999; font-size: 0.85rem; margin-top: 30px;">— Harisco Ticketing System</p>
+</body>
+</html>`;
+
+    let sentCount = 0;
+    const errors: string[] = [];
+
+    for (const user of itUsers) {
+      const sent = await sendEmailWithAttachment(user.email, subject, body, [
+        {
+          filename: fileName,
+          content: pdfBase64,
+          contentType: 'application/pdf',
+        },
+      ]).catch((err: unknown) => {
+        logger.error(`[cv-generator] Failed to email CV to ${user.email}:`, err);
+        errors.push(user.email);
+        return false;
+      });
+
+      if (sent) sentCount++;
+    }
+
+    if (sentCount === 0) {
+      logger.warn('[cv-generator] No IT users with email addresses found to receive CV.');
+    }
+
+    logger.info(`[cv-generator] CV for ${candidateName} emailed to ${sentCount} recipient(s).`);
+
+    return res.json({
+      success: true,
+      sentCount,
+      totalRecipients: itUsers.length,
+      errors: errors.length > 0 ? errors : undefined,
+    });
+  } catch (err) {
+    logger.error('[cv-generator] Failed to process CV email:', err);
+    return res.status(500).json({ error: 'Failed to send CV email.' });
+  }
+});
+
+export default router;

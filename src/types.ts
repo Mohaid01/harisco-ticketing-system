@@ -139,7 +139,8 @@ export type ActiveTab =
   | 'attendance'
   | 'factory_attendance'
   | 'leaves'
-  | 'site_duties';
+  | 'site_duties'
+  | 'cv_generator';
 
 export interface MenuItems {
   id?: ActiveTab;
@@ -148,6 +149,17 @@ export interface MenuItems {
   roles: UserRole[];
   notAllowedDepartments?: string[];
   children?: MenuItems[];
+}
+
+export interface ScreenOverrideUser {
+  id: number;
+  screen_name: string;
+  user_id: string;
+  granted_by: string;
+  granted_at: string;
+  user_name?: string;
+  user_avatar?: string;
+  user_role?: string;
 }
 
 // Attendance Types

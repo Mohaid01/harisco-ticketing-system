@@ -212,6 +212,11 @@ export const resetUserPasswordSchema = z.object({
   newPassword: z.string().min(4, 'Password must be at least 4 characters'),
 });
 
+// Screen Override schemas
+export const grantScreenAccessSchema = z.object({
+  userIds: z.array(z.string().min(1, 'User IDs are required')),
+});
+
 // HSE Ticket schemas
 export const createHSETicketSchema = z.object({
   description: z.string().min(1, 'Description is required'),

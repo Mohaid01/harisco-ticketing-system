@@ -29,18 +29,25 @@ import { NewAdminTicketModal } from './components/Modals/NewAdminTicketModal';
 import { NewHSETicketModal } from './components/Modals/NewHSETicketModal';
 import { NewTicketModal } from './components/Modals/NewTicketModal';
 import { PasswordReset } from './components/PasswordReset';
+import { ScreenAccessManager } from './components/ScreenAccessManager';
 import { Header } from './components/Sidebar';
 import { TicketDetails } from './components/TicketDetails';
 import { TicketList } from './components/TicketList';
 import { UserManagement } from './components/UserManagement';
 import { ADMIN_TICKET_STATUS_LABELS, APP_TITLE, HSE_STATUS_LABELS, STATUS_LABELS } from './constants';
 import { ActivityLog } from './tabs/ActivityLogs';
+import { CVGenerator } from './tabs/CVGenerator';
 import { LeaveManagement } from './tabs/LeaveManagement';
 import { Login } from './tabs/Login';
 import { NoticeBoard } from './tabs/Noticeboard';
 import { SiteDutyManagement } from './tabs/SiteDutyManagement';
 
-function canUserAccessTab(tab: ActiveTab, role: UserRole, department: string | undefined): boolean {
+function canUserAccessTab(
+  tab: ActiveTab,
+  role: UserRole,
+  department: string | undefined,
+  cvGeneratorAllowed: boolean
+): boolean {
   switch (tab) {
     case 'noticeboard':
       return ['it', 'employee', 'manager', 'executive'].includes(role);
@@ -60,6 +67,8 @@ function canUserAccessTab(tab: ActiveTab, role: UserRole, department: string | u
       return ['it', 'employee', 'manager', 'executive'].includes(role);
     case 'site_duties':
       return ['it', 'employee', 'manager', 'executive'].includes(role) && department !== 'Staff';
+    case 'cv_generator':
+      return cvGeneratorAllowed;
     case 'factory_users':
       return role === 'it' || role === 'factory_it';
     case 'factory_attendance':
@@ -95,6 +104,7 @@ function pathToTab(pathname: string): {
     attendance: 'attendance',
     leaves: 'leaves',
     'site-duties': 'site_duties',
+    'cv-generator': 'cv_generator',
     'factory-users': 'factory_users',
     'factory-attendance': 'factory_attendance',
   };
@@ -190,6 +200,7 @@ function App() {
   useEffect(() => {
     attendanceSelectedUserIdRef.current = attendanceSelectedUserId;
   });
+  const [cvGeneratorAllowed, setCvGeneratorAllowed] = useState<boolean>(false);
 
   const handleAttendanceViewModeChange = (mode: 'summary' | 'individual', userId?: string) => {
     if (mode === 'individual') {
@@ -264,7 +275,7 @@ function App() {
   const enforceAccessControl = useCallback(() => {
     if (!currentUser) return;
     const { tab } = pathToTab(window.location.pathname);
-    if (!canUserAccessTab(tab, currentUser.role, currentUser.department ?? undefined)) {
+    if (!canUserAccessTab(tab, currentUser.role, currentUser.department ?? undefined, cvGeneratorAllowed)) {
       const fallback = getSafeFallbackTab(currentUser.role);
       syncUrl(fallback);
       setActiveTab(fallback);
@@ -273,7 +284,7 @@ function App() {
       setAttendanceViewMode('summary');
       setAttendanceSelectedUserId(undefined);
     }
-  }, [currentUser, syncUrl]);
+  }, [currentUser, syncUrl, cvGeneratorAllowed]);
 
   useEffect(() => {
     if (currentUser && !loading) {
@@ -300,7 +311,10 @@ function App() {
   useEffect(() => {
     const handlePopState = () => {
       const { tab, ticketId, attendanceUserId, attendanceView } = pathToTab(window.location.pathname);
-      if (!currentUser || canUserAccessTab(tab, currentUser.role, currentUser.department ?? undefined)) {
+      if (
+        !currentUser ||
+        canUserAccessTab(tab, currentUser.role, currentUser.department ?? undefined, cvGeneratorAllowed)
+      ) {
         setActiveTab(tab);
         setSelectedTicketId(tab === 'tickets' ? ticketId : null);
         setSelectedAdminTicketId(tab === 'admin_tickets' ? ticketId : null);
@@ -321,7 +335,7 @@ function App() {
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [currentUser]);
+  }, [currentUser, cvGeneratorAllowed]);
 
   // Load session and data
   useEffect(() => {
@@ -349,6 +363,15 @@ function App() {
         const authData = await authRes.json();
         const user: AppUser = authData.user;
         setCurrentUser(user);
+
+        const cvRes = await fetch('/api/screen-overrides/cv_generator/users', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (cvRes.ok) {
+          const cvData = await cvRes.json();
+          const allowedIds: string[] = cvData.users.map((u: { id: string }) => u.id);
+          setCvGeneratorAllowed(allowedIds.includes(user.id) || allowedIds.length === 0);
+        }
 
         if (user.needsPasswordReset === 1) {
           setLoading(false);
@@ -1732,6 +1755,7 @@ function App() {
         setActiveTab={navigateToTab}
         onLogout={handleLogout}
         onChangePasswordClick={() => setIsPasswordModalOpen(true)}
+        cvGeneratorAllowed={cvGeneratorAllowed}
       />
 
       {/* Main Section */}
@@ -1770,16 +1794,25 @@ function App() {
               loading={loading}
             />
           ) : activeTab === 'users' && currentUser.role === 'it' ? (
-            <UserManagement
-              users={users}
-              currentUser={currentUser}
-              token={token}
-              onAddUser={handleAddUser}
-              onDeleteUser={handleDeleteUser}
-              onOffboardUser={handleOffboardUser}
-              onUpdateUser={handleUpdateUser}
-              loading={loading}
-            />
+            <div>
+              <UserManagement
+                users={users}
+                currentUser={currentUser}
+                token={token}
+                onAddUser={handleAddUser}
+                onDeleteUser={handleDeleteUser}
+                onOffboardUser={handleOffboardUser}
+                onUpdateUser={handleUpdateUser}
+                loading={loading}
+              />
+              <ScreenAccessManager
+                screenName="cv_generator"
+                screenLabel="CV Generator"
+                users={users}
+                currentUser={currentUser}
+                token={token}
+              />
+            </div>
           ) : activeTab === 'factory_users' && (currentUser.role === 'factory_it' || currentUser.role === 'it') ? (
             <FactoryUserManagement
               users={factoryUsers}
@@ -1815,6 +1848,8 @@ function App() {
             <LeaveManagement currentUser={currentUser} token={token!} />
           ) : activeTab === 'site_duties' ? (
             <SiteDutyManagement currentUser={currentUser} token={token!} />
+          ) : activeTab === 'cv_generator' ? (
+            <CVGenerator currentUser={currentUser} token={token!} />
           ) : activeTab === 'admin_tickets' ? (
             currentAdminTicket ? (
               <AdminTicketDetails
