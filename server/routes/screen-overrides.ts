@@ -158,10 +158,10 @@ router.get('/:screenName/check', authenticateToken, async (req: AuthRequest, res
       return res.json({ hasAccess: true });
     }
 
-    const override = await db.get(
-      'SELECT user_id FROM screen_overrides WHERE screen_name = ? AND user_id = ?',
-      [screenName, currentUser.id]
-    );
+    const override = await db.get('SELECT user_id FROM screen_overrides WHERE screen_name = ? AND user_id = ?', [
+      screenName,
+      currentUser.id,
+    ]);
 
     return res.json({ hasAccess: !!override });
   } catch (err) {
