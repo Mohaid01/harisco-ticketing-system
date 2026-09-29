@@ -42,7 +42,7 @@
   border-bottom: 0.0531rem solid var(--border-color);
   padding-bottom: 0.7rem;
   margin-bottom: 1rem;
-  flex-wrap: gap: 0.5rem;
+  gap: 0.5rem;
 }
 
 .cv-review-section-title {

@@ -38,7 +38,16 @@ router.post('/send', authenticateToken, async (req: ApiAuthRequest<SendCVRequest
       "SELECT email, name FROM users WHERE role = 'it' AND email IS NOT NULL AND email != '' AND is_active = 1"
     );
 
-    const subject = `[CV Application] ${candidateName}`;
+    // Escape user-provided values to prevent HTML injection
+    const escapeHtml = (s: string): string =>
+      s
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+
+    const subject = `[CV Application] ${escapeHtml(candidateName)}`;
     const body = `
 <!DOCTYPE html>
 <html>
@@ -46,9 +55,9 @@ router.post('/send', authenticateToken, async (req: ApiAuthRequest<SendCVRequest
   <h2 style="color: #0e529b;">New CV Application Received</h2>
   <p>A new CV application has been generated and is attached to this email.</p>
   <table style="border-collapse: collapse; margin: 20px 0;">
-    <tr><td style="padding: 4px 12px; border: 1px solid #ddd;"><strong>Candidate Name:</strong></td><td style="padding: 4px 12px; border: 1px solid #ddd;">${candidateName}</td></tr>
-    ${candidateEmail ? `<tr><td style="padding: 4px 12px; border: 1px solid #ddd;"><strong>Email:</strong></td><td style="padding: 4px 12px; border: 1px solid #ddd;">${candidateEmail}</td></tr>` : ''}
-    <tr><td style="padding: 4px 12px; border: 1px solid #ddd;"><strong>Submitted By:</strong></td><td style="padding: 4px 12px; border: 1px solid #ddd;">${currentUser.name}</td></tr>
+    <tr><td style="padding: 4px 12px; border: 1px solid #ddd;"><strong>Candidate Name:</strong></td><td style="padding: 4px 12px; border: 1px solid #ddd;">${escapeHtml(candidateName)}</td></tr>
+    ${candidateEmail ? `<tr><td style="padding: 4px 12px; border: 1px solid #ddd;"><strong>Email:</strong></td><td style="padding: 4px 12px; border: 1px solid #ddd;">${escapeHtml(candidateEmail)}</td></tr>` : ''}
+    <tr><td style="padding: 4px 12px; border: 1px solid #ddd;"><strong>Submitted By:</strong></td><td style="padding: 4px 12px; border: 1px solid #ddd;">${escapeHtml(currentUser.name)}</td></tr>
     <tr><td style="padding: 4px 12px; border: 1px solid #ddd;"><strong>Date:</strong></td><td style="padding: 4px 12px; border: 1px solid #ddd;">${new Date().toLocaleString()}</td></tr>
   </table>
   <p>Please review the attached PDF for full details.</p>
