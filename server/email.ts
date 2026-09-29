@@ -67,3 +67,50 @@ export async function sendEmail(to: string, subject: string, body: string): Prom
   `);
   return true;
 }
+
+/**
+ * Sends an email with a PDF attachment.
+ * Uses the same SMTP transporter as sendEmail, but attaches a base64-encoded PDF.
+ */
+export async function sendEmailWithAttachment(
+  to: string,
+  subject: string,
+  body: string,
+  attachments: { filename: string; content: string; contentType: string }[]
+): Promise<boolean> {
+  if (!to) {
+    logger.warn(`[Email Service] Skipped sending email: "to" address is empty. (Subject: "${subject}")`);
+    return false;
+  }
+
+  if (transporter) {
+    try {
+      await transporter.sendMail({
+        from: fromAddress,
+        to,
+        subject,
+        html: body,
+        attachments,
+      });
+      logger.info(`[Email Service] Email with attachment sent to ${to} (Subject: "${subject}")`);
+      return true;
+    } catch (err) {
+      logger.error(`[Email Service] Failed to send email with attachment to ${to} via SMTP:`, err);
+    }
+  }
+
+  // Fallback to console simulation (attachments are logged but not actually sent)
+  logger.info(`
+    =========================================
+    📧 EMAIL WITH ATTACHMENT (SIMULATION - SMTP NOT CONFIGURED)
+    From:    ${fromAddress}
+    To:      ${to}
+    Subject: ${subject}
+    Date:    ${new Date().toLocaleString()}
+    Attachments: ${attachments.map((a) => a.filename).join(', ')}
+    -----------------------------------------
+    ${body}
+    =========================================
+  `);
+  return true;
+}

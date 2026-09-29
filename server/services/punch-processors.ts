@@ -255,17 +255,6 @@ export async function processFactoryAttendancePunch(input: {
   try {
     const db = getDb();
 
-    const scanDateStr = punchTime.includes(' ')
-      ? punchTime.split(' ')[0]
-      : punchTime.includes('T')
-        ? punchTime.split('T')[0]
-        : punchTime;
-    const holiday = await db.get('SELECT name FROM holidays WHERE date = ?', [scanDateStr]);
-    if (holiday) {
-      logger.info(`🏖️ [HOLIDAY] Factory scan on '${holiday.name}' (${scanDateStr}) — ignored from ${deviceLabel}.`);
-      return;
-    }
-
     const insertResult = await db.run(
       `INSERT INTO factory_attendance_logs 
       (name, userId, ioTime, method, status, timestamp) 

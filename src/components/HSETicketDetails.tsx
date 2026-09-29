@@ -1,13 +1,4 @@
-import {
-  ArrowLeft,
-  Calendar,
-  CheckCircle2,
-  Send,
-  ShieldAlert,
-  Tag,
-  User,
-  UserCheck,
-} from 'lucide-react';
+import { ArrowLeft, Calendar, CheckCircle2, Send, ShieldAlert, Tag, User, UserCheck } from 'lucide-react';
 import React, { useState } from 'react';
 
 import type { AppUser, HSEStatus, HSETicket } from '../types';
@@ -19,7 +10,13 @@ interface HSETicketDetailsProps {
   currentUser: AppUser;
   hseUsers: AppUser[];
   onBack: () => void;
-  onUpdateStatus: (ticketId: string, status: HSEStatus, actionMessage: string, executiveId?: string, executiveName?: string) => void;
+  onUpdateStatus: (
+    ticketId: string,
+    status: HSEStatus,
+    actionMessage: string,
+    executiveId?: string,
+    executiveName?: string
+  ) => void;
   onAssignTicket: (ticketId: string, assigneeId: string, assigneeName: string) => void;
   onAddComment: (ticketId: string, content: string) => void;
   onDeleteTicket?: (ticketId: string) => void;
@@ -122,8 +119,7 @@ export const HSETicketDetails: React.FC<HSETicketDetailsProps> = ({
 
   const canAssignOrEscalate = isHSEUser && ticket.status === 'open';
   const canApproveOrReject = (isHSEUser || isExecutive) && ticket.status === 'escalated';
-  const canClose =
-    ticket.assigneeId === currentUser.id && ticket.status === 'in_progress';
+  const canClose = ticket.assigneeId === currentUser.id && ticket.status === 'in_progress';
 
   const handleEscalate = () => {
     onUpdateStatus(ticket.id, 'escalated', 'Escalated to HSE Executive for review');
@@ -526,12 +522,7 @@ export const HSETicketDetails: React.FC<HSETicketDetailsProps> = ({
               )}
 
               {canClose && (
-                <button
-                  id="btn-hse-close"
-                  className="btn btn-success"
-                  style={{ width: '100%' }}
-                  onClick={handleClose}
-                >
+                <button id="btn-hse-close" className="btn btn-success" style={{ width: '100%' }} onClick={handleClose}>
                   <CheckCircle2 size={16} />
                   Close Ticket
                 </button>
@@ -588,9 +579,7 @@ export const HSETicketDetails: React.FC<HSETicketDetailsProps> = ({
                   }}
                 >
                   <Tag size={16} style={{ color: 'var(--text-muted)' }} />
-                  <span style={{ fontSize: '0.88rem', fontWeight: 600 }}>
-                    {HSE_CATEGORY_LABELS[ticket.category]}
-                  </span>
+                  <span style={{ fontSize: '0.88rem', fontWeight: 600 }}>{HSE_CATEGORY_LABELS[ticket.category]}</span>
                 </div>
               </div>
 
@@ -654,9 +643,7 @@ export const HSETicketDetails: React.FC<HSETicketDetailsProps> = ({
                     }}
                   >
                     <User size={16} style={{ color: 'var(--text-muted)' }} />
-                    <span style={{ fontSize: '0.88rem', fontWeight: 600 }}>
-                      {ticket.executiveName}
-                    </span>
+                    <span style={{ fontSize: '0.88rem', fontWeight: 600 }}>{ticket.executiveName}</span>
                   </div>
                 </div>
               )}

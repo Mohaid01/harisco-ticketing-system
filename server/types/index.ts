@@ -799,6 +799,27 @@ export interface DeleteFactoryAttendanceLogResponse {
 
 export type FactoryAttendanceLogsResponse = AttendanceLog[];
 
+// Screen Override Types
+export interface ScreenOverride {
+  id: number;
+  screen_name: string;
+  user_id: string;
+  granted_by: string;
+  granted_at: string;
+}
+
+export interface GrantScreenAccessRequestBody {
+  userIds: string[];
+}
+
+export interface ScreenOverrideResponse extends ScreenOverride {
+  user_name?: string;
+  user_avatar?: string;
+  user_role?: string;
+}
+
+export type ScreenOverridesResponse = ScreenOverrideResponse[];
+
 // HSE Ticket Types
 export type HSECategory =
   | 'human_resource'
@@ -816,8 +837,7 @@ export type HSECategory =
   | 'environmental'
   | 'demos_drills';
 
-export type HSEStatus =
-  | 'open' | 'escalated' | 'in_progress' | 'rejected' | 'closed';
+export type HSEStatus = 'open' | 'escalated' | 'in_progress' | 'rejected' | 'closed';
 
 export interface DbHSETicket {
   id: string;
