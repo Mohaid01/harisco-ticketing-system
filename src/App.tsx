@@ -29,18 +29,18 @@ import { NewAdminTicketModal } from './components/Modals/NewAdminTicketModal';
 import { NewHSETicketModal } from './components/Modals/NewHSETicketModal';
 import { NewTicketModal } from './components/Modals/NewTicketModal';
 import { PasswordReset } from './components/PasswordReset';
+import { ScreenAccessManager } from './components/ScreenAccessManager';
 import { Header } from './components/Sidebar';
 import { TicketDetails } from './components/TicketDetails';
 import { TicketList } from './components/TicketList';
 import { UserManagement } from './components/UserManagement';
-import { ScreenAccessManager } from './components/ScreenAccessManager';
 import { ADMIN_TICKET_STATUS_LABELS, APP_TITLE, HSE_STATUS_LABELS, STATUS_LABELS } from './constants';
 import { ActivityLog } from './tabs/ActivityLogs';
+import { CVGenerator } from './tabs/CVGenerator';
 import { LeaveManagement } from './tabs/LeaveManagement';
 import { Login } from './tabs/Login';
 import { NoticeBoard } from './tabs/Noticeboard';
 import { SiteDutyManagement } from './tabs/SiteDutyManagement';
-import { CVGenerator } from './tabs/CVGenerator';
 
 function canUserAccessTab(
   tab: ActiveTab,
