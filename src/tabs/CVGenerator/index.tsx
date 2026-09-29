@@ -226,6 +226,7 @@ export const CVGenerator: React.FC<CVGeneratorProps> = ({ token }) => {
     { id: 'review', title: 'Review & Submit', subtitle: 'Step 9 of 9' },
   ];
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     const draft = loadDraft() as FormData | null;
     if (draft) {
@@ -289,6 +290,7 @@ export const CVGenerator: React.FC<CVGeneratorProps> = ({ token }) => {
       }
     }
   }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   useEffect(() => {
     formDataRef.current = {

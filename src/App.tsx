@@ -284,7 +284,7 @@ function App() {
       setAttendanceViewMode('summary');
       setAttendanceSelectedUserId(undefined);
     }
-  }, [currentUser, syncUrl]);
+  }, [currentUser, syncUrl, cvGeneratorAllowed]);
 
   useEffect(() => {
     if (currentUser && !loading) {
@@ -335,7 +335,7 @@ function App() {
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [currentUser]);
+  }, [currentUser, cvGeneratorAllowed]);
 
   // Load session and data
   useEffect(() => {
