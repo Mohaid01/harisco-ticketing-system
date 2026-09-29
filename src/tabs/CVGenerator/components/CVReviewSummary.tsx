@@ -3,7 +3,7 @@ import React from 'react';
 
 import type { ExperienceRow, FormData, RepeaterRow } from '../types';
 
-import './CVReviewSummary.css';
+import '../CVReviewSummary.css';
 
 const NOT_SPECIFIED = '—';
 const NO_ENTRIES_TEXT = 'No entries provided';

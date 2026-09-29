@@ -4,7 +4,7 @@ import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 
 import type { ExperienceRow, FormData, RepeaterRow } from '../types';
 
-import logo from '../../assets/harisco-logo.png';
+import logo from '../../../assets/harisco-logo.png';
 
 const blobToBase64 = async (blob: Blob): Promise<string> => {
   const arrayBuffer = await blob.arrayBuffer();
