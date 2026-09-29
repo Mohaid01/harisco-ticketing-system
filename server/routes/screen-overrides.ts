@@ -148,10 +148,20 @@ router.get('/:screenName/check', authenticateToken, async (req: AuthRequest, res
 
   try {
     const db = getDb();
-    const override = await db.get('SELECT user_id FROM screen_overrides WHERE screen_name = ? AND user_id = ?', [
-      screenName,
-      currentUser.id,
-    ]);
+    const countRow = await db.get<{ count: number }>(
+      'SELECT count(*) as count FROM screen_overrides WHERE screen_name = ?',
+      [screenName]
+    );
+    const totalCount = countRow?.count ?? 0;
+
+    if (totalCount === 0 || currentUser.role === 'it') {
+      return res.json({ hasAccess: true });
+    }
+
+    const override = await db.get(
+      'SELECT user_id FROM screen_overrides WHERE screen_name = ? AND user_id = ?',
+      [screenName, currentUser.id]
+    );
 
     return res.json({ hasAccess: !!override });
   } catch (err) {

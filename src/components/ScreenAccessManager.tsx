@@ -36,7 +36,8 @@ export const ScreenAccessManager: React.FC<ScreenAccessManagerProps> = ({
         });
         if (res.ok) {
           const data = await res.json();
-          const allowedIds: Set<string> = new Set((data.users || []).map((u: ScreenOverrideUser) => u.user_id));
+          const list: ScreenOverrideUser[] = Array.isArray(data) ? data : data.users || [];
+          const allowedIds: Set<string> = new Set(list.map((u: ScreenOverrideUser) => u.user_id));
           setAllowedUsers(users.map((u) => ({ ...u, checked: allowedIds.has(u.id) })));
         } else {
           setAllowedUsers(users.map((u) => ({ ...u, checked: false })));

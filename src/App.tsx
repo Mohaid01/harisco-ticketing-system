@@ -364,13 +364,16 @@ function App() {
         const user: AppUser = authData.user;
         setCurrentUser(user);
 
-        const cvRes = await fetch('/api/screen-overrides/cv_generator/users', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (cvRes.ok) {
-          const cvData = await cvRes.json();
-          const allowedIds: string[] = cvData.users.map((u: { id: string }) => u.id);
-          setCvGeneratorAllowed(allowedIds.includes(user.id) || allowedIds.length === 0);
+        try {
+          const cvRes = await fetch('/api/screen-overrides/cv_generator/check', {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (cvRes.ok) {
+            const cvData = await cvRes.json();
+            setCvGeneratorAllowed(!!cvData.hasAccess);
+          }
+        } catch (cvErr) {
+          console.error('Failed to check CV generator access:', cvErr);
         }
 
         if (user.needsPasswordReset === 1) {
@@ -436,9 +439,11 @@ function App() {
         }
       } catch (err) {
         console.error('Session verification failed:', err);
-        localStorage.removeItem('harisco_token');
-        setToken(null);
-        setCurrentUser(null);
+        if (err instanceof Error && err.message === 'Session expired') {
+          localStorage.removeItem('harisco_token');
+          setToken(null);
+          setCurrentUser(null);
+        }
       } finally {
         setLoading(false);
       }
