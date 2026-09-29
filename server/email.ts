@@ -76,7 +76,7 @@ export async function sendEmailWithAttachment(
   to: string,
   subject: string,
   body: string,
-  attachments: { filename: string; content: string; contentType: string }[],
+  attachments: { filename: string; content: string; contentType: string }[]
 ): Promise<boolean> {
   if (!to) {
     logger.warn(`[Email Service] Skipped sending email: "to" address is empty. (Subject: "${subject}")`);

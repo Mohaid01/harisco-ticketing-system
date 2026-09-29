@@ -92,9 +92,7 @@ const RepeaterSection: React.FC<RepeaterSectionProps> = ({
         transition={{ duration: 0.3 }}
         className="cv-repeater-body"
       >
-        {rows.length === 0 && (
-          <p className="cv-empty-text">No entries added yet. Click the button below to add one.</p>
-        )}
+        {rows.length === 0 && <p className="cv-empty-text">No entries added yet. Click the button below to add one.</p>}
 
         {rows.map((row, index) => (
           <div key={index} className="cv-repeater-row">

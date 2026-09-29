@@ -59,7 +59,10 @@ const drawLetterhead = (page: PageWithFonts, logoImage: unknown, font: Font) => 
 
   if (logoImage) {
     const logoHeight = 40;
-    const logoWidth = ((logoImage as { width: number; height: number }).width / (logoImage as { width: number; height: number }).height) * logoHeight;
+    const logoWidth =
+      ((logoImage as { width: number; height: number }).width /
+        (logoImage as { width: number; height: number }).height) *
+      logoHeight;
     page.drawImage(logoImage, {
       x: A4_WIDTH - MARGIN_RIGHT - logoWidth,
       y: A4_HEIGHT - 60,
@@ -69,7 +72,11 @@ const drawLetterhead = (page: PageWithFonts, logoImage: unknown, font: Font) => 
   }
 };
 
-const wrapText = (text: string, maxWidth: number, font: { widthOfTextAtSize: (t: string, s: number) => number }): string[] => {
+const wrapText = (
+  text: string,
+  maxWidth: number,
+  font: { widthOfTextAtSize: (t: string, s: number) => number }
+): string[] => {
   if (!text) return [];
   const FONT_SIZE = 9;
   const lines: string[] = [];
@@ -185,17 +192,12 @@ const drawDivider = (page: PageWithFonts, y: number): number => {
   return y - 10;
 };
 
-interface CheckNewPageResult {
-  page: PageWithFonts;
-  y: number;
-}
-
 const checkNewPage = (
   pdfDoc: PDFDocument,
   page: PageWithFonts,
   y: number,
   requiredHeight: number,
-  logoImage: unknown,
+  logoImage: unknown
 ): CheckNewPageResult => {
   if (y - requiredHeight < MARGIN_BOTTOM) {
     const newPage = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
@@ -212,7 +214,7 @@ const twoColumnFields = (
   page: PageWithFonts,
   logoImage: unknown,
   items: { label: string; value: string | number }[],
-  yPos: number,
+  yPos: number
 ): { page: PageWithFonts; y: number } => {
   const indent = 10;
   const colWidth = Math.floor((CONTENT_WIDTH - indent * 2 - 20) / 2);
@@ -226,22 +228,40 @@ const twoColumnFields = (
     const leftItem = items[i];
     const rightItem = items[i + 1];
 
-    const leftVal = (!leftItem.value && leftItem.value !== 0) || String(leftItem.value).trim() === ''
-      ? 'N/A'
-      : String(leftItem.value);
-    const leftLabelLines = wrapText(leftItem.label, labelWidth - 4, page.font as { widthOfTextAtSize: (t: string, s: number) => number });
-    const leftValueLines = wrapText(leftVal, valueWidth, page.font as { widthOfTextAtSize: (t: string, s: number) => number });
+    const leftVal =
+      (!leftItem.value && leftItem.value !== 0) || String(leftItem.value).trim() === ''
+        ? 'N/A'
+        : String(leftItem.value);
+    const leftLabelLines = wrapText(
+      leftItem.label,
+      labelWidth - 4,
+      page.font as { widthOfTextAtSize: (t: string, s: number) => number }
+    );
+    const leftValueLines = wrapText(
+      leftVal,
+      valueWidth,
+      page.font as { widthOfTextAtSize: (t: string, s: number) => number }
+    );
     const leftLines = Math.max(leftLabelLines.length, leftValueLines.length);
 
     let rightLines = 0;
     let rightLabelLines: string[] = [];
     let rightValueLines: string[] = [];
     if (rightItem) {
-      const rightVal = (!rightItem.value && rightItem.value !== 0) || String(rightItem.value).trim() === ''
-        ? 'N/A'
-        : String(rightItem.value);
-      rightLabelLines = wrapText(rightItem.label, labelWidth - 4, page.font as { widthOfTextAtSize: (t: string, s: number) => number });
-      rightValueLines = wrapText(rightVal, valueWidth, page.font as { widthOfTextAtSize: (t: string, s: number) => number });
+      const rightVal =
+        (!rightItem.value && rightItem.value !== 0) || String(rightItem.value).trim() === ''
+          ? 'N/A'
+          : String(rightItem.value);
+      rightLabelLines = wrapText(
+        rightItem.label,
+        labelWidth - 4,
+        page.font as { widthOfTextAtSize: (t: string, s: number) => number }
+      );
+      rightValueLines = wrapText(
+        rightVal,
+        valueWidth,
+        page.font as { widthOfTextAtSize: (t: string, s: number) => number }
+      );
       rightLines = Math.max(rightLabelLines.length, rightValueLines.length);
     }
 
@@ -264,7 +284,7 @@ const twoColumnFields = (
         size: 9,
         font: page.font,
         color: LABEL_COLOR,
-      }),
+      })
     );
     leftValueLines.forEach((line, li) =>
       page.drawText(line, {
@@ -273,7 +293,7 @@ const twoColumnFields = (
         size: 9,
         font: page.font,
         color: TEXT_COLOR,
-      }),
+      })
     );
 
     if (rightItem) {
@@ -284,7 +304,7 @@ const twoColumnFields = (
           size: 9,
           font: page.font,
           color: LABEL_COLOR,
-        }),
+        })
       );
       rightValueLines.forEach((line, li) =>
         page.drawText(line, {
@@ -293,7 +313,7 @@ const twoColumnFields = (
           size: 9,
           font: page.font,
           color: TEXT_COLOR,
-        }),
+        })
       );
     }
 
@@ -309,7 +329,7 @@ const drawTable = (
   logoImage: unknown,
   columns: { header: string; width: number }[],
   rows: string[][],
-  yPos: number,
+  yPos: number
 ): { page: PageWithFonts; y: number } => {
   let currentY = yPos;
   const FONT_SIZE = 9;
@@ -364,7 +384,7 @@ const drawTable = (
 
   if (rows.length > 0) {
     const firstRowWrapped = rows[0].map((text, idx) =>
-      wrapText(text || 'N/A', Math.max(10, columns[idx].width - PAD_X * 2), font),
+      wrapText(text || 'N/A', Math.max(10, columns[idx].width - PAD_X * 2), font)
     );
     const firstRowMaxLines = Math.max(1, ...firstRowWrapped.map((w) => w.length));
     const firstRowH = PAD_TOP + firstRowMaxLines * LINE_H + PAD_BOT;
@@ -376,9 +396,7 @@ const drawTable = (
 
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
-    const wrapped = row.map((text, idx) =>
-      wrapText(text || 'N/A', Math.max(10, columns[idx].width - PAD_X * 2), font),
-    );
+    const wrapped = row.map((text, idx) => wrapText(text || 'N/A', Math.max(10, columns[idx].width - PAD_X * 2), font));
     const maxLines = Math.max(1, ...wrapped.map((w) => w.length));
     const rowH = PAD_TOP + maxLines * LINE_H + PAD_BOT;
 
@@ -438,7 +456,7 @@ const section = (
   page: PageWithFonts,
   logoImage: unknown,
   title: string,
-  y: number,
+  y: number
 ): { page: PageWithFonts; y: number } => {
   const res = checkNewPage(pdfDoc, page, y, 80, logoImage);
   const newPage = res.page;
@@ -535,10 +553,15 @@ export const generateApplicationPdf = async (data: FormData, photoFile?: File): 
 
   let currentY = personalStartY;
   for (const field of allLeftFields) {
-    const displayValue = field.value === null || field.value === undefined || String(field.value).trim() === ''
-      ? 'N/A'
-      : String(field.value);
-    const valueLines = wrapText(displayValue, leftValueWidth, font as { widthOfTextAtSize: (t: string, s: number) => number });
+    const displayValue =
+      field.value === null || field.value === undefined || String(field.value).trim() === ''
+        ? 'N/A'
+        : String(field.value);
+    const valueLines = wrapText(
+      displayValue,
+      leftValueWidth,
+      font as { widthOfTextAtSize: (t: string, s: number) => number }
+    );
     page.drawText(field.label, {
       x: MARGIN_LEFT + 10,
       y: currentY,
@@ -568,7 +591,11 @@ export const generateApplicationPdf = async (data: FormData, photoFile?: File): 
   });
   currentY -= 14;
   const cnicNumberDisplay = data.cnicNumber || 'N/A';
-  const cnicNumberLines = wrapText(cnicNumberDisplay, leftValueWidth, font as { widthOfTextAtSize: (t: string, s: number) => number });
+  const cnicNumberLines = wrapText(
+    cnicNumberDisplay,
+    leftValueWidth,
+    font as { widthOfTextAtSize: (t: string, s: number) => number }
+  );
   page.drawText('Number', {
     x: MARGIN_LEFT + 10,
     y: currentY,
@@ -588,7 +615,11 @@ export const generateApplicationPdf = async (data: FormData, photoFile?: File): 
   currentY -= Math.max(1, cnicNumberLines.length) * lineHeight + 2;
 
   const cnicExpiryDisplay = formatDate(data.cnicExpiry);
-  const cnicExpiryLines = wrapText(cnicExpiryDisplay, leftValueWidth, font as { widthOfTextAtSize: (t: string, s: number) => number });
+  const cnicExpiryLines = wrapText(
+    cnicExpiryDisplay,
+    leftValueWidth,
+    font as { widthOfTextAtSize: (t: string, s: number) => number }
+  );
   page.drawText('Expiry', {
     x: MARGIN_LEFT + 10,
     y: currentY,
@@ -617,7 +648,11 @@ export const generateApplicationPdf = async (data: FormData, photoFile?: File): 
   });
   currentY -= 14;
   const passportNumberDisplay = data.passportNumber || 'N/A';
-  const passportNumberLines = wrapText(passportNumberDisplay, leftValueWidth, font as { widthOfTextAtSize: (t: string, s: number) => number });
+  const passportNumberLines = wrapText(
+    passportNumberDisplay,
+    leftValueWidth,
+    font as { widthOfTextAtSize: (t: string, s: number) => number }
+  );
   page.drawText('Number', {
     x: MARGIN_LEFT + 10,
     y: currentY,
@@ -637,7 +672,11 @@ export const generateApplicationPdf = async (data: FormData, photoFile?: File): 
   currentY -= Math.max(1, passportNumberLines.length) * lineHeight + 2;
 
   const passportExpiryDisplay = formatDate(data.passportExpiry);
-  const passportExpiryLines = wrapText(passportExpiryDisplay, leftValueWidth, font as { widthOfTextAtSize: (t: string, s: number) => number });
+  const passportExpiryLines = wrapText(
+    passportExpiryDisplay,
+    leftValueWidth,
+    font as { widthOfTextAtSize: (t: string, s: number) => number }
+  );
   page.drawText('Expiry', {
     x: MARGIN_LEFT + 10,
     y: currentY,
@@ -661,7 +700,9 @@ export const generateApplicationPdf = async (data: FormData, photoFile?: File): 
   if (photoImage) {
     const maxWidth = colWidth - 20;
     const targetHeight = personalDetailsHeight / 1.75;
-    const aspectRatio = (photoImage as { width: number; height: number }).width / (photoImage as { width: number; height: number }).height;
+    const aspectRatio =
+      (photoImage as { width: number; height: number }).width /
+      (photoImage as { width: number; height: number }).height;
     let drawWidth = targetHeight * aspectRatio;
     let drawHeight = targetHeight;
     if (drawWidth > maxWidth) {
@@ -670,7 +711,7 @@ export const generateApplicationPdf = async (data: FormData, photoFile?: File): 
     }
     const imgX = rightColX + 10 + maxWidth - drawWidth;
     const imgY = personalStartY - drawHeight;
-    page.drawImage(logoImage, { x: imgX, y: imgY, width: drawWidth, height: drawHeight });
+    page.drawImage(photoImage, { x: imgX, y: imgY, width: drawWidth, height: drawHeight });
   }
 
   y = currentY - 8;
@@ -684,11 +725,15 @@ export const generateApplicationPdf = async (data: FormData, photoFile?: File): 
   });
   page.drawText(
     `Spouse: ${data.dependantsSpouse ?? 0}    Sons: ${data.dependantsSons ?? 0}    Daughters: ${data.dependantsDaughters ?? 0}    Others: ${data.dependantsOthers ?? 0}`,
-    { x: MARGIN_LEFT + 10 + 110, y, size: 9, font, color: TEXT_COLOR },
+    { x: MARGIN_LEFT + 10 + 110, y, size: 9, font, color: TEXT_COLOR }
   );
   y -= 14;
 
-  const addrLines = wrapText(data.permanentAddress || 'N/A', CONTENT_WIDTH - 10 - 110, font as { widthOfTextAtSize: (t: string, s: number) => number });
+  const addrLines = wrapText(
+    data.permanentAddress || 'N/A',
+    CONTENT_WIDTH - 10 - 110,
+    font as { widthOfTextAtSize: (t: string, s: number) => number }
+  );
   page.drawText('Permanent Address', {
     x: MARGIN_LEFT + 10,
     y,
@@ -712,19 +757,31 @@ export const generateApplicationPdf = async (data: FormData, photoFile?: File): 
   ({ page, y } = section(pdfDoc, page, logoImage, 'Emergency Contacts', y));
   if (data.emergencyContact1Name) {
     y = drawEntryHeader(page, 'Primary Contact', y);
-    ({ page, y } = twoColumnFields(pdfDoc, page, logoImage, [
-      { label: 'Name', value: data.emergencyContact1Name },
-      { label: 'Relation', value: data.emergencyContact1Relation },
-      { label: 'Phone', value: data.emergencyContact1Phone },
-    ], y));
+    ({ page, y } = twoColumnFields(
+      pdfDoc,
+      page,
+      logoImage,
+      [
+        { label: 'Name', value: data.emergencyContact1Name },
+        { label: 'Relation', value: data.emergencyContact1Relation },
+        { label: 'Phone', value: data.emergencyContact1Phone },
+      ],
+      y
+    ));
   }
   if (data.emergencyContact2Name) {
     y = drawEntryHeader(page, 'Secondary Contact', y);
-    ({ page, y } = twoColumnFields(pdfDoc, page, logoImage, [
-      { label: 'Name', value: data.emergencyContact2Name },
-      { label: 'Relation', value: data.emergencyContact2Relation },
-      { label: 'Phone', value: data.emergencyContact2Phone },
-    ], y));
+    ({ page, y } = twoColumnFields(
+      pdfDoc,
+      page,
+      logoImage,
+      [
+        { label: 'Name', value: data.emergencyContact2Name },
+        { label: 'Relation', value: data.emergencyContact2Relation },
+        { label: 'Phone', value: data.emergencyContact2Phone },
+      ],
+      y
+    ));
   }
   y = drawDivider(page, y);
 

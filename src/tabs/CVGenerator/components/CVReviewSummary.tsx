@@ -1,16 +1,6 @@
 import React from 'react';
 
-import {
-  Award,
-  Briefcase,
-  FileText,
-  Globe,
-  GraduationCap,
-  Laptop,
-  Pencil,
-  User,
-  Users,
-} from 'lucide-react';
+import { Award, Briefcase, FileText, Globe, GraduationCap, Laptop, Pencil, User, Users } from 'lucide-react';
 
 import type { ExperienceRow, FormData, RepeaterRow } from '../types';
 
@@ -50,12 +40,7 @@ export const CVReviewSummary: React.FC<CVReviewSummaryProps> = ({
   const validLanguages = (data.foreignLanguages || []).filter(isNonEmptyRow);
   const validReferences = (data.references || []).filter(isNonEmptyRow);
 
-  const formatExperienceDuration = (
-    years: string,
-    months: string,
-    asOfMonth: string,
-    asOfYear: string,
-  ): string => {
+  const formatExperienceDuration = (years: string, months: string, asOfMonth: string, asOfYear: string): string => {
     const y = years || '0';
     const m = months || '0';
     const asOf = asOfMonth && asOfYear ? ` (As of ${asOfMonth}/${asOfYear})` : '';
@@ -76,8 +61,8 @@ export const CVReviewSummary: React.FC<CVReviewSummaryProps> = ({
       <div className="cv-review-intro">
         <h3 className="cv-review-intro-title">Review Your Application</h3>
         <p className="cv-review-intro-text">
-          Please carefully review all submitted information before final submission. Click Edit on
-          any section to make updates.
+          Please carefully review all submitted information before final submission. Click Edit on any section to make
+          updates.
         </p>
       </div>
 
@@ -90,11 +75,7 @@ export const CVReviewSummary: React.FC<CVReviewSummaryProps> = ({
           <div className="cv-review-section-badge">
             {validExperience.length} {validExperience.length === 1 ? 'entry' : 'entries'}
           </div>
-          <button
-            type="button"
-            onClick={() => onNavigateStep(0)}
-            className="cv-btn cv-btn-secondary"
-          >
+          <button type="button" onClick={() => onNavigateStep(0)} className="cv-btn cv-btn-secondary">
             <Pencil className="w-3.5 h-3.5" />
             <span className="cv-btn-text">Edit</span>
           </button>
@@ -110,8 +91,8 @@ export const CVReviewSummary: React.FC<CVReviewSummaryProps> = ({
                 data.totalExpYears,
                 data.totalExpMonths,
                 data.totalExpAsOfMonth,
-                data.totalExpAsOfYear,
-              ),
+                data.totalExpAsOfYear
+              )
             )}
           </div>
           <div className="cv-review-field-span-3">
@@ -121,8 +102,8 @@ export const CVReviewSummary: React.FC<CVReviewSummaryProps> = ({
                 data.relevantExpYears,
                 data.relevantExpMonths,
                 data.relevantExpAsOfMonth,
-                data.relevantExpAsOfYear,
-              ),
+                data.relevantExpAsOfYear
+              )
             )}
           </div>
         </div>
@@ -134,11 +115,7 @@ export const CVReviewSummary: React.FC<CVReviewSummaryProps> = ({
             <User className="w-4 h-4" />
             <h4>Personal Details</h4>
           </div>
-          <button
-            type="button"
-            onClick={() => onNavigateStep(0)}
-            className="cv-btn cv-btn-secondary"
-          >
+          <button type="button" onClick={() => onNavigateStep(0)} className="cv-btn cv-btn-secondary">
             <Pencil className="w-3.5 h-3.5" />
             <span className="cv-btn-text">Edit</span>
           </button>
@@ -166,9 +143,7 @@ export const CVReviewSummary: React.FC<CVReviewSummaryProps> = ({
             {renderField('CNIC Expiry', data.cnicExpiry)}
             {renderField('Passport Number', data.passportNumber || undefined)}
             {renderField('Passport Expiry', data.passportExpiry || undefined)}
-            <div className="cv-review-field-span-full">
-              {renderField('Permanent Address', data.permanentAddress)}
-            </div>
+            <div className="cv-review-field-span-full">{renderField('Permanent Address', data.permanentAddress)}</div>
           </div>
         </div>
 
@@ -220,11 +195,7 @@ export const CVReviewSummary: React.FC<CVReviewSummaryProps> = ({
             <Briefcase className="w-4 h-4" />
             <h4>Work Experience</h4>
           </div>
-          <button
-            type="button"
-            onClick={() => onNavigateStep(1)}
-            className="cv-btn cv-btn-secondary"
-          >
+          <button type="button" onClick={() => onNavigateStep(1)} className="cv-btn cv-btn-secondary">
             <Pencil className="w-3.5 h-3.5" />
             <span className="cv-btn-text">Edit</span>
           </button>
@@ -241,7 +212,9 @@ export const CVReviewSummary: React.FC<CVReviewSummaryProps> = ({
               return (
                 <div key={idx} className="cv-review-exp-card">
                   <div className="cv-review-exp-header">
-                    <span className="cv-review-entry-label">{ENTRY_LABEL} {idx + 1}</span>
+                    <span className="cv-review-entry-label">
+                      {ENTRY_LABEL} {idx + 1}
+                    </span>
                     <span className="cv-review-exp-dates">
                       {exp.from || NOT_SPECIFIED} — {exp.to || 'Present'}
                     </span>
@@ -270,11 +243,7 @@ export const CVReviewSummary: React.FC<CVReviewSummaryProps> = ({
             <GraduationCap className="w-4 h-4" />
             <h4>Academic Details</h4>
           </div>
-          <button
-            type="button"
-            onClick={() => onNavigateStep(2)}
-            className="cv-btn cv-btn-secondary"
-          >
+          <button type="button" onClick={() => onNavigateStep(2)} className="cv-btn cv-btn-secondary">
             <Pencil className="w-3.5 h-3.5" />
             <span className="cv-btn-text">Edit</span>
           </button>
@@ -285,7 +254,9 @@ export const CVReviewSummary: React.FC<CVReviewSummaryProps> = ({
           <div className="cv-review-grid cv-review-grid-2">
             {validAcademics.map((acad, idx) => (
               <div key={idx} className="cv-review-acad-card">
-                <span className="cv-review-entry-label">{ENTRY_LABEL} {idx + 1}</span>
+                <span className="cv-review-entry-label">
+                  {ENTRY_LABEL} {idx + 1}
+                </span>
                 <span className="cv-review-acad-dates">
                   {acad.sessionFrom || NOT_SPECIFIED} — {acad.sessionTo || NOT_SPECIFIED}
                 </span>
@@ -303,11 +274,7 @@ export const CVReviewSummary: React.FC<CVReviewSummaryProps> = ({
             <Award className="w-4 h-4" />
             <h4>Certifications</h4>
           </div>
-          <button
-            type="button"
-            onClick={() => onNavigateStep(3)}
-            className="cv-btn cv-btn-secondary"
-          >
+          <button type="button" onClick={() => onNavigateStep(3)} className="cv-btn cv-btn-secondary">
             <Pencil className="w-3.5 h-3.5" />
             <span className="cv-btn-text">Edit</span>
           </button>
@@ -318,15 +285,13 @@ export const CVReviewSummary: React.FC<CVReviewSummaryProps> = ({
           <div className="cv-review-grid cv-review-grid-3">
             {validCertifications.map((cert, idx) => (
               <div key={idx} className="cv-review-cert-card">
-                <span className="cv-review-entry-label">{ENTRY_LABEL} {idx + 1}</span>
-                {cert.year && (
-                  <span className="cv-review-cert-year">{cert.year}</span>
-                )}
+                <span className="cv-review-entry-label">
+                  {ENTRY_LABEL} {idx + 1}
+                </span>
+                {cert.year && <span className="cv-review-cert-year">{cert.year}</span>}
                 <h5 className="cv-review-cert-title">{cert.name || NOT_SPECIFIED}</h5>
                 <p className="cv-review-acad-inst">{cert.institution || NOT_SPECIFIED}</p>
-                {cert.body && (
-                  <p className="cv-review-cert-body">Body: {cert.body}</p>
-                )}
+                {cert.body && <p className="cv-review-cert-body">Body: {cert.body}</p>}
               </div>
             ))}
           </div>
@@ -339,11 +304,7 @@ export const CVReviewSummary: React.FC<CVReviewSummaryProps> = ({
             <Award className="w-4 h-4" />
             <h4>Awards & Achievements</h4>
           </div>
-          <button
-            type="button"
-            onClick={() => onNavigateStep(4)}
-            className="cv-btn cv-btn-secondary"
-          >
+          <button type="button" onClick={() => onNavigateStep(4)} className="cv-btn cv-btn-secondary">
             <Pencil className="w-3.5 h-3.5" />
             <span className="cv-btn-text">Edit</span>
           </button>
@@ -354,17 +315,13 @@ export const CVReviewSummary: React.FC<CVReviewSummaryProps> = ({
           <div className="cv-review-grid cv-review-grid-2">
             {validAwards.map((award, idx) => (
               <div key={idx} className="cv-review-award-card">
-                <span className="cv-review-entry-label">{ENTRY_LABEL} {idx + 1}</span>
-                {award.year && (
-                  <span className="cv-review-award-year">{award.year}</span>
-                )}
+                <span className="cv-review-entry-label">
+                  {ENTRY_LABEL} {idx + 1}
+                </span>
+                {award.year && <span className="cv-review-award-year">{award.year}</span>}
                 <h5 className="cv-review-award-title">{award.institution || NOT_SPECIFIED}</h5>
-                {award.body && (
-                  <p className="cv-review-cert-body">Authorized Body: {award.body}</p>
-                )}
-                {award.description && (
-                  <p className="cv-review-award-desc">{award.description}</p>
-                )}
+                {award.body && <p className="cv-review-cert-body">Authorized Body: {award.body}</p>}
+                {award.description && <p className="cv-review-award-desc">{award.description}</p>}
               </div>
             ))}
           </div>
@@ -377,11 +334,7 @@ export const CVReviewSummary: React.FC<CVReviewSummaryProps> = ({
             <Laptop className="w-4 h-4" />
             <h4>Computer Skills</h4>
           </div>
-          <button
-            type="button"
-            onClick={() => onNavigateStep(5)}
-            className="cv-btn cv-btn-secondary"
-          >
+          <button type="button" onClick={() => onNavigateStep(5)} className="cv-btn cv-btn-secondary">
             <Pencil className="w-3.5 h-3.5" />
             <span className="cv-btn-text">Edit</span>
           </button>
@@ -406,11 +359,7 @@ export const CVReviewSummary: React.FC<CVReviewSummaryProps> = ({
             <Globe className="w-4 h-4" />
             <h4>Foreign Languages</h4>
           </div>
-          <button
-            type="button"
-            onClick={() => onNavigateStep(6)}
-            className="cv-btn cv-btn-secondary"
-          >
+          <button type="button" onClick={() => onNavigateStep(6)} className="cv-btn cv-btn-secondary">
             <Pencil className="w-3.5 h-3.5" />
             <span className="cv-btn-text">Edit</span>
           </button>
@@ -448,11 +397,7 @@ export const CVReviewSummary: React.FC<CVReviewSummaryProps> = ({
             <Users className="w-4 h-4" />
             <h4>Professional References</h4>
           </div>
-          <button
-            type="button"
-            onClick={() => onNavigateStep(7)}
-            className="cv-btn cv-btn-secondary"
-          >
+          <button type="button" onClick={() => onNavigateStep(7)} className="cv-btn cv-btn-secondary">
             <Pencil className="w-3.5 h-3.5" />
             <span className="cv-btn-text">Edit</span>
           </button>
@@ -463,7 +408,9 @@ export const CVReviewSummary: React.FC<CVReviewSummaryProps> = ({
           <div className="cv-review-grid cv-review-grid-3">
             {validReferences.map((ref, idx) => (
               <div key={idx} className="cv-review-ref-card">
-                <span className="cv-review-entry-label">{ENTRY_LABEL} {idx + 1}</span>
+                <span className="cv-review-entry-label">
+                  {ENTRY_LABEL} {idx + 1}
+                </span>
                 <h5 className="cv-review-ref-name">{ref.name || NOT_SPECIFIED}</h5>
                 <p className="cv-review-ref-mobile">{ref.mobile || NOT_SPECIFIED}</p>
               </div>
@@ -473,11 +420,7 @@ export const CVReviewSummary: React.FC<CVReviewSummaryProps> = ({
       </div>
 
       <div className="cv-review-submit">
-        <button
-          onClick={onSubmit}
-          disabled={isSubmitting}
-          className="cv-btn cv-btn-primary cv-btn-submit"
-        >
+        <button onClick={onSubmit} disabled={isSubmitting} className="cv-btn cv-btn-primary cv-btn-submit">
           {isSubmitting ? 'Sending...' : 'Generate & Send CV'}
         </button>
       </div>

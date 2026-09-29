@@ -46,7 +46,7 @@ function canUserAccessTab(
   tab: ActiveTab,
   role: UserRole,
   department: string | undefined,
-  cvGeneratorAllowed: boolean,
+  cvGeneratorAllowed: boolean
 ): boolean {
   switch (tab) {
     case 'noticeboard':
@@ -311,7 +311,10 @@ function App() {
   useEffect(() => {
     const handlePopState = () => {
       const { tab, ticketId, attendanceUserId, attendanceView } = pathToTab(window.location.pathname);
-      if (!currentUser || canUserAccessTab(tab, currentUser.role, currentUser.department ?? undefined, cvGeneratorAllowed)) {
+      if (
+        !currentUser ||
+        canUserAccessTab(tab, currentUser.role, currentUser.department ?? undefined, cvGeneratorAllowed)
+      ) {
         setActiveTab(tab);
         setSelectedTicketId(tab === 'tickets' ? ticketId : null);
         setSelectedAdminTicketId(tab === 'admin_tickets' ? ticketId : null);
@@ -1790,26 +1793,26 @@ function App() {
               setSearchQuery={setSearchQuery}
               loading={loading}
             />
-           ) : activeTab === 'users' && currentUser.role === 'it' ? (
-             <div>
-               <UserManagement
-                 users={users}
-                 currentUser={currentUser}
-                 token={token}
-                 onAddUser={handleAddUser}
-                 onDeleteUser={handleDeleteUser}
-                 onOffboardUser={handleOffboardUser}
-                 onUpdateUser={handleUpdateUser}
-                 loading={loading}
-               />
-               <ScreenAccessManager
-                 screenName="cv_generator"
-                 screenLabel="CV Generator"
-                 users={users}
-                 currentUser={currentUser}
-                 token={token}
-               />
-             </div>
+          ) : activeTab === 'users' && currentUser.role === 'it' ? (
+            <div>
+              <UserManagement
+                users={users}
+                currentUser={currentUser}
+                token={token}
+                onAddUser={handleAddUser}
+                onDeleteUser={handleDeleteUser}
+                onOffboardUser={handleOffboardUser}
+                onUpdateUser={handleUpdateUser}
+                loading={loading}
+              />
+              <ScreenAccessManager
+                screenName="cv_generator"
+                screenLabel="CV Generator"
+                users={users}
+                currentUser={currentUser}
+                token={token}
+              />
+            </div>
           ) : activeTab === 'factory_users' && (currentUser.role === 'factory_it' || currentUser.role === 'it') ? (
             <FactoryUserManagement
               users={factoryUsers}

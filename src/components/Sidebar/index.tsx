@@ -114,7 +114,7 @@ const MENU_ITEMS: MenuItem[] = [
         icon: Calendar,
         roles: ['it', 'employee', 'manager', 'executive'],
       },
-       {
+      {
         id: 'site_duties',
         label: 'Site Duties',
         icon: MapPin,
@@ -155,7 +155,7 @@ function isItemVisible(
   item: MenuItem,
   userRole: UserRole,
   userDepartment: string | undefined,
-  screenOverrideFlags: Record<string, boolean> = {},
+  screenOverrideFlags: Record<string, boolean> = {}
 ): boolean {
   if (!item.roles.includes(userRole)) return false;
   if (item.notAllowedDepartments?.includes(userDepartment ?? 'unknown')) return false;
@@ -213,7 +213,7 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   const visibleItems = MENU_ITEMS.filter((item) =>
-    isItemVisible(item, currentUser.role, currentUser.department ?? undefined, screenOverrideFlags),
+    isItemVisible(item, currentUser.role, currentUser.department ?? undefined, screenOverrideFlags)
   );
 
   const handleTabChange = (tab: ActiveTab) => {

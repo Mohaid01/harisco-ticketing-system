@@ -8,9 +8,5 @@ interface CVSectionLabelProps {
 }
 
 export const CVSectionLabel: React.FC<CVSectionLabelProps> = ({ children, className = '' }) => (
-  <h3
-    className={`cv-section-label ${className}`}
-  >
-    {children}
-  </h3>
+  <h3 className={`cv-section-label ${className}`}>{children}</h3>
 );

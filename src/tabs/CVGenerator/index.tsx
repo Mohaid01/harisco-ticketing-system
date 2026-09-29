@@ -82,9 +82,7 @@ const base64ToFile = (base64: string, filename = 'photo.jpg'): File | null => {
   }
 };
 
-const compressImageFile = (
-  file: File,
-): Promise<{ preview: string; compressedFile: File } | null> => {
+const compressImageFile = (file: File): Promise<{ preview: string; compressedFile: File } | null> => {
   return new Promise((resolve) => {
     const reader = new FileReader();
     reader.onloadend = () => {
@@ -134,12 +132,7 @@ const formatCNIC = (value: string): string => {
   return `${limited.slice(0, 5)}-${limited.slice(5, 12)}-${limited.slice(12)}`;
 };
 
-const validateRepeater = (
-  rows: RepeaterRow[],
-  fields: string[],
-  sectionName: string,
-  minEntries = 0,
-): boolean => {
+const validateRepeater = (rows: RepeaterRow[], fields: string[], sectionName: string, minEntries = 0): boolean => {
   if (rows.length < minEntries) {
     alert(`Please add at least ${minEntries} ${sectionName} entry${minEntries === 1 ? '' : 'ies'}.`);
     return false;
@@ -156,11 +149,7 @@ const validateRepeater = (
   return true;
 };
 
-const validateRepeaterSilent = (
-  rows: RepeaterRow[],
-  fields: string[],
-  minEntries = 0,
-): boolean => {
+const validateRepeaterSilent = (rows: RepeaterRow[], fields: string[], minEntries = 0): boolean => {
   if (rows.length < minEntries) return false;
   for (let i = 0; i < rows.length; i++) {
     for (let j = 0; j < fields.length; j++) {
@@ -227,14 +216,15 @@ export const CVGenerator: React.FC<CVGeneratorProps> = ({ token }) => {
   ]);
 
   const steps = [
-    { id: 'header-personal', title: 'Personal Details', subtitle: 'Step 1 of 8' },
-    { id: 'experience', title: 'Experience', subtitle: 'Step 2 of 8' },
-    { id: 'academic', title: 'Academic Details', subtitle: 'Step 3 of 8' },
-    { id: 'certifications', title: 'Certifications', subtitle: 'Step 4 of 8' },
-    { id: 'awards', title: 'Awards & Achievements', subtitle: 'Step 5 of 8' },
-    { id: 'computer', title: 'Computer Skills', subtitle: 'Step 6 of 8' },
-    { id: 'languages', title: 'Foreign Languages', subtitle: 'Step 7 of 8' },
-    { id: 'references', title: 'Professional References', subtitle: 'Step 8 of 8' },
+    { id: 'header-personal', title: 'Personal Details', subtitle: 'Step 1 of 9' },
+    { id: 'experience', title: 'Experience', subtitle: 'Step 2 of 9' },
+    { id: 'academic', title: 'Academic Details', subtitle: 'Step 3 of 9' },
+    { id: 'certifications', title: 'Certifications', subtitle: 'Step 4 of 9' },
+    { id: 'awards', title: 'Awards & Achievements', subtitle: 'Step 5 of 9' },
+    { id: 'computer', title: 'Computer Skills', subtitle: 'Step 6 of 9' },
+    { id: 'languages', title: 'Foreign Languages', subtitle: 'Step 7 of 9' },
+    { id: 'references', title: 'Professional References', subtitle: 'Step 8 of 9' },
+    { id: 'review', title: 'Review & Submit', subtitle: 'Step 9 of 9' },
   ];
 
   useEffect(() => {
@@ -277,12 +267,22 @@ export const CVGenerator: React.FC<CVGeneratorProps> = ({ token }) => {
       setAwards(draft.awards || []);
       const migratedExperience = (draft.experience || []).map((exp: Record<string, unknown>) => ({
         ...exp,
-        descriptions: (Array.isArray(exp.descriptions) ? exp.descriptions : exp.description ? [exp.description] : []) as string[],
+        descriptions: (Array.isArray(exp.descriptions)
+          ? exp.descriptions
+          : exp.description
+            ? [exp.description]
+            : []) as string[],
       })) as ExperienceRow[];
       setExperience(migratedExperience);
       setComputerSkills(draft.computerSkills || []);
       setForeignLanguages(draft.foreignLanguages || []);
-      setReferences(draft.references || [{ name: '', mobile: '' }, { name: '', mobile: '' }, { name: '', mobile: '' }]);
+      setReferences(
+        draft.references || [
+          { name: '', mobile: '' },
+          { name: '', mobile: '' },
+          { name: '', mobile: '' },
+        ]
+      );
       setPhotoPreview(draft.photoPreview || null);
       if (draft.photoPreview) {
         const restoredFile = base64ToFile(draft.photoPreview, `photo-${Date.now()}.jpg`);
@@ -345,32 +345,102 @@ export const CVGenerator: React.FC<CVGeneratorProps> = ({ token }) => {
 
     return () => clearTimeout(timer);
   }, [
-    postAppliedFor, code, noticePeriodDays,
-    totalExpYears, totalExpMonths, totalExpAsOfMonth, totalExpAsOfYear,
-    relevantExpYears, relevantExpMonths, relevantExpAsOfMonth, relevantExpAsOfYear,
-    fullName, fatherName, dob, bloodGroup, phone, email,
-    cnicNumber, cnicExpiry, passportNumber, passportExpiry, permanentAddress,
-    emgName1, emgRel1, emgPhone1, emgName2, emgRel2, emgPhone2,
-    dependantsSpouse, dependantsSons, dependantsDaughters, dependantsOthers,
-    academicDetails, certifications, awards, experience,
-    computerSkills, foreignLanguages, references, photoPreview,
+    postAppliedFor,
+    code,
+    noticePeriodDays,
+    totalExpYears,
+    totalExpMonths,
+    totalExpAsOfMonth,
+    totalExpAsOfYear,
+    relevantExpYears,
+    relevantExpMonths,
+    relevantExpAsOfMonth,
+    relevantExpAsOfYear,
+    fullName,
+    fatherName,
+    dob,
+    bloodGroup,
+    phone,
+    email,
+    cnicNumber,
+    cnicExpiry,
+    passportNumber,
+    passportExpiry,
+    permanentAddress,
+    emgName1,
+    emgRel1,
+    emgPhone1,
+    emgName2,
+    emgRel2,
+    emgPhone2,
+    dependantsSpouse,
+    dependantsSons,
+    dependantsDaughters,
+    dependantsOthers,
+    academicDetails,
+    certifications,
+    awards,
+    experience,
+    computerSkills,
+    foreignLanguages,
+    references,
+    photoPreview,
   ]);
 
   const validateStep = (step: number): boolean => {
     if (step === 0) {
-      if (!fullName.trim()) { alert('Please fill your Full Name.'); return false; }
-      if (!fatherName.trim()) { alert("Please fill Father's Name."); return false; }
-      if (!dob.trim()) { alert('Please fill Date of Birth.'); return false; }
-      if (!bloodGroup) { alert('Please select Blood Group.'); return false; }
-      if (!phone.trim()) { alert('Please fill Phone Number.'); return false; }
-      if (!email.trim()) { alert('Please fill Email.'); return false; }
-      if (!cnicNumber.trim() || !cnicExpiry.trim()) { alert('Please fill CNIC Number and Expiry.'); return false; }
-      if (!permanentAddress.trim()) { alert('Please fill Permanent Address.'); return false; }
-      if (!emgName1.trim() || !emgRel1.trim() || !emgPhone1.trim()) { alert('Please fill Emergency Contact 1.'); return false; }
-      if (!emgName2.trim() || !emgRel2.trim() || !emgPhone2.trim()) { alert('Please fill Emergency Contact 2.'); return false; }
-      if (!photoFile) { alert('Please upload your photo.'); return false; }
-      if (passportNumber.trim() && !passportExpiry.trim()) { alert('Please fill Passport Expiry.'); return false; }
-      if (passportExpiry.trim() && !passportNumber.trim()) { alert('Please fill Passport Number.'); return false; }
+      if (!fullName.trim()) {
+        alert('Please fill your Full Name.');
+        return false;
+      }
+      if (!fatherName.trim()) {
+        alert("Please fill Father's Name.");
+        return false;
+      }
+      if (!dob.trim()) {
+        alert('Please fill Date of Birth.');
+        return false;
+      }
+      if (!bloodGroup) {
+        alert('Please select Blood Group.');
+        return false;
+      }
+      if (!phone.trim()) {
+        alert('Please fill Phone Number.');
+        return false;
+      }
+      if (!email.trim()) {
+        alert('Please fill Email.');
+        return false;
+      }
+      if (!cnicNumber.trim() || !cnicExpiry.trim()) {
+        alert('Please fill CNIC Number and Expiry.');
+        return false;
+      }
+      if (!permanentAddress.trim()) {
+        alert('Please fill Permanent Address.');
+        return false;
+      }
+      if (!emgName1.trim() || !emgRel1.trim() || !emgPhone1.trim()) {
+        alert('Please fill Emergency Contact 1.');
+        return false;
+      }
+      if (!emgName2.trim() || !emgRel2.trim() || !emgPhone2.trim()) {
+        alert('Please fill Emergency Contact 2.');
+        return false;
+      }
+      if (!photoFile) {
+        alert('Please upload your photo.');
+        return false;
+      }
+      if (passportNumber.trim() && !passportExpiry.trim()) {
+        alert('Please fill Passport Expiry.');
+        return false;
+      }
+      if (passportExpiry.trim() && !passportNumber.trim()) {
+        alert('Please fill Passport Number.');
+        return false;
+      }
     }
     if (step === 1) {
       if (experience.length === 0) {
@@ -391,7 +461,8 @@ export const CVGenerator: React.FC<CVGeneratorProps> = ({ token }) => {
       }
     }
     if (step === 2) {
-      if (!validateRepeater(academicDetails, ['degree', 'institution', 'sessionFrom', 'sessionTo'], 'Academic', 1)) return false;
+      if (!validateRepeater(academicDetails, ['degree', 'institution', 'sessionFrom', 'sessionTo'], 'Academic', 1))
+        return false;
     }
     if (step === 3) {
       if (!validateRepeaterSilent(certifications, ['name', 'institution', 'year', 'body'])) {
@@ -454,9 +525,7 @@ export const CVGenerator: React.FC<CVGeneratorProps> = ({ token }) => {
         setCurrentStep(currentStep + 1);
       }
     } else {
-      if (validateStep(currentStep) && validateStep(7)) {
-        handleSubmit();
-      }
+      handleSubmit();
     }
   };
 
@@ -662,9 +731,13 @@ export const CVGenerator: React.FC<CVGeneratorProps> = ({ token }) => {
               className="cv-select"
               required
             >
-              <option value="" className="bg-slate-900 text-white">Select</option>
+              <option value="" className="bg-slate-900 text-white">
+                Select
+              </option>
               {BLOOD_GROUPS.map((bg) => (
-                <option key={bg} value={bg} className="bg-slate-900 text-white">{bg}</option>
+                <option key={bg} value={bg} className="bg-slate-900 text-white">
+                  {bg}
+                </option>
               ))}
             </select>
           </div>
@@ -722,9 +795,13 @@ export const CVGenerator: React.FC<CVGeneratorProps> = ({ token }) => {
               onChange={(e) => setTotalExpAsOfMonth(e.target.value)}
               className="cv-select"
             >
-              <option value="" className="bg-slate-900 text-white">Month</option>
+              <option value="" className="bg-slate-900 text-white">
+                Month
+              </option>
               {MONTHS.map((m) => (
-                <option key={m.value} value={m.value} className="bg-slate-900 text-white">{m.label}</option>
+                <option key={m.value} value={m.value} className="bg-slate-900 text-white">
+                  {m.label}
+                </option>
               ))}
             </select>
           </div>
@@ -736,9 +813,13 @@ export const CVGenerator: React.FC<CVGeneratorProps> = ({ token }) => {
               onChange={(e) => setTotalExpAsOfYear(e.target.value)}
               className="cv-select"
             >
-              <option value="" className="bg-slate-900 text-white">Year</option>
+              <option value="" className="bg-slate-900 text-white">
+                Year
+              </option>
               {YEARS.map((year) => (
-                <option key={year} value={String(year)} className="bg-slate-900 text-white">{year}</option>
+                <option key={year} value={String(year)} className="bg-slate-900 text-white">
+                  {year}
+                </option>
               ))}
             </select>
           </div>
@@ -776,9 +857,13 @@ export const CVGenerator: React.FC<CVGeneratorProps> = ({ token }) => {
               onChange={(e) => setRelevantExpAsOfMonth(e.target.value)}
               className="cv-select"
             >
-              <option value="" className="bg-slate-900 text-white">Month</option>
+              <option value="" className="bg-slate-900 text-white">
+                Month
+              </option>
               {MONTHS.map((m) => (
-                <option key={m.value} value={m.value} className="bg-slate-900 text-white">{m.label}</option>
+                <option key={m.value} value={m.value} className="bg-slate-900 text-white">
+                  {m.label}
+                </option>
               ))}
             </select>
           </div>
@@ -790,9 +875,13 @@ export const CVGenerator: React.FC<CVGeneratorProps> = ({ token }) => {
               onChange={(e) => setRelevantExpAsOfYear(e.target.value)}
               className="cv-select"
             >
-              <option value="" className="bg-slate-900 text-white">Year</option>
+              <option value="" className="bg-slate-900 text-white">
+                Year
+              </option>
               {YEARS.map((year) => (
-                <option key={year} value={String(year)} className="bg-slate-900 text-white">{year}</option>
+                <option key={year} value={String(year)} className="bg-slate-900 text-white">
+                  {year}
+                </option>
               ))}
             </select>
           </div>
@@ -911,16 +1000,14 @@ export const CVGenerator: React.FC<CVGeneratorProps> = ({ token }) => {
         <div>
           <label className="cv-input-label-sub">Photo</label>
           <div className="cv-photo-upload">
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handlePhotoUpload}
-              className="hidden"
-              id="photo-upload"
-            />
+            <input type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" id="photo-upload" />
             <label htmlFor="photo-upload" className="cv-photo-placeholder cursor-pointer">
               {photoPreview ? (
-                <img src={photoPreview} alt="Photo preview" className="cv-photo-preview object-cover w-full h-full rounded" />
+                <img
+                  src={photoPreview}
+                  alt="Photo preview"
+                  className="cv-photo-preview object-cover w-full h-full rounded"
+                />
               ) : (
                 <>
                   <Upload className="w-6 h-6" />
@@ -941,18 +1028,6 @@ export const CVGenerator: React.FC<CVGeneratorProps> = ({ token }) => {
               </button>
             )}
           </div>
-        </div>
-
-        <div className="cv-form-grid-md">
-          <CVInput
-            label="Relevant Experience"
-            placeholder="Years"
-            type="number"
-            value={relevantExpYears}
-            onChange={(e) => setRelevantExpYears(e.target.value)}
-            name="relevantExpYears"
-            compact
-          />
         </div>
       </div>
     </div>
@@ -1119,7 +1194,12 @@ export const CVGenerator: React.FC<CVGeneratorProps> = ({ token }) => {
         maxEntries={10}
         minEntries={1}
         fields={['degree', 'institution', 'sessionFrom', 'sessionTo']}
-        labels={{ degree: 'Degree/Certificate', institution: 'Institution', sessionFrom: 'Session From', sessionTo: 'Session To' }}
+        labels={{
+          degree: 'Degree/Certificate',
+          institution: 'Institution',
+          sessionFrom: 'Session From',
+          sessionTo: 'Session To',
+        }}
         hasDate={['sessionFrom', 'sessionTo']}
         gridCols={{
           degree: 'md:col-span-5',
@@ -1218,12 +1298,36 @@ export const CVGenerator: React.FC<CVGeneratorProps> = ({ token }) => {
         fields={['name', 'reading', 'writing', 'speaking']}
         labels={{ name: 'Language', reading: 'Reading', writing: 'Writing', speaking: 'Speaking' }}
         hasSelect={{
-          name: ['English', 'Urdu', 'Arabic', 'Hindi', 'French', 'German', 'Spanish', 'Chinese', 'Japanese', 'Korean', 'Persian', 'Turkish', 'Bengali', 'Punjabi', 'Pashto', 'Sindhi', 'Balochi', 'Other'],
+          name: [
+            'English',
+            'Urdu',
+            'Arabic',
+            'Hindi',
+            'French',
+            'German',
+            'Spanish',
+            'Chinese',
+            'Japanese',
+            'Korean',
+            'Persian',
+            'Turkish',
+            'Bengali',
+            'Punjabi',
+            'Pashto',
+            'Sindhi',
+            'Balochi',
+            'Other',
+          ],
           reading: LANGUAGE_PROFICIENCY,
           writing: LANGUAGE_PROFICIENCY,
           speaking: LANGUAGE_PROFICIENCY,
         }}
-        gridCols={{ name: 'md:col-span-3', reading: 'md:col-span-3', writing: 'md:col-span-3', speaking: 'md:col-span-3' }}
+        gridCols={{
+          name: 'md:col-span-3',
+          reading: 'md:col-span-3',
+          writing: 'md:col-span-3',
+          speaking: 'md:col-span-3',
+        }}
       />
     </div>
   );
@@ -1248,9 +1352,7 @@ export const CVGenerator: React.FC<CVGeneratorProps> = ({ token }) => {
                 label="Reference Name"
                 value={ref.name || ''}
                 onChange={(e) =>
-                  setReferences((prev) =>
-                    prev.map((r, i) => (i === index ? { ...r, name: e.target.value } : r)),
-                  )
+                  setReferences((prev) => prev.map((r, i) => (i === index ? { ...r, name: e.target.value } : r)))
                 }
                 placeholder="Full Name"
                 required
@@ -1260,9 +1362,7 @@ export const CVGenerator: React.FC<CVGeneratorProps> = ({ token }) => {
                 type="tel"
                 value={ref.mobile || ''}
                 onChange={(e) =>
-                  setReferences((prev) =>
-                    prev.map((r, i) => (i === index ? { ...r, mobile: e.target.value } : r)),
-                  )
+                  setReferences((prev) => prev.map((r, i) => (i === index ? { ...r, mobile: e.target.value } : r)))
                 }
                 placeholder="+92 ..."
                 required
@@ -1285,10 +1385,13 @@ export const CVGenerator: React.FC<CVGeneratorProps> = ({ token }) => {
           <p className="cv-generator-success-message">
             Your CV PDF has been generated and sent to all IT users. A copy has also been downloaded to your device.
           </p>
-          <button onClick={() => {
-            clearDraft();
-            window.location.reload();
-          }} className="cv-btn cv-btn-primary">
+          <button
+            onClick={() => {
+              clearDraft();
+              window.location.reload();
+            }}
+            className="cv-btn cv-btn-primary"
+          >
             Generate Another CV
           </button>
         </div>
@@ -1333,18 +1436,11 @@ export const CVGenerator: React.FC<CVGeneratorProps> = ({ token }) => {
 
       {currentStep !== steps.length - 1 && (
         <div className="cv-form-actions">
-          <button
-            onClick={goPrev}
-            disabled={currentStep === 0}
-            className="cv-btn cv-btn-secondary"
-          >
+          <button onClick={goPrev} disabled={currentStep === 0} className="cv-btn cv-btn-secondary">
             <ArrowLeft className="w-4 h-4" />
             Previous
           </button>
-          <button
-            onClick={goNext}
-            className="cv-btn cv-btn-primary"
-          >
+          <button onClick={goNext} className="cv-btn cv-btn-primary">
             Next
             <ArrowRight className="w-4 h-4" />
           </button>

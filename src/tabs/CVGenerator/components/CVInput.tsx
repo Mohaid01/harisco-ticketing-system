@@ -36,11 +36,7 @@ const CVInput: React.FC<CVInputProps> = ({
   <div className="cv-input-group">
     <label
       className={`cv-input-label ${
-        compact
-          ? 'cv-input-label-compact'
-          : subLabel
-            ? 'cv-input-label-sub'
-            : 'cv-input-label-default'
+        compact ? 'cv-input-label-compact' : subLabel ? 'cv-input-label-sub' : 'cv-input-label-default'
       }`}
     >
       {label}

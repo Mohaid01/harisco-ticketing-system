@@ -36,12 +36,8 @@ export const ScreenAccessManager: React.FC<ScreenAccessManagerProps> = ({
         });
         if (res.ok) {
           const data = await res.json();
-          const allowedIds: Set<string> = new Set(
-            (data.users || []).map((u: ScreenOverrideUser) => u.user_id),
-          );
-          setAllowedUsers(
-            users.map((u) => ({ ...u, checked: allowedIds.has(u.id) })),
-          );
+          const allowedIds: Set<string> = new Set((data.users || []).map((u: ScreenOverrideUser) => u.user_id));
+          setAllowedUsers(users.map((u) => ({ ...u, checked: allowedIds.has(u.id) })));
         } else {
           setAllowedUsers(users.map((u) => ({ ...u, checked: false })));
         }
@@ -55,9 +51,7 @@ export const ScreenAccessManager: React.FC<ScreenAccessManagerProps> = ({
   }, [screenName, users, token]);
 
   const toggleUser = (userId: string) => {
-    setAllowedUsers((prev) =>
-      prev.map((u) => (u.id === userId ? { ...u, checked: !u.checked } : u)),
-    );
+    setAllowedUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, checked: !u.checked } : u)));
   };
 
   const saveOverrides = async () => {
@@ -94,7 +88,11 @@ export const ScreenAccessManager: React.FC<ScreenAccessManagerProps> = ({
   }
 
   if (loading) {
-    return <div className="panel" style={{ marginTop: '1.5rem' }}>Loading...</div>;
+    return (
+      <div className="panel" style={{ marginTop: '1.5rem' }}>
+        Loading...
+      </div>
+    );
   }
 
   return (
@@ -116,14 +114,17 @@ export const ScreenAccessManager: React.FC<ScreenAccessManagerProps> = ({
 
       <div style={{ marginTop: '0.7rem' }}>
         <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary, #8a94a6)', marginBottom: '0.5rem' }}>
-          Toggle which users can access the {screenLabel} screen. Currently {allowedUsers.filter(u => u.checked).length} user(s) have access.
+          Toggle which users can access the {screenLabel} screen. Currently{' '}
+          {allowedUsers.filter((u) => u.checked).length} user(s) have access.
         </p>
-        <div style={{
-          maxHeight: '300px',
-          overflowY: 'auto',
-          border: '0.0531rem solid var(--border-color)',
-          borderRadius: 'var(--radius-md)',
-        }}>
+        <div
+          style={{
+            maxHeight: '300px',
+            overflowY: 'auto',
+            border: '0.0531rem solid var(--border-color)',
+            borderRadius: 'var(--radius-md)',
+          }}
+        >
           {allowedUsers.map((user) => (
             <div
               key={user.id}
@@ -143,9 +144,7 @@ export const ScreenAccessManager: React.FC<ScreenAccessManagerProps> = ({
                 style={{ cursor: 'pointer' }}
               />
               <div style={{ flex: 1 }}>
-                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                  {user.name}
-                </span>
+                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>{user.name}</span>
                 <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary, #8a94a6)' }}>
                   {user.role} &middot; {user.email || 'No email'}
                 </span>

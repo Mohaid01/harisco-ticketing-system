@@ -18,31 +18,28 @@ interface SendCVRequestBody {
 
 // POST /api/cv-generator/send
 // Emails a generated CV PDF to IT users (same SMTP as ticket notifications)
-router.post(
-  '/send',
-  authenticateToken,
-   async (req: ApiAuthRequest<SendCVRequestBody>, res) => {
-    const currentUser = req.user;
-    if (!currentUser) {
-      return res.status(401).json({ error: 'Unauthorized. User data missing.' });
-    }
+router.post('/send', authenticateToken, async (req: ApiAuthRequest<SendCVRequestBody>, res) => {
+  const currentUser = req.user;
+  if (!currentUser) {
+    return res.status(401).json({ error: 'Unauthorized. User data missing.' });
+  }
 
-    const { candidateName, candidateEmail, pdfBase64, fileName } = req.body;
+  const { candidateName, candidateEmail, pdfBase64, fileName } = req.body;
 
-    if (!candidateName || !pdfBase64 || !fileName) {
-      return res.status(400).json({ error: 'Missing required fields: candidateName, pdfBase64, fileName.' });
-    }
+  if (!candidateName || !pdfBase64 || !fileName) {
+    return res.status(400).json({ error: 'Missing required fields: candidateName, pdfBase64, fileName.' });
+  }
 
-    try {
-      const db = getDb();
+  try {
+    const db = getDb();
 
-      // Fetch IT users who have email addresses — same pattern as ticket notifications
-      const itUsers = await db.all<{ email: string; name: string }[]>(
-        "SELECT email, name FROM users WHERE role = 'it' AND email IS NOT NULL AND email != '' AND is_active = 1"
-      );
+    // Fetch IT users who have email addresses — same pattern as ticket notifications
+    const itUsers = await db.all<{ email: string; name: string }[]>(
+      "SELECT email, name FROM users WHERE role = 'it' AND email IS NOT NULL AND email != '' AND is_active = 1"
+    );
 
-      const subject = `[CV Application] ${candidateName}`;
-      const body = `
+    const subject = `[CV Application] ${candidateName}`;
+    const body = `
 <!DOCTYPE html>
 <html>
 <body style="font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.6; color: #333;">
@@ -59,47 +56,41 @@ router.post(
 </body>
 </html>`;
 
-      let sentCount = 0;
-      const errors: string[] = [];
+    let sentCount = 0;
+    const errors: string[] = [];
 
-      for (const user of itUsers) {
-        const sent = await sendEmailWithAttachment(
-          user.email,
-          subject,
-          body,
-          [
-            {
-              filename: fileName,
-              content: pdfBase64,
-              contentType: 'application/pdf',
-            },
-          ],
-        ).catch((err: unknown) => {
-          logger.error(`[cv-generator] Failed to email CV to ${user.email}:`, err);
-          errors.push(user.email);
-          return false;
-        });
-
-        if (sent) sentCount++;
-      }
-
-      if (sentCount === 0) {
-        logger.warn('[cv-generator] No IT users with email addresses found to receive CV.');
-      }
-
-      logger.info(`[cv-generator] CV for ${candidateName} emailed to ${sentCount} recipient(s).`);
-
-      return res.json({
-        success: true,
-        sentCount,
-        totalRecipients: itUsers.length,
-        errors: errors.length > 0 ? errors : undefined,
+    for (const user of itUsers) {
+      const sent = await sendEmailWithAttachment(user.email, subject, body, [
+        {
+          filename: fileName,
+          content: pdfBase64,
+          contentType: 'application/pdf',
+        },
+      ]).catch((err: unknown) => {
+        logger.error(`[cv-generator] Failed to email CV to ${user.email}:`, err);
+        errors.push(user.email);
+        return false;
       });
-    } catch (err) {
-      logger.error('[cv-generator] Failed to process CV email:', err);
-      return res.status(500).json({ error: 'Failed to send CV email.' });
+
+      if (sent) sentCount++;
     }
-  },
-);
+
+    if (sentCount === 0) {
+      logger.warn('[cv-generator] No IT users with email addresses found to receive CV.');
+    }
+
+    logger.info(`[cv-generator] CV for ${candidateName} emailed to ${sentCount} recipient(s).`);
+
+    return res.json({
+      success: true,
+      sentCount,
+      totalRecipients: itUsers.length,
+      errors: errors.length > 0 ? errors : undefined,
+    });
+  } catch (err) {
+    logger.error('[cv-generator] Failed to process CV email:', err);
+    return res.status(500).json({ error: 'Failed to send CV email.' });
+  }
+});
 
 export default router;
