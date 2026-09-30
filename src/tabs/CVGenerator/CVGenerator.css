@@ -12,12 +12,11 @@
 }
 
 .cv-generator-title {
-  font-family: var(--font-mono);
-  font-size: 0.9rem;
+  font-family: var(--font-sans);
+  font-size: 1.15rem;
   font-weight: 700;
-  letter-spacing: 0.3em;
-  text-transform: uppercase;
-  color: var(--color-primary);
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
 }
 
 .cv-generator-steps {
@@ -34,14 +33,14 @@
   background-color: var(--bg-secondary);
   border: 0.0531rem solid var(--border-color);
   border-radius: var(--radius-md);
-  padding: 0.7rem 0.5rem;
+  padding: 0.6rem 0.5rem;
   text-align: center;
   cursor: pointer;
   transition: all var(--transition-fast);
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--text-secondary);
 }
 
 .cv-generator-step:hover {
@@ -87,22 +86,26 @@
 }
 
 .cv-step-card-title {
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
   font-weight: 700;
-  letter-spacing: 0.3em;
-  text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--text-primary);
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
 
-.cv-step-card-subtitle {
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
+.cv-step-card-title span {
+  font-size: 0.72rem;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.3em;
+  letter-spacing: 0.05em;
+  color: var(--color-primary);
+}
+
+.cv-step-card-subtitle {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
   color: var(--text-secondary, #8a94a6);
 }
 
@@ -134,28 +137,25 @@
 }
 
 .cv-fieldset-title {
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.25em;
-  text-transform: uppercase;
-  color: var(--color-primary-solid, var(--color-primary));
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
   display: flex;
   align-items: center;
   gap: 0.45rem;
 }
 
 .cv-fieldset-title svg {
-  width: 14px;
-  height: 14px;
+  width: 15px;
+  height: 15px;
   flex-shrink: 0;
+  color: var(--color-primary);
 }
 
 .cv-fieldset-hint {
-  font-family: var(--font-mono);
-  font-size: 0.6rem;
-  text-transform: uppercase;
-  letter-spacing: 0.15em;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
   color: var(--text-secondary, #8a94a6);
   margin-left: auto;
   text-align: right;
@@ -210,7 +210,7 @@
 }
 
 .cv-desc-counter {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 0.7rem;
   color: var(--text-secondary, #8a94a6);
   padding-top: 0.55rem;
@@ -237,10 +237,10 @@
   align-items: center;
   justify-content: center;
   gap: 0.425rem;
-  padding: 0.5rem 1rem;
+  padding: 0.5313rem 0.9563rem;
   font-family: var(--font-sans);
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: 0.88rem;
   border-radius: var(--radius-md);
   cursor: pointer;
   transition: all var(--transition-fast);
@@ -280,10 +280,9 @@
 }
 
 .cv-btn-text {
-  font-family: var(--font-mono);
-  font-size: 0.65rem;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  font-weight: 600;
 }
 
 .cv-btn:disabled,
@@ -299,39 +298,31 @@
 }
 
 .cv-input-label-default {
-  font-family: var(--font-mono);
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--color-primary);
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
 }
 
 .cv-input-label-sub {
-  font-family: var(--font-mono);
-  font-size: 0.6rem;
-  font-weight: 700;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  color: var(--text-secondary, #8a94a6);
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
 }
 
 .cv-input-label-compact {
-  font-family: var(--font-mono);
-  font-size: 0.6rem;
-  font-weight: 700;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  color: var(--text-secondary, #8a94a6);
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
 }
 
 .cv-section-label {
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.25em;
-  text-transform: uppercase;
-  color: var(--color-primary);
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
   margin-bottom: 0.7rem;
 }
 
@@ -340,17 +331,17 @@
   background-color: var(--bg-primary);
   border: 0.0531rem solid var(--border-color);
   border-radius: var(--radius-md);
-  padding: 0.5rem 0.75rem;
+  color: white;
+  padding: 0.5313rem 0.7438rem;
   font-family: var(--font-sans);
   font-size: 0.9rem;
-  color: var(--text-primary);
   transition: all var(--transition-fast);
 }
 
 .cv-input:focus {
   outline: none;
   border-color: var(--border-color-hover);
-  box-shadow: 0 0 0 0.1rem var(--color-primary-glow);
+  box-shadow: 0 0 0 0.1594rem var(--color-primary-glow);
 }
 
 .cv-input::placeholder {
@@ -358,11 +349,12 @@
 }
 
 .cv-select {
+  width: 100%;
   background-color: var(--bg-primary);
   color: var(--text-primary);
   border: 0.0531rem solid var(--border-color);
   border-radius: var(--radius-md);
-  padding: 0.5rem 0.75rem;
+  padding: 0.5313rem 0.7438rem;
   font-family: var(--font-sans);
   font-size: 0.9rem;
   cursor: pointer;
@@ -372,7 +364,7 @@
 .cv-select:focus {
   outline: none;
   border-color: var(--border-color-hover);
-  box-shadow: 0 0 0 0.1rem var(--color-primary-glow);
+  box-shadow: 0 0 0 0.1594rem var(--color-primary-glow);
 }
 
 .cv-photo-upload {
@@ -418,11 +410,9 @@
 }
 
 .cv-photo-label {
-  font-family: var(--font-mono);
-  font-size: 0.65rem;
-  text-transform: uppercase;
-  letter-spacing: 0.2em;
-  color: var(--color-primary);
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
 }
 
 .cv-repeater-section {
@@ -444,25 +434,21 @@
 }
 
 .cv-repeater-title {
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.25em;
-  text-transform: uppercase;
-  color: var(--color-primary);
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 .cv-repeater-info {
-  font-family: var(--font-mono);
-  font-size: 0.6rem;
-  text-transform: uppercase;
-  letter-spacing: 0.15em;
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
   color: var(--text-secondary, #8a94a6);
 }
 
 .cv-repeater-counter {
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
   color: var(--text-secondary, #8a94a6);
 }
 
@@ -471,10 +457,8 @@
 }
 
 .cv-empty-text {
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
   color: var(--text-secondary, #8a94a6);
   text-align: center;
   padding: 1.5rem;
@@ -504,10 +488,9 @@
 }
 
 .cv-repeater-entry-label {
-  font-family: var(--font-mono);
-  font-size: 0.65rem;
-  text-transform: uppercase;
-  letter-spacing: 0.15em;
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  font-weight: 600;
   color: var(--text-secondary, #8a94a6);
 }
 
@@ -551,10 +534,9 @@
 }
 
 .cv-btn .cv-btn-text {
-  font-family: var(--font-mono);
-  font-size: 0.65rem;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  font-weight: 600;
 }
 
 .cv-btn-primary .cv-btn-text {
@@ -581,12 +563,10 @@
 }
 
 .cv-generator-success-title {
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
+  font-family: var(--font-sans);
+  font-size: 1.1rem;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.2em;
-  color: var(--color-primary);
+  color: var(--text-primary);
   margin-bottom: 0.5rem;
 }
 

@@ -13,17 +13,15 @@
 }
 
 .cv-review-intro-title {
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
+  font-family: var(--font-sans);
+  font-size: 1.05rem;
   font-weight: 700;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
   color: var(--color-primary);
 }
 
 .cv-review-intro-text {
   font-family: var(--font-sans);
-  font-size: 0.8rem;
+  font-size: 0.95rem;
   color: var(--text-secondary, #8a94a6);
   margin-top: 0.5rem;
 }
@@ -49,11 +47,9 @@
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
+  font-family: var(--font-sans);
+  font-size: 1rem;
   font-weight: 700;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
   color: var(--color-primary);
 }
 
@@ -63,8 +59,8 @@
 }
 
 .cv-review-section-badge {
-  font-family: var(--font-mono);
-  font-size: 0.65rem;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
   color: var(--text-secondary, #8a94a6);
   background-color: var(--bg-primary);
   border: 0.0531rem solid var(--border-color);
@@ -79,17 +75,15 @@
 }
 
 .cv-review-field-label {
-  font-family: var(--font-mono);
-  font-size: 0.6rem;
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
   font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
   color: var(--text-secondary, #8a94a6);
 }
 
 .cv-review-field-value {
   font-family: var(--font-sans);
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   color: var(--text-primary);
 }
 
@@ -169,10 +163,8 @@
 }
 
 .cv-review-photo-label {
-  font-family: var(--font-mono);
-  font-size: 0.65rem;
-  text-transform: uppercase;
-  letter-spacing: 0.2em;
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
   color: var(--color-primary);
 }
 
@@ -195,11 +187,9 @@
 }
 
 .cv-review-sub-title {
-  font-family: var(--font-mono);
-  font-size: 0.6rem;
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
   font-weight: 700;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
   color: var(--text-secondary, #8a94a6);
   margin-bottom: 0.5rem;
 }
@@ -218,14 +208,14 @@
 
 .cv-review-sub-label {
   font-family: var(--font-sans);
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 600;
   color: var(--text-primary);
 }
 
 .cv-review-sub-text {
   font-family: var(--font-sans);
-  font-size: 0.75rem;
+  font-size: 0.9rem;
   color: var(--text-secondary, #8a94a6);
 }
 
@@ -254,10 +244,8 @@
 }
 
 .cv-review-dependant-label {
-  font-family: var(--font-mono);
-  font-size: 0.6rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
   color: var(--text-secondary, #8a94a6);
 }
 
@@ -290,7 +278,7 @@
 }
 
 .cv-review-exp-title {
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   font-weight: 600;
   color: var(--text-primary);
 }
@@ -301,8 +289,8 @@
 }
 
 .cv-review-exp-dates {
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
   color: var(--color-primary);
   background-color: var(--bg-secondary);
   border-radius: 999px;
@@ -313,7 +301,7 @@
   list-style: disc;
   list-style-position: inside;
   font-family: var(--font-sans);
-  font-size: 0.8rem;
+  font-size: 0.95rem;
   color: var(--text-primary);
   padding-left: 0.5rem;
 }
@@ -326,8 +314,8 @@
 }
 
 .cv-review-acad-dates {
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
   color: var(--color-primary);
   background-color: var(--bg-secondary);
   border-radius: 999px;
@@ -335,14 +323,14 @@
 }
 
 .cv-review-acad-title {
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   font-weight: 600;
   color: var(--text-primary);
   margin-top: 0.3rem;
 }
 
 .cv-review-acad-inst {
-  font-size: 0.75rem;
+  font-size: 0.9rem;
   color: var(--text-secondary, #8a94a6);
 }
 
@@ -354,22 +342,22 @@
 }
 
 .cv-review-cert-year {
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
   color: var(--color-primary);
   font-weight: 600;
 }
 
 .cv-review-cert-title {
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   font-weight: 600;
   color: var(--text-primary);
   margin-top: 0.3rem;
 }
 
 .cv-review-cert-body {
-  font-family: var(--font-mono);
-  font-size: 0.65rem;
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
   color: var(--text-secondary, #8a94a6);
   margin-top: 0.2rem;
 }
@@ -382,21 +370,21 @@
 }
 
 .cv-review-award-year {
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
   color: var(--color-primary);
   font-weight: 600;
 }
 
 .cv-review-award-title {
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   font-weight: 600;
   color: var(--text-primary);
   margin-top: 0.3rem;
 }
 
 .cv-review-award-desc {
-  font-size: 0.8rem;
+  font-size: 0.95rem;
   color: var(--text-primary);
   background-color: var(--bg-secondary);
   border: 0.0531rem solid var(--border-color);
@@ -416,16 +404,14 @@
 }
 
 .cv-review-skill-name {
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   font-weight: 600;
   color: var(--text-primary);
 }
 
 .cv-review-skill-level {
-  font-family: var(--font-mono);
-  font-size: 0.65rem;
-  text-transform: uppercase;
-  letter-spacing: 0.15em;
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
   color: var(--color-primary);
   background-color: rgba(14, 82, 155, 0.1);
   border-radius: 999px;
@@ -440,7 +426,7 @@
 }
 
 .cv-review-lang-name {
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   font-weight: 600;
   color: var(--text-primary);
   margin-bottom: 0.4rem;
@@ -467,15 +453,13 @@
 }
 
 .cv-review-lang-label {
-  font-family: var(--font-mono);
-  font-size: 0.55rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
   color: var(--text-secondary, #8a94a6);
 }
 
 .cv-review-lang-value {
-  font-size: 0.7rem;
+  font-size: 0.9rem;
   font-weight: 600;
   color: var(--text-primary);
 }
@@ -489,14 +473,14 @@
 }
 
 .cv-review-ref-name {
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   font-weight: 600;
   color: var(--text-primary);
 }
 
 .cv-review-ref-mobile {
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
   color: var(--text-secondary, #8a94a6);
 }
 
@@ -513,7 +497,7 @@
   padding: 0.5rem 1.2rem;
   font-family: var(--font-sans);
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   border-radius: var(--radius-md);
   cursor: pointer;
   transition: all var(--transition-fast);
