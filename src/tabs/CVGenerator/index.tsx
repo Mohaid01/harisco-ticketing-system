@@ -665,9 +665,8 @@ export const CVGenerator: React.FC<CVGeneratorProps> = ({ currentUser, token, al
         throw new Error(error.error || 'Failed to send CV');
       }
 
-      const result = await response.json();
       downloadPdf(pdfBlob, pdfName);
-      alert(`CV sent successfully to ${result.sentCount} recipient(s).`);
+      alert('CV sent successfully to HR.');
       clearDraft();
       setIsSubmitted(true);
     } catch (error) {
@@ -1481,7 +1480,7 @@ export const CVGenerator: React.FC<CVGeneratorProps> = ({ currentUser, token, al
           </div>
           <h2 className="cv-generator-success-title">Employee CV Generated &amp; Sent</h2>
           <p className="cv-generator-success-message">
-            The CV has been generated and sent to all IT users. A copy has also been downloaded to your device.
+            The CV has been generated and sent to the HR department. A copy has also been downloaded to your device.
           </p>
           <button
             onClick={() => {
