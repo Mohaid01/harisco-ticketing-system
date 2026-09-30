@@ -4,6 +4,7 @@ import {
   ArrowRight,
   Award,
   Briefcase,
+  Calculator,
   Check,
   GraduationCap,
   Heart,
@@ -85,6 +86,47 @@ const YEARS = Array.from({ length: 51 }, (_, i) => 2026 - i);
 const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 const SKILL_LEVELS = ['Basic', 'Good', 'Excellent'];
 const LANGUAGE_PROFICIENCY = ['Basic', 'Good', 'Proficient'];
+
+/** Months elapsed between an ISO yyyy-mm-dd date and today (inclusive of the end month). */
+const monthsBetween = (from: string, to: string): number => {
+  const start = new Date(from);
+  const end = new Date(to);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return 0;
+  return Math.max(0, (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth()) + 1);
+};
+
+/**
+ * Derives total years/months and the "as of" period from the experience entries,
+ * using the earliest start date through the latest end date (or today if ongoing).
+ */
+const deriveTotalExperience = (
+  rows: ExperienceRow[]
+): { years: string; months: string; asOfMonth: string; asOfYear: string } | null => {
+  const dated = rows.filter((r) => r.from && /^\d{4}-\d{2}-\d{2}$/.test(r.from.trim()));
+  if (dated.length === 0) return null;
+
+  const today = new Date();
+  const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+  const startDates = dated.map((r) => r.from.trim());
+  const earliest = startDates.reduce((min, d) => (d < min ? d : min));
+
+  // An entry with no valid "to" is ongoing, so it runs up to today
+  const endDates = dated.map((r) => (r.to && /^\d{4}-\d{2}-\d{2}$/.test(r.to.trim()) ? r.to.trim() : todayIso));
+  const latest = endDates.reduce((max, d) => (d > max ? d : max));
+
+  const totalMonths = monthsBetween(earliest, latest);
+  const years = Math.floor(totalMonths / 12);
+  const months = totalMonths % 12;
+
+  const asOf = new Date(latest);
+  return {
+    years: String(years),
+    months: String(months),
+    asOfMonth: String(asOf.getMonth() + 1),
+    asOfYear: String(asOf.getFullYear()),
+  };
+};
 
 const base64ToFile = (base64: string, filename = 'photo.jpg'): File | null => {
   try {
@@ -317,6 +359,12 @@ export const CVGenerator: React.FC<CVGeneratorProps> = ({ currentUser, token, al
         const restoredFile = base64ToFile(draft.photoPreview, `photo-${Date.now()}.jpg`);
         if (restoredFile) setPhotoFile(restoredFile);
       }
+    } else {
+      // No saved draft — prefill what the system already knows about this employee
+      setFullName(currentUser.name || '');
+      if (currentUser.email) setEmail(currentUser.email);
+      if (currentUser.designation) setPostAppliedFor(currentUser.designation);
+      if (currentUser.username) setCode(currentUser.username);
     }
   }, []);
   /* eslint-enable react-hooks/set-state-in-effect */
@@ -580,6 +628,22 @@ export const CVGenerator: React.FC<CVGeneratorProps> = ({ currentUser, token, al
     photoPreview,
   };
 
+  const autoDeriveTotalExperience = () => {
+    const derived = deriveTotalExperience(experience);
+    if (!derived) {
+      alert('Add at least one experience entry with a valid "From" date to calculate automatically.');
+      return;
+    }
+    setTotalExpYears(derived.years);
+    setTotalExpMonths(derived.months);
+    setTotalExpAsOfMonth(derived.asOfMonth);
+    setTotalExpAsOfYear(derived.asOfYear);
+    setRelevantExpYears(derived.years);
+    setRelevantExpMonths(derived.months);
+    setRelevantExpAsOfMonth(derived.asOfMonth);
+    setRelevantExpAsOfYear(derived.asOfYear);
+  };
+
   const handleSubmit = async () => {
     if (isSubmitting) return;
     setIsSubmitting(true);
@@ -670,14 +734,14 @@ export const CVGenerator: React.FC<CVGeneratorProps> = ({ currentUser, token, al
               required
             />
             <CVInput
-              label="Code"
+              label="Code (optional)"
               value={code}
               onChange={(e) => setCode(e.target.value)}
-              placeholder="e.g. PME-JAD-002"
+              placeholder="e.g. HC-00653"
               name="code"
             />
             <CVInput
-              label="Notice Period (Days)"
+              label="Notice Period – Days (optional)"
               value={noticePeriodDays}
               onChange={(e) => setNoticePeriodDays(e.target.value)}
               placeholder="e.g. 30"
@@ -688,7 +752,13 @@ export const CVGenerator: React.FC<CVGeneratorProps> = ({ currentUser, token, al
 
           <div className="cv-grid cv-grid-2">
             <div>
-              <span className="cv-input-label-sub">Total Industry Experience</span>
+              <div className="cv-subhead">
+                <span className="cv-input-label-sub">Total Industry Experience</span>
+                <button type="button" onClick={autoDeriveTotalExperience} className="cv-derive-btn">
+                  <Calculator size={12} />
+                  Auto-calc
+                </button>
+              </div>
               <div className="cv-grid cv-grid-4">
                 <CVInput
                   label="Years"
@@ -750,7 +820,23 @@ export const CVGenerator: React.FC<CVGeneratorProps> = ({ currentUser, token, al
             </div>
 
             <div>
-              <span className="cv-input-label-sub">Job Relevant Experience</span>
+              <div className="cv-subhead">
+                <span className="cv-input-label-sub">Job Relevant Experience</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRelevantExpYears(totalExpYears);
+                    setRelevantExpMonths(totalExpMonths);
+                    setRelevantExpAsOfMonth(totalExpAsOfMonth);
+                    setRelevantExpAsOfYear(totalExpAsOfYear);
+                  }}
+                  disabled={!totalExpYears && !totalExpMonths}
+                  className="cv-derive-btn"
+                >
+                  <Calculator size={12} />
+                  Use total
+                </button>
+              </div>
               <div className="cv-grid cv-grid-4">
                 <CVInput
                   label="Years"

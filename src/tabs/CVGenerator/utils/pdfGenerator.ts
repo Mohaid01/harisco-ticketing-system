@@ -501,14 +501,19 @@ export const generateApplicationPdf = async (data: FormData, photoFile?: File): 
 
   const jobInfoItems: { label: string; value: string | number }[] = [
     { label: 'Position / Designation', value: data.postAppliedFor },
-    { label: 'Code', value: data.code },
-    { label: 'Notice Period (Days)', value: data.noticePeriodDays },
+    // Code and notice period are optional — omit the rows entirely rather than printing N/A
+    ...(data.code?.trim() ? [{ label: 'Code', value: data.code }] : []),
+    ...(data.noticePeriodDays?.trim() ? [{ label: 'Notice Period (Days)', value: data.noticePeriodDays }] : []),
     {
       label: 'Total Experience',
       value: `${data.totalExpYears ?? ''}y ${data.totalExpMonths ?? ''}m`,
     },
-    { label: 'Total Exp As Of', value: `${data.totalExpAsOfMonth}/${data.totalExpAsOfYear}` },
-    { label: 'Relevant Exp As Of', value: `${data.relevantExpAsOfMonth}/${data.relevantExpAsOfYear}` },
+    ...(data.totalExpAsOfMonth || data.totalExpAsOfYear
+      ? [{ label: 'Total Exp As Of', value: `${data.totalExpAsOfMonth}/${data.totalExpAsOfYear}` }]
+      : []),
+    ...(data.relevantExpAsOfMonth || data.relevantExpAsOfYear
+      ? [{ label: 'Relevant Exp As Of', value: `${data.relevantExpAsOfMonth}/${data.relevantExpAsOfYear}` }]
+      : []),
     {
       label: 'Relevant Experience',
       value: `${data.relevantExpYears ?? ''}y ${data.relevantExpMonths ?? ''}m`,

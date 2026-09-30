@@ -81,7 +81,7 @@ export const CVReviewSummary: React.FC<CVReviewSummaryProps> = ({
         </div>
         <div className="cv-review-grid cv-review-grid-3">
           {renderField('Position / Designation', data.postAppliedFor)}
-          {renderField('Job Code', data.code)}
+          {renderField('Job Code', data.code || undefined)}
           {renderField('Notice Period', data.noticePeriodDays ? `${data.noticePeriodDays} Days` : undefined)}
           <div className="cv-review-field-span-2">
             {renderField(
