@@ -1,10 +1,26 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowLeft, ArrowRight, Check, Upload, Plus, Trash2 } from 'lucide-react';
+import {
+  ArrowLeft,
+  ArrowRight,
+  Award,
+  Briefcase,
+  Check,
+  GraduationCap,
+  Heart,
+  Languages,
+  Phone,
+  Plus,
+  Trash2,
+  Upload,
+  User,
+  Users,
+} from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 
 import type { AppUser } from '../../types';
 import type { ExperienceRow, FormData, RepeaterRow } from './types';
 
+import CVFieldset from './components/CVFieldset';
 import CVInput from './components/CVInput';
 import CVNumberInput from './components/CVNumberInput';
 import CVReviewSummary from './components/CVReviewSummary';
@@ -640,368 +656,387 @@ export const CVGenerator: React.FC<CVGeneratorProps> = ({ token }) => {
         <span className="cv-step-card-subtitle">{steps[0].subtitle}</span>
       </div>
       <div className="cv-step-form">
-        <div className="cv-form-grid">
-          <CVInput
-            label="Post Applied For"
-            value={postAppliedFor}
-            onChange={(e) => setPostAppliedFor(e.target.value)}
-            placeholder="e.g. Maintenance Engineer"
-            name="postAppliedFor"
-            required
-          />
-          <CVInput
-            label="Code"
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            placeholder="e.g. PME-JAD-002"
-            name="code"
-          />
-        </div>
-
-        <CVInput
-          label="Notice Period (Days)"
-          value={noticePeriodDays}
-          onChange={(e) => setNoticePeriodDays(e.target.value)}
-          placeholder="e.g. 30"
-          name="noticePeriodDays"
-          type="number"
-        />
-
-        <div className="cv-form-grid-md">
-          <CVInput
-            label="Full Name"
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-            placeholder="Full Name"
-            name="fullName"
-            required
-          />
-          <CVInput
-            label="Father's Name"
-            value={fatherName}
-            onChange={(e) => setFatherName(e.target.value)}
-            placeholder="Father's Name"
-            name="fatherName"
-            required
-          />
-        </div>
-
-        <div className="cv-form-grid-md">
-          <CVInput
-            label="Date of Birth"
-            type="date"
-            value={dob}
-            onChange={(e) => setDob(e.target.value)}
-            name="dob"
-            required
-          />
-          <div>
-            <label className="cv-input-label-sub">Blood Group</label>
-            <select
-              name="bloodGroup"
-              value={bloodGroup}
-              onChange={(e) => setBloodGroup(e.target.value)}
-              className="cv-select"
+        <CVFieldset title="Job Information" icon={<Briefcase size={14} />}>
+          <div className="cv-grid cv-grid-3">
+            <CVInput
+              label="Post Applied For"
+              value={postAppliedFor}
+              onChange={(e) => setPostAppliedFor(e.target.value)}
+              placeholder="e.g. Maintenance Engineer"
+              name="postAppliedFor"
               required
-            >
-              <option value="" className="bg-slate-900 text-white">
-                Select
-              </option>
-              {BLOOD_GROUPS.map((bg) => (
-                <option key={bg} value={bg} className="bg-slate-900 text-white">
-                  {bg}
-                </option>
-              ))}
-            </select>
+            />
+            <CVInput
+              label="Code"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              placeholder="e.g. PME-JAD-002"
+              name="code"
+            />
+            <CVInput
+              label="Notice Period (Days)"
+              value={noticePeriodDays}
+              onChange={(e) => setNoticePeriodDays(e.target.value)}
+              placeholder="e.g. 30"
+              name="noticePeriodDays"
+              type="number"
+            />
           </div>
-        </div>
 
-        <div className="cv-form-grid-md">
-          <CVInput
-            label="Phone"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="+92 300 1234567"
-            name="phone"
-            required
-          />
-          <CVInput
-            label="Email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="example@harisco.com"
-            name="email"
-            required
-          />
-        </div>
-
-        <div className="cv-form-grid-md">
-          <CVInput
-            label="Total Experience"
-            placeholder="Years"
-            type="number"
-            value={totalExpYears}
-            onChange={(e) => setTotalExpYears(e.target.value)}
-            name="totalExpYears"
-            compact
-          />
-          <CVInput
-            label="Months"
-            placeholder="Months"
-            type="number"
-            min={0}
-            max={12}
-            value={totalExpMonths}
-            onChange={(e) => setTotalExpMonths(e.target.value)}
-            name="totalExpMonths"
-            compact
-          />
-        </div>
-
-        <div className="cv-form-grid-md">
-          <div>
-            <label className="cv-input-label-sub">As Of Month</label>
-            <select
-              name="totalExpAsOfMonth"
-              value={totalExpAsOfMonth}
-              onChange={(e) => setTotalExpAsOfMonth(e.target.value)}
-              className="cv-select"
-            >
-              <option value="" className="bg-slate-900 text-white">
-                Month
-              </option>
-              {MONTHS.map((m) => (
-                <option key={m.value} value={m.value} className="bg-slate-900 text-white">
-                  {m.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="cv-input-label-sub">As Of Year</label>
-            <select
-              name="totalExpAsOfYear"
-              value={totalExpAsOfYear}
-              onChange={(e) => setTotalExpAsOfYear(e.target.value)}
-              className="cv-select"
-            >
-              <option value="" className="bg-slate-900 text-white">
-                Year
-              </option>
-              {YEARS.map((year) => (
-                <option key={year} value={String(year)} className="bg-slate-900 text-white">
-                  {year}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div className="cv-form-grid-md">
-          <CVInput
-            label="Relevant Experience"
-            placeholder="Years"
-            type="number"
-            value={relevantExpYears}
-            onChange={(e) => setRelevantExpYears(e.target.value)}
-            name="relevantExpYears"
-            compact
-          />
-          <CVInput
-            label="Months"
-            placeholder="Months"
-            type="number"
-            min={0}
-            max={12}
-            value={relevantExpMonths}
-            onChange={(e) => setRelevantExpMonths(e.target.value)}
-            name="relevantExpMonths"
-            compact
-          />
-        </div>
-
-        <div className="cv-form-grid-md">
-          <div>
-            <label className="cv-input-label-sub">As Of Month</label>
-            <select
-              name="relevantExpAsOfMonth"
-              value={relevantExpAsOfMonth}
-              onChange={(e) => setRelevantExpAsOfMonth(e.target.value)}
-              className="cv-select"
-            >
-              <option value="" className="bg-slate-900 text-white">
-                Month
-              </option>
-              {MONTHS.map((m) => (
-                <option key={m.value} value={m.value} className="bg-slate-900 text-white">
-                  {m.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="cv-input-label-sub">As Of Year</label>
-            <select
-              name="relevantExpAsOfYear"
-              value={relevantExpAsOfYear}
-              onChange={(e) => setRelevantExpAsOfYear(e.target.value)}
-              className="cv-select"
-            >
-              <option value="" className="bg-slate-900 text-white">
-                Year
-              </option>
-              {YEARS.map((year) => (
-                <option key={year} value={String(year)} className="bg-slate-900 text-white">
-                  {year}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div className="cv-form-grid-md">
-          <CVInput
-            label="CNIC Number"
-            value={cnicNumber}
-            onChange={(e) => setCnicNumber(formatCNIC(e.target.value))}
-            placeholder="XXXXX-XXXXXXX-X"
-            name="cnicNumber"
-            required
-          />
-          <CVInput
-            label="CNIC Expiry"
-            type="date"
-            value={cnicExpiry}
-            onChange={(e) => setCnicExpiry(e.target.value)}
-            name="cnicExpiry"
-            required
-          />
-        </div>
-
-        <div className="cv-form-grid-md">
-          <CVInput
-            label="Passport Number"
-            value={passportNumber}
-            onChange={(e) => setPassportNumber(e.target.value)}
-            placeholder="Passport Number"
-            name="passportNumber"
-          />
-          <CVInput
-            label="Passport Expiry"
-            type="date"
-            value={passportExpiry}
-            onChange={(e) => setPassportExpiry(e.target.value)}
-            name="passportExpiry"
-          />
-        </div>
-
-        <CVInput
-          label="Permanent Address"
-          isTextArea
-          value={permanentAddress}
-          onChange={(e) => setPermanentAddress(e.target.value)}
-          placeholder="Full permanent address"
-          name="permanentAddress"
-          required
-        />
-
-        <div className="cv-form-grid-md">
-          <CVInput
-            label="Emergency Contact 1 Name"
-            value={emgName1}
-            onChange={(e) => setEmgName1(e.target.value)}
-            placeholder="Full Name"
-            name="emgName1"
-            required
-          />
-          <CVInput
-            label="Relation"
-            value={emgRel1}
-            onChange={(e) => setEmgRel1(e.target.value)}
-            placeholder="e.g. Brother"
-            name="emgRel1"
-            required
-          />
-        </div>
-
-        <div className="cv-form-grid-md">
-          <CVInput
-            label="Emergency Contact 1 Phone"
-            value={emgPhone1}
-            onChange={(e) => setEmgPhone1(e.target.value)}
-            placeholder="+92 ..."
-            name="emgPhone1"
-            required
-          />
-          <CVInput
-            label="Emergency Contact 2 Name"
-            value={emgName2}
-            onChange={(e) => setEmgName2(e.target.value)}
-            placeholder="Full Name"
-            name="emgName2"
-            required
-          />
-        </div>
-
-        <div className="cv-form-grid-md">
-          <CVInput
-            label="Emergency Contact 2 Relation"
-            value={emgRel2}
-            onChange={(e) => setEmgRel2(e.target.value)}
-            placeholder="e.g. Sister"
-            name="emgRel2"
-            required
-          />
-          <CVInput
-            label="Emergency Contact 2 Phone"
-            value={emgPhone2}
-            onChange={(e) => setEmgPhone2(e.target.value)}
-            placeholder="+92 ..."
-            name="emgPhone2"
-            required
-          />
-        </div>
-
-        <div className="cv-form-grid-md">
-          <CVNumberInput label="Dependants - Spouse" value={dependantsSpouse} onChange={setDependantsSpouse} />
-          <CVNumberInput label="Sons" value={dependantsSons} onChange={setDependantsSons} />
-          <CVNumberInput label="Daughters" value={dependantsDaughters} onChange={setDependantsDaughters} />
-          <CVNumberInput label="Others" value={dependantsOthers} onChange={setDependantsOthers} />
-        </div>
-
-        <div>
-          <label className="cv-input-label-sub">Photo</label>
-          <div className="cv-photo-upload">
-            <input type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" id="photo-upload" />
-            <label htmlFor="photo-upload" className="cv-photo-placeholder cursor-pointer">
-              {photoPreview ? (
-                <img
-                  src={photoPreview}
-                  alt="Photo preview"
-                  className="cv-photo-preview object-cover w-full h-full rounded"
+          <div className="cv-grid cv-grid-2">
+            <div>
+              <span className="cv-input-label-sub">Total Industry Experience</span>
+              <div className="cv-grid cv-grid-4">
+                <CVInput
+                  label="Years"
+                  type="number"
+                  value={totalExpYears}
+                  onChange={(e) => setTotalExpYears(e.target.value)}
+                  placeholder="0"
+                  name="totalExpYears"
+                  compact
                 />
-              ) : (
-                <>
-                  <Upload className="w-6 h-6" />
-                  <span className="cv-photo-label">Click to upload photo</span>
-                </>
-              )}
-            </label>
-            {photoPreview && (
-              <button
-                type="button"
-                onClick={() => {
-                  setPhotoPreview(null);
-                  setPhotoFile(null);
-                }}
-                className="cv-btn cv-btn-danger cv-btn-sm"
-              >
-                Remove
-              </button>
-            )}
+                <CVInput
+                  label="Months"
+                  type="number"
+                  min={0}
+                  max={12}
+                  value={totalExpMonths}
+                  onChange={(e) => setTotalExpMonths(e.target.value)}
+                  placeholder="0"
+                  name="totalExpMonths"
+                  compact
+                />
+                <div className="cv-input-group">
+                  <label className="cv-input-label-compact">As Of Month</label>
+                  <select
+                    name="totalExpAsOfMonth"
+                    value={totalExpAsOfMonth}
+                    onChange={(e) => setTotalExpAsOfMonth(e.target.value)}
+                    className="cv-select"
+                  >
+                    <option value="" className="bg-slate-900 text-white">
+                      Month
+                    </option>
+                    {MONTHS.map((m) => (
+                      <option key={m.value} value={m.value} className="bg-slate-900 text-white">
+                        {m.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="cv-input-group">
+                  <label className="cv-input-label-compact">As Of Year</label>
+                  <select
+                    name="totalExpAsOfYear"
+                    value={totalExpAsOfYear}
+                    onChange={(e) => setTotalExpAsOfYear(e.target.value)}
+                    className="cv-select"
+                  >
+                    <option value="" className="bg-slate-900 text-white">
+                      Year
+                    </option>
+                    {YEARS.map((year) => (
+                      <option key={year} value={String(year)} className="bg-slate-900 text-white">
+                        {year}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <span className="cv-input-label-sub">Job Relevant Experience</span>
+              <div className="cv-grid cv-grid-4">
+                <CVInput
+                  label="Years"
+                  type="number"
+                  value={relevantExpYears}
+                  onChange={(e) => setRelevantExpYears(e.target.value)}
+                  placeholder="0"
+                  name="relevantExpYears"
+                  compact
+                />
+                <CVInput
+                  label="Months"
+                  type="number"
+                  min={0}
+                  max={12}
+                  value={relevantExpMonths}
+                  onChange={(e) => setRelevantExpMonths(e.target.value)}
+                  placeholder="0"
+                  name="relevantExpMonths"
+                  compact
+                />
+                <div className="cv-input-group">
+                  <label className="cv-input-label-compact">As Of Month</label>
+                  <select
+                    name="relevantExpAsOfMonth"
+                    value={relevantExpAsOfMonth}
+                    onChange={(e) => setRelevantExpAsOfMonth(e.target.value)}
+                    className="cv-select"
+                  >
+                    <option value="" className="bg-slate-900 text-white">
+                      Month
+                    </option>
+                    {MONTHS.map((m) => (
+                      <option key={m.value} value={m.value} className="bg-slate-900 text-white">
+                        {m.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="cv-input-group">
+                  <label className="cv-input-label-compact">As Of Year</label>
+                  <select
+                    name="relevantExpAsOfYear"
+                    value={relevantExpAsOfYear}
+                    onChange={(e) => setRelevantExpAsOfYear(e.target.value)}
+                    className="cv-select"
+                  >
+                    <option value="" className="bg-slate-900 text-white">
+                      Year
+                    </option>
+                    {YEARS.map((year) => (
+                      <option key={year} value={String(year)} className="bg-slate-900 text-white">
+                        {year}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
+        </CVFieldset>
+
+        <CVFieldset title="Personal Details" icon={<User size={14} />}>
+          <div className="cv-grid cv-grid-4">
+            <div className="cv-col-full">
+              <div className="cv-grid cv-grid-2">
+                <div>
+                  <CVInput
+                    label="Full Name"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="Full Name"
+                    name="fullName"
+                    required
+                  />
+                  <CVInput
+                    label="Father's Name"
+                    value={fatherName}
+                    onChange={(e) => setFatherName(e.target.value)}
+                    placeholder="Father's Name"
+                    name="fatherName"
+                    required
+                  />
+                  <CVInput
+                    label="Date of Birth"
+                    type="date"
+                    value={dob}
+                    onChange={(e) => setDob(e.target.value)}
+                    name="dob"
+                    required
+                  />
+                </div>
+                <div className="cv-input-group">
+                  <label className="cv-input-label-default">Photo</label>
+                  <div className="cv-photo-upload">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePhotoUpload}
+                      className="hidden"
+                      id="photo-upload"
+                    />
+                    <label htmlFor="photo-upload" className="cv-photo-placeholder cursor-pointer">
+                      {photoPreview ? (
+                        <img
+                          src={photoPreview}
+                          alt="Photo preview"
+                          className="cv-photo-preview object-cover w-full h-full rounded"
+                        />
+                      ) : (
+                        <>
+                          <Upload className="w-6 h-6" />
+                          <span className="cv-photo-label">Click to upload photo</span>
+                        </>
+                      )}
+                    </label>
+                    {photoPreview && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPhotoPreview(null);
+                          setPhotoFile(null);
+                        }}
+                        className="cv-btn cv-btn-danger cv-btn-sm"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="cv-grid cv-grid-4">
+            <div className="cv-col-full" style={{ display: 'grid', gridTemplateColumns: '3fr 1fr', gap: '0.85rem' }}>
+              <CVInput
+                label="Phone Number"
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+92 300 1234567"
+                name="phone"
+                required
+              />
+              <div className="cv-input-group">
+                <label className="cv-input-label-default">Blood Group</label>
+                <select
+                  name="bloodGroup"
+                  value={bloodGroup}
+                  onChange={(e) => setBloodGroup(e.target.value)}
+                  className="cv-select"
+                  required
+                >
+                  <option value="" className="bg-slate-900 text-white">
+                    Select
+                  </option>
+                  {BLOOD_GROUPS.map((bg) => (
+                    <option key={bg} value={bg} className="bg-slate-900 text-white">
+                      {bg}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div className="cv-grid cv-grid-2">
+            <CVInput
+              label="Email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="example@harisco.com"
+              name="email"
+              required
+            />
+            <CVInput
+              label="Permanent Address"
+              isTextArea
+              value={permanentAddress}
+              onChange={(e) => setPermanentAddress(e.target.value)}
+              placeholder="Full permanent address"
+              name="permanentAddress"
+              required
+            />
+          </div>
+        </CVFieldset>
+
+        <CVFieldset title="Identity Documents" icon={<Check size={14} />}>
+          <div className="cv-grid cv-grid-4">
+            <CVInput
+              label="CNIC Number"
+              value={cnicNumber}
+              onChange={(e) => setCnicNumber(formatCNIC(e.target.value))}
+              placeholder="XXXXX-XXXXXXX-X"
+              name="cnicNumber"
+              required
+            />
+            <CVInput
+              label="CNIC Expiry"
+              type="date"
+              value={cnicExpiry}
+              onChange={(e) => setCnicExpiry(e.target.value)}
+              name="cnicExpiry"
+              required
+            />
+            <CVInput
+              label="Passport Number"
+              value={passportNumber}
+              onChange={(e) => setPassportNumber(e.target.value)}
+              placeholder="Passport Number"
+              name="passportNumber"
+            />
+            <CVInput
+              label="Passport Expiry"
+              type="date"
+              value={passportExpiry}
+              onChange={(e) => setPassportExpiry(e.target.value)}
+              name="passportExpiry"
+            />
+          </div>
+        </CVFieldset>
+
+        <CVFieldset title="Emergency Contacts" icon={<Phone size={14} />} hint="Two contacts required">
+          <div className="cv-grid cv-grid-3">
+            <CVInput
+              label="Contact 1 Name"
+              value={emgName1}
+              onChange={(e) => setEmgName1(e.target.value)}
+              placeholder="Full Name"
+              name="emgName1"
+              required
+            />
+            <CVInput
+              label="Contact 1 Relation"
+              value={emgRel1}
+              onChange={(e) => setEmgRel1(e.target.value)}
+              placeholder="e.g. Brother"
+              name="emgRel1"
+              required
+            />
+            <CVInput
+              label="Contact 1 Phone"
+              type="tel"
+              value={emgPhone1}
+              onChange={(e) => setEmgPhone1(e.target.value)}
+              placeholder="+92 ..."
+              name="emgPhone1"
+              required
+            />
+          </div>
+          <div className="cv-grid cv-grid-3">
+            <CVInput
+              label="Contact 2 Name"
+              value={emgName2}
+              onChange={(e) => setEmgName2(e.target.value)}
+              placeholder="Full Name"
+              name="emgName2"
+              required
+            />
+            <CVInput
+              label="Contact 2 Relation"
+              value={emgRel2}
+              onChange={(e) => setEmgRel2(e.target.value)}
+              placeholder="e.g. Sister"
+              name="emgRel2"
+              required
+            />
+            <CVInput
+              label="Contact 2 Phone"
+              type="tel"
+              value={emgPhone2}
+              onChange={(e) => setEmgPhone2(e.target.value)}
+              placeholder="+92 ..."
+              name="emgPhone2"
+              required
+            />
+          </div>
+        </CVFieldset>
+
+        <CVFieldset title="Dependants" icon={<Heart size={14} />}>
+          <div className="cv-grid cv-grid-4">
+            <CVNumberInput label="Spouse" value={dependantsSpouse} onChange={setDependantsSpouse} />
+            <CVNumberInput label="Sons" value={dependantsSons} onChange={setDependantsSons} />
+            <CVNumberInput label="Daughters" value={dependantsDaughters} onChange={setDependantsDaughters} />
+            <CVNumberInput label="Others" value={dependantsOthers} onChange={setDependantsOthers} />
+          </div>
+        </CVFieldset>
       </div>
     </div>
   );
@@ -1010,7 +1045,8 @@ export const CVGenerator: React.FC<CVGeneratorProps> = ({ token }) => {
     <div className="cv-step-card">
       <div className="cv-step-card-header">
         <h3 className="cv-step-card-title">
-          <span>Step 2</span> Professional Experience
+          <span>Step 2</span>
+          <Briefcase size={16} /> Professional Experience
         </h3>
         <span className="cv-step-card-subtitle">{steps[1].subtitle}</span>
       </div>
@@ -1156,7 +1192,8 @@ export const CVGenerator: React.FC<CVGeneratorProps> = ({ token }) => {
     <div className="cv-step-card">
       <div className="cv-step-card-header">
         <h3 className="cv-step-card-title">
-          <span>Step 3</span> Academic Details
+          <span>Step 3</span>
+          <GraduationCap size={16} /> Academic Details
         </h3>
         <span className="cv-step-card-subtitle">{steps[2].subtitle}</span>
       </div>
@@ -1175,7 +1212,7 @@ export const CVGenerator: React.FC<CVGeneratorProps> = ({ token }) => {
         }}
         hasDate={['sessionFrom', 'sessionTo']}
         gridCols={{
-          degree: 'md:col-span-5',
+          degree: 'md:col-span-4',
           institution: 'md:col-span-4',
           sessionFrom: 'md:col-span-2',
           sessionTo: 'md:col-span-2',
@@ -1188,7 +1225,8 @@ export const CVGenerator: React.FC<CVGeneratorProps> = ({ token }) => {
     <div className="cv-step-card">
       <div className="cv-step-card-header">
         <h3 className="cv-step-card-title">
-          <span>Step 4</span> Certifications
+          <span>Step 4</span>
+          <Check size={16} /> Certifications
         </h3>
         <span className="cv-step-card-subtitle">{steps[3].subtitle}</span>
       </div>
@@ -1200,9 +1238,9 @@ export const CVGenerator: React.FC<CVGeneratorProps> = ({ token }) => {
         fields={['name', 'institution', 'year', 'body']}
         labels={{ name: 'Name', institution: 'Institution', year: 'Year', body: 'Body' }}
         gridCols={{
-          name: 'md:col-span-4',
+          name: 'md:col-span-3',
           institution: 'md:col-span-4',
-          year: 'md:col-span-1',
+          year: 'md:col-span-2',
           body: 'md:col-span-3',
         }}
       />
@@ -1213,7 +1251,8 @@ export const CVGenerator: React.FC<CVGeneratorProps> = ({ token }) => {
     <div className="cv-step-card">
       <div className="cv-step-card-header">
         <h3 className="cv-step-card-title">
-          <span>Step 5</span> Awards & Achievements
+          <span>Step 5</span>
+          <Award size={16} /> Awards &amp; Achievements
         </h3>
         <span className="cv-step-card-subtitle">{steps[4].subtitle}</span>
       </div>
@@ -1226,8 +1265,8 @@ export const CVGenerator: React.FC<CVGeneratorProps> = ({ token }) => {
         labels={{ description: 'Description', institution: 'Institution', year: 'Year', body: 'Body' }}
         gridCols={{
           description: 'md:col-span-4',
-          institution: 'md:col-span-4',
-          year: 'md:col-span-1',
+          institution: 'md:col-span-3',
+          year: 'md:col-span-2',
           body: 'md:col-span-3',
         }}
       />
@@ -1238,7 +1277,8 @@ export const CVGenerator: React.FC<CVGeneratorProps> = ({ token }) => {
     <div className="cv-step-card">
       <div className="cv-step-card-header">
         <h3 className="cv-step-card-title">
-          <span>Step 6</span> Computer Skills
+          <span>Step 6</span>
+          <Users size={16} /> Computer Skills
         </h3>
         <span className="cv-step-card-subtitle">{steps[5].subtitle}</span>
       </div>
@@ -1250,7 +1290,7 @@ export const CVGenerator: React.FC<CVGeneratorProps> = ({ token }) => {
         fields={['name', 'level']}
         labels={{ name: 'Skill Name', level: 'Skill Level' }}
         hasSelect={{ level: SKILL_LEVELS }}
-        gridCols={{ name: 'md:col-span-7', level: 'md:col-span-5' }}
+        gridCols={{ name: 'md:col-span-8', level: 'md:col-span-4' }}
       />
     </div>
   );
@@ -1259,7 +1299,8 @@ export const CVGenerator: React.FC<CVGeneratorProps> = ({ token }) => {
     <div className="cv-step-card">
       <div className="cv-step-card-header">
         <h3 className="cv-step-card-title">
-          <span>Step 7</span> Foreign Languages
+          <span>Step 7</span>
+          <Languages size={16} /> Foreign Languages
         </h3>
         <span className="cv-step-card-subtitle">{steps[6].subtitle}</span>
       </div>
@@ -1309,15 +1350,16 @@ export const CVGenerator: React.FC<CVGeneratorProps> = ({ token }) => {
     <div className="cv-step-card">
       <div className="cv-step-card-header">
         <h3 className="cv-step-card-title">
-          <span>Step 8</span> Professional References
+          <span>Step 8</span>
+          <Users size={16} /> Professional References
         </h3>
         <span className="cv-step-card-subtitle">{steps[7].subtitle}</span>
       </div>
       <p className="cv-repeater-info">Please provide three professional references</p>
-      <div className="cv-repeater-grid">
+      <div className="cv-grid cv-grid-3">
         {references.map((ref, index) => (
-          <div key={index} className="md:col-span-4">
-            <div className="cv-repeater-row">
+          <div key={index}>
+            <div className="cv-repeater-row cv-repeater-row-fields">
               <div className="cv-repeater-row-header">
                 <span className="cv-repeater-entry-label">Reference {index + 1}</span>
               </div>

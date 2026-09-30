@@ -23,21 +23,21 @@ interface RepeaterSectionProps {
 }
 
 const defaultGridCols: Record<string, string> = {
-  degree: 'md:col-span-5',
+  degree: 'md:col-span-4',
   sessionFrom: 'md:col-span-2',
   sessionTo: 'md:col-span-2',
   institution: 'md:col-span-4',
   name: 'md:col-span-3',
-  year: 'md:col-span-1',
+  year: 'md:col-span-2',
   body: 'md:col-span-4',
-  description: 'md:col-span-5',
-  company: 'md:col-span-3',
-  from: 'md:col-span-1',
-  to: 'md:col-span-1',
-  position: 'md:col-span-2',
+  description: 'md:col-span-4',
+  company: 'md:col-span-4',
+  from: 'md:col-span-2',
+  to: 'md:col-span-2',
+  position: 'md:col-span-4',
   language: 'md:col-span-3',
-  level: 'md:col-span-2',
-  mobile: 'md:col-span-2',
+  level: 'md:col-span-4',
+  mobile: 'md:col-span-6',
 };
 
 const RepeaterSection: React.FC<RepeaterSectionProps> = ({
