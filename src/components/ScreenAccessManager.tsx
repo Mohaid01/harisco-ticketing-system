@@ -1,5 +1,5 @@
-import { Save, ShieldCheck } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import { Check, Search, ShieldCheck } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 import type { AppUser, ScreenOverrideUser } from '../types';
 
@@ -24,6 +24,8 @@ export const ScreenAccessManager: React.FC<ScreenAccessManagerProps> = ({
 }) => {
   const [allowedUsers, setAllowedUsers] = useState<LocalOverrideUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [query, setQuery] = useState('');
 
   const isIT = currentUser.role === 'it';
 
@@ -34,14 +36,13 @@ export const ScreenAccessManager: React.FC<ScreenAccessManagerProps> = ({
         const res = await fetch(`/api/screen-overrides/${screenName}/users`, {
           headers: { Authorization: `Bearer ${token}` },
         });
+        let allowedIds: Set<string> = new Set();
         if (res.ok) {
           const data = await res.json();
-          const list: ScreenOverrideUser[] = Array.isArray(data) ? data : data.users || [];
-          const allowedIds: Set<string> = new Set(list.map((u: ScreenOverrideUser) => u.user_id));
-          setAllowedUsers(users.map((u) => ({ ...u, checked: allowedIds.has(u.id) })));
-        } else {
-          setAllowedUsers(users.map((u) => ({ ...u, checked: false })));
+          const list: ScreenOverrideUser[] = Array.isArray(data) ? data : (data.users ?? []);
+          allowedIds = new Set(list.map((u) => u.user_id));
         }
+        setAllowedUsers(users.map((u) => ({ ...u, checked: allowedIds.has(u.id) })));
       } catch {
         setAllowedUsers(users.map((u) => ({ ...u, checked: false })));
       } finally {
@@ -51,12 +52,25 @@ export const ScreenAccessManager: React.FC<ScreenAccessManagerProps> = ({
     fetchOverrides();
   }, [screenName, users, token]);
 
+  const filteredUsers = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return allowedUsers;
+    return allowedUsers.filter(
+      (u) =>
+        u.name?.toLowerCase().includes(q) ||
+        u.email?.toLowerCase().includes(q) ||
+        u.role?.toLowerCase().includes(q) ||
+        u.username?.toLowerCase().includes(q)
+    );
+  }, [allowedUsers, query]);
+
   const toggleUser = (userId: string) => {
     setAllowedUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, checked: !u.checked } : u)));
   };
 
   const saveOverrides = async () => {
     const selectedIds = allowedUsers.filter((u) => u.checked).map((u) => u.id);
+    setSaving(true);
     try {
       const res = await fetch(`/api/screen-overrides/${screenName}`, {
         method: 'POST',
@@ -75,90 +89,151 @@ export const ScreenAccessManager: React.FC<ScreenAccessManagerProps> = ({
       }
     } catch {
       alert('Failed to update screen access.');
+    } finally {
+      setSaving(false);
     }
   };
 
   if (!isIT) {
     return (
-      <div className="panel" style={{ marginTop: '1.5rem' }}>
-        <p style={{ color: 'var(--text-secondary, #8a94a6)' }}>
-          Only IT administrators can manage {screenLabel} access.
-        </p>
-      </div>
+      <p style={{ color: 'var(--text-secondary, #8a94a6)', fontSize: '0.85rem' }}>
+        Only IT administrators can manage {screenLabel} access.
+      </p>
     );
   }
 
   if (loading) {
-    return (
-      <div className="panel" style={{ marginTop: '1.5rem' }}>
-        Loading...
-      </div>
-    );
+    return <p style={{ color: 'var(--text-secondary, #8a94a6)', fontSize: '0.85rem' }}>Loading users...</p>;
   }
 
+  const grantedCount = allowedUsers.filter((u) => u.checked).length;
+
   return (
-    <div className="panel" style={{ marginTop: '1.5rem' }}>
-      <div className="panel-header" style={{ marginBottom: '1rem' }}>
-        <span className="panel-title">
-          <ShieldCheck className="w-4 h-4" />
-          {screenLabel} Access Control
-        </span>
-        <button
-          onClick={saveOverrides}
-          className="btn btn-primary"
-          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+      <p
+        style={{
+          fontSize: '0.75rem',
+          color: 'var(--text-secondary, #8a94a6)',
+          fontFamily: 'var(--font-mono)',
+          textTransform: 'uppercase',
+          letterSpacing: '0.1em',
+        }}
+      >
+        Tick a user to grant them {screenLabel} access. IT administrators always retain access.
+      </p>
+
+      <div
+        style={{
+          display: 'flex',
+          gap: '0.6rem',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          justifyContent: 'space-between',
+        }}
+      >
+        <div
+          style={{
+            position: 'relative',
+            flex: '1 1 220px',
+            display: 'flex',
+            alignItems: 'center',
+          }}
         >
-          <Save className="w-4 h-4" />
-          Save Changes
+          <Search
+            size={14}
+            style={{
+              position: 'absolute',
+              left: '0.6rem',
+              color: 'var(--text-secondary, #8a94a6)',
+              pointerEvents: 'none',
+            }}
+          />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search by name, email, code or role"
+            className="cv-input"
+            style={{ paddingLeft: '2rem' }}
+          />
+        </div>
+
+        <button
+          type="button"
+          onClick={saveOverrides}
+          disabled={saving}
+          className="cv-btn cv-btn-primary"
+          style={{ opacity: saving ? 0.6 : 1 }}
+        >
+          {saving ? <Check size={14} /> : <ShieldCheck size={14} />}
+          <span className="cv-btn-text">{saving ? 'Saving' : `Save (${grantedCount})`}</span>
         </button>
       </div>
 
-      <div style={{ marginTop: '0.7rem' }}>
-        <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary, #8a94a6)', marginBottom: '0.5rem' }}>
-          Toggle which users can access the {screenLabel} screen. Currently{' '}
-          {allowedUsers.filter((u) => u.checked).length} user(s) have access.
-        </p>
-        <div
-          style={{
-            maxHeight: '300px',
-            overflowY: 'auto',
-            border: '0.0531rem solid var(--border-color)',
-            borderRadius: 'var(--radius-md)',
-          }}
-        >
-          {allowedUsers.map((user) => (
-            <div
+      <div
+        style={{
+          maxHeight: '340px',
+          overflowY: 'auto',
+          border: '0.0531rem solid var(--border-color)',
+          borderRadius: 'var(--radius-md)',
+          backgroundColor: 'var(--bg-secondary)',
+        }}
+      >
+        {filteredUsers.length === 0 ? (
+          <p className="cv-empty-text">No users match your search.</p>
+        ) : (
+          filteredUsers.map((user) => (
+            <label
               key={user.id}
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.5rem',
+                gap: '0.6rem',
                 padding: '0.5rem 0.75rem',
                 borderBottom: '0.0531rem solid var(--border-color)',
-                background: user.checked ? 'rgba(14, 82, 155, 0.1)' : 'transparent',
+                background: user.checked ? 'rgba(14, 82, 155, 0.12)' : 'transparent',
+                cursor: 'pointer',
               }}
             >
               <input
                 type="checkbox"
                 checked={user.checked}
                 onChange={() => toggleUser(user.id)}
-                style={{ cursor: 'pointer' }}
+                style={{ cursor: 'pointer', flexShrink: 0 }}
               />
-              <div style={{ flex: 1 }}>
-                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>{user.name}</span>
-                <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary, #8a94a6)' }}>
-                  {user.role} &middot; {user.email || 'No email'}
-                </span>
-              </div>
-              {user.id === currentUser.id && (
-                <span style={{ fontSize: '0.65rem', color: 'var(--color-primary)', textTransform: 'uppercase' }}>
-                  You
-                </span>
-              )}
-            </div>
-          ))}
-        </div>
+              <span
+                style={{
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  color: 'var(--text-primary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                }}
+              >
+                {user.name}
+                {user.id === currentUser.id && (
+                  <span style={{ fontSize: '0.6rem', color: 'var(--color-primary)', letterSpacing: '0.15em' }}>
+                    YOU
+                  </span>
+                )}
+              </span>
+              <span
+                style={{
+                  fontSize: '0.7rem',
+                  color: 'var(--text-secondary, #8a94a6)',
+                  marginLeft: 'auto',
+                  fontFamily: 'var(--font-mono)',
+                }}
+              >
+                {user.role} &middot; {user.email || user.username}
+              </span>
+            </label>
+          ))
+        )}
       </div>
     </div>
   );
 };
+
+export default ScreenAccessManager;

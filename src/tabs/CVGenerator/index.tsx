@@ -10,6 +10,7 @@ import {
   Languages,
   Phone,
   Plus,
+  ShieldCheck,
   Trash2,
   Upload,
   User,
@@ -20,6 +21,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import type { AppUser } from '../../types';
 import type { ExperienceRow, FormData, RepeaterRow } from './types';
 
+import ScreenAccessManager from '../../components/ScreenAccessManager';
 import CVFieldset from './components/CVFieldset';
 import CVInput from './components/CVInput';
 import CVNumberInput from './components/CVNumberInput';
@@ -32,6 +34,7 @@ import './CVGenerator.css';
 interface CVGeneratorProps {
   currentUser: AppUser;
   token: string;
+  allUsers: AppUser[];
 }
 
 const initialFormData: FormData = {
@@ -185,7 +188,7 @@ const validateRepeaterSilent = (rows: RepeaterRow[], fields: string[], minEntrie
   return true;
 };
 
-export const CVGenerator: React.FC<CVGeneratorProps> = ({ token }) => {
+export const CVGenerator: React.FC<CVGeneratorProps> = ({ currentUser, token, allUsers }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -1419,6 +1422,18 @@ export const CVGenerator: React.FC<CVGeneratorProps> = ({ token }) => {
       <div className="cv-generator-header">
         <h1 className="cv-generator-title">CV Generator</h1>
       </div>
+
+      {currentUser.role === 'it' && (
+        <CVFieldset title="CV Generator Access Control" icon={<ShieldCheck size={14} />} hint="IT administrators only">
+          <ScreenAccessManager
+            screenName="cv_generator"
+            screenLabel="CV Generator"
+            users={allUsers}
+            currentUser={currentUser}
+            token={token}
+          />
+        </CVFieldset>
+      )}
 
       {renderStepIndicators()}
 

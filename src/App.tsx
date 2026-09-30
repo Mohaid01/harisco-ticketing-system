@@ -29,7 +29,6 @@ import { NewAdminTicketModal } from './components/Modals/NewAdminTicketModal';
 import { NewHSETicketModal } from './components/Modals/NewHSETicketModal';
 import { NewTicketModal } from './components/Modals/NewTicketModal';
 import { PasswordReset } from './components/PasswordReset';
-import { ScreenAccessManager } from './components/ScreenAccessManager';
 import { Header } from './components/Sidebar';
 import { TicketDetails } from './components/TicketDetails';
 import { TicketList } from './components/TicketList';
@@ -1799,25 +1798,16 @@ function App() {
               loading={loading}
             />
           ) : activeTab === 'users' && currentUser.role === 'it' ? (
-            <div>
-              <UserManagement
-                users={users}
-                currentUser={currentUser}
-                token={token}
-                onAddUser={handleAddUser}
-                onDeleteUser={handleDeleteUser}
-                onOffboardUser={handleOffboardUser}
-                onUpdateUser={handleUpdateUser}
-                loading={loading}
-              />
-              <ScreenAccessManager
-                screenName="cv_generator"
-                screenLabel="CV Generator"
-                users={users}
-                currentUser={currentUser}
-                token={token}
-              />
-            </div>
+            <UserManagement
+              users={users}
+              currentUser={currentUser}
+              token={token}
+              onAddUser={handleAddUser}
+              onDeleteUser={handleDeleteUser}
+              onOffboardUser={handleOffboardUser}
+              onUpdateUser={handleUpdateUser}
+              loading={loading}
+            />
           ) : activeTab === 'factory_users' && (currentUser.role === 'factory_it' || currentUser.role === 'it') ? (
             <FactoryUserManagement
               users={factoryUsers}
@@ -1854,7 +1844,7 @@ function App() {
           ) : activeTab === 'site_duties' ? (
             <SiteDutyManagement currentUser={currentUser} token={token!} />
           ) : activeTab === 'cv_generator' ? (
-            <CVGenerator currentUser={currentUser} token={token!} />
+            <CVGenerator currentUser={currentUser} token={token!} allUsers={users} />
           ) : activeTab === 'admin_tickets' ? (
             currentAdminTicket ? (
               <AdminTicketDetails
