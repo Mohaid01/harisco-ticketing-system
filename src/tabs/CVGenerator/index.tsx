@@ -360,11 +360,9 @@ export const CVGenerator: React.FC<CVGeneratorProps> = ({ currentUser, token, al
         if (restoredFile) setPhotoFile(restoredFile);
       }
     } else {
-      // No saved draft — prefill what the system already knows about this employee
+      // No saved draft — prefill name and designation only; both stay editable
       setFullName(currentUser.name || '');
-      if (currentUser.email) setEmail(currentUser.email);
       if (currentUser.designation) setPostAppliedFor(currentUser.designation);
-      if (currentUser.username) setCode(currentUser.username);
     }
   }, []);
   /* eslint-enable react-hooks/set-state-in-effect */
@@ -638,10 +636,6 @@ export const CVGenerator: React.FC<CVGeneratorProps> = ({ currentUser, token, al
     setTotalExpMonths(derived.months);
     setTotalExpAsOfMonth(derived.asOfMonth);
     setTotalExpAsOfYear(derived.asOfYear);
-    setRelevantExpYears(derived.years);
-    setRelevantExpMonths(derived.months);
-    setRelevantExpAsOfMonth(derived.asOfMonth);
-    setRelevantExpAsOfYear(derived.asOfYear);
   };
 
   const handleSubmit = async () => {
