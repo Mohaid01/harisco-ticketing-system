@@ -131,16 +131,26 @@ const formatCNIC = (value: string): string => {
   return `${limited.slice(0, 5)}-${limited.slice(5, 12)}-${limited.slice(12)}`;
 };
 
-const validateRepeater = (rows: RepeaterRow[], fields: string[], sectionName: string, minEntries = 0): boolean => {
+const validateRepeater = (
+  rows: RepeaterRow[],
+  fields: string[],
+  sectionName: string,
+  minEntries = 0,
+  silent = false
+): boolean => {
   if (rows.length < minEntries) {
-    alert(`Please add at least ${minEntries} ${sectionName} entry${minEntries === 1 ? '' : 'ies'}.`);
+    if (!silent) {
+      alert(`Please add at least ${minEntries} ${sectionName} entry${minEntries === 1 ? '' : 'ies'}.`);
+    }
     return false;
   }
   for (let i = 0; i < rows.length; i++) {
     for (let j = 0; j < fields.length; j++) {
       const field = fields[j];
       if (!rows[i][field]?.trim()) {
-        alert(`Please fill all fields in ${sectionName} entry ${i + 1}.`);
+        if (!silent) {
+          alert(`Please fill all fields in ${sectionName} entry ${i + 1}.`);
+        }
         return false;
       }
     }
@@ -388,117 +398,79 @@ export const CVGenerator: React.FC<CVGeneratorProps> = ({ token }) => {
     photoPreview,
   ]);
 
-  const validateStep = (step: number): boolean => {
+  const validateStep = (step: number, silent = false): boolean => {
+    const notify = (message: string) => {
+      if (!silent) alert(message);
+      return false;
+    };
     if (step === 0) {
-      if (!fullName.trim()) {
-        alert('Please fill your Full Name.');
-        return false;
-      }
-      if (!fatherName.trim()) {
-        alert("Please fill Father's Name.");
-        return false;
-      }
-      if (!dob.trim()) {
-        alert('Please fill Date of Birth.');
-        return false;
-      }
-      if (!bloodGroup) {
-        alert('Please select Blood Group.');
-        return false;
-      }
-      if (!phone.trim()) {
-        alert('Please fill Phone Number.');
-        return false;
-      }
-      if (!email.trim()) {
-        alert('Please fill Email.');
-        return false;
-      }
-      if (!cnicNumber.trim() || !cnicExpiry.trim()) {
-        alert('Please fill CNIC Number and Expiry.');
-        return false;
-      }
-      if (!permanentAddress.trim()) {
-        alert('Please fill Permanent Address.');
-        return false;
-      }
+      if (!fullName.trim()) return notify('Please fill your Full Name.');
+      if (!fatherName.trim()) return notify("Please fill Father's Name.");
+      if (!dob.trim()) return notify('Please fill Date of Birth.');
+      if (!bloodGroup) return notify('Please select Blood Group.');
+      if (!phone.trim()) return notify('Please fill Phone Number.');
+      if (!email.trim()) return notify('Please fill Email.');
+      if (!cnicNumber.trim() || !cnicExpiry.trim()) return notify('Please fill CNIC Number and Expiry.');
+      if (!permanentAddress.trim()) return notify('Please fill Permanent Address.');
       if (!emgName1.trim() || !emgRel1.trim() || !emgPhone1.trim()) {
-        alert('Please fill Emergency Contact 1.');
-        return false;
+        return notify('Please fill Emergency Contact 1.');
       }
       if (!emgName2.trim() || !emgRel2.trim() || !emgPhone2.trim()) {
-        alert('Please fill Emergency Contact 2.');
-        return false;
+        return notify('Please fill Emergency Contact 2.');
       }
-      if (!photoFile) {
-        alert('Please upload your photo.');
-        return false;
-      }
-      if (passportNumber.trim() && !passportExpiry.trim()) {
-        alert('Please fill Passport Expiry.');
-        return false;
-      }
-      if (passportExpiry.trim() && !passportNumber.trim()) {
-        alert('Please fill Passport Number.');
-        return false;
-      }
+      if (!photoFile) return notify('Please upload your photo.');
+      if (passportNumber.trim() && !passportExpiry.trim()) return notify('Please fill Passport Expiry.');
+      if (passportExpiry.trim() && !passportNumber.trim()) return notify('Please fill Passport Number.');
     }
     if (step === 1) {
-      if (experience.length === 0) {
-        alert('Please add at least one experience entry.');
-        return false;
-      }
+      if (experience.length === 0) return notify('Please add at least one experience entry.');
       for (let i = 0; i < experience.length; i++) {
         const row = experience[i];
         if (!row.company?.trim() || !row.from?.trim() || !row.to?.trim() || !row.position?.trim()) {
-          alert(`Please fill all required fields in Experience entry ${i + 1}.`);
-          return false;
+          return notify(`Please fill all required fields in Experience entry ${i + 1}.`);
         }
         const descs = row.descriptions || [];
         if (descs.length === 0 || !descs[0]?.trim()) {
-          alert(`Please fill at least one Job Description in Experience entry ${i + 1}.`);
-          return false;
+          return notify(`Please fill at least one Job Description in Experience entry ${i + 1}.`);
         }
       }
     }
     if (step === 2) {
-      if (!validateRepeater(academicDetails, ['degree', 'institution', 'sessionFrom', 'sessionTo'], 'Academic', 1))
+      if (
+        !validateRepeater(academicDetails, ['degree', 'institution', 'sessionFrom', 'sessionTo'], 'Academic', 1, silent)
+      )
         return false;
     }
     if (step === 3) {
       if (!validateRepeaterSilent(certifications, ['name', 'institution', 'year', 'body'])) {
         if (certifications.length > 0) {
-          alert('Please fill all fields in Certification entries.');
-          return false;
+          return notify('Please fill all fields in Certification entries.');
         }
       }
     }
     if (step === 4) {
       if (!validateRepeaterSilent(awards, ['description', 'institution', 'year', 'body'])) {
         if (awards.length > 0) {
-          alert('Please fill all fields in Award entries.');
-          return false;
+          return notify('Please fill all fields in Award entries.');
         }
       }
     }
     if (step === 5) {
       if (!validateRepeaterSilent(computerSkills, ['name', 'level'])) {
         if (computerSkills.length > 0) {
-          alert('Please fill all fields in Computer Skills entries.');
-          return false;
+          return notify('Please fill all fields in Computer Skills entries.');
         }
       }
     }
     if (step === 6) {
       if (!validateRepeaterSilent(foreignLanguages, ['name', 'reading', 'writing', 'speaking'])) {
         if (foreignLanguages.length > 0) {
-          alert('Please fill all fields in Foreign Language entries.');
-          return false;
+          return notify('Please fill all fields in Foreign Language entries.');
         }
       }
     }
     if (step === 7) {
-      if (!validateRepeater(references, ['name', 'mobile'], 'Reference', 3)) return false;
+      if (!validateRepeater(references, ['name', 'mobile'], 'Reference', 3, silent)) return false;
     }
     return true;
   };
@@ -506,7 +478,7 @@ export const CVGenerator: React.FC<CVGeneratorProps> = ({ token }) => {
   const isStepAccessible = (targetStep: number): boolean => {
     if (targetStep === 0) return true;
     for (let i = 0; i < targetStep; i++) {
-      if (!validateStep(i)) return false;
+      if (!validateStep(i, true)) return false;
     }
     return true;
   };
