@@ -29,6 +29,9 @@ export const ScreenAccessManager: React.FC<ScreenAccessManagerProps> = ({
 
   const isIT = currentUser.role === 'it';
 
+  // Offboarded users can no longer log in, so they should not be grantable access
+  const activeUsers = useMemo(() => users.filter((u) => u.is_active !== 0), [users]);
+
   useEffect(() => {
     const fetchOverrides = async () => {
       setLoading(true);
@@ -42,15 +45,15 @@ export const ScreenAccessManager: React.FC<ScreenAccessManagerProps> = ({
           const list: ScreenOverrideUser[] = Array.isArray(data) ? data : (data.users ?? []);
           allowedIds = new Set(list.map((u) => u.user_id));
         }
-        setAllowedUsers(users.map((u) => ({ ...u, checked: allowedIds.has(u.id) })));
+        setAllowedUsers(activeUsers.map((u) => ({ ...u, checked: allowedIds.has(u.id) })));
       } catch {
-        setAllowedUsers(users.map((u) => ({ ...u, checked: false })));
+        setAllowedUsers(activeUsers.map((u) => ({ ...u, checked: false })));
       } finally {
         setLoading(false);
       }
     };
     fetchOverrides();
-  }, [screenName, users, token]);
+  }, [screenName, activeUsers, token]);
 
   const filteredUsers = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -119,7 +122,8 @@ export const ScreenAccessManager: React.FC<ScreenAccessManagerProps> = ({
           letterSpacing: '0.1em',
         }}
       >
-        Tick a user to grant them {screenLabel} access. IT administrators always retain access.
+        Tick a user to grant them {screenLabel} access. IT administrators always retain access, and no other user can
+        open this screen until you save a list.
       </p>
 
       <div

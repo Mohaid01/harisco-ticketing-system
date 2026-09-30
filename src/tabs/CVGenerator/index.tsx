@@ -595,7 +595,7 @@ export const CVGenerator: React.FC<CVGeneratorProps> = ({ currentUser, token, al
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          candidateName: fullName || 'Unknown Candidate',
+          candidateName: fullName || currentUser.name,
           candidateEmail: email,
           pdfBase64: base64Pdf,
           fileName: pdfName,
@@ -662,7 +662,7 @@ export const CVGenerator: React.FC<CVGeneratorProps> = ({ currentUser, token, al
         <CVFieldset title="Job Information" icon={<Briefcase size={14} />}>
           <div className="cv-grid cv-grid-3">
             <CVInput
-              label="Post Applied For"
+              label="Position / Designation"
               value={postAppliedFor}
               onChange={(e) => setPostAppliedFor(e.target.value)}
               placeholder="e.g. Maintenance Engineer"
@@ -1399,9 +1399,9 @@ export const CVGenerator: React.FC<CVGeneratorProps> = ({ currentUser, token, al
           <div className="cv-generator-success-icon">
             <Check className="w-16 h-16 text-green-500 mx-auto" />
           </div>
-          <h2 className="cv-generator-success-title">CV Generated &amp; Sent</h2>
+          <h2 className="cv-generator-success-title">Employee CV Generated &amp; Sent</h2>
           <p className="cv-generator-success-message">
-            Your CV PDF has been generated and sent to all IT users. A copy has also been downloaded to your device.
+            The CV has been generated and sent to all IT users. A copy has also been downloaded to your device.
           </p>
           <button
             onClick={() => {
@@ -1410,7 +1410,7 @@ export const CVGenerator: React.FC<CVGeneratorProps> = ({ currentUser, token, al
             }}
             className="cv-btn cv-btn-primary"
           >
-            Generate Another CV
+            Generate Another Employee CV
           </button>
         </div>
       </div>

@@ -51,7 +51,7 @@ router.get(
                 u.name, u.avatar, u.role
          FROM screen_overrides so
          JOIN users u ON so.user_id = u.id
-         WHERE so.screen_name = ?
+         WHERE so.screen_name = ? AND u.is_active = 1
          ORDER BY u.name ASC`,
         [screenName]
       );
@@ -100,11 +100,11 @@ router.post('/:screenName', authenticateToken, async (req: ApiAuthRequest<GrantS
   try {
     const db = getDb();
 
-    // Verify all user IDs exist
+    // Verify all user IDs exist and are active
     for (const userId of userIds) {
-      const user = await db.get('SELECT id FROM users WHERE id = ?', [userId]);
+      const user = await db.get('SELECT id FROM users WHERE id = ? AND is_active = 1', [userId]);
       if (!user) {
-        return res.status(404).json({ error: `User with id "${userId}" not found.` });
+        return res.status(404).json({ error: `Active user with id "${userId}" not found.` });
       }
     }
 
@@ -148,20 +148,21 @@ router.get('/:screenName/check', authenticateToken, async (req: AuthRequest, res
 
   try {
     const db = getDb();
-    const countRow = await db.get<{ count: number }>(
-      'SELECT count(*) as count FROM screen_overrides WHERE screen_name = ?',
-      [screenName]
-    );
-    const totalCount = countRow?.count ?? 0;
 
-    if (totalCount === 0 || currentUser.role === 'it') {
+    // IT administrators always retain access
+    if (currentUser.role === 'it') {
       return res.json({ hasAccess: true });
     }
 
-    const override = await db.get('SELECT user_id FROM screen_overrides WHERE screen_name = ? AND user_id = ?', [
-      screenName,
-      currentUser.id,
-    ]);
+    // Everyone else must be explicitly granted access by an IT administrator.
+    // Closed by default: an empty allow list means nobody but IT can open the screen.
+    const override = await db.get(
+      `SELECT so.user_id
+       FROM screen_overrides so
+       JOIN users u ON so.user_id = u.id
+       WHERE so.screen_name = ? AND so.user_id = ? AND u.is_active = 1`,
+      [screenName, currentUser.id]
+    );
 
     return res.json({ hasAccess: !!override });
   } catch (err) {

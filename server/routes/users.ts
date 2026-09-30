@@ -220,6 +220,9 @@ router.post(
         [offboardDate, req.user?.id, reason ? reason.trim() : null, userId]
       );
 
+      // Revoke any screen access grants held by the offboarded user
+      await db.run('DELETE FROM screen_overrides WHERE user_id = ?', [userId]);
+
       res.json({ message: 'User offboarded successfully.' });
     } catch {
       res.status(500).json({ error: 'Failed to offboard user.' });

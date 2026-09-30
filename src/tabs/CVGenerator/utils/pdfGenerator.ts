@@ -488,7 +488,7 @@ export const generateApplicationPdf = async (data: FormData, photoFile?: File): 
 
   let y = A4_HEIGHT - MARGIN_TOP;
 
-  page.drawText('JOB APPLICATION', {
+  page.drawText('EMPLOYEE CV', {
     x: MARGIN_LEFT,
     y,
     size: 20,
@@ -500,7 +500,7 @@ export const generateApplicationPdf = async (data: FormData, photoFile?: File): 
   ({ page, y } = section(pdfDoc, page, logoImage, 'Job Information', y));
 
   const jobInfoItems: { label: string; value: string | number }[] = [
-    { label: 'Post Applied For', value: data.postAppliedFor },
+    { label: 'Position / Designation', value: data.postAppliedFor },
     { label: 'Code', value: data.code },
     { label: 'Notice Period (Days)', value: data.noticePeriodDays },
     {

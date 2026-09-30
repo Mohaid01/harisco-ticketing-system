@@ -58,7 +58,7 @@ export const CVReviewSummary: React.FC<CVReviewSummaryProps> = ({
   return (
     <div className="cv-review-summary">
       <div className="cv-review-intro">
-        <h3 className="cv-review-intro-title">Review Your Application</h3>
+        <h3 className="cv-review-intro-title">Review Employee CV</h3>
         <p className="cv-review-intro-text">
           Please carefully review all submitted information before final submission. Click Edit on any section to make
           updates.
@@ -80,7 +80,7 @@ export const CVReviewSummary: React.FC<CVReviewSummaryProps> = ({
           </button>
         </div>
         <div className="cv-review-grid cv-review-grid-3">
-          {renderField('Post Applied For', data.postAppliedFor)}
+          {renderField('Position / Designation', data.postAppliedFor)}
           {renderField('Job Code', data.code)}
           {renderField('Notice Period', data.noticePeriodDays ? `${data.noticePeriodDays} Days` : undefined)}
           <div className="cv-review-field-span-2">
