@@ -1790,10 +1790,7 @@ function App() {
     }
   };
 
-  const handleUpdateExternalUser = async (
-    userId: string,
-    data: { username: string; password?: string }
-  ) => {
+  const handleUpdateExternalUser = async (userId: string, data: { username: string; password?: string }) => {
     if (!token || !currentUser) return;
     try {
       const res = await fetch(`/api/external/users/${userId}`, {

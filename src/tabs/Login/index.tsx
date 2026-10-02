@@ -25,8 +25,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     setError(null);
     setLoading(true);
 
-    const finalUsername =
-      loginMode === 'employee_id' ? `${EMPLOYEE_ID_PREFIX}${codeOrUsername}` : codeOrUsername;
+    const finalUsername = loginMode === 'employee_id' ? `${EMPLOYEE_ID_PREFIX}${codeOrUsername}` : codeOrUsername;
 
     try {
       const response = await fetch('/api/auth/login', {

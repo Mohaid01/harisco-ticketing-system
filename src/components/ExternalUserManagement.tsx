@@ -117,40 +117,45 @@ export const ExternalUserManagement: React.FC<ExternalUserManagementProps> = ({
             </div>
           )}
 
-            <form onSubmit={handleSubmit} autoComplete="off">
-              <div className="form-group">
-                <label htmlFor="external-username-input" className="form-label">
-                  Username
-                </label>
-                <input
-                  id="external-username-input"
-                  type="text"
-                  className="form-input"
-                  placeholder="e.g. external_user"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  autoComplete="off"
-                  required
-                />
-              </div>
+          <form onSubmit={handleSubmit} autoComplete="off">
+            <div className="form-group">
+              <label htmlFor="external-username-input" className="form-label">
+                Username
+              </label>
+              <input
+                id="external-username-input"
+                type="text"
+                className="form-input"
+                placeholder="e.g. external_user"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                autoComplete="off"
+                required
+              />
+            </div>
 
-              <div className="form-group" style={{ marginTop: '1.0625rem' }}>
-                <label htmlFor="external-password-input" className="form-label">
-                  Password
-                </label>
-                <input
-                  id="external-password-input"
-                  type="password"
-                  className="form-input"
-                  placeholder="Enter password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  autoComplete="new-password"
-                  required
-                />
-              </div>
+            <div className="form-group" style={{ marginTop: '1.0625rem' }}>
+              <label htmlFor="external-password-input" className="form-label">
+                Password
+              </label>
+              <input
+                id="external-password-input"
+                type="password"
+                className="form-input"
+                placeholder="Enter password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="new-password"
+                required
+              />
+            </div>
 
-            <button id="btn-add-external-user-submit" type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '1.5938rem' }}>
+            <button
+              id="btn-add-external-user-submit"
+              type="submit"
+              className="btn btn-primary"
+              style={{ width: '100%', marginTop: '1.5938rem' }}
+            >
               Create Account
             </button>
           </form>
@@ -177,34 +182,34 @@ export const ExternalUserManagement: React.FC<ExternalUserManagementProps> = ({
                       gap: '0.5313rem',
                     }}
                   >
-                      <div className="form-group" style={{ marginBottom: '0' }}>
-                        <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: '4px' }}>
-                          Username
-                        </label>
-                        <input
-                          type="text"
-                          className="form-input"
-                          style={{ fontSize: '0.85rem', padding: '6px 10px' }}
-                          value={editUsername}
-                          onChange={(e) => setEditUsername(e.target.value)}
-                          autoComplete="off"
-                          required
-                        />
-                      </div>
-                      <div className="form-group" style={{ marginBottom: '0' }}>
-                        <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: '4px' }}>
-                          New Password (leave blank to keep current)
-                        </label>
-                        <input
-                          type="password"
-                          className="form-input"
-                          style={{ fontSize: '0.85rem', padding: '6px 10px' }}
-                          value={editPassword}
-                          onChange={(e) => setEditPassword(e.target.value)}
-                          autoComplete="new-password"
-                          placeholder="Optional"
-                        />
-                      </div>
+                    <div className="form-group" style={{ marginBottom: '0' }}>
+                      <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: '4px' }}>
+                        Username
+                      </label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        style={{ fontSize: '0.85rem', padding: '6px 10px' }}
+                        value={editUsername}
+                        onChange={(e) => setEditUsername(e.target.value)}
+                        autoComplete="off"
+                        required
+                      />
+                    </div>
+                    <div className="form-group" style={{ marginBottom: '0' }}>
+                      <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: '4px' }}>
+                        New Password (leave blank to keep current)
+                      </label>
+                      <input
+                        type="password"
+                        className="form-input"
+                        style={{ fontSize: '0.85rem', padding: '6px 10px' }}
+                        value={editPassword}
+                        onChange={(e) => setEditPassword(e.target.value)}
+                        autoComplete="new-password"
+                        placeholder="Optional"
+                      />
+                    </div>
 
                     <div style={{ display: 'flex', gap: '0.425rem', width: '100%', marginTop: '0.6375rem' }}>
                       <button
@@ -256,9 +261,7 @@ export const ExternalUserManagement: React.FC<ExternalUserManagementProps> = ({
                           color: 'white',
                         }}
                       >
-                        {user.username
-                          ?.slice(0, 2)
-                          .toUpperCase()}
+                        {user.username?.slice(0, 2).toUpperCase()}
                       </div>
                       <div
                         style={{

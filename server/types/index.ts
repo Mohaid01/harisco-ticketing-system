@@ -2,7 +2,8 @@ import type { Request, Response } from 'express';
 
 import { IncomingMessage } from 'http';
 
-type UserRoles = 'it' | 'employee' | 'manager' | 'executive' | 'factory_employee' | 'factory_it' | 'factory_manager' | 'external';
+type UserRoles =
+  'it' | 'employee' | 'manager' | 'executive' | 'factory_employee' | 'factory_it' | 'factory_manager' | 'external';
 
 type TicketTypes = 'hardware' | 'software' | 'maintenance' | 'upgrade' | 'installation' | 'email' | 'others';
 

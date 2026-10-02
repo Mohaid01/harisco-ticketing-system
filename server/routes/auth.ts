@@ -193,7 +193,7 @@ router.post(
         [userId]
       );
 
-if (!user || result.changes === 0) {
+      if (!user || result.changes === 0) {
         await db.run('UPDATE factory_users SET passwordHash = ?, needsPasswordReset = 0 WHERE id = ?', [
           passwordHash,
           userId,
@@ -286,10 +286,10 @@ router.post(
       ]);
 
       if (result.changes === 0) {
-        const factoryResult = await db.run('UPDATE factory_users SET passwordHash = ?, needsPasswordReset = 0 WHERE id = ?', [
-          newPasswordHash,
-          userId,
-        ]);
+        const factoryResult = await db.run(
+          'UPDATE factory_users SET passwordHash = ?, needsPasswordReset = 0 WHERE id = ?',
+          [newPasswordHash, userId]
+        );
         if (factoryResult.changes === 0) {
           await db.run('UPDATE external_users SET passwordHash = ?, needsPasswordReset = 0 WHERE id = ?', [
             newPasswordHash,
