@@ -2,7 +2,8 @@ import type { Request, Response } from 'express';
 
 import { IncomingMessage } from 'http';
 
-type UserRoles = 'it' | 'employee' | 'manager' | 'executive' | 'factory_employee' | 'factory_it' | 'factory_manager';
+type UserRoles =
+  'it' | 'employee' | 'manager' | 'executive' | 'factory_employee' | 'factory_it' | 'factory_manager' | 'external';
 
 type TicketTypes = 'hardware' | 'software' | 'maintenance' | 'upgrade' | 'installation' | 'email' | 'others';
 
@@ -774,6 +775,49 @@ export interface ResetFactoryUserPasswordResponse {
 }
 
 export interface DeleteFactoryUserResponse {
+  message: string;
+}
+
+// External User Types
+export interface CreateExternalUserRequestBody {
+  username: string;
+  password: string;
+}
+
+export interface UpdateExternalUserRequestBody {
+  username: string;
+  password?: string;
+}
+
+export type ExternalUsersResponse = DbUser[];
+
+export interface CreateExternalUserResponse {
+  id: string;
+  name: string;
+  email: string | null;
+  username: string;
+  role: UserRoles;
+  avatar?: string;
+  department?: string | null;
+  designation?: string | null;
+  isDepartmentHead: number;
+  loginEnabled: number;
+}
+
+export interface UpdateExternalUserResponse {
+  id: string;
+  username: string;
+}
+
+export interface DeleteExternalUserResponse {
+  message: string;
+}
+
+export interface ResetExternalUserPasswordRequestBody {
+  newPassword: string;
+}
+
+export interface ResetExternalUserPasswordResponse {
   message: string;
 }
 

@@ -1,4 +1,4 @@
-import { AlertCircle, ArrowRight, Lock } from 'lucide-react';
+import { AlertCircle, ArrowRight, Lock, User } from 'lucide-react';
 import React, { useState } from 'react';
 
 import type { AppUser } from '../../types';
@@ -11,8 +11,11 @@ interface LoginProps {
   onLoginSuccess: (token: string, user: AppUser) => void;
 }
 
+type LoginMode = 'employee_id' | 'username';
+
 export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
-  const [employeeCode, setEmployeeCode] = useState('');
+  const [loginMode, setLoginMode] = useState<LoginMode>('employee_id');
+  const [codeOrUsername, setCodeOrUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -22,6 +25,8 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     setError(null);
     setLoading(true);
 
+    const finalUsername = loginMode === 'employee_id' ? `${EMPLOYEE_ID_PREFIX}${codeOrUsername}` : codeOrUsername;
+
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -29,7 +34,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          username: `${EMPLOYEE_ID_PREFIX}${employeeCode}`,
+          username: finalUsername,
           password,
         }),
       });
@@ -50,6 +55,21 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     }
   };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (loginMode === 'employee_id') {
+      const val = e.target.value.replace(/\D/g, '').slice(0, 5);
+      setCodeOrUsername(val);
+    } else {
+      setCodeOrUsername(e.target.value);
+    }
+  };
+
+  const handleModeChange = (mode: LoginMode) => {
+    setLoginMode(mode);
+    setCodeOrUsername('');
+    setError(null);
+  };
+
   return (
     <div className="login-page">
       <div className="login-card">
@@ -67,30 +87,66 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
           </div>
         )}
 
+        <div className="login-mode-toggle">
+          <button
+            type="button"
+            className={`login-mode-btn ${loginMode === 'employee_id' ? 'active' : ''}`}
+            onClick={() => handleModeChange('employee_id')}
+          >
+            Employee ID
+          </button>
+          <button
+            type="button"
+            className={`login-mode-btn ${loginMode === 'username' ? 'active' : ''}`}
+            onClick={() => handleModeChange('username')}
+          >
+            Username
+          </button>
+        </div>
+
         <form onSubmit={handleLogin}>
           <div className="form-group">
-            <label htmlFor="login-username" className="form-label">
-              Employee ID
-            </label>
-            <div className="login-input-group">
-              <span className="login-input-prefix">{EMPLOYEE_ID_PREFIX}</span>
-              <input
-                id="login-username"
-                type="text"
-                className="form-input login-input-with-prefix"
-                placeholder="12345"
-                maxLength={5}
-                value={employeeCode}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/\D/g, '');
-                  setEmployeeCode(val);
-                }}
-                required
-              />
-            </div>
+            {loginMode === 'employee_id' ? (
+              <>
+                <label htmlFor="login-username" className="form-label">
+                  Employee ID
+                </label>
+                <div className="login-input-group">
+                  <span className="login-input-prefix">{EMPLOYEE_ID_PREFIX}</span>
+                  <input
+                    id="login-username"
+                    type="text"
+                    className="form-input login-input-with-prefix"
+                    placeholder="12345"
+                    maxLength={5}
+                    value={codeOrUsername}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <label htmlFor="login-username-ext" className="form-label">
+                  Username
+                </label>
+                <div className="login-input-group">
+                  <User size={16} className="login-input-icon" />
+                  <input
+                    id="login-username-ext"
+                    type="text"
+                    className="form-input login-input-with-icon"
+                    placeholder="e.g. external_user"
+                    value={codeOrUsername}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+              </>
+            )}
           </div>
 
-          <div className="form-group">
+          <div className="form-group" style={{ marginTop: '1.0625rem' }}>
             <label htmlFor="login-password" className="form-label">
               Password
             </label>
@@ -99,7 +155,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                 id="login-password"
                 type="password"
                 className="form-input login-input-with-icon"
-                placeholder="••••••••"
+                placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required

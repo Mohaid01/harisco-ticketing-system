@@ -2,12 +2,12 @@ import type { LucideIcon } from 'lucide-react';
 
 // User Types
 export type UserRole =
-  'it' | 'employee' | 'manager' | 'executive' | 'factory_employee' | 'factory_it' | 'factory_manager';
+  'it' | 'employee' | 'manager' | 'executive' | 'factory_employee' | 'factory_it' | 'factory_manager' | 'external';
 
 export interface AppUser {
   id: string;
   name: string;
-  email: string;
+  email: string | null;
   username?: string;
   role: UserRole;
   needsPasswordReset?: number;
@@ -24,6 +24,19 @@ export interface AppUser {
   offboarded_at?: string;
   offboarded_by?: string;
   offboard_reason?: string;
+}
+
+export interface CreateExternalUserResponse {
+  id: string;
+  name: string;
+  email: string | null;
+  username: string;
+  role: UserRole;
+  avatar?: string;
+  department?: string | null;
+  designation?: string | null;
+  isDepartmentHead: number;
+  loginEnabled: number;
 }
 
 // Ticket Types
@@ -140,7 +153,9 @@ export type ActiveTab =
   | 'factory_attendance'
   | 'leaves'
   | 'site_duties'
-  | 'cv_generator';
+  | 'cv_generator'
+  | 'users_statistics'
+  | 'external_users';
 
 export interface MenuItems {
   id?: ActiveTab;
