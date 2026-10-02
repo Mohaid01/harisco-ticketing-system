@@ -52,6 +52,9 @@
   --role-executive: #10b981;
   --role-executive-bg: rgba(16, 185, 129, 0.1);
 
+  --role-external: #6366f1;
+  --role-external-bg: rgba(99, 102, 241, 0.1);
+
   /* Fonts & Radius */
   --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;

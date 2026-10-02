@@ -154,6 +154,11 @@ router.get('/:screenName/check', authenticateToken, async (req: AuthRequest, res
       return res.json({ hasAccess: true });
     }
 
+    // External users have default access to CV Generator
+    if (currentUser.role === 'external' && screenName === 'cv_generator') {
+      return res.json({ hasAccess: true });
+    }
+
     // Everyone else must be explicitly granted access by an IT administrator.
     // Closed by default: an empty allow list means nobody but IT can open the screen.
     const override = await db.get(

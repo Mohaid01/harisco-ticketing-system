@@ -49,6 +49,13 @@ router.post('/login', loginLimiter, async (req: ApiRequest<LoginRequestBody>, re
     }
 
     if (!user) {
+      user = await db.get<DbUser>(
+        'SELECT id, name, email, username, role, avatar, passwordHash, needsPasswordReset, department, designation, isDepartmentHead, loginEnabled, is_active, NULL as casualLeaves, NULL as annualLeaves, NULL as medicalLeaves FROM external_users WHERE LOWER(username) = ? AND is_active = 1',
+        [normalizedUsername]
+      );
+    }
+
+    if (!user) {
       logger.security('Login failed - invalid credentials', {
         username: normalizedUsername,
         ip: req.ip,
@@ -143,6 +150,13 @@ router.get('/me', authenticateToken, async (req: AuthRequest, res: ApiResponse<M
     }
 
     if (!user) {
+      user = await db.get<DbUser>(
+        'SELECT id, name, email, username, role, avatar, needsPasswordReset, department, designation, isDepartmentHead, loginEnabled, NULL as casualLeaves, NULL as annualLeaves, NULL as medicalLeaves FROM external_users WHERE id = ?',
+        [req.user?.id]
+      );
+    }
+
+    if (!user) {
       res.status(404).json({ error: 'User not found.' });
       return;
     }
@@ -179,13 +193,24 @@ router.post(
         [userId]
       );
 
-      if (!user || result.changes === 0) {
+if (!user || result.changes === 0) {
         await db.run('UPDATE factory_users SET passwordHash = ?, needsPasswordReset = 0 WHERE id = ?', [
           passwordHash,
           userId,
         ]);
         user = await db.get<DbUser>(
           'SELECT id, name, email, username, role, avatar, needsPasswordReset FROM factory_users WHERE id = ?',
+          [userId]
+        );
+      }
+
+      if (!user) {
+        await db.run('UPDATE external_users SET passwordHash = ?, needsPasswordReset = 0 WHERE id = ?', [
+          passwordHash,
+          userId,
+        ]);
+        user = await db.get<DbUser>(
+          'SELECT id, name, email, username, role, avatar, needsPasswordReset FROM external_users WHERE id = ?',
           [userId]
         );
       }
@@ -239,6 +264,10 @@ router.post(
       }
 
       if (!user) {
+        user = await db.get<DbUser>('SELECT passwordHash FROM external_users WHERE id = ?', [userId]);
+      }
+
+      if (!user) {
         res.status(404).json({ error: 'User not found.' });
         return;
       }
@@ -257,10 +286,16 @@ router.post(
       ]);
 
       if (result.changes === 0) {
-        await db.run('UPDATE factory_users SET passwordHash = ?, needsPasswordReset = 0 WHERE id = ?', [
+        const factoryResult = await db.run('UPDATE factory_users SET passwordHash = ?, needsPasswordReset = 0 WHERE id = ?', [
           newPasswordHash,
           userId,
         ]);
+        if (factoryResult.changes === 0) {
+          await db.run('UPDATE external_users SET passwordHash = ?, needsPasswordReset = 0 WHERE id = ?', [
+            newPasswordHash,
+            userId,
+          ]);
+        }
       }
 
       res.json({ message: 'Password updated successfully.' });

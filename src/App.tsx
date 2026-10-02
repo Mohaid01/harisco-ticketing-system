@@ -19,6 +19,7 @@ import type {
 import { AdminTicketDetails } from './components/AdminTicketDetails';
 import { AdminTicketList } from './components/AdminTicketList';
 import { Attendance } from './components/Attendance';
+import { ExternalUserManagement } from './components/ExternalUserManagement';
 import { FactoryUserManagement } from './components/FactoryUserManagement';
 import { HSETicketDetails } from './components/HSETicketDetails';
 import { HSETicketList } from './components/HSETicketList';
@@ -72,6 +73,8 @@ function canUserAccessTab(
       return role === 'it' || role === 'factory_it';
     case 'factory_attendance':
       return ['it', 'manager', 'factory_it', 'factory_manager', 'factory_employee'].includes(role);
+    case 'external_users':
+      return role === 'it';
     default:
       return false;
   }
@@ -81,6 +84,7 @@ function getSafeFallbackTab(role: UserRole): ActiveTab {
   if (role === 'it' || role === 'manager' || role === 'executive') return 'noticeboard';
   if (role === 'employee') return 'noticeboard';
   if (role === 'factory_it' || role === 'factory_manager' || role === 'factory_employee') return 'factory_attendance';
+  if (role === 'external') return 'cv_generator';
   return 'noticeboard';
 }
 
@@ -106,6 +110,7 @@ function pathToTab(pathname: string): {
     'cv-generator': 'cv_generator',
     'factory-users': 'factory_users',
     'factory-attendance': 'factory_attendance',
+    'external-users': 'external_users',
   };
 
   if (parts.length === 0) return { tab: 'noticeboard', ticketId: null };
@@ -174,6 +179,7 @@ function App() {
   const [currentUser, setCurrentUser] = useState<AppUser | null>(null);
   const [users, setUsers] = useState<AppUser[]>([]);
   const [factoryUsers, setFactoryUsers] = useState<AppUser[]>([]);
+  const [externalUsers, setExternalUsers] = useState<AppUser[]>([]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [activeTab, setActiveTab] = useState<ActiveTab>(initialTab.tab);
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(initialTab.ticketId);
@@ -436,6 +442,15 @@ function App() {
           const factoryUsersData = await factoryUsersRes.json();
           setFactoryUsers(factoryUsersData);
         }
+
+        // Fetch external users
+        const externalUsersRes = await fetch('/api/external/users', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (externalUsersRes.ok) {
+          const externalUsersData = await externalUsersRes.json();
+          setExternalUsers(externalUsersData);
+        }
       } catch (err) {
         console.error('Session verification failed:', err);
         if (err instanceof Error && err.message === 'Session expired') {
@@ -689,6 +704,7 @@ function App() {
     setTickets([]);
     setUsers([]);
     setFactoryUsers([]);
+    setExternalUsers([]);
     setAdminTickets([]);
     setSelectedTicketId(null);
     setSelectedAdminTicketId(null);
@@ -1718,6 +1734,100 @@ function App() {
     }
   };
 
+  // External User handlers
+  const handleAddExternalUser = async (data: { username: string; password: string }) => {
+    if (!token || !currentUser) return;
+    try {
+      const res = await fetch('/api/external/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      const responseText = await res.clone().text();
+      let responseData: Record<string, unknown>;
+      try {
+        responseData = JSON.parse(responseText) as Record<string, unknown>;
+      } catch {
+        throw new Error(`Failed to create external user (HTTP ${res.status}). Server returned a non-JSON response.`);
+      }
+
+      if (!res.ok) {
+        throw new Error((responseData.error as string) || 'Failed to add external user');
+      }
+
+      setExternalUsers((prevUsers) => [...prevUsers, responseData as AppUser]);
+    } catch (err) {
+      console.error(err);
+      const errMsg = err instanceof Error ? err.message : 'Error creating external user. Please try again.';
+      alert(errMsg);
+    }
+  };
+
+  const handleDeleteExternalUser = async (userId: string) => {
+    if (!token || !currentUser) return;
+    try {
+      const res = await fetch(`/api/external/users/${userId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || 'Failed to delete external user');
+      }
+
+      setExternalUsers((prevUsers) => prevUsers.filter((u) => u.id !== userId));
+    } catch (err) {
+      console.error(err);
+      const errMsg = err instanceof Error ? err.message : 'Error deleting external user. Please try again.';
+      alert(errMsg);
+    }
+  };
+
+  const handleUpdateExternalUser = async (
+    userId: string,
+    data: { username: string; password?: string }
+  ) => {
+    if (!token || !currentUser) return;
+    try {
+      const res = await fetch(`/api/external/users/${userId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || 'Failed to update external user');
+      }
+
+      const updatedUser = await res.json();
+      setExternalUsers((prevUsers) =>
+        prevUsers.map((u) =>
+          u.id === userId
+            ? {
+                ...u,
+                username: updatedUser.username,
+              }
+            : u
+        )
+      );
+    } catch (err) {
+      console.error(err);
+      const errMsg = err instanceof Error ? err.message : 'Error updating external user. Please try again.';
+      alert(errMsg);
+    }
+  };
+
   // Loading state skeleton screen
   if (loading) {
     return (
@@ -1817,6 +1927,16 @@ function App() {
               onDeleteUser={handleDeleteFactoryUser}
               onOffboardUser={handleOffboardFactoryUser}
               onUpdateUser={handleUpdateFactoryUser}
+              loading={loading}
+            />
+          ) : activeTab === 'external_users' && currentUser.role === 'it' ? (
+            <ExternalUserManagement
+              users={externalUsers}
+              currentUser={currentUser}
+              token={token}
+              onAddUser={handleAddExternalUser}
+              onDeleteUser={handleDeleteExternalUser}
+              onUpdateUser={handleUpdateExternalUser}
               loading={loading}
             />
           ) : activeTab === 'attendance' ? (

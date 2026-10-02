@@ -100,7 +100,7 @@ const MENU_ITEMS: MenuItem[] = [
   {
     label: 'HR',
     icon: Building2,
-    roles: ['it', 'employee', 'manager', 'executive'],
+    roles: ['it', 'employee', 'manager', 'executive', 'external'],
     children: [
       {
         id: 'attendance',
@@ -125,7 +125,7 @@ const MENU_ITEMS: MenuItem[] = [
         id: 'cv_generator',
         label: 'CV Generator',
         icon: FileText,
-        roles: ['it', 'employee', 'manager', 'executive'],
+        roles: ['it', 'employee', 'manager', 'executive', 'external'],
         requiresScreenOverride: true,
       },
     ],
@@ -146,6 +146,19 @@ const MENU_ITEMS: MenuItem[] = [
         label: 'User Management',
         icon: Users,
         roles: ['it', 'factory_it'],
+      },
+    ],
+  },
+  {
+    label: 'External',
+    icon: Building2,
+    roles: ['it'],
+    children: [
+      {
+        id: 'external_users',
+        label: 'User Management',
+        icon: Users,
+        roles: ['it'],
       },
     ],
   },

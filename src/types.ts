@@ -2,7 +2,7 @@ import type { LucideIcon } from 'lucide-react';
 
 // User Types
 export type UserRole =
-  'it' | 'employee' | 'manager' | 'executive' | 'factory_employee' | 'factory_it' | 'factory_manager';
+  'it' | 'employee' | 'manager' | 'executive' | 'factory_employee' | 'factory_it' | 'factory_manager' | 'external';
 
 export interface AppUser {
   id: string;
@@ -140,7 +140,9 @@ export type ActiveTab =
   | 'factory_attendance'
   | 'leaves'
   | 'site_duties'
-  | 'cv_generator';
+  | 'cv_generator'
+  | 'users_statistics'
+  | 'external_users';
 
 export interface MenuItems {
   id?: ActiveTab;
