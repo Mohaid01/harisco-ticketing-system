@@ -139,6 +139,19 @@ const MENU_ITEMS: MenuItem[] = [
       },
     ],
   },
+  {
+    label: 'External',
+    icon: Building2,
+    roles: ['it', 'external'],
+    children: [
+      {
+        id: 'external_users',
+        label: 'User Management',
+        icon: Users,
+        roles: ['it', 'external'],
+      },
+    ],
+  },
 ];
 
 function isItemVisible(item: MenuItem, userRole: UserRole, userDepartment: string | undefined): boolean {

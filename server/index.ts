@@ -22,6 +22,7 @@ import noticesRouter from './routes/notices.ts';
 import siteDutiesRouter from './routes/site-duties.ts';
 import ticketsRouter from './routes/tickets.ts';
 import usersRouter from './routes/users.ts';
+import externalUsersRouter from './routes/external-users.ts';
 import logger from './utils/logger.ts';
 import { performanceTiming, requestId } from './utils/middleware.ts';
 
@@ -120,6 +121,7 @@ app.use('/api/notices', noticesRouter);
 app.use('/api/site-duties', siteDutiesRouter);
 app.use('/api/tickets', ticketsRouter);
 app.use('/api/users', usersRouter);
+app.use('/api/external', externalUsersRouter);
 
 // Start Database and Server
 // Serve static frontend files in production
