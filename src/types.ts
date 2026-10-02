@@ -7,7 +7,7 @@ export type UserRole =
 export interface AppUser {
   id: string;
   name: string;
-  email: string;
+  email: string | null;
   username?: string;
   role: UserRole;
   needsPasswordReset?: number;
@@ -24,6 +24,19 @@ export interface AppUser {
   offboarded_at?: string;
   offboarded_by?: string;
   offboard_reason?: string;
+}
+
+export interface CreateExternalUserResponse {
+  id: string;
+  name: string;
+  email: string | null;
+  username: string;
+  role: UserRole;
+  avatar?: string;
+  department?: string | null;
+  designation?: string | null;
+  isDepartmentHead: number;
+  loginEnabled: number;
 }
 
 // Ticket Types

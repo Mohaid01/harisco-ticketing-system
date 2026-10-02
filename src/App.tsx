@@ -6,6 +6,7 @@ import type {
   AdminTicketCategory,
   AdminTicketStatus,
   AppUser,
+  CreateExternalUserResponse,
   HSECategory,
   HSEStatus,
   HSETicket,
@@ -1748,18 +1749,18 @@ function App() {
       });
 
       const responseText = await res.clone().text();
-      let responseData: Record<string, unknown>;
+      let responseData: CreateExternalUserResponse & { error?: string };
       try {
-        responseData = JSON.parse(responseText) as Record<string, unknown>;
+        responseData = JSON.parse(responseText) as CreateExternalUserResponse & { error?: string };
       } catch {
         throw new Error(`Failed to create external user (HTTP ${res.status}). Server returned a non-JSON response.`);
       }
 
       if (!res.ok) {
-        throw new Error((responseData.error as string) || 'Failed to add external user');
+        throw new Error(responseData.error || 'Failed to add external user');
       }
 
-      setExternalUsers((prevUsers) => [...prevUsers, responseData as AppUser]);
+      setExternalUsers((prevUsers) => [...prevUsers, responseData]);
     } catch (err) {
       console.error(err);
       const errMsg = err instanceof Error ? err.message : 'Error creating external user. Please try again.';
