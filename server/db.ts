@@ -4,6 +4,8 @@ import path from 'path';
 import { Database, open } from 'sqlite';
 import sqlite3 from 'sqlite3';
 
+import type { DbUser } from './types/index.ts';
+
 import logger from './utils/logger.ts';
 
 let db: Database<sqlite3.Database, sqlite3.Statement>;
@@ -511,10 +513,75 @@ export async function initDb() {
   }
 
   try {
-    await db.exec('ALTER TABLE factory_users ADD COLUMN offboard_reason TEXT');
+    await db.exec('ALTER TABLE factory_users ADD COLUMN offboarded_reason TEXT');
   } catch {
     // Column might already exist, ignore error
   }
+
+  // Create External Users Table
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS external_users (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      email TEXT UNIQUE,
+      username TEXT UNIQUE NOT NULL,
+      role TEXT CHECK(role IN ('external')) NOT NULL,
+      avatar TEXT NOT NULL,
+      passwordHash TEXT NOT NULL,
+      needsPasswordReset INTEGER DEFAULT 1,
+      department TEXT,
+      designation TEXT,
+      isDepartmentHead INTEGER DEFAULT 0,
+      loginEnabled INTEGER DEFAULT 1,
+      is_active INTEGER DEFAULT 1,
+      offboarded_at TEXT,
+      offboarded_by TEXT,
+      offboard_reason TEXT
+    )
+  `);
+
+  // Migrate any existing external users from the users table to external_users table
+  try {
+    const existingExternalUsers = await db.all<DbUser[]>(
+      'SELECT id, name, email, username, role, avatar, passwordHash, needsPasswordReset, department, designation, isDepartmentHead, loginEnabled FROM users WHERE role = ?',
+      ['external']
+    );
+
+    if (existingExternalUsers.length > 0) {
+      logger.info(`Migrating ${existingExternalUsers.length} external user(s) from users table to external_users table.`);
+
+      for (const user of existingExternalUsers) {
+        await db.run(
+          'INSERT OR IGNORE INTO external_users (id, name, email, username, role, avatar, passwordHash, needsPasswordReset, department, designation, isDepartmentHead, loginEnabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          [
+            user.id,
+            user.name,
+            user.email ?? null,
+            user.username,
+            user.role,
+            user.avatar || '',
+            user.passwordHash,
+            user.needsPasswordReset ?? 1,
+            user.department ?? null,
+            user.designation ?? null,
+            user.isDepartmentHead ?? 0,
+            user.loginEnabled ?? 1,
+          ]
+        );
+      }
+
+      // Remove migrated external users from the users table
+      await db.run('DELETE FROM users WHERE role = ?', ['external']);
+      logger.info('External users migration completed.');
+    }
+  } catch (err) {
+    logger.error('Failed to migrate external users to external_users table:', err);
+  }
+
+  // Create indexes for external_users table to improve query performance
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_external_users_username ON external_users(username)');
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_external_users_role ON external_users(role)');
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_external_users_email ON external_users(email)');
 
   // Create User Shift Overrides Table
   await db.exec(`

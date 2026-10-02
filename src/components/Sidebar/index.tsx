@@ -5,6 +5,7 @@ import {
   Calendar,
   ChevronDown,
   Factory,
+  FileText,
   MapPin,
   Menu,
   Settings2,
@@ -97,7 +98,7 @@ const MENU_ITEMS: MenuItem[] = [
   {
     label: 'HR',
     icon: Building2,
-    roles: ['it', 'employee', 'manager', 'executive'],
+    roles: ['it', 'employee', 'manager', 'executive', 'external'],
     children: [
       {
         id: 'attendance',
@@ -117,6 +118,13 @@ const MENU_ITEMS: MenuItem[] = [
         icon: MapPin,
         roles: ['it', 'employee', 'manager', 'executive'],
         notAllowedDepartments: ['Staff'],
+      },
+      {
+        id: 'cv_generator',
+        label: 'CV Generator',
+        icon: FileText,
+        roles: ['it', 'employee', 'manager', 'executive', 'external'],
+        requiresScreenOverride: true,
       },
     ],
   },

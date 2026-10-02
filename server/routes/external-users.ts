@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs';
-import { Response, Router } from 'express';
+import { Router } from 'express';
 
 import type {
   ApiAuthRequest,
@@ -30,15 +30,15 @@ router.get('/users', authenticateToken, async (req: AuthRequest, res: ApiRespons
       return res.status(401).json({ error: 'Unauthorized. User data missing.' });
     }
 
-    // Only IT and external users can access external users
-    if (!['it', 'external'].includes(currentUser.role)) {
+    // Only IT can access external users
+    if (currentUser.role !== 'it') {
       return res.status(403).json({ error: 'Forbidden. Access denied.' });
     }
 
     const selectFields =
-      'SELECT id, name, email, username, role, avatar, department, designation, isDepartmentHead, loginEnabled, is_active, offboarded_at, offboarded_by, offboard_reason FROM users WHERE role = ?';
+      'SELECT id, name, email, username, role, avatar, department, designation, isDepartmentHead, loginEnabled, is_active, offboarded_at, offboarded_by, offboard_reason FROM external_users';
 
-    const users = await db.all<DbUser[]>(selectFields, ['external']);
+    const users = await db.all<DbUser[]>(selectFields, []);
     return res.json(users);
   } catch (error) {
     logger.error('Error fetching external users data:', error);
@@ -51,9 +51,9 @@ router.post(
   '/users',
   authenticateToken,
   async (req: ApiAuthRequest<CreateExternalUserRequestBody>, res: ApiResponse<CreateExternalUserResponse>) => {
-    if (!req.user || !['it', 'external'].includes(req.user.role)) {
+    if (!req.user || req.user.role !== 'it') {
       res.status(403).json({
-        error: 'Forbidden. External user administration requires IT or External role.',
+        error: 'Forbidden. External user administration requires IT role.',
       });
       return;
     }
@@ -70,7 +70,7 @@ router.post(
     try {
       const db = getDb();
 
-      const existingUsername = await db.get('SELECT id FROM users WHERE username = ?', [finalUsername]);
+      const existingUsername = await db.get('SELECT id FROM external_users WHERE username = ?', [finalUsername]);
       if (existingUsername) {
         res.status(400).json({ error: 'User with this username already exists.' });
         return;
@@ -81,7 +81,7 @@ router.post(
 
       // Use 'external' role for external users
       await db.run(
-        'INSERT INTO users (id, name, email, username, role, avatar, passwordHash, needsPasswordReset, department, designation, isDepartmentHead, loginEnabled) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)',
+        'INSERT INTO external_users (id, name, email, username, role, avatar, passwordHash, needsPasswordReset, department, designation, isDepartmentHead, loginEnabled) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)',
         [
           userId,
           finalUsername, // name same as username for external users
@@ -123,9 +123,9 @@ router.delete(
   '/users/:id',
   authenticateToken,
   async (req: AuthRequest, res: ApiResponse<DeleteExternalUserResponse>) => {
-    if (!req.user || !['it', 'external'].includes(req.user.role)) {
+    if (!req.user || req.user.role !== 'it') {
       res.status(403).json({
-        error: 'Forbidden. External user deletion requires IT or External role.',
+        error: 'Forbidden. External user deletion requires IT role.',
       });
       return;
     }
@@ -140,7 +140,7 @@ router.delete(
 
     try {
       const db = getDb();
-      const result = await db.run('DELETE FROM users WHERE id = ? AND role = ?', [userId, 'external']);
+      const result = await db.run('DELETE FROM external_users WHERE id = ?', [userId]);
 
       if (result.changes === 0) {
         res.status(404).json({ error: 'External user not found.' });
@@ -159,9 +159,9 @@ router.put(
   '/users/:id',
   authenticateToken,
   async (req: ApiAuthRequest<UpdateExternalUserRequestBody>, res: ApiResponse<UpdateExternalUserResponse>) => {
-    if (!req.user || !['it', 'external'].includes(req.user.role)) {
+    if (!req.user || req.user.role !== 'it') {
       res.status(403).json({
-        error: 'Forbidden. External user modification requires IT or External role.',
+        error: 'Forbidden. External user modification requires IT role.',
       });
       return;
     }
@@ -180,7 +180,7 @@ router.put(
       const db = getDb();
 
       // Check if username already exists for another user
-      const existingUsername = await db.get('SELECT id FROM users WHERE LOWER(username) = ? AND id != ?', [
+      const existingUsername = await db.get('SELECT id FROM external_users WHERE LOWER(username) = ? AND id != ?', [
         finalUsername,
         userId,
       ]);
@@ -189,12 +189,12 @@ router.put(
         return;
       }
 
-      let query = 'UPDATE users SET username = ? WHERE id = ? AND role = ?';
-      const params: (string | undefined)[] = [finalUsername, userId, 'external'];
+      let query = 'UPDATE external_users SET username = ? WHERE id = ?';
+      const params: (string | undefined)[] = [finalUsername, userId];
 
       if (password && password.trim()) {
         const passwordHash = await bcrypt.hash(password.trim(), 10);
-        query = 'UPDATE users SET username = ?, passwordHash = ?, needsPasswordReset = 1 WHERE id = ? AND role = ?';
+        query = 'UPDATE external_users SET username = ?, passwordHash = ?, needsPasswordReset = 1 WHERE id = ?';
         params.splice(1, 0, passwordHash);
       }
 

@@ -13,6 +13,7 @@ import activityLogsRouter from './routes/activity-logs.ts';
 import adminTicketsRouter from './routes/admin-tickets.ts';
 import attendanceRouter from './routes/attendance.ts';
 import authRouter from './routes/auth.ts';
+import externalUsersRouter from './routes/external-users.ts';
 import factoryRouter from './routes/factory.ts';
 import healthRouter from './routes/health.ts';
 import holidaysRouter from './routes/holidays.ts';
@@ -22,7 +23,6 @@ import noticesRouter from './routes/notices.ts';
 import siteDutiesRouter from './routes/site-duties.ts';
 import ticketsRouter from './routes/tickets.ts';
 import usersRouter from './routes/users.ts';
-import externalUsersRouter from './routes/external-users.ts';
 import logger from './utils/logger.ts';
 import { performanceTiming, requestId } from './utils/middleware.ts';
 

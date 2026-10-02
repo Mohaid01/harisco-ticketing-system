@@ -140,7 +140,10 @@ export type ActiveTab =
   | 'factory_attendance'
   | 'leaves'
   | 'site_duties'
-  | 'users_statistics';
+  | 'users_statistics'
+  | 'users_statistics'
+  | 'external_users'
+  | 'cv_generator';
 
 export interface MenuItems {
   id?: ActiveTab;

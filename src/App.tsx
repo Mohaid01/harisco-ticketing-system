@@ -36,6 +36,7 @@ import { TicketList } from './components/TicketList';
 import { UserManagement } from './components/UserManagement';
 import { ADMIN_TICKET_STATUS_LABELS, APP_TITLE, HSE_STATUS_LABELS, STATUS_LABELS } from './constants';
 import { ActivityLog } from './tabs/ActivityLogs';
+import { CVGenerator } from './tabs/CVGenerator';
 import { LeaveManagement } from './tabs/LeaveManagement';
 import { Login } from './tabs/Login';
 import { NoticeBoard } from './tabs/Noticeboard';
@@ -66,7 +67,7 @@ function canUserAccessTab(tab: ActiveTab, role: UserRole, department: string | u
     case 'factory_attendance':
       return ['it', 'manager', 'factory_it', 'factory_manager', 'factory_employee'].includes(role);
     case 'external_users':
-      return ['it', 'external'].includes(role);
+      return role === 'it';
     default:
       return false;
   }
@@ -76,6 +77,7 @@ function getSafeFallbackTab(role: UserRole): ActiveTab {
   if (role === 'it' || role === 'manager' || role === 'executive') return 'noticeboard';
   if (role === 'employee') return 'noticeboard';
   if (role === 'factory_it' || role === 'factory_manager' || role === 'factory_employee') return 'factory_attendance';
+  if (role === 'external') return 'cv_generator';
   return 'noticeboard';
 }
 
@@ -95,6 +97,7 @@ function pathToTab(pathname: string): {
     'hse-tickets': 'hse_tickets',
     users: 'users',
     'activity-log': 'activity_log',
+    'cv-generator': 'cv_generator',
     attendance: 'attendance',
     leaves: 'leaves',
     'site-duties': 'site_duties',
@@ -1894,7 +1897,7 @@ function App() {
               onUpdateUser={handleUpdateFactoryUser}
               loading={loading}
             />
-          ) : activeTab === 'external_users' && ['it', 'external'].includes(currentUser.role) ? (
+          ) : activeTab === 'external_users' && currentUser.role === 'it' ? (
             <ExternalUserManagement
               users={externalUsers}
               currentUser={currentUser}
@@ -1904,6 +1907,8 @@ function App() {
               onUpdateUser={handleUpdateExternalUser}
               loading={loading}
             />
+          ) : activeTab === 'cv_generator' ? (
+            <CVGenerator currentUser={currentUser} />
           ) : activeTab === 'attendance' ? (
             <Attendance
               currentUser={currentUser}
