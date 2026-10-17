@@ -558,6 +558,50 @@ export async function initDb() {
   await db.exec('CREATE INDEX IF NOT EXISTS idx_external_users_username ON external_users(username)');
   await db.exec('CREATE INDEX IF NOT EXISTS idx_external_users_email ON external_users(email)');
 
+  // Create Inventory Table
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS inventory (
+      id TEXT PRIMARY KEY,
+      company TEXT NOT NULL,
+      entity TEXT NOT NULL CHECK(entity IN ('HQ','Factory','External','Others')),
+      category TEXT NOT NULL CHECK(category IN ('Laptop','Monitor','Mouse','Keyboard','Printer','Mobile')),
+      details TEXT NOT NULL,
+      device_id TEXT NOT NULL UNIQUE,
+      sn_mac_address TEXT NOT NULL UNIQUE,
+      status TEXT NOT NULL DEFAULT 'Stocked' CHECK(status IN ('Stocked','Assigned','Under Repair','Retired','Lost')),
+      assigned_user_id TEXT,
+      assigned_user_name TEXT,
+      attachment TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )
+  `);
+
+  // Self-healing migration: add missing columns to existing inventory tables
+  try {
+    const inventoryCols = await db.all<{ name: string }[]>('PRAGMA table_info(inventory)');
+    const colNames = inventoryCols.map((c) => c.name);
+    const requiredCols: Record<string, string> = {
+      assigned_user_id: 'TEXT',
+      assigned_user_name: 'TEXT',
+      attachment: 'TEXT',
+    };
+    for (const [colName, colType] of Object.entries(requiredCols)) {
+      if (!colNames.includes(colName)) {
+        await db.exec(`ALTER TABLE inventory ADD COLUMN ${colName} ${colType}`);
+      }
+    }
+  } catch {
+    // Table may not exist yet or already has all columns
+  }
+
+  // Create indexes for inventory table
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_inventory_device_id ON inventory(device_id)');
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_inventory_sn_mac_address ON inventory(sn_mac_address)');
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_inventory_status ON inventory(status)');
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_inventory_entity ON inventory(entity)');
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_inventory_category ON inventory(category)');
+
   // Create Factory Attendance Logs Table
   await db.exec(`
     CREATE TABLE IF NOT EXISTS factory_attendance_logs (

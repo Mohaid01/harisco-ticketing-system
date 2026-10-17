@@ -261,3 +261,35 @@ export const assignHSETicketSchema = z.object({
 export const revertHSEStatusSchema = z.object({
   actionMessage: z.string().min(1, 'Action message is required'),
 });
+
+// Inventory schemas
+export const createInventorySchema = z.object({
+  company: z.string().min(1, 'Company is required'),
+  entity: z.enum(['HQ', 'Factory', 'External', 'Others'], {
+    errorMap: () => ({ message: 'Entity is required' }),
+  }),
+  category: z.enum(['Laptop', 'Monitor', 'Mouse', 'Keyboard', 'Printer', 'Mobile'], {
+    errorMap: () => ({ message: 'Category is required' }),
+  }),
+  details: z.string().min(1, 'Details is required'),
+  device_id: z.string().min(1, 'Device ID is required'),
+  sn_mac_address: z.string().min(1, 'SN/MAC Address is required'),
+  assigned_user_id: z.string().optional().nullable(),
+  attachment: z.string().optional().nullable(),
+});
+
+export const assignInventorySchema = z.object({
+  userId: z.string().min(1, 'User ID is required'),
+});
+
+export const updateInventorySchema = z.object({
+  company: z.string().min(1).optional(),
+  entity: z.enum(['HQ', 'Factory', 'External', 'Others']).optional(),
+  category: z.enum(['Laptop', 'Monitor', 'Mouse', 'Keyboard', 'Printer', 'Mobile']).optional(),
+  details: z.string().min(1).optional(),
+  device_id: z.string().min(1).optional(),
+  sn_mac_address: z.string().min(1).optional(),
+  status: z.enum(['Stocked', 'Assigned', 'Under Repair', 'Retired', 'Lost']).optional(),
+  assigned_user_id: z.string().nullable().optional(),
+  attachment: z.string().nullable().optional(),
+});

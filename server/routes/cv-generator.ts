@@ -27,16 +27,16 @@ router.post('/send', authenticateToken, async (req: ApiAuthRequest<SendCVRequest
     return res.status(401).json({ error: 'Unauthorized. User data missing.' });
   }
 
-    const { candidateName, candidateEmail, pdfBase64, fileName } = req.body;
+  const { candidateName, candidateEmail, pdfBase64, fileName } = req.body;
 
-    if (!candidateName || !pdfBase64 || !fileName) {
-      return res.status(400).json({ error: 'Missing required fields: candidateName, pdfBase64, fileName.' });
-    }
+  if (!candidateName || !pdfBase64 || !fileName) {
+    return res.status(400).json({ error: 'Missing required fields: candidateName, pdfBase64, fileName.' });
+  }
 
-    // Sanitize filename to ASCII-safe characters to avoid SMTP "WinAsi cannot encode"
-    // errors on Windows caused by non-ASCII (e.g. Urdu/Arabic) characters in the
-    // attachment filename. Printable ASCII only (a-zA-Z0-9._-); everything else -> '_'.
-    const safeFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_') || 'cv.pdf';
+  // Sanitize filename to ASCII-safe characters to avoid SMTP "WinAsi cannot encode"
+  // errors on Windows caused by non-ASCII (e.g. Urdu/Arabic) characters in the
+  // attachment filename. Printable ASCII only (a-zA-Z0-9._-); everything else -> '_'.
+  const safeFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_') || 'cv.pdf';
 
   try {
     const db = getDb();
@@ -86,26 +86,26 @@ router.post('/send', authenticateToken, async (req: ApiAuthRequest<SendCVRequest
 </body>
 </html>`;
 
-     // Decode the base64 PDF payload into a Buffer so nodemailer attaches the real PDF
-     // bytes (and emits a proper base64 Content-Transfer-Encoding). Passing the base64
-     // string directly would make the attachment contain the literal base64 text,
-     // which email clients then fail to decode as a PDF ("decoding error").
-     const pdfBuffer = Buffer.from(pdfBase64, 'base64');
-     if (!pdfBuffer.length || pdfBuffer[0] !== 0x25 || pdfBuffer[1] !== 0x50) {
-       // 0x25 'P' 0x50 'D' — minimal PDF magic check ("PDF" is '%' + 70)
-       return res.status(400).json({ error: 'Invalid PDF data received.' });
-     }
+    // Decode the base64 PDF payload into a Buffer so nodemailer attaches the real PDF
+    // bytes (and emits a proper base64 Content-Transfer-Encoding). Passing the base64
+    // string directly would make the attachment contain the literal base64 text,
+    // which email clients then fail to decode as a PDF ("decoding error").
+    const pdfBuffer = Buffer.from(pdfBase64, 'base64');
+    if (!pdfBuffer.length || pdfBuffer[0] !== 0x25 || pdfBuffer[1] !== 0x50) {
+      // 0x25 'P' 0x50 'D' — minimal PDF magic check ("PDF" is '%' + 70)
+      return res.status(400).json({ error: 'Invalid PDF data received.' });
+    }
 
-     let sentCount = 0;
-     const errors: string[] = [];
+    let sentCount = 0;
+    const errors: string[] = [];
 
-     for (const email of recipients) {
-       const sent = await sendEmailWithAttachment(email, subject, body, [
-         {
-           filename: safeFileName,
-           content: pdfBuffer,
-           contentType: 'application/pdf',
-         },
+    for (const email of recipients) {
+      const sent = await sendEmailWithAttachment(email, subject, body, [
+        {
+          filename: safeFileName,
+          content: pdfBuffer,
+          contentType: 'application/pdf',
+        },
       ]).catch((err: unknown) => {
         logger.error(`[cv-generator] Failed to email CV to ${email}:`, err);
         errors.push(email);

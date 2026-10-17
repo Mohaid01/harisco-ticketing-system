@@ -6,6 +6,7 @@ import {
   ChevronDown,
   Factory,
   FileText,
+  HardDrive,
   MapPin,
   Menu,
   Settings2,
@@ -74,6 +75,19 @@ const MENU_ITEMS: MenuItem[] = [
         icon: ShieldCheck,
         roles: ['it', 'employee', 'manager', 'executive'],
         notAllowedDepartments: ['Staff'],
+      },
+    ],
+  },
+  {
+    label: 'Inventory',
+    icon: HardDrive,
+    roles: ['it', 'manager', 'executive'],
+    children: [
+      {
+        id: 'inventory',
+        label: 'Inventory Tracking',
+        icon: HardDrive,
+        roles: ['it', 'manager', 'executive'],
       },
     ],
   },

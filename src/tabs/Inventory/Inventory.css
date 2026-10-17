@@ -1,0 +1,10 @@
+.inventory-tab-bar {
+  display: flex;
+  gap: 0.6375rem;
+  margin-bottom: 1.275rem;
+}
+
+.inventory-tab-btn {
+  padding: 0.5313rem 1.0625rem;
+  font-size: 0.85rem;
+}

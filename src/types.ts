@@ -155,7 +155,8 @@ export type ActiveTab =
   | 'site_duties'
   | 'cv_generator'
   | 'users_statistics'
-  | 'external_users';
+  | 'external_users'
+  | 'inventory';
 
 export interface MenuItems {
   id?: ActiveTab;
@@ -241,6 +242,27 @@ export type HSECategory =
   | 'demos_drills';
 
 export type HSEStatus = 'open' | 'escalated' | 'in_progress' | 'rejected' | 'closed';
+
+// Inventory Types
+export type InventoryStatus = 'Stocked' | 'Assigned' | 'Under Repair' | 'Retired' | 'Lost';
+export type InventoryCategory = 'Laptop' | 'Monitor' | 'Mouse' | 'Keyboard' | 'Printer' | 'Mobile' | 'Others';
+export type InventoryEntity = 'HQ' | 'Factory' | 'External' | 'Others';
+
+export interface Inventory {
+  id: string;
+  company: string;
+  entity: InventoryEntity;
+  category: InventoryCategory;
+  details: string;
+  device_id: string;
+  sn_mac_address: string;
+  status: InventoryStatus;
+  assigned_user_id: string | null;
+  assigned_user_name?: string | null;
+  attachment?: string | null;
+  created_at: string;
+  updated_at: string;
+}
 
 export interface HSEComment {
   id: string;
