@@ -2,16 +2,7 @@ import type { CodeItem } from './types';
 
 export const DOC_PREFIX = 'HC';
 
-export const REVISION_OPTIONS = [
-  'Rev 00',
-  'Rev 01',
-  'Rev 02',
-  'Rev 03',
-  'Rev 04',
-  'Rev A',
-  'Rev B',
-  'Rev C',
-];
+export const REVISION_OPTIONS = ['Rev 00', 'Rev 01', 'Rev 02', 'Rev 03', 'Rev 04', 'Rev A', 'Rev B', 'Rev C'];
 
 export const ENTITIES: CodeItem[] = [
   { code: '01', name: 'Head Office', description: 'Principal Corporate Headquarters' },

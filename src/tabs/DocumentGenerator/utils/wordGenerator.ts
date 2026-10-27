@@ -66,7 +66,9 @@ export const generateDocumentWord = async (params: GenerateWordParams): Promise<
 };
 
 export const downloadWordBlob = (buffer: Uint8Array, fileName: string) => {
-  const blob = new Blob([buffer as any], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+  const blob = new Blob([buffer as any], {
+    type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;

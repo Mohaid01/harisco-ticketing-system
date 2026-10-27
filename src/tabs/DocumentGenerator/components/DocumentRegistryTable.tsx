@@ -66,7 +66,9 @@ export const DocumentRegistryTable: React.FC<DocumentRegistryTableProps> = ({
       <div className="docgen-card-header">
         <div>
           <h3 className="docgen-card-title">Master Document Register (MDR)</h3>
-          <span className="docgen-card-subtitle">Complete registry of issued corporate documents and revision histories</span>
+          <span className="docgen-card-subtitle">
+            Complete registry of issued corporate documents and revision histories
+          </span>
         </div>
       </div>
 
@@ -133,11 +135,7 @@ export const DocumentRegistryTable: React.FC<DocumentRegistryTableProps> = ({
             onChange={(e) => setFilterYear(e.target.value)}
           />
 
-          <button
-            type="button"
-            className="docgen-btn docgen-btn-secondary"
-            onClick={onRefresh}
-          >
+          <button type="button" className="docgen-btn docgen-btn-secondary" onClick={onRefresh}>
             Refresh
           </button>
         </div>
@@ -177,13 +175,14 @@ export const DocumentRegistryTable: React.FC<DocumentRegistryTableProps> = ({
                   <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: '#38bdf8' }}>
                     {doc.document_id}
                   </td>
-                  <td style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>
-                    {doc.revision}
-                  </td>
+                  <td style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>{doc.revision}</td>
                   <td>{doc.entity_code}</td>
                   <td>{doc.department_code}</td>
                   <td>{doc.doc_type_code}</td>
-                  <td style={{ maxWidth: '240px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={doc.title}>
+                  <td
+                    style={{ maxWidth: '240px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                    title={doc.title}
+                  >
                     {doc.title}
                   </td>
                   <td>{doc.prepared_by_name}</td>
@@ -231,7 +230,9 @@ export const DocumentRegistryTable: React.FC<DocumentRegistryTableProps> = ({
               Select new revision tag for {documents.find((d) => d.id === editingDocId)?.document_id}
             </p>
             <div className="docgen-input-group" style={{ marginBottom: '1.25rem' }}>
-              <label htmlFor="modal-rev-select" className="docgen-label">Revision</label>
+              <label htmlFor="modal-rev-select" className="docgen-label">
+                Revision
+              </label>
               <select
                 id="modal-rev-select"
                 className="docgen-select"
@@ -246,18 +247,10 @@ export const DocumentRegistryTable: React.FC<DocumentRegistryTableProps> = ({
               </select>
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.65rem' }}>
-              <button
-                type="button"
-                className="docgen-btn docgen-btn-secondary"
-                onClick={() => setEditingDocId(null)}
-              >
+              <button type="button" className="docgen-btn docgen-btn-secondary" onClick={() => setEditingDocId(null)}>
                 Cancel
               </button>
-              <button
-                type="button"
-                className="docgen-btn docgen-btn-primary"
-                onClick={handleConfirmRevision}
-              >
+              <button type="button" className="docgen-btn docgen-btn-primary" onClick={handleConfirmRevision}>
                 Save Revision
               </button>
             </div>

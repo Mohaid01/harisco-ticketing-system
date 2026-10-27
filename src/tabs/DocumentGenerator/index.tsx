@@ -15,11 +15,7 @@ import './DocumentGenerator.css';
 
 type SubTab = 'generate' | 'registry' | 'access';
 
-export const DocumentGenerator: React.FC<DocumentGeneratorProps> = ({
-  currentUser,
-  token,
-  allUsers,
-}) => {
+export const DocumentGenerator: React.FC<DocumentGeneratorProps> = ({ currentUser, token, allUsers }) => {
   const [activeSubTab, setActiveSubTab] = useState<SubTab>('generate');
 
   const {
@@ -228,9 +224,7 @@ export const DocumentGenerator: React.FC<DocumentGeneratorProps> = ({
       {errorMessage && <div className="docgen-alert-error">{errorMessage}</div>}
       {successInfo && (
         <div className="docgen-alert-success">
-          <span>
-            Document {successInfo.documentId} registered and generated successfully.
-          </span>
+          <span>Document {successInfo.documentId} registered and generated successfully.</span>
         </div>
       )}
 
@@ -258,7 +252,7 @@ export const DocumentGenerator: React.FC<DocumentGeneratorProps> = ({
               <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                 Target Document ID:{' '}
                 <strong style={{ fontFamily: 'var(--font-mono)', color: '#38bdf8' }}>
-                   {previewId || 'HC-01-COR-LE-0001'}
+                  {previewId || 'HC-01-COR-LE-0001'}
                 </strong>{' '}
                 ({revision})
               </span>

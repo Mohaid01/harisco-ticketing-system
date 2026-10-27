@@ -7,10 +7,7 @@ interface ControlledDocumentFormProps {
   onChange: React.Dispatch<React.SetStateAction<ControlledDocumentData>>;
 }
 
-export const ControlledDocumentForm: React.FC<ControlledDocumentFormProps> = ({
-  data,
-  onChange,
-}) => {
+export const ControlledDocumentForm: React.FC<ControlledDocumentFormProps> = ({ data, onChange }) => {
   const updateField = (field: keyof ControlledDocumentData, value: string) => {
     onChange((prev) => ({ ...prev, [field]: value }));
   };

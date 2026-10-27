@@ -13,6 +13,7 @@
 The **Document Generator** is an enterprise-grade document control, numbering, and generation system embedded inside the Haris & Co. Ticketing System (`harisco-ticketing-system`).
 
 ### Core Objectives
+
 1. **Corporate Standard Compliance:** Enforce the official Haris & Co. **Corporate Revision Number Scheme** across all legal entities, departments, and document types.
 2. **Automated Sequence & ID Generation:** Eliminate manual document numbering errors by automatically reserving and generating unique, collision-proof Document IDs with zero-padded sequence counters (`HC-{Entity}-{Department}-{DocType}-{YY}{SN}`).
 3. **Professional Document Production:** Produce standardized, executive-ready documents:
@@ -32,27 +33,29 @@ HC-{Entity}-{Department}-{DocType}-{SN}
 
 ### 2.1 Format Breakdown
 
-| Component | Code Format | Description / Example |
-| :--- | :---: | :--- |
-| **Prefix** | `HC` | Harisco Control corporate prefix |
-| **Entity** | `01` – `08` | Legal entity code (e.g. `01` for Head Office, `03` for Haris & Co Saudia) |
-| **Department** | 3 Letters | Department / Discipline code (e.g. `ENG`, `COR`, `HSE`, `IT`) |
-| **Doc Type** | 2 Letters | Standardized Document Type code (e.g. `LE`, `ME`, `TR`, `DR`, `SP`) |
-| **Sequence (`SN`)** | 4 Digits | Zero-padded sequential counter starting at `0001` (expands to `1000+` if > 9999) |
+| Component           | Code Format | Description / Example                                                            |
+| :------------------ | :---------: | :------------------------------------------------------------------------------- |
+| **Prefix**          |    `HC`     | Harisco Control corporate prefix                                                 |
+| **Entity**          | `01` – `08` | Legal entity code (e.g. `01` for Head Office, `03` for Haris & Co Saudia)        |
+| **Department**      |  3 Letters  | Department / Discipline code (e.g. `ENG`, `COR`, `HSE`, `IT`)                    |
+| **Doc Type**        |  2 Letters  | Standardized Document Type code (e.g. `LE`, `ME`, `TR`, `DR`, `SP`)              |
+| **Sequence (`SN`)** |  4 Digits   | Zero-padded sequential counter starting at `0001` (expands to `1000+` if > 9999) |
 
-- **Example 1 (Memo):** `HC-01-COR-ME-0001` *(Head Office — Corporate — Memo — Seq 0001)*
-- **Example 2 (Letter):** `HC-03-BDV-LE-0002` *(Haris & Co Saudia — Business Development — Letter — Seq 0002)*
-- **Example 3 (Drawing):** `HC-01-ENG-DR-0005` *(Head Office — Engineering — Drawing — Seq 0005)*
-- **Example 4 (Transmittal):** `HC-04-PMT-TR-0001` *(Haris Engineering Saudia — Project Management — Transmittal — Seq 0001)*
+- **Example 1 (Memo):** `HC-01-COR-ME-0001` _(Head Office — Corporate — Memo — Seq 0001)_
+- **Example 2 (Letter):** `HC-03-BDV-LE-0002` _(Haris & Co Saudia — Business Development — Letter — Seq 0002)_
+- **Example 3 (Drawing):** `HC-01-ENG-DR-0005` _(Head Office — Engineering — Drawing — Seq 0005)_
+- **Example 4 (Transmittal):** `HC-04-PMT-TR-0001` _(Haris Engineering Saudia — Project Management — Transmittal — Seq 0001)_
 
 The `year` field is stored in the database (`document_sequences`, `generated_documents`) for backward compatibility and audit purposes, but it is **not** part of the displayed Document ID string.
 
 ### 2.2 Revision Control
+
 - **Revision Code:** Managed as a dedicated field: `Rev 00` (initial issue), `Rev 01`, `Rev 02`, or alphabetic `Rev A`, `Rev B` for preliminary engineering review.
 - Displayed prominently in the Document Control Block on the generated PDF and stored in the database.
 - A "Create Revision" action allows users to issue an updated version under the same Document ID, incrementing the revision tag and tracking version history.
 
 ### 2.3 Sequence Scope & Rules
+
 - **Scope Key:** `Entity + Department + DocType` for ID generation; `year` column is stored in `document_sequences` and `generated_documents` tables for backward compatibility and audit tracking.
 - **Atomic Counter:** Handled via SQLite transactions to guarantee that two users generating documents simultaneously will never receive duplicate sequence numbers.
 - **No Yearly Reset:** Sequence numbers do not reset at the beginning of each calendar year — they continue incrementing per Entity + Department + DocType scope.
@@ -63,41 +66,41 @@ The `year` field is stored in the database (`document_sequences`, `generated_doc
 
 ### 3.1 Entity Reference Table (Dropdown 1)
 
-| Code | Entity Description | Operational Territory / Role |
-| :---: | :--- | :--- |
-| **01** | Head Office | Principal Executive Office |
-| **02** | Manufacturing Shop | Fabrication & Production Facility |
-| **03** | Haris & Co Saudia | Saudi Arabia Branch / Operations |
-| **04** | Haris Engineering Saudia | Engineering Services KSA |
-| **05** | Haris IT Company | Technology & Digital Solutions |
-| **06** | XYZ | Reserved / Joint Venture / Future Entity |
-| **07** | ABD | Reserved / Subsidiary / Future Entity |
-| **08** | GHT | Reserved / Subsidiary / Future Entity |
+|  Code  | Entity Description       | Operational Territory / Role             |
+| :----: | :----------------------- | :--------------------------------------- |
+| **01** | Head Office              | Principal Executive Office               |
+| **02** | Manufacturing Shop       | Fabrication & Production Facility        |
+| **03** | Haris & Co Saudia        | Saudi Arabia Branch / Operations         |
+| **04** | Haris Engineering Saudia | Engineering Services KSA                 |
+| **05** | Haris IT Company         | Technology & Digital Solutions           |
+| **06** | XYZ                      | Reserved / Joint Venture / Future Entity |
+| **07** | ABD                      | Reserved / Subsidiary / Future Entity    |
+| **08** | GHT                      | Reserved / Subsidiary / Future Entity    |
 
 ---
 
 ### 3.2 Department / Discipline Reference Table (Dropdown 2)
 
-| Code | Description | Functional Group |
-| :---: | :--- | :--- |
-| **COR** | Corporate | Executive & Governance |
-| **ADM** | Administration | General Admin & Office Services |
-| **HRC** | Human Resource Capital | Human Resources & Talent |
-| **BDV** | Business Development | Commercial Growth & Client Relations |
-| **HSE** | Health, Safety and Environment | Safety, Compliance & Environmental |
-| **QUA** | Quality Assurance | QA Systems & Audits |
-| **QUC** | Quality Control | QC Inspection & Verification |
-| **PMT** | Project Management | Project Execution & Delivery |
-| **CAS** | Commissioning and After Sales | Field Commissioning & Client Support |
-| **WRH** | Warehouse | Stores & Inventory Control |
-| **CSL** | Commercial, Shipment, Logistics | Supply Chain, Shipping & Customs |
-| **ACF** | Accounts & Finance | Financial Management & Treasury |
-| **IAU** | Internal Audit | Internal Financial & Ops Audit |
-| **IMS** | Integration Management System | ISO / Integrated Mgmt Standards |
-| **PRP** | Proposal | Bid Management & Estimations |
-| **PRC** | Procurement | Purchasing & Vendor Sourcing |
-| **ENG** | Engineering | Design, Technical & Drafting |
-| **PLN** | Planning | Master Scheduling & Resource Planning |
+|  Code   | Description                     | Functional Group                      |
+| :-----: | :------------------------------ | :------------------------------------ |
+| **COR** | Corporate                       | Executive & Governance                |
+| **ADM** | Administration                  | General Admin & Office Services       |
+| **HRC** | Human Resource Capital          | Human Resources & Talent              |
+| **BDV** | Business Development            | Commercial Growth & Client Relations  |
+| **HSE** | Health, Safety and Environment  | Safety, Compliance & Environmental    |
+| **QUA** | Quality Assurance               | QA Systems & Audits                   |
+| **QUC** | Quality Control                 | QC Inspection & Verification          |
+| **PMT** | Project Management              | Project Execution & Delivery          |
+| **CAS** | Commissioning and After Sales   | Field Commissioning & Client Support  |
+| **WRH** | Warehouse                       | Stores & Inventory Control            |
+| **CSL** | Commercial, Shipment, Logistics | Supply Chain, Shipping & Customs      |
+| **ACF** | Accounts & Finance              | Financial Management & Treasury       |
+| **IAU** | Internal Audit                  | Internal Financial & Ops Audit        |
+| **IMS** | Integration Management System   | ISO / Integrated Mgmt Standards       |
+| **PRP** | Proposal                        | Bid Management & Estimations          |
+| **PRC** | Procurement                     | Purchasing & Vendor Sourcing          |
+| **ENG** | Engineering                     | Design, Technical & Drafting          |
+| **PLN** | Planning                        | Master Scheduling & Resource Planning |
 
 ---
 
@@ -106,62 +109,67 @@ The `year` field is stored in the database (`document_sequences`, `generated_doc
 The 37 standard document types are categorized below:
 
 #### A. Correspondence & Communication
-| Code | Description | Specialized Phase 1 Form |
-| :---: | :--- | :---: |
-| **LE** | Letter | **Yes (Dedicated Layout)** |
-| **ME** | Memo | **Yes (Dedicated Layout)** |
+
+|  Code  | Description |  Specialized Phase 1 Form  |
+| :----: | :---------- | :------------------------: |
+| **LE** | Letter      | **Yes (Dedicated Layout)** |
+| **ME** | Memo        | **Yes (Dedicated Layout)** |
 | **TR** | Transmittal | **Yes (Dedicated Layout)** |
-| **FX** | Fax | Universal Sheet |
-| **EM** | Emails | Universal Sheet |
-| **NF** | Information | Universal Sheet |
+| **FX** | Fax         |      Universal Sheet       |
+| **EM** | Emails      |      Universal Sheet       |
+| **NF** | Information |      Universal Sheet       |
 
 #### B. Engineering, Design & Technical
-| Code | Description | Specialized Phase 1 Form |
-| :---: | :--- | :---: |
-| **CS** | Calculation Sheet | Universal Sheet |
-| **DB** | Design Basis | Universal Sheet |
-| **DR** | Drawings | Universal Sheet |
-| **DS** | Data Sheets | Universal Sheet |
-| **EL** | Equipment List | Universal Sheet |
-| **LI** | Line List | Universal Sheet |
-| **FC** | Field Change Sheet | Universal Sheet |
-| **SP** | Specifications / Procedures | Universal Sheet |
-| **ST** | Standard Tables | Universal Sheet |
+
+|  Code  | Description                 | Specialized Phase 1 Form |
+| :----: | :-------------------------- | :----------------------: |
+| **CS** | Calculation Sheet           |     Universal Sheet      |
+| **DB** | Design Basis                |     Universal Sheet      |
+| **DR** | Drawings                    |     Universal Sheet      |
+| **DS** | Data Sheets                 |     Universal Sheet      |
+| **EL** | Equipment List              |     Universal Sheet      |
+| **LI** | Line List                   |     Universal Sheet      |
+| **FC** | Field Change Sheet          |     Universal Sheet      |
+| **SP** | Specifications / Procedures |     Universal Sheet      |
+| **ST** | Standard Tables             |     Universal Sheet      |
 
 #### C. Commercial, Procurement & Estimations
-| Code | Description | Specialized Phase 1 Form |
-| :---: | :--- | :---: |
-| **BQ** | Bill of Material (Quantity) | Universal Sheet |
-| **BU** | Budgets | Universal Sheet |
-| **CE** | Cost Estimation | Universal Sheet |
-| **CO** | Change Order | Universal Sheet |
-| **NV** | Invoices | Universal Sheet |
-| **PO** | Purchase Orders | Universal Sheet |
-| **PP** | Proposal | Universal Sheet |
-| **RQ** | Requisitions | Universal Sheet |
-| **TD** | Tender Documents | Universal Sheet |
-| **WE** | Work Estimates | Universal Sheet |
+
+|  Code  | Description                 | Specialized Phase 1 Form |
+| :----: | :-------------------------- | :----------------------: |
+| **BQ** | Bill of Material (Quantity) |     Universal Sheet      |
+| **BU** | Budgets                     |     Universal Sheet      |
+| **CE** | Cost Estimation             |     Universal Sheet      |
+| **CO** | Change Order                |     Universal Sheet      |
+| **NV** | Invoices                    |     Universal Sheet      |
+| **PO** | Purchase Orders             |     Universal Sheet      |
+| **PP** | Proposal                    |     Universal Sheet      |
+| **RQ** | Requisitions                |     Universal Sheet      |
+| **TD** | Tender Documents            |     Universal Sheet      |
+| **WE** | Work Estimates              |     Universal Sheet      |
 
 #### D. Quality, HSE & Field Operations
-| Code | Description | Specialized Phase 1 Form |
-| :---: | :--- | :---: |
-| **TP** | Inspection and Test Plans | Universal Sheet |
-| **OM** | Operation Manual | Universal Sheet |
-| **PR** | Progress Reports / Write Ups | Universal Sheet |
-| **RP** | Reports | Universal Sheet |
-| **PL** | Plan | Universal Sheet |
-| **SC** | Schedules / Planning | Universal Sheet |
+
+|  Code  | Description                  | Specialized Phase 1 Form |
+| :----: | :--------------------------- | :----------------------: |
+| **TP** | Inspection and Test Plans    |     Universal Sheet      |
+| **OM** | Operation Manual             |     Universal Sheet      |
+| **PR** | Progress Reports / Write Ups |     Universal Sheet      |
+| **RP** | Reports                      |     Universal Sheet      |
+| **PL** | Plan                         |     Universal Sheet      |
+| **SC** | Schedules / Planning         |     Universal Sheet      |
 
 #### E. Maintenance, Materials & Lists
-| Code | Description | Specialized Phase 1 Form |
-| :---: | :--- | :---: |
-| **AL** | List of Accessory | Universal Sheet |
-| **DC** | Document Control Lists | Universal Sheet |
-| **SL** | Spare Parts List | Universal Sheet |
-| **TL** | Tool List | Universal Sheet |
-| **LL** | Lubrication List | Universal Sheet |
-| **LM** | List (Miscellaneous) | Universal Sheet |
-| **TM** | Standard Templates | Universal Sheet |
+
+|  Code  | Description            | Specialized Phase 1 Form |
+| :----: | :--------------------- | :----------------------: |
+| **AL** | List of Accessory      |     Universal Sheet      |
+| **DC** | Document Control Lists |     Universal Sheet      |
+| **SL** | Spare Parts List       |     Universal Sheet      |
+| **TL** | Tool List              |     Universal Sheet      |
+| **LL** | Lubrication List       |     Universal Sheet      |
+| **LM** | List (Miscellaneous)   |     Universal Sheet      |
+| **TM** | Standard Templates     |     Universal Sheet      |
 
 ---
 
@@ -175,6 +183,7 @@ Every document type shares the same controlled content form — there are no per
 2. **Document Description** — multi-paragraph description / executive overview.
 
 The Document Control Box surrounding the content displays:
+
 - Document ID (`HC-{Entity}-{Department}-{DocType}-{YY}{SN}`)
 - Revision (`Rev 00`, `Rev 01`, …)
 - Issue Date
@@ -193,11 +202,11 @@ graph TD
         Sidebar["Sidebar Nav ('Document Generator')"]
         AccessGate["ScreenAccessManager (IT Managed via screen_overrides)"]
         TabContainer["DocumentGenerator Tab Container"]
-        
+
         SubTab1["New Document (Form & Live Preview)"]
         SubTab2["Master Document Register (MDR)"]
         SubTab3["Access Management (IT Only)"]
-        
+
         CorporateDropdowns["Corporate Scheme Selectors\n(Entity, Dept, DocType)"]
         LiveIdBadge["Real-Time Document ID Display\n(HC-01-ENG-DR-0001)"]
         DynamicForm["Controlled Document Content\n(Title + Description)"]
@@ -208,7 +217,7 @@ graph TD
     subgraph Server ["Backend (Node.js + Express 5)"]
         AuthMiddleware["authenticateToken & Role Security"]
         DocRoutes["/api/document-generator/*"]
-        
+
         NextIdEndpoint["GET /preview-id"]
         GenerateEndpoint["POST /generate-and-register"]
         ListEndpoint["GET /documents"]
@@ -226,7 +235,7 @@ graph TD
     SubTab1 --> CorporateDropdowns --> LiveIdBadge
     SubTab1 --> DynamicForm --> ExcelGenerator
     SubTab1 --> DynamicForm --> WordGenerator
-    
+
     NextIdEndpoint --> SeqTable
     GenerateEndpoint --> SeqTable
     GenerateEndpoint --> DocTable
@@ -239,6 +248,7 @@ graph TD
 ## 6. Database Schema Design (SQLite)
 
 ### 6.1 `document_sequences` Table
+
 Guarantees atomic, collision-free sequence numbers across concurrent requests.
 
 ```sql
@@ -255,6 +265,7 @@ CREATE TABLE IF NOT EXISTS document_sequences (
 ```
 
 ### 6.2 `generated_documents` Table
+
 Master register of all generated corporate documents.
 
 ```sql
@@ -292,16 +303,19 @@ CREATE INDEX IF NOT EXISTS idx_gen_docs_year ON generated_documents(year);
 When authorized to proceed with implementation, development will follow these 5 clear phases:
 
 ### Phase 1: Database & Sequence Engine
+
 - Add `document_sequences` and `generated_documents` table creation in [server/db.ts](file:///home/shae/Repos/harisco-ticketing-system/server/db.ts).
 - Implement atomic sequence counter in `server/routes/document-generator.ts` with collision prevention.
 - Register router in `server/index.ts`.
 
 ### Phase 2: Frontend Scheme Selectors & State Management
+
 - Create `src/tabs/DocumentGenerator/` folder structure.
 - Build `CorporateSchemeSelector.tsx` dropdowns (Entity, Department, DocType) with live search and descriptions.
 - Implement live ID generator badge that computes previews without burning sequence numbers.
 
 ### Phase 3: Single Controlled Document Form Template
+
 - Create `src/tabs/DocumentGenerator/components/ControlledDocumentForm.tsx` with exactly two content inputs:
   - Document Title / Subject
   - Document Description
@@ -309,6 +323,7 @@ When authorized to proceed with implementation, development will follow these 5 
 - Add Document Control Box around the content (ID, Revision, Issue Date, Entity, Dept, Doc Type, Year, Sequence).
 
 ### Phase 4: Excel & Word Document Generation
+
 - Create `src/tabs/DocumentGenerator/utils/excelGenerator.ts` using `exceljs`.
   - Document Control Block: Document ID, Revision, Document Type, Entity, Department, Issue Date, Title / Subject, Description, Prepared By, Checked / Reviewed By, Approved By.
   - Confidentiality footer.
@@ -318,10 +333,12 @@ When authorized to proceed with implementation, development will follow these 5 
 - Live download buttons for Excel (.xlsx) and Word (.docx); no PDF generation.
 
 ### Phase 5: Master Document Register (MDR), RBAC & Navigation
+
 - Build `DocumentRegistryTable.tsx` for searching, filtering, and re-downloading documents.
 - Implement "Create Revision" workflow.
 - Integrate with `ScreenAccessManager` and `screen_overrides` with `screen_name = 'document_generator'`.
 - Add menu item to [src/components/Sidebar/index.tsx](file:///home/shae/Repos/harisco-ticketing-system/src/components/Sidebar/index.tsx) with Lucide icon.
 
 ---
-*Created by AI Pair Programmer for Haris & Co. Engineering & Corporate Documentation System.*
+
+_Created by AI Pair Programmer for Haris & Co. Engineering & Corporate Documentation System._

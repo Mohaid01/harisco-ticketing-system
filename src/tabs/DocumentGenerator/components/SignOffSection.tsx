@@ -11,11 +11,7 @@ interface SignOffSectionProps {
   allUsers: AppUser[];
 }
 
-export const SignOffSection: React.FC<SignOffSectionProps> = ({
-  signOff,
-  setSignOff,
-  allUsers,
-}) => {
+export const SignOffSection: React.FC<SignOffSectionProps> = ({ signOff, setSignOff, allUsers }) => {
   const hqUsers = allUsers.filter((u) => HQ_ROLES.includes(u.role));
 
   const [searchPrepared, setSearchPrepared] = useState('');
@@ -50,12 +46,8 @@ export const SignOffSection: React.FC<SignOffSectionProps> = ({
     setSignOff((prev) => ({ ...prev, [field]: value }));
   };
 
-  const selectUser = (
-    field: keyof DocumentSignOff,
-    user: AppUser,
-    closeFn: () => void
-  ) => {
-    setSignOff((prev) => ({ ...prev, [field]: `${user.name} (${user.designation || ''})`.trimEnd()}));
+  const selectUser = (field: keyof DocumentSignOff, user: AppUser, closeFn: () => void) => {
+    setSignOff((prev) => ({ ...prev, [field]: `${user.name} (${user.designation || ''})`.trimEnd() }));
     closeFn();
   };
 
@@ -98,7 +90,10 @@ export const SignOffSection: React.FC<SignOffSectionProps> = ({
           placeholder={`Select ${label.toLowerCase()}`}
         />
         {isOpen && (
-          <div className="inv-assignee-dropdown" style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10 }}>
+          <div
+            className="inv-assignee-dropdown"
+            style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10 }}
+          >
             {filtered.length === 0 ? (
               <div className="inv-assignee-empty">No matching HQ users available.</div>
             ) : (

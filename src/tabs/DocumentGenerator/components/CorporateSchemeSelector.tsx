@@ -59,9 +59,7 @@ export const CorporateSchemeSelector: React.FC<CorporateSchemeSelectorProps> = (
               </option>
             ))}
           </select>
-          {selectedEntity?.description && (
-            <span className="docgen-input-hint">{selectedEntity.description}</span>
-          )}
+          {selectedEntity?.description && <span className="docgen-input-hint">{selectedEntity.description}</span>}
         </div>
 
         <div className="docgen-input-group">
@@ -99,9 +97,7 @@ export const CorporateSchemeSelector: React.FC<CorporateSchemeSelectorProps> = (
               </option>
             ))}
           </select>
-          <span className="docgen-input-hint">
-            Active: {selectedDocType?.name}
-          </span>
+          <span className="docgen-input-hint">Active: {selectedDocType?.name}</span>
         </div>
 
         <div className="docgen-input-group">

@@ -45,32 +45,30 @@ export const useDocumentGenerator = ({ currentUser, token }: UseDocumentGenerato
 
   useEffect(() => {
     let isCancelled = false;
-  const fetchPreview = async () => {
-    if (!entityCode || !departmentCode || !docTypeCode) return;
-    setPreviewLoading(true);
-    try {
-      const res = await fetch(
-        `/api/document-generator/preview-id?entity=${encodeURIComponent(
-          entityCode
-        )}&department=${encodeURIComponent(
-          departmentCode
-        )}&docType=${encodeURIComponent(docTypeCode)}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
+    const fetchPreview = async () => {
+      if (!entityCode || !departmentCode || !docTypeCode) return;
+      setPreviewLoading(true);
+      try {
+        const res = await fetch(
+          `/api/document-generator/preview-id?entity=${encodeURIComponent(entityCode)}&department=${encodeURIComponent(
+            departmentCode
+          )}&docType=${encodeURIComponent(docTypeCode)}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        if (res.ok && !isCancelled) {
+          const data = await res.json();
+          setPreviewId(data.documentId);
         }
-      );
-      if (res.ok && !isCancelled) {
-        const data = await res.json();
-        setPreviewId(data.documentId);
+      } catch {
+        if (!isCancelled) {
+          setPreviewId(`${DOC_PREFIX}-${entityCode}-${departmentCode}-${docTypeCode}-0001`);
+        }
+      } finally {
+        if (!isCancelled) setPreviewLoading(false);
       }
-    } catch {
-      if (!isCancelled) {
-        setPreviewId(`${DOC_PREFIX}-${entityCode}-${departmentCode}-${docTypeCode}-0001`);
-      }
-    } finally {
-      if (!isCancelled) setPreviewLoading(false);
-    }
-  };
+    };
 
     fetchPreview();
     return () => {

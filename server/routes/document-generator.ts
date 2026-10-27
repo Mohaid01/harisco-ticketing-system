@@ -3,12 +3,7 @@ import { Router } from 'express';
 
 import type { ApiAuthRequest, AuthRequest } from '../types/index.ts';
 
-import {
-  DEPARTMENTS,
-  DOC_PREFIX,
-  DOCUMENT_TYPES,
-  ENTITIES,
-} from '../constants/documentGenerator.ts';
+import { DEPARTMENTS, DOC_PREFIX, DOCUMENT_TYPES, ENTITIES } from '../constants/documentGenerator.ts';
 import { getDb } from '../db.ts';
 import { authenticateToken } from '../middleware/auth.ts';
 import logger from '../utils/logger.ts';
@@ -51,8 +46,12 @@ router.get('/preview-id', authenticateToken, async (req: AuthRequest, res) => {
   if (!hasAccess) return res.status(403).json({ error: 'Access denied.' });
 
   const entity = String(req.query.entity || '').trim();
-  const department = String(req.query.department || '').trim().toUpperCase();
-  const docType = String(req.query.docType || '').trim().toUpperCase();
+  const department = String(req.query.department || '')
+    .trim()
+    .toUpperCase();
+  const docType = String(req.query.docType || '')
+    .trim()
+    .toUpperCase();
 
   if (!entity || !department || !docType) {
     return res.status(400).json({ error: 'Missing required parameters: entity, department, docType.' });
@@ -98,11 +97,10 @@ router.post('/generate', authenticateToken, async (req: ApiAuthRequest<GenerateR
   const user = req.user;
   if (!user) return res.status(401).json({ error: 'Unauthorized.' });
 
-
   const hasAccess = await checkAccess(user.id, user.role);
   if (!hasAccess) return res.status(403).json({ error: 'Access denied.' });
 
-  logger.info("CHECKPOINT 1");
+  logger.info('CHECKPOINT 1');
 
   const {
     entityCode,
@@ -129,7 +127,7 @@ router.post('/generate', authenticateToken, async (req: ApiAuthRequest<GenerateR
   try {
     await db.exec('BEGIN IMMEDIATE');
 
-    logger.info("CHECKPOINT 2");
+    logger.info('CHECKPOINT 2');
 
     let seqRow = await db.get<{ last_sequence: number }>(
       `SELECT last_sequence FROM document_sequences
@@ -137,8 +135,7 @@ router.post('/generate', authenticateToken, async (req: ApiAuthRequest<GenerateR
       [entityCode, departmentCode, docTypeCode]
     );
 
-    logger.info("CHECKPOINT 3");
-
+    logger.info('CHECKPOINT 3');
 
     let nextSeq = 1;
     const nowIso = new Date().toISOString();
@@ -159,7 +156,7 @@ router.post('/generate', authenticateToken, async (req: ApiAuthRequest<GenerateR
       );
     }
 
-    logger.info("CHECKPOINT 4");
+    logger.info('CHECKPOINT 4');
 
     const paddedSeq = String(nextSeq).padStart(4, '0');
     const documentId = `${DOC_PREFIX}-${entityCode}-${departmentCode}-${docTypeCode}-${paddedSeq}`;
@@ -195,8 +192,7 @@ router.post('/generate', authenticateToken, async (req: ApiAuthRequest<GenerateR
       ]
     );
 
-    logger.info("CHECKPOINT 5");
-
+    logger.info('CHECKPOINT 5');
 
     await db.exec('COMMIT');
 
@@ -223,7 +219,7 @@ router.post('/generate', authenticateToken, async (req: ApiAuthRequest<GenerateR
       },
     });
   } catch (err) {
-    await db.exec('ROLLBACK').catch(() => { });
+    await db.exec('ROLLBACK').catch(() => {});
     logger.error('[docgen] Error generating document:', err);
     return res.status(500).json({ error: 'Failed to generate document.' });
   }
@@ -289,10 +285,7 @@ router.get('/documents/:id', authenticateToken, async (req: AuthRequest, res) =>
 
   try {
     const db = getDb();
-    const doc = await db.get(
-      `SELECT * FROM generated_documents WHERE id = ? OR document_id = ?`,
-      [docId, docId]
-    );
+    const doc = await db.get(`SELECT * FROM generated_documents WHERE id = ? OR document_id = ?`, [docId, docId]);
 
     if (!doc) return res.status(404).json({ error: 'Document not found.' });
 
@@ -328,10 +321,11 @@ router.post('/documents/:id/revision', authenticateToken, async (req: AuthReques
     if (!existing) return res.status(404).json({ error: 'Document not found.' });
 
     const nowIso = new Date().toISOString();
-    await db.run(
-      `UPDATE generated_documents SET revision = ?, updated_at = ? WHERE id = ?`,
-      [newRevision, nowIso, existing.id]
-    );
+    await db.run(`UPDATE generated_documents SET revision = ?, updated_at = ? WHERE id = ?`, [
+      newRevision,
+      nowIso,
+      existing.id,
+    ]);
 
     logger.info(`[docgen] Document ${existing.document_id} revision updated to ${newRevision} by ${user.name}`);
     res.json({ success: true, documentId: existing.document_id, revision: newRevision });
