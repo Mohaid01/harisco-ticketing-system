@@ -45,6 +45,7 @@ import { UserManagement } from './components/UserManagement';
 import { ADMIN_TICKET_STATUS_LABELS, APP_TITLE, HSE_STATUS_LABELS, STATUS_LABELS } from './constants';
 import { ActivityLog } from './tabs/ActivityLogs';
 import { CVGenerator } from './tabs/CVGenerator';
+import { DocumentGenerator } from './tabs/DocumentGenerator';
 import { InventoryTab } from './tabs/Inventory';
 import { LeaveManagement } from './tabs/LeaveManagement';
 import { Login } from './tabs/Login';
@@ -56,7 +57,8 @@ function canUserAccessTab(
   tab: ActiveTab,
   role: UserRole,
   department: string | undefined,
-  cvGeneratorAllowed: boolean
+  cvGeneratorAllowed: boolean,
+  docGeneratorAllowed: boolean
 ): boolean {
   switch (tab) {
     case 'noticeboard':
@@ -79,6 +81,8 @@ function canUserAccessTab(
       return ['it', 'employee', 'manager', 'executive'].includes(role) && department !== 'Staff';
     case 'cv_generator':
       return cvGeneratorAllowed;
+    case 'document_generator':
+      return docGeneratorAllowed;
     case 'factory_users':
       return role === 'it' || role === 'factory_it';
     case 'factory_attendance':
@@ -120,6 +124,7 @@ function pathToTab(pathname: string): {
     leaves: 'leaves',
     'site-duties': 'site_duties',
     'cv-generator': 'cv_generator',
+    'document-generator': 'document_generator',
     'factory-users': 'factory_users',
     'factory-attendance': 'factory_attendance',
     'external-users': 'external_users',
@@ -219,6 +224,7 @@ function App() {
     attendanceSelectedUserIdRef.current = attendanceSelectedUserId;
   });
   const [cvGeneratorAllowed, setCvGeneratorAllowed] = useState<boolean>(false);
+  const [docGeneratorAllowed, setDocGeneratorAllowed] = useState<boolean>(false);
 
   // Inventory Tracking state
   const [inventory, setInventory] = useState<Inventory[]>([]);
@@ -308,7 +314,15 @@ function App() {
   const enforceAccessControl = useCallback(() => {
     if (!currentUser) return;
     const { tab } = pathToTab(window.location.pathname);
-    if (!canUserAccessTab(tab, currentUser.role, currentUser.department ?? undefined, cvGeneratorAllowed)) {
+    if (
+      !canUserAccessTab(
+        tab,
+        currentUser.role,
+        currentUser.department ?? undefined,
+        cvGeneratorAllowed,
+        docGeneratorAllowed
+      )
+    ) {
       const fallback = getSafeFallbackTab(currentUser.role);
       syncUrl(fallback);
       setActiveTab(fallback);
@@ -317,7 +331,7 @@ function App() {
       setAttendanceViewMode('summary');
       setAttendanceSelectedUserId(undefined);
     }
-  }, [currentUser, syncUrl, cvGeneratorAllowed]);
+  }, [currentUser, syncUrl, cvGeneratorAllowed, docGeneratorAllowed]);
 
   // Refetch inventory when the inventory tab is activated
   const fetchInventory = useCallback(async () => {
@@ -372,7 +386,13 @@ function App() {
       const { tab, ticketId, attendanceUserId, attendanceView } = pathToTab(window.location.pathname);
       if (
         !currentUser ||
-        canUserAccessTab(tab, currentUser.role, currentUser.department ?? undefined, cvGeneratorAllowed)
+        canUserAccessTab(
+          tab,
+          currentUser.role,
+          currentUser.department ?? undefined,
+          cvGeneratorAllowed,
+          docGeneratorAllowed
+        )
       ) {
         setActiveTab(tab);
         setSelectedTicketId(tab === 'tickets' ? ticketId : null);
@@ -394,7 +414,7 @@ function App() {
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [currentUser, cvGeneratorAllowed]);
+  }, [currentUser, cvGeneratorAllowed, docGeneratorAllowed]);
 
   useEffect(() => {
     const fetchSessionAndData = async () => {
@@ -432,6 +452,18 @@ function App() {
           }
         } catch (cvErr) {
           console.error('Failed to check CV generator access:', cvErr);
+        }
+
+        try {
+          const docRes = await fetch('/api/screen-overrides/document_generator/check', {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (docRes.ok) {
+            const docData = await docRes.json();
+            setDocGeneratorAllowed(!!docData.hasAccess);
+          }
+        } catch (docErr) {
+          console.error('Failed to check Document generator access:', docErr);
         }
 
         if (user.needsPasswordReset === 1) {
@@ -2076,6 +2108,7 @@ function App() {
         onLogout={handleLogout}
         onChangePasswordClick={() => setIsPasswordModalOpen(true)}
         cvGeneratorAllowed={cvGeneratorAllowed}
+        docGeneratorAllowed={docGeneratorAllowed}
       />
 
       {/* Main Section */}
@@ -2191,6 +2224,8 @@ function App() {
             <SiteDutyManagement currentUser={currentUser} token={token!} />
           ) : activeTab === 'cv_generator' ? (
             <CVGenerator currentUser={currentUser} token={token!} allUsers={users} />
+          ) : activeTab === 'document_generator' ? (
+            <DocumentGenerator currentUser={currentUser} token={token!} allUsers={users} />
           ) : activeTab === 'admin_tickets' ? (
             currentAdminTicket ? (
               <AdminTicketDetails

@@ -24,6 +24,7 @@
   "dependencies": {
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
+    "docx": "^9.14.0",
     "dotenv": "^17.4.2",
     "exceljs": "^4.4.0",
     "express": "^5.2.1",
@@ -31,6 +32,7 @@
     "framer-motion": "^13.4.5",
     "helmet": "^8.2.0",
     "jsonwebtoken": "^9.0.3",
+    "jszip": "^3.10.2",
     "lucide-react": "^1.37.0",
     "nodemailer": "^10.0.12",
     "pdf-lib": "^1.17.1",

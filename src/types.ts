@@ -154,6 +154,7 @@ export type ActiveTab =
   | 'leaves'
   | 'site_duties'
   | 'cv_generator'
+  | 'document_generator'
   | 'users_statistics'
   | 'external_users'
   | 'inventory';

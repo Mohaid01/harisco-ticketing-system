@@ -737,6 +737,48 @@ export async function initDb() {
   await db.exec('CREATE INDEX IF NOT EXISTS idx_screen_overrides_screen ON screen_overrides(screen_name)');
   await db.exec('CREATE INDEX IF NOT EXISTS idx_screen_overrides_user ON screen_overrides(user_id)');
 
+  // Create Document Generator Tables
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS document_sequences (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      entity_code TEXT NOT NULL,
+      department_code TEXT NOT NULL,
+      doc_type_code TEXT NOT NULL,
+      year TEXT NOT NULL,
+      last_sequence INTEGER NOT NULL DEFAULT 0,
+      updated_at TEXT NOT NULL,
+      UNIQUE(entity_code, department_code, doc_type_code, year)
+    )
+  `);
+
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS generated_documents (
+      id TEXT PRIMARY KEY,
+      document_id TEXT UNIQUE NOT NULL,
+      entity_code TEXT NOT NULL,
+      department_code TEXT NOT NULL,
+      doc_type_code TEXT NOT NULL,
+      year TEXT NOT NULL,
+      sequence_number INTEGER NOT NULL,
+      revision TEXT NOT NULL DEFAULT 'Rev 00',
+      title TEXT NOT NULL,
+      prepared_by_id TEXT NOT NULL,
+      prepared_by_name TEXT NOT NULL,
+      checked_by_name TEXT,
+      approved_by_name TEXT,
+      doc_date TEXT NOT NULL,
+      content_json TEXT,
+      file_name TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )
+  `);
+
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_gen_docs_entity ON generated_documents(entity_code)');
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_gen_docs_dept ON generated_documents(department_code)');
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_gen_docs_doctype ON generated_documents(doc_type_code)');
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_gen_docs_year ON generated_documents(year)');
+
   // Seed initial admin user if table is empty
   const userCount = await db.get<{ count: number }>('SELECT COUNT(*) as count FROM users');
   if (userCount && userCount.count === 0) {

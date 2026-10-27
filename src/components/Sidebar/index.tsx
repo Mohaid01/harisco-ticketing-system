@@ -32,6 +32,7 @@ interface HeaderProps {
   onLogout: () => void;
   onChangePasswordClick: () => void;
   cvGeneratorAllowed: boolean;
+  docGeneratorAllowed: boolean;
 }
 
 interface MenuItem {
@@ -142,6 +143,13 @@ const MENU_ITEMS: MenuItem[] = [
         roles: ['it', 'employee', 'manager', 'executive', 'external'],
         requiresScreenOverride: true,
       },
+      {
+        id: 'document_generator',
+        label: 'Document Generator',
+        icon: FileText,
+        roles: ['it', 'employee', 'manager', 'executive'],
+        requiresScreenOverride: true,
+      },
     ],
   },
   {
@@ -226,6 +234,7 @@ export const Header: React.FC<HeaderProps> = ({
   onLogout,
   onChangePasswordClick,
   cvGeneratorAllowed,
+  docGeneratorAllowed,
 }) => {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [currentDate, setCurrentDate] = useState(formatDate(new Date()));
@@ -237,6 +246,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   const screenOverrideFlags: Record<string, boolean> = {
     cv_generator: cvGeneratorAllowed,
+    document_generator: docGeneratorAllowed,
   };
 
   const visibleItems = MENU_ITEMS.filter((item) =>
