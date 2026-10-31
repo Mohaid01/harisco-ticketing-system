@@ -296,10 +296,7 @@ export const NonHqUserManagement: React.FC<NonHqUserManagementProps> = ({
                         checked={editActive}
                         onChange={(e) => setEditActive(e.target.checked)}
                       />
-                      <label
-                        htmlFor="non-hq-edit-active-input"
-                        className="form-label"
-                      >
+                      <label htmlFor="non-hq-edit-active-input" className="form-label">
                         Active Non HQ User
                       </label>
                     </div>

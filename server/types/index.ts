@@ -3,7 +3,16 @@ import type { Request, Response } from 'express';
 import { IncomingMessage } from 'http';
 
 type UserRoles =
-  'it' | 'employee' | 'manager' | 'executive' | 'factory_employee' | 'factory_it' | 'factory_manager' | 'external' | 'field_user' | 'non_hq_user';
+  | 'it'
+  | 'employee'
+  | 'manager'
+  | 'executive'
+  | 'factory_employee'
+  | 'factory_it'
+  | 'factory_manager'
+  | 'external'
+  | 'field_user'
+  | 'non_hq_user';
 
 type TicketTypes = 'hardware' | 'software' | 'maintenance' | 'upgrade' | 'installation' | 'email' | 'others';
 

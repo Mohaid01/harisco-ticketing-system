@@ -83,19 +83,7 @@ router.post(
 
       await db.run(
         'INSERT INTO non_hq_users (id, name, email, username, role, avatar, passwordHash, needsPasswordReset, department, designation, isDepartmentHead, loginEnabled) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)',
-        [
-          userId,
-          finalUsername,
-          null,
-          finalUsername,
-          'non_hq_user',
-          '',
-          passwordHash,
-          null,
-          null,
-          0,
-          1,
-        ]
+        [userId, finalUsername, null, finalUsername, 'non_hq_user', '', passwordHash, null, null, 0, 1]
       );
 
       const response: CreateNonHqUserResponse = {
@@ -120,40 +108,36 @@ router.post(
 );
 
 // DELETE /api/non-hq/users/:id
-router.delete(
-  '/users/:id',
-  authenticateToken,
-  async (req: AuthRequest, res: ApiResponse<DeleteNonHqUserResponse>) => {
-    if (!req.user || req.user.role !== 'it') {
-      res.status(403).json({
-        error: 'Forbidden. Non HQ user deletion requires IT role.',
-      });
-      return;
-    }
-
-    const userId = req.params.id;
-    if (userId === req.user?.id) {
-      res.status(400).json({
-        error: 'Cannot delete your own logged-in account.',
-      });
-      return;
-    }
-
-    try {
-      const db = getDb();
-      const result = await db.run('DELETE FROM non_hq_users WHERE id = ?', [userId]);
-
-      if (result.changes === 0) {
-        res.status(404).json({ error: 'Non HQ user not found.' });
-        return;
-      }
-
-      res.json({ message: 'Non HQ user deleted successfully.' });
-    } catch {
-      res.status(500).json({ error: 'Failed to delete non hq user.' });
-    }
+router.delete('/users/:id', authenticateToken, async (req: AuthRequest, res: ApiResponse<DeleteNonHqUserResponse>) => {
+  if (!req.user || req.user.role !== 'it') {
+    res.status(403).json({
+      error: 'Forbidden. Non HQ user deletion requires IT role.',
+    });
+    return;
   }
-);
+
+  const userId = req.params.id;
+  if (userId === req.user?.id) {
+    res.status(400).json({
+      error: 'Cannot delete your own logged-in account.',
+    });
+    return;
+  }
+
+  try {
+    const db = getDb();
+    const result = await db.run('DELETE FROM non_hq_users WHERE id = ?', [userId]);
+
+    if (result.changes === 0) {
+      res.status(404).json({ error: 'Non HQ user not found.' });
+      return;
+    }
+
+    res.json({ message: 'Non HQ user deleted successfully.' });
+  } catch {
+    res.status(500).json({ error: 'Failed to delete non hq user.' });
+  }
+});
 
 // PUT /api/non-hq/users/:id
 router.put(
@@ -222,10 +206,7 @@ router.put(
 router.post(
   '/users/:id/reset-password',
   authenticateToken,
-  async (
-    req: ApiAuthRequest<ResetNonHqUserPasswordRequestBody>,
-    res: ApiResponse<ResetNonHqUserPasswordResponse>
-  ) => {
+  async (req: ApiAuthRequest<ResetNonHqUserPasswordRequestBody>, res: ApiResponse<ResetNonHqUserPasswordResponse>) => {
     if (!req.user || req.user.role !== 'it') {
       res.status(403).json({
         error: 'Forbidden. Non HQ user password reset requires IT role.',

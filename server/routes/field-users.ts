@@ -83,19 +83,7 @@ router.post(
 
       await db.run(
         'INSERT INTO field_users (id, name, email, username, role, avatar, passwordHash, needsPasswordReset, department, designation, isDepartmentHead, loginEnabled) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)',
-        [
-          userId,
-          finalUsername,
-          null,
-          finalUsername,
-          'field_user',
-          '',
-          passwordHash,
-          null,
-          null,
-          0,
-          1,
-        ]
+        [userId, finalUsername, null, finalUsername, 'field_user', '', passwordHash, null, null, 0, 1]
       );
 
       const response: CreateFieldUserResponse = {
@@ -120,40 +108,36 @@ router.post(
 );
 
 // DELETE /api/field/users/:id
-router.delete(
-  '/users/:id',
-  authenticateToken,
-  async (req: AuthRequest, res: ApiResponse<DeleteFieldUserResponse>) => {
-    if (!req.user || req.user.role !== 'it') {
-      res.status(403).json({
-        error: 'Forbidden. Field user deletion requires IT role.',
-      });
-      return;
-    }
-
-    const userId = req.params.id;
-    if (userId === req.user?.id) {
-      res.status(400).json({
-        error: 'Cannot delete your own logged-in account.',
-      });
-      return;
-    }
-
-    try {
-      const db = getDb();
-      const result = await db.run('DELETE FROM field_users WHERE id = ?', [userId]);
-
-      if (result.changes === 0) {
-        res.status(404).json({ error: 'Field user not found.' });
-        return;
-      }
-
-      res.json({ message: 'Field user deleted successfully.' });
-    } catch {
-      res.status(500).json({ error: 'Failed to delete field user.' });
-    }
+router.delete('/users/:id', authenticateToken, async (req: AuthRequest, res: ApiResponse<DeleteFieldUserResponse>) => {
+  if (!req.user || req.user.role !== 'it') {
+    res.status(403).json({
+      error: 'Forbidden. Field user deletion requires IT role.',
+    });
+    return;
   }
-);
+
+  const userId = req.params.id;
+  if (userId === req.user?.id) {
+    res.status(400).json({
+      error: 'Cannot delete your own logged-in account.',
+    });
+    return;
+  }
+
+  try {
+    const db = getDb();
+    const result = await db.run('DELETE FROM field_users WHERE id = ?', [userId]);
+
+    if (result.changes === 0) {
+      res.status(404).json({ error: 'Field user not found.' });
+      return;
+    }
+
+    res.json({ message: 'Field user deleted successfully.' });
+  } catch {
+    res.status(500).json({ error: 'Failed to delete field user.' });
+  }
+});
 
 // PUT /api/field/users/:id
 router.put(
@@ -222,10 +206,7 @@ router.put(
 router.post(
   '/users/:id/reset-password',
   authenticateToken,
-  async (
-    req: ApiAuthRequest<ResetFieldUserPasswordRequestBody>,
-    res: ApiResponse<ResetFieldUserPasswordResponse>
-  ) => {
+  async (req: ApiAuthRequest<ResetFieldUserPasswordRequestBody>, res: ApiResponse<ResetFieldUserPasswordResponse>) => {
     if (!req.user || req.user.role !== 'it') {
       res.status(403).json({
         error: 'Forbidden. Field user password reset requires IT role.',

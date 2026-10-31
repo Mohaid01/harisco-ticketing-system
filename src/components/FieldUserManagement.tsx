@@ -296,10 +296,7 @@ export const FieldUserManagement: React.FC<FieldUserManagementProps> = ({
                         checked={editActive}
                         onChange={(e) => setEditActive(e.target.checked)}
                       />
-                      <label
-                        htmlFor="field-edit-active-input"
-                        className="form-label"
-                      >
+                      <label htmlFor="field-edit-active-input" className="form-label">
                         Active Field User
                       </label>
                     </div>

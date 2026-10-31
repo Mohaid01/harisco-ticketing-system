@@ -1967,7 +1967,10 @@ function App() {
     }
   };
 
-  const handleUpdateFieldUser = async (userId: string, data: { username: string; password?: string; active?: boolean }) => {
+  const handleUpdateFieldUser = async (
+    userId: string,
+    data: { username: string; password?: string; active?: boolean }
+  ) => {
     if (!token || !currentUser) return;
     try {
       const res = await fetch(`/api/field/users/${userId}`, {
