@@ -351,6 +351,12 @@
   border: 0.0531rem solid rgba(6, 182, 212, 0.2);
 }
 
+.role-badge-non-hq {
+  background-color: var(--role-non-hq-bg);
+  color: var(--role-non-hq);
+  border: 0.0531rem solid rgba(139, 92, 246, 0.2);
+}
+
 /* Desktop actions */
 .header-desktop-actions {
   display: flex;
@@ -702,6 +708,12 @@
   background-color: var(--role-field-bg);
   color: var(--role-field);
   border: 0.0531rem solid rgba(6, 182, 212, 0.2);
+}
+
+.role-badge-non-hq {
+  background-color: var(--role-non-hq-bg);
+  color: var(--role-non-hq);
+  border: 0.0531rem solid rgba(139, 92, 246, 0.2);
 }
 
 /* Mobile */

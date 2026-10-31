@@ -157,6 +157,7 @@ export type ActiveTab =
   | 'users_statistics'
   | 'external_users'
   | 'field_users'
+  | 'non_hq_users'
   | 'inventory';
 
 export interface MenuItems {

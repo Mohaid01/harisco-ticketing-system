@@ -189,6 +189,19 @@ const MENU_ITEMS: MenuItem[] = [
       },
     ],
   },
+  {
+    label: 'Non HQ',
+    icon: Building2,
+    roles: ['it'],
+    children: [
+      {
+        id: 'non_hq_users',
+        label: 'User Management',
+        icon: Users,
+        roles: ['it'],
+      },
+    ],
+  },
 ];
 
 function isItemVisible(

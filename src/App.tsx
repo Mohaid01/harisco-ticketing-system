@@ -27,6 +27,7 @@ import { Attendance } from './components/Attendance';
 import { ExternalUserManagement } from './components/ExternalUserManagement';
 import { FactoryUserManagement } from './components/FactoryUserManagement';
 import { FieldUserManagement } from './components/FieldUserManagement';
+import { NonHqUserManagement } from './components/NonHqUserManagement';
 import { HSETicketDetails } from './components/HSETicketDetails';
 import { HSETicketList } from './components/HSETicketList';
 import { AssignInventoryModal } from './components/Modals/AssignInventoryModal';
@@ -88,6 +89,8 @@ function canUserAccessTab(
       return role === 'it';
     case 'field_users':
       return role === 'it';
+    case 'non_hq_users':
+      return role === 'it';
     case 'inventory':
       return ['it', 'manager', 'executive'].includes(role);
     default:
@@ -127,6 +130,7 @@ function pathToTab(pathname: string): {
     'factory-attendance': 'factory_attendance',
     'external-users': 'external_users',
     'field-users': 'field_users',
+    'non-hq-users': 'non_hq_users',
     inventory: 'inventory',
   };
 
@@ -198,6 +202,7 @@ function App() {
   const [factoryUsers, setFactoryUsers] = useState<AppUser[]>([]);
   const [externalUsers, setExternalUsers] = useState<AppUser[]>([]);
   const [fieldUsers, setFieldUsers] = useState<AppUser[]>([]);
+  const [nonHqUsers, setNonHqUsers] = useState<AppUser[]>([]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [activeTab, setActiveTab] = useState<ActiveTab>(initialTab.tab);
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(initialTab.ticketId);
@@ -236,8 +241,8 @@ function App() {
   const [invEntityFilter, setInvEntityFilter] = useState<string>('all');
 
   const allAssignableUsers = useMemo(
-    () => [...users, ...factoryUsers, ...externalUsers, ...fieldUsers],
-    [users, factoryUsers, externalUsers, fieldUsers]
+    () => [...users, ...factoryUsers, ...externalUsers, ...fieldUsers, ...nonHqUsers],
+    [users, factoryUsers, externalUsers, fieldUsers, nonHqUsers]
   );
 
   const handleAttendanceViewModeChange = (mode: 'summary' | 'individual', userId?: string) => {
@@ -519,6 +524,15 @@ function App() {
           setFieldUsers(fieldUsersData);
         }
 
+        // Fetch non hq users
+        const nonHqUsersRes = await fetch('/api/non-hq/users', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (nonHqUsersRes.ok) {
+          const nonHqUsersData = await nonHqUsersRes.json();
+          setNonHqUsers(nonHqUsersData);
+        }
+
         // Fetch inventory
         await fetchInventory();
       } catch (err) {
@@ -776,6 +790,7 @@ function App() {
     setFactoryUsers([]);
     setExternalUsers([]);
     setFieldUsers([]);
+    setNonHqUsers([]);
     setAdminTickets([]);
     setSelectedTicketId(null);
     setSelectedAdminTicketId(null);
@@ -1988,6 +2003,101 @@ function App() {
     }
   };
 
+  // Non HQ User handlers
+  const handleAddNonHqUser = async (data: { username: string; password: string; active: boolean }) => {
+    if (!token || !currentUser) return;
+    try {
+      const res = await fetch('/api/non-hq/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      const responseText = await res.clone().text();
+      let responseData: CreateExternalUserResponse & { error?: string };
+      try {
+        responseData = JSON.parse(responseText) as CreateExternalUserResponse & { error?: string };
+      } catch {
+        throw new Error(`Failed to create non hq user (HTTP ${res.status}). Server returned a non-JSON response.`);
+      }
+
+      if (!res.ok) {
+        throw new Error(responseData.error || 'Failed to add non hq user');
+      }
+
+      setNonHqUsers((prevUsers) => [...prevUsers, responseData]);
+    } catch (err) {
+      console.error(err);
+      const errMsg = err instanceof Error ? err.message : 'Error creating non hq user. Please try again.';
+      alert(errMsg);
+    }
+  };
+
+  const handleDeleteNonHqUser = async (userId: string) => {
+    if (!token || !currentUser) return;
+    try {
+      const res = await fetch(`/api/non-hq/users/${userId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || 'Failed to delete non hq user');
+      }
+
+      setNonHqUsers((prevUsers) => prevUsers.filter((u) => u.id !== userId));
+    } catch (err) {
+      console.error(err);
+      const errMsg = err instanceof Error ? err.message : 'Error deleting non hq user. Please try again.';
+      alert(errMsg);
+    }
+  };
+
+  const handleUpdateNonHqUser = async (
+    userId: string,
+    data: { username: string; password?: string; active?: boolean }
+  ) => {
+    if (!token || !currentUser) return;
+    try {
+      const res = await fetch(`/api/non-hq/users/${userId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || 'Failed to update non hq user');
+      }
+
+      const updatedUser = await res.json();
+      setNonHqUsers((prevUsers) =>
+        prevUsers.map((u) =>
+          u.id === userId
+            ? {
+                ...u,
+                username: updatedUser.username,
+                ...(updatedUser.is_active !== undefined && { is_active: updatedUser.is_active }),
+              }
+            : u
+        )
+      );
+    } catch (err) {
+      console.error(err);
+      const errMsg = err instanceof Error ? err.message : 'Error updating non hq user. Please try again.';
+      alert(errMsg);
+    }
+  };
+
   // Inventory Tracking handlers
   const handleCreateInventory = async (data: {
     company: string;
@@ -2260,6 +2370,16 @@ function App() {
               onAddUser={handleAddFieldUser}
               onDeleteUser={handleDeleteFieldUser}
               onUpdateUser={handleUpdateFieldUser}
+              loading={loading}
+            />
+          ) : activeTab === 'non_hq_users' && currentUser.role === 'it' ? (
+            <NonHqUserManagement
+              users={nonHqUsers}
+              currentUser={currentUser}
+              token={token}
+              onAddUser={handleAddNonHqUser}
+              onDeleteUser={handleDeleteNonHqUser}
+              onUpdateUser={handleUpdateNonHqUser}
               loading={loading}
             />
           ) : activeTab === 'inventory' ? (

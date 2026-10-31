@@ -3,7 +3,7 @@ import type { Request, Response } from 'express';
 import { IncomingMessage } from 'http';
 
 type UserRoles =
-  'it' | 'employee' | 'manager' | 'executive' | 'factory_employee' | 'factory_it' | 'factory_manager' | 'external' | 'field_user';
+  'it' | 'employee' | 'manager' | 'executive' | 'factory_employee' | 'factory_it' | 'factory_manager' | 'external' | 'field_user' | 'non_hq_user';
 
 type TicketTypes = 'hardware' | 'software' | 'maintenance' | 'upgrade' | 'installation' | 'email' | 'others';
 
@@ -937,6 +937,51 @@ export interface ResetFieldUserPasswordRequestBody {
 }
 
 export interface ResetFieldUserPasswordResponse {
+  message: string;
+}
+
+// Non HQ User Types
+export interface CreateNonHqUserRequestBody {
+  username: string;
+  password: string;
+  active: boolean;
+}
+
+export interface UpdateNonHqUserRequestBody {
+  username: string;
+  password?: string;
+  active?: boolean;
+}
+
+export type NonHqUsersResponse = DbUser[];
+
+export interface CreateNonHqUserResponse {
+  id: string;
+  name: string;
+  email: string | null;
+  username: string;
+  role: UserRoles;
+  avatar?: string;
+  department?: string | null;
+  designation?: string | null;
+  isDepartmentHead: number;
+  loginEnabled: number;
+}
+
+export interface UpdateNonHqUserResponse {
+  id: string;
+  username: string;
+}
+
+export interface DeleteNonHqUserResponse {
+  message: string;
+}
+
+export interface ResetNonHqUserPasswordRequestBody {
+  newPassword: string;
+}
+
+export interface ResetNonHqUserPasswordResponse {
   message: string;
 }
 
