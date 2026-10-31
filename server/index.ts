@@ -15,6 +15,7 @@ import attendanceRouter from './routes/attendance.ts';
 import authRouter from './routes/auth.ts';
 import cvGeneratorRouter from './routes/cv-generator.ts';
 import externalUsersRouter from './routes/external-users.ts';
+import fieldUsersRouter from './routes/field-users.ts';
 import factoryRouter from './routes/factory.ts';
 import healthRouter from './routes/health.ts';
 import holidaysRouter from './routes/holidays.ts';
@@ -128,6 +129,7 @@ app.use('/api/site-duties', siteDutiesRouter);
 app.use('/api/tickets', ticketsRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/external', externalUsersRouter);
+app.use('/api/field', fieldUsersRouter);
 
 // Start Database and Server
 // Serve static frontend files in production

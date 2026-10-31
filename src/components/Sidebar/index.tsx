@@ -176,6 +176,19 @@ const MENU_ITEMS: MenuItem[] = [
       },
     ],
   },
+  {
+    label: 'Field',
+    icon: Building2,
+    roles: ['it'],
+    children: [
+      {
+        id: 'field_users',
+        label: 'User Management',
+        icon: Users,
+        roles: ['it'],
+      },
+    ],
+  },
 ];
 
 function isItemVisible(

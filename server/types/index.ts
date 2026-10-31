@@ -3,7 +3,7 @@ import type { Request, Response } from 'express';
 import { IncomingMessage } from 'http';
 
 type UserRoles =
-  'it' | 'employee' | 'manager' | 'executive' | 'factory_employee' | 'factory_it' | 'factory_manager' | 'external';
+  'it' | 'employee' | 'manager' | 'executive' | 'factory_employee' | 'factory_it' | 'factory_manager' | 'external' | 'field_user';
 
 type TicketTypes = 'hardware' | 'software' | 'maintenance' | 'upgrade' | 'installation' | 'email' | 'others';
 
@@ -892,6 +892,51 @@ export interface ResetExternalUserPasswordRequestBody {
 }
 
 export interface ResetExternalUserPasswordResponse {
+  message: string;
+}
+
+// Field User Types
+export interface CreateFieldUserRequestBody {
+  username: string;
+  password: string;
+  active: boolean;
+}
+
+export interface UpdateFieldUserRequestBody {
+  username: string;
+  password?: string;
+  active?: boolean;
+}
+
+export type FieldUsersResponse = DbUser[];
+
+export interface CreateFieldUserResponse {
+  id: string;
+  name: string;
+  email: string | null;
+  username: string;
+  role: UserRoles;
+  avatar?: string;
+  department?: string | null;
+  designation?: string | null;
+  isDepartmentHead: number;
+  loginEnabled: number;
+}
+
+export interface UpdateFieldUserResponse {
+  id: string;
+  username: string;
+}
+
+export interface DeleteFieldUserResponse {
+  message: string;
+}
+
+export interface ResetFieldUserPasswordRequestBody {
+  newPassword: string;
+}
+
+export interface ResetFieldUserPasswordResponse {
   message: string;
 }
 

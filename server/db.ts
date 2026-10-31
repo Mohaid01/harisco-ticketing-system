@@ -558,6 +558,31 @@ export async function initDb() {
   await db.exec('CREATE INDEX IF NOT EXISTS idx_external_users_username ON external_users(username)');
   await db.exec('CREATE INDEX IF NOT EXISTS idx_external_users_email ON external_users(email)');
 
+  // Create Field Users Table
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS field_users (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      email TEXT UNIQUE,
+      username TEXT UNIQUE NOT NULL,
+      role TEXT CHECK(role IN ('field_user')) NOT NULL,
+      avatar TEXT NOT NULL,
+      passwordHash TEXT NOT NULL,
+      needsPasswordReset INTEGER DEFAULT 1,
+      department TEXT,
+      designation TEXT,
+      isDepartmentHead INTEGER DEFAULT 0,
+      loginEnabled INTEGER DEFAULT 1,
+      is_active INTEGER DEFAULT 1,
+      offboarded_at TEXT,
+      offboarded_by TEXT,
+      offboard_reason TEXT
+    )
+  `);
+
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_field_users_username ON field_users(username)');
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_field_users_email ON field_users(email)');
+
   // Create Inventory Table
   await db.exec(`
     CREATE TABLE IF NOT EXISTS inventory (

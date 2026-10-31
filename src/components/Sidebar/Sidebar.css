@@ -345,6 +345,12 @@
   border: 0.0531rem solid rgba(99, 102, 241, 0.2);
 }
 
+.role-badge-field {
+  background-color: var(--role-field-bg);
+  color: var(--role-field);
+  border: 0.0531rem solid rgba(6, 182, 212, 0.2);
+}
+
 /* Desktop actions */
 .header-desktop-actions {
   display: flex;
@@ -690,6 +696,12 @@
   background-color: var(--role-external-bg);
   color: var(--role-external);
   border: 0.0531rem solid rgba(99, 102, 241, 0.2);
+}
+
+.role-badge-field {
+  background-color: var(--role-field-bg);
+  color: var(--role-field);
+  border: 0.0531rem solid rgba(6, 182, 212, 0.2);
 }
 
 /* Mobile */

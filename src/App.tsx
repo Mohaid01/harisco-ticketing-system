@@ -26,6 +26,7 @@ import { AdminTicketList } from './components/AdminTicketList';
 import { Attendance } from './components/Attendance';
 import { ExternalUserManagement } from './components/ExternalUserManagement';
 import { FactoryUserManagement } from './components/FactoryUserManagement';
+import { FieldUserManagement } from './components/FieldUserManagement';
 import { HSETicketDetails } from './components/HSETicketDetails';
 import { HSETicketList } from './components/HSETicketList';
 import { AssignInventoryModal } from './components/Modals/AssignInventoryModal';
@@ -85,6 +86,8 @@ function canUserAccessTab(
       return ['it', 'manager', 'factory_it', 'factory_manager', 'factory_employee'].includes(role);
     case 'external_users':
       return role === 'it';
+    case 'field_users':
+      return role === 'it';
     case 'inventory':
       return ['it', 'manager', 'executive'].includes(role);
     default:
@@ -123,6 +126,7 @@ function pathToTab(pathname: string): {
     'factory-users': 'factory_users',
     'factory-attendance': 'factory_attendance',
     'external-users': 'external_users',
+    'field-users': 'field_users',
     inventory: 'inventory',
   };
 
@@ -193,6 +197,7 @@ function App() {
   const [users, setUsers] = useState<AppUser[]>([]);
   const [factoryUsers, setFactoryUsers] = useState<AppUser[]>([]);
   const [externalUsers, setExternalUsers] = useState<AppUser[]>([]);
+  const [fieldUsers, setFieldUsers] = useState<AppUser[]>([]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [activeTab, setActiveTab] = useState<ActiveTab>(initialTab.tab);
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(initialTab.ticketId);
@@ -231,8 +236,8 @@ function App() {
   const [invEntityFilter, setInvEntityFilter] = useState<string>('all');
 
   const allAssignableUsers = useMemo(
-    () => [...users, ...factoryUsers, ...externalUsers],
-    [users, factoryUsers, externalUsers]
+    () => [...users, ...factoryUsers, ...externalUsers, ...fieldUsers],
+    [users, factoryUsers, externalUsers, fieldUsers]
   );
 
   const handleAttendanceViewModeChange = (mode: 'summary' | 'individual', userId?: string) => {
@@ -505,6 +510,15 @@ function App() {
           setExternalUsers(externalUsersData);
         }
 
+        // Fetch field users
+        const fieldUsersRes = await fetch('/api/field/users', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (fieldUsersRes.ok) {
+          const fieldUsersData = await fieldUsersRes.json();
+          setFieldUsers(fieldUsersData);
+        }
+
         // Fetch inventory
         await fetchInventory();
       } catch (err) {
@@ -761,6 +775,7 @@ function App() {
     setUsers([]);
     setFactoryUsers([]);
     setExternalUsers([]);
+    setFieldUsers([]);
     setAdminTickets([]);
     setSelectedTicketId(null);
     setSelectedAdminTicketId(null);
@@ -1881,6 +1896,98 @@ function App() {
     }
   };
 
+  // Field User handlers
+  const handleAddFieldUser = async (data: { username: string; password: string; active: boolean }) => {
+    if (!token || !currentUser) return;
+    try {
+      const res = await fetch('/api/field/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      const responseText = await res.clone().text();
+      let responseData: CreateExternalUserResponse & { error?: string };
+      try {
+        responseData = JSON.parse(responseText) as CreateExternalUserResponse & { error?: string };
+      } catch {
+        throw new Error(`Failed to create field user (HTTP ${res.status}). Server returned a non-JSON response.`);
+      }
+
+      if (!res.ok) {
+        throw new Error(responseData.error || 'Failed to add field user');
+      }
+
+      setFieldUsers((prevUsers) => [...prevUsers, responseData]);
+    } catch (err) {
+      console.error(err);
+      const errMsg = err instanceof Error ? err.message : 'Error creating field user. Please try again.';
+      alert(errMsg);
+    }
+  };
+
+  const handleDeleteFieldUser = async (userId: string) => {
+    if (!token || !currentUser) return;
+    try {
+      const res = await fetch(`/api/field/users/${userId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || 'Failed to delete field user');
+      }
+
+      setFieldUsers((prevUsers) => prevUsers.filter((u) => u.id !== userId));
+    } catch (err) {
+      console.error(err);
+      const errMsg = err instanceof Error ? err.message : 'Error deleting field user. Please try again.';
+      alert(errMsg);
+    }
+  };
+
+  const handleUpdateFieldUser = async (userId: string, data: { username: string; password?: string; active?: boolean }) => {
+    if (!token || !currentUser) return;
+    try {
+      const res = await fetch(`/api/field/users/${userId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || 'Failed to update field user');
+      }
+
+      const updatedUser = await res.json();
+      setFieldUsers((prevUsers) =>
+        prevUsers.map((u) =>
+          u.id === userId
+            ? {
+                ...u,
+                username: updatedUser.username,
+                ...(updatedUser.is_active !== undefined && { is_active: updatedUser.is_active }),
+              }
+            : u
+        )
+      );
+    } catch (err) {
+      console.error(err);
+      const errMsg = err instanceof Error ? err.message : 'Error updating field user. Please try again.';
+      alert(errMsg);
+    }
+  };
+
   // Inventory Tracking handlers
   const handleCreateInventory = async (data: {
     company: string;
@@ -2143,6 +2250,16 @@ function App() {
               onAddUser={handleAddExternalUser}
               onDeleteUser={handleDeleteExternalUser}
               onUpdateUser={handleUpdateExternalUser}
+              loading={loading}
+            />
+          ) : activeTab === 'field_users' && currentUser.role === 'it' ? (
+            <FieldUserManagement
+              users={fieldUsers}
+              currentUser={currentUser}
+              token={token}
+              onAddUser={handleAddFieldUser}
+              onDeleteUser={handleDeleteFieldUser}
+              onUpdateUser={handleUpdateFieldUser}
               loading={loading}
             />
           ) : activeTab === 'inventory' ? (

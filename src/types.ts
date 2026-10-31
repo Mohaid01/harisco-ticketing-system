@@ -156,6 +156,7 @@ export type ActiveTab =
   | 'cv_generator'
   | 'users_statistics'
   | 'external_users'
+  | 'field_users'
   | 'inventory';
 
 export interface MenuItems {
