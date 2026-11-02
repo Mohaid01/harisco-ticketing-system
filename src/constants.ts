@@ -26,6 +26,7 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   factory_it: 'IT Administrator',
   factory_manager: 'Manager',
   external: 'External User',
+  non_hq_user: 'Non HQ User',
 };
 
 export const TICKET_TYPE_LABELS: Record<TicketType, string> = {

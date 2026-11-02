@@ -49,18 +49,18 @@ const MENU_ITEMS: MenuItem[] = [
     id: 'noticeboard',
     label: 'Noticeboard',
     icon: Bell,
-    roles: ['it', 'employee', 'manager', 'executive'],
+    roles: ['it', 'employee', 'manager', 'executive', 'non_hq_user'],
   },
   {
     label: 'Tickets',
     icon: Ticket,
-    roles: ['it', 'employee', 'manager', 'executive'],
+    roles: ['it', 'employee', 'manager', 'executive', 'non_hq_user'],
     children: [
       {
         id: 'tickets',
         label: 'IT',
         icon: Ticket,
-        roles: ['it', 'employee', 'manager', 'executive'],
+        roles: ['it', 'employee', 'manager', 'executive', 'non_hq_user'],
         notAllowedDepartments: ['Staff'],
       },
       {
