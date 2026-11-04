@@ -1666,6 +1666,45 @@ h1.page-title {
   color: white;
 }
 
+/* Face guidance message */
+.attendance-face-guidance {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5313rem;
+  padding: 0.5313rem 0.85rem;
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
+  margin-top: 0.6375rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.attendance-face-guidance-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.attendance-face-guidance-text {
+  flex: 1;
+}
+
+.attendance-face-guidance-warning {
+  background-color: rgba(244, 63, 94, 0.12);
+  border: 0.0531rem solid #f43f5e;
+  color: #f43f5e;
+}
+
+.attendance-face-guidance-info {
+  background-color: rgba(245, 158, 11, 0.12);
+  border: 0.0531rem solid #f59e0b;
+  color: #d97706;
+}
+
 .attendance-camera-error {
   position: absolute;
   inset: 0;

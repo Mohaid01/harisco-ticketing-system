@@ -171,10 +171,12 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
       const video = videoRef.current;
       if (video) {
         video.srcObject = stream;
+        video.onplay = () => {
+          setCameraActive(true);
+          setCameraLoading(false);
+          startFaceDetectionLoop();
+        };
         await video.play();
-        setCameraActive(true);
-        setCameraLoading(false);
-        startFaceDetectionLoop();
       }
     } catch (err) {
       setCameraError(err instanceof Error ? err.message : 'Failed to access camera.');
@@ -202,19 +204,11 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
 
   const startFaceDetectionLoop = useCallback(() => {
     const video = videoRef.current;
-    const canvas = canvasRef.current;
     const overlay = overlayRef.current;
-    if (!video || !canvas || !overlay) return;
+    if (!video || !overlay) return;
 
     const tick = async () => {
       if (video.readyState >= 2 && faceModelsLoaded && video.videoWidth > 0 && video.videoHeight > 0) {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        }
-
         const ovCtx = overlay.getContext('2d');
         if (ovCtx) {
           overlay.width = video.videoWidth;
@@ -224,14 +218,14 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
 
         try {
           const detection = await faceapi
-            .detectSingleFace(canvas, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.1 }));
+            .detectSingleFace(video, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.1 }));
 
           if (detection) {
             setFaceDetected(true);
 
             try {
               const withLandmarks = await faceapi
-                .detectSingleFace(canvas, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.1 }))
+                .detectSingleFace(video, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.1 }))
                 .withFaceLandmarks();
               setFaceDescriptor(Array.from((withLandmarks as any).descriptor || []));
             } catch {
@@ -239,11 +233,11 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
             }
 
             const box = detection.box;
-            const faceHeight = box.height / canvas.height;
+            const faceHeight = box.height / video.videoHeight;
             const centerX = box.x + box.width / 2;
             const centerY = box.y + box.height / 2;
-            const midX = canvas.width / 2;
-            const midY = canvas.height / 2;
+            const midX = video.videoWidth / 2;
+            const midY = video.videoHeight / 2;
 
             if (ovCtx) {
               const isGood = faceHeight > 0.15 && faceHeight < 0.45;
@@ -292,8 +286,6 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
         } catch {
           // silently continue
         }
-      } else if (faceModelsLoaded && (video.videoWidth === 0 || video.videoHeight === 0)) {
-        // Video not ready yet, keep polling
       }
       animationFrameRef.current = requestAnimationFrame(tick);
     };
