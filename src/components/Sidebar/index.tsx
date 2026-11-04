@@ -187,6 +187,12 @@ const MENU_ITEMS: MenuItem[] = [
         icon: Users,
         roles: ['it'],
       },
+      {
+        id: 'field_attendance',
+        label: 'Attendance',
+        icon: UserCheck,
+        roles: ['it'],
+      },
     ],
   },
   {

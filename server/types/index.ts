@@ -1016,6 +1016,110 @@ export interface DeleteFactoryAttendanceLogResponse {
 
 export type FactoryAttendanceLogsResponse = AttendanceLog[];
 
+// Field Attendance Types
+export interface FieldAttendanceLog {
+  id: number;
+  name: string;
+  userId: string;
+  ioTime: string;
+  method: string;
+  status: string;
+  timestamp: string;
+  gpsLat: number | null;
+  gpsLng: number | null;
+  faceMatchScore: number | null;
+  faceMatchConfidence: string | null;
+  photoUrl: string | null;
+  verified: number;
+  withinRadius: number | null;
+  distanceMeters: number | null;
+  debugInfo: string | null;
+}
+
+export interface FieldAttendanceSetting {
+  id: number;
+  label: string;
+  centerLat: number;
+  centerLng: number;
+  radiusMeters: number;
+  isActive: number;
+  createdAt: string;
+}
+
+export interface PunchFieldAttendanceRequestBody {
+  userId: string;
+  name: string;
+  ioTime?: string;
+  method: string;
+  status: string;
+  gpsLat?: number | null;
+  gpsLng?: number | null;
+  faceMatchScore?: number | null;
+  faceMatchConfidence?: string | null;
+  photoUrl?: string | null;
+  debugInfo?: string | null;
+  faceDescriptor?: number[] | null;
+  livenessPassed?: boolean | null;
+  challenge?: string | null;
+}
+
+export interface PunchFieldAttendanceResponse {
+  success: boolean;
+  id: number;
+  verified: boolean;
+  withinRadius: boolean;
+  matchedSettingId: number | null;
+  distanceMeters: number | null;
+  faceMatchScore: number | null;
+  livenessPassed: boolean;
+  debugInfo: string | null;
+}
+
+export interface PhotoUploadResponse {
+  photoUrl: string;
+  gpsLat: number | null;
+  gpsLng: number | null;
+  exifTakenAt: string | null;
+}
+
+export interface FieldAttendanceFaceReference {
+  id: number;
+  userId: string;
+  photoUrl: string;
+  descriptor: number[];
+  createdAt: string;
+}
+
+export interface UploadFaceReferenceRequestBody {
+  userId: string;
+  photoUrl: string;
+  descriptor: number[];
+}
+
+export interface UploadFaceReferenceResponse {
+  success: boolean;
+  id: number;
+}
+
+export type FieldAttendanceLogsResponse = FieldAttendanceLog[];
+
+export type FieldAttendanceSettingsResponse = FieldAttendanceSetting[];
+
+export type FieldAttendanceFaceReferencesResponse = FieldAttendanceFaceReference[];
+
+export interface UpsertFieldAttendanceSettingRequestBody {
+  label: string;
+  centerLat: number;
+  centerLng: number;
+  radiusMeters: number;
+  isActive?: number;
+}
+
+export interface UpsertFieldAttendanceSettingResponse {
+  success: boolean;
+  id: number;
+}
+
 // Screen Override Types
 export interface ScreenOverride {
   id: number;

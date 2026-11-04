@@ -16,6 +16,7 @@ import authRouter from './routes/auth.ts';
 import cvGeneratorRouter from './routes/cv-generator.ts';
 import externalUsersRouter from './routes/external-users.ts';
 import factoryRouter from './routes/factory.ts';
+import fieldAttendanceRouter from './routes/field-attendance.ts';
 import fieldUsersRouter from './routes/field-users.ts';
 import healthRouter from './routes/health.ts';
 import holidaysRouter from './routes/holidays.ts';
@@ -131,7 +132,11 @@ app.use('/api/tickets', ticketsRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/external', externalUsersRouter);
 app.use('/api/field', fieldUsersRouter);
+app.use('/api/field/attendance', fieldAttendanceRouter);
 app.use('/api/non-hq', nonHqUsersRouter);
+
+// Serve uploaded field attendance photos
+app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
 
 // Start Database and Server
 // Serve static frontend files in production

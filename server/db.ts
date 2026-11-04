@@ -583,6 +583,71 @@ export async function initDb() {
   await db.exec('CREATE INDEX IF NOT EXISTS idx_field_users_username ON field_users(username)');
   await db.exec('CREATE INDEX IF NOT EXISTS idx_field_users_email ON field_users(email)');
 
+  // Create Field Attendance Logs Table
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS field_attendance_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      userId TEXT NOT NULL,
+      ioTime TEXT NOT NULL,
+      method TEXT NOT NULL,
+      status TEXT NOT NULL,
+      timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+      gpsLat REAL,
+      gpsLng REAL,
+      faceMatchScore REAL,
+      faceMatchConfidence TEXT,
+      photoUrl TEXT,
+      verified INTEGER DEFAULT 0,
+      withinRadius INTEGER DEFAULT 0,
+      distanceMeters REAL,
+      debugInfo TEXT
+    )
+  `);
+
+  try {
+    await db.exec('ALTER TABLE field_attendance_logs ADD COLUMN withinRadius INTEGER DEFAULT 0');
+  } catch {
+    // Column might already exist, ignore error
+  }
+
+  try {
+    await db.exec('ALTER TABLE field_attendance_logs ADD COLUMN distanceMeters REAL');
+  } catch {
+    // Column might already exist, ignore error
+  }
+
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_field_attendance_logs_user_id ON field_attendance_logs(userId)');
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_field_attendance_logs_ioTime ON field_attendance_logs(ioTime)');
+
+  // Create Field Attendance Settings Table (allowed site centers for presence check)
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS field_attendance_settings (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      label TEXT NOT NULL,
+      centerLat REAL NOT NULL,
+      centerLng REAL NOT NULL,
+      radiusMeters REAL NOT NULL DEFAULT 50,
+      isActive INTEGER DEFAULT 1,
+      createdAt TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_field_attendance_settings_active ON field_attendance_settings(isActive)');
+
+  // Create Field Attendance Face References Table (enrolled reference photos per user)
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS field_attendance_face_references (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      userId TEXT NOT NULL,
+      photoUrl TEXT NOT NULL,
+      descriptor TEXT NOT NULL,
+      createdAt TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_field_attendance_face_references_user_id ON field_attendance_face_references(userId)');
+
   // Create Non HQ Users Table
   await db.exec(`
     CREATE TABLE IF NOT EXISTS non_hq_users (

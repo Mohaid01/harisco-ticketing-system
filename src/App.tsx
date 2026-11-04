@@ -26,6 +26,7 @@ import { AdminTicketList } from './components/AdminTicketList';
 import { Attendance } from './components/Attendance';
 import { ExternalUserManagement } from './components/ExternalUserManagement';
 import { FactoryUserManagement } from './components/FactoryUserManagement';
+import { FieldAttendance } from './components/FieldAttendance';
 import { FieldUserManagement } from './components/FieldUserManagement';
 import { HSETicketDetails } from './components/HSETicketDetails';
 import { HSETicketList } from './components/HSETicketList';
@@ -89,6 +90,8 @@ function canUserAccessTab(
       return role === 'it';
     case 'field_users':
       return role === 'it';
+    case 'field_attendance':
+      return role === 'it';
     case 'non_hq_users':
       return role === 'it';
     case 'inventory':
@@ -130,6 +133,7 @@ function pathToTab(pathname: string): {
     'factory-attendance': 'factory_attendance',
     'external-users': 'external_users',
     'field-users': 'field_users',
+    'field-attendance': 'field_attendance',
     'non-hq-users': 'non_hq_users',
     inventory: 'inventory',
   };
@@ -2375,6 +2379,8 @@ function App() {
               onUpdateUser={handleUpdateFieldUser}
               loading={loading}
             />
+          ) : activeTab === 'field_attendance' && currentUser.role === 'it' ? (
+            <FieldAttendance currentUser={currentUser} token={token} />
           ) : activeTab === 'non_hq_users' && currentUser.role === 'it' ? (
             <NonHqUserManagement
               users={nonHqUsers}
