@@ -1441,19 +1441,12 @@ h1.page-title {
 /* Main layout */
 .attendance-main {
   display: grid;
-  grid-template-columns: 1fr 340px;
+  grid-template-columns: 1fr;
   gap: 1.275rem;
   align-items: start;
   margin-bottom: 1.275rem;
 }
 
-@media screen and (max-width: 48rem) {
-  .attendance-main {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* Step card */
 .attendance-step-card {
   background-color: var(--bg-secondary);
   border: 0.0531rem solid var(--border-color);
@@ -1593,19 +1586,29 @@ h1.page-title {
   flex-direction: column;
   gap: 0.85rem;
   min-height: 0;
+  width: 100%;
+  max-width: 100%;
 }
 
 .attendance-camera-wrap {
   position: relative;
   width: 100%;
-  height: 280px;
-  background-color: var(--bg-primary);
+  max-width: 48rem;
+  margin: 0 auto;
+  aspect-ratio: 16 / 9;
+  background-color: #000;
   border: 0.0531rem solid var(--border-color);
   border-radius: var(--radius-lg);
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+@media screen and (max-width: 48rem) {
+  .attendance-camera-wrap {
+    aspect-ratio: 9 / 16;
+  }
 }
 
 .attendance-camera-video {

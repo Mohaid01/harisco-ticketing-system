@@ -69,6 +69,7 @@ const STEPS: { id: Step; label: string }[] = [
 export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, token }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const overlayRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const animationFrameRef = useRef<number>(0);
 
@@ -97,6 +98,8 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
   const [faceDescriptor, setFaceDescriptor] = useState<number[] | null>(null);
   const [capturedFrame, setCapturedFrame] = useState<string | null>(null);
   const [faceModelsLoaded, setFaceModelsLoaded] = useState<boolean>(false);
+  const [faceModelsError, setFaceModelsError] = useState<string | null>(null);
+  const [faceHelpMessage, setFaceHelpMessage] = useState<string | null>(null);
 
   const [challenge, setChallenge] = useState<Challenge | null>(null);
   const [livenessStage, setLivenessStage] = useState<'idle' | 'ready' | 'verifying' | 'passed' | 'failed'>('idle');
@@ -200,31 +203,105 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
   const startFaceDetectionLoop = useCallback(() => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    if (!video || !canvas) return;
+    const overlay = overlayRef.current;
+    if (!video || !canvas || !overlay) return;
 
     const tick = async () => {
-      if (video.readyState >= 2 && faceModelsLoaded) {
+      if (video.readyState >= 2 && faceModelsLoaded && video.videoWidth > 0 && video.videoHeight > 0) {
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         const ctx = canvas.getContext('2d');
         if (ctx) {
           ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         }
+
+        const ovCtx = overlay.getContext('2d');
+        if (ovCtx) {
+          overlay.width = video.videoWidth;
+          overlay.height = video.videoHeight;
+          ovCtx.clearRect(0, 0, overlay.width, overlay.height);
+        }
+
         try {
+          console.log('Running face detection on frame...');
+
+          // Step 1: Just face detection first (no landmarks/descriptor)
           const detection = await faceapi
-            .detectSingleFace(canvas, new faceapi.TinyFaceDetectorOptions())
-            .withFaceLandmarks()
-            .withFaceDescriptor();
+            .detectSingleFace(canvas, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.1 }));
+
+          console.log('Detection result:', detection);
+
           if (detection) {
+            console.log('Face detected! Box:', detection.box, 'Score:', (detection as any).score);
             setFaceDetected(true);
-            setFaceDescriptor(Array.from(detection.descriptor as unknown as number[]));
+
+            // Only compute landmarks/descriptor if face is detected
+            try {
+              const withLandmarks = await faceapi
+                .detectSingleFace(canvas, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.1 }))
+                .withFaceLandmarks();
+              setFaceDescriptor(Array.from((withLandmarks as any).descriptor || []));
+            } catch (lmErr) {
+              console.warn('Landmarks/descriptor failed:', lmErr);
+            }
+
+            const box = detection.box;
+            const faceHeight = box.height / canvas.height;
+            const centerX = box.x + box.width / 2;
+            const centerY = box.y + box.height / 2;
+            const midX = canvas.width / 2;
+            const midY = canvas.height / 2;
+
+            if (ovCtx) {
+              const isGood = faceHeight > 0.15 && faceHeight < 0.45;
+              ovCtx.strokeStyle = isGood ? '#10b981' : '#f43f5e';
+              ovCtx.lineWidth = 4;
+              ovCtx.strokeRect(box.x, box.y, box.width, box.height);
+
+              ovCtx.fillStyle = isGood ? '#10b981' : '#f43f5e';
+              ovCtx.font = 'bold 14px system-ui';
+              ovCtx.fillText(`Face (${Math.round((detection as any).score * 100)}%)`, box.x, box.y - 10);
+
+              if ((detection as any).landmarks) {
+                (detection as any).landmarks.positions.forEach((p: { x: number; y: number }) => {
+                  ovCtx.fillStyle = '#10b981';
+                  ovCtx.beginPath();
+                  ovCtx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+                  ovCtx.fill();
+                });
+              }
+
+              ovCtx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+              ovCtx.lineWidth = 2;
+              ovCtx.setLineDash([8, 4]);
+              ovCtx.beginPath();
+              ovCtx.arc(midX, midY, 70, 0, Math.PI * 2);
+              ovCtx.stroke();
+              ovCtx.setLineDash([]);
+            }
+
+            let help: string | null = null;
+            if (faceHeight > 0.45) help = 'Move back';
+            else if (faceHeight < 0.15) help = 'Come closer';
+            else if (centerX < midX * 0.4 || centerX > midX * 1.6) help = 'Center your face';
+            else if (centerY < midY * 0.4 || centerY > midY * 1.6) help = 'Center your face';
+            setFaceHelpMessage(help);
           } else {
             setFaceDetected(false);
             setFaceDescriptor(null);
+            setFaceHelpMessage('Position your face in frame');
+            if (ovCtx) {
+              ovCtx.fillStyle = 'rgba(244, 63, 94, 0.8)';
+              ovCtx.font = 'bold 16px system-ui';
+              ovCtx.fillText('No face detected', 20, 40);
+            }
           }
-        } catch {
-          // silently continue
+        } catch (err) {
+          console.error('Face detection error:', err);
+          setFaceHelpMessage('Face detection error - check console');
         }
+      } else if (faceModelsLoaded && (video.videoWidth === 0 || video.videoHeight === 0)) {
+        // Video not ready yet, keep polling
       }
       animationFrameRef.current = requestAnimationFrame(tick);
     };
@@ -452,13 +529,16 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
   const loadFaceModels = useCallback(async () => {
     try {
       await Promise.all([
-        faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
+        faceapi.nets.ssdMobilenetv1.loadFromUri('/models'),
         faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
         faceapi.nets.faceRecognitionNet.loadFromUri('/models'),
       ]);
       setFaceModelsLoaded(true);
+      setFaceModelsError(null);
     } catch (err) {
-      console.warn('Face models not loaded (place model files in /public/models):', err);
+      const msg = err instanceof Error ? err.message : 'Unknown error loading face models';
+      console.warn('Face models failed to load:', msg);
+      setFaceModelsError(`Face detection unavailable: ${msg}. Place model files in /public/models/`);
       setFaceModelsLoaded(false);
     }
   }, []);
@@ -539,7 +619,7 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
         {/* Left: Step content */}
         <div className="attendance-step-card">
           {step === 'gps' && (
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <>
               <div className="attendance-step-header">
                 <div className="attendance-step-icon gps">
                   <Camera size={20} />
@@ -658,11 +738,11 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
                   </>
                 )}
               </div>
-            </div>
+            </>
           )}
 
           {step === 'face' && (
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <>
               <div className="attendance-step-header">
                 <div className="attendance-step-icon face">
                   <CheckCircle size={20} />
@@ -681,7 +761,24 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
                     autoPlay
                     playsInline
                     muted
-                    style={{ display: cameraActive ? 'block' : 'none', width: '100%', height: '100%', objectFit: 'cover' }}
+                    style={{
+                      display: cameraActive ? 'block' : 'none',
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                    }}
+                  />
+                  <canvas
+                    ref={overlayRef}
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: '100%',
+                      pointerEvents: 'none',
+                      zIndex: 10,
+                    }}
                   />
                   <canvas ref={canvasRef} style={{ display: 'none' }} />
                   {!cameraActive && !cameraError && (
@@ -704,13 +801,55 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
                     </div>
                   )}
                   {cameraError && <div className="attendance-camera-error">{cameraError}</div>}
+                  {!cameraActive && faceModelsError && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexDirection: 'column',
+                        gap: 0.425,
+                        color: '#f43f5e',
+                        fontSize: '0.8rem',
+                        textAlign: 'center',
+                        zIndex: 5,
+                        padding: '1rem',
+                      }}
+                    >
+                      <XCircle size={20} strokeWidth={2} />
+                      <div>{faceModelsError}</div>
+                    </div>
+                  )}
+                  {!cameraActive && !cameraError && !faceModelsError && !faceModelsLoaded && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexDirection: 'column',
+                        gap: 0.425,
+                        color: 'var(--text-muted)',
+                        fontSize: '0.8rem',
+                        textAlign: 'center',
+                        zIndex: 5,
+                        padding: '1rem',
+                      }}
+                    >
+                      <Loader size={24} strokeWidth={2} />
+                      <div>Loading face detection models...</div>
+                    </div>
+                  )}
                   {cameraActive && faceDetected && (
                     <div className="attendance-camera-status detected">
                       <CheckCircle size={12} strokeWidth={2} />
                       Face Detected
                     </div>
                   )}
-                  {cameraActive && !faceDetected && (
+                  {cameraActive && !faceDetected && !faceModelsError && (
                     <div className="attendance-camera-status noface">
                       <XCircle size={12} strokeWidth={2} />
                       No Face
@@ -718,6 +857,48 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
                   )}
                 </div>
               </div>
+
+              {/* Face guidance overlay message */}
+              {faceHelpMessage && (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 0.5313,
+                    padding: 0.5313,
+                    backgroundColor:
+                      faceHelpMessage === 'Position your face in frame'
+                        ? 'rgba(244, 63, 94, 0.12)'
+                        : 'rgba(245, 158, 11, 0.12)',
+                    border: `0.0531rem solid ${faceHelpMessage === 'Position your face in frame' ? '#f43f5e' : '#f59e0b'}`,
+                    borderRadius: 'var(--radius-md)',
+                    color: faceHelpMessage === 'Position your face in frame' ? '#f43f5e' : '#d97706',
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                    textAlign: 'center',
+                  }}
+                >
+                  {faceHelpMessage === 'Position your face in frame' ? (
+                    <XCircle size={14} strokeWidth={2} />
+                  ) : (
+                    <Camera size={14} strokeWidth={2} />
+                  )}
+                  {faceHelpMessage}
+                </div>
+              )}
+
+              {/* Debug info */}
+              {process.env.NODE_ENV === 'development' && (
+                <div style={{ marginTop: 0.5313, fontSize: '0.7rem', color: 'var(--text-muted)', textAlign: 'left' }}>
+                  <div>Models: {faceModelsLoaded ? 'loaded' : 'loading'}</div>
+                  <div>Camera: {cameraActive ? 'active' : 'inactive'}</div>
+                  <div>
+                    Video: {videoRef.current?.videoWidth}x{videoRef.current?.videoHeight}
+                  </div>
+                  <div>Face: {faceDetected ? 'detected' : 'none'}</div>
+                  {faceModelsError && <div style={{ color: '#f43f5e' }}>{faceModelsError}</div>}
+                </div>
+              )}
 
               {/* Liveness status */}
               <div className="attendance-liveness-card">
@@ -836,7 +1017,8 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
                       disabled={(livenessStage as string) === 'verifying'}
                       style={{ width: '100%', padding: '0.85rem 1.5rem', fontSize: '1rem', fontWeight: 600 }}
                     >
-                      {(livenessStage as string) === 'verifying' ? <Loader size={18} strokeWidth={2} /> : null} Try Again
+                      {(livenessStage as string) === 'verifying' ? <Loader size={18} strokeWidth={2} /> : null} Try
+                      Again
                     </button>
                   </>
                 )}
@@ -845,11 +1027,7 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
                     type="submit"
                     className="btn btn-primary"
                     disabled={
-                      submitting ||
-                      !challenge ||
-                      !capturedFrame ||
-                      !faceDescriptor ||
-                      livenessStage !== 'passed'
+                      submitting || !challenge || !capturedFrame || !faceDescriptor || livenessStage !== 'passed'
                     }
                     style={{ width: '100%', padding: '0.85rem 1.5rem', fontSize: '1rem', fontWeight: 600 }}
                   >
@@ -857,11 +1035,11 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
                   </button>
                 )}
               </div>
-            </div>
+            </>
           )}
 
           {step === 'done' && (
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <>
               <div className="attendance-done-card">
                 <div className="attendance-done-icon">&#10004;</div>
                 <h2 className="attendance-done-title">Attendance Marked</h2>
@@ -896,7 +1074,7 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
                   Done
                 </button>
               </div>
-            </div>
+            </>
           )}
         </div>
       </div>
