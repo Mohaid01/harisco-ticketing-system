@@ -1595,12 +1595,12 @@ function App() {
         prevUsers.map((u) =>
           u.id === userId
             ? {
-              ...u,
-              is_active: 0,
-              offboarded_at: offboardDate,
-              offboarded_by: currentUser.id,
-              offboard_reason: reason,
-            }
+                ...u,
+                is_active: 0,
+                offboarded_at: offboardDate,
+                offboarded_by: currentUser.id,
+                offboard_reason: reason,
+              }
             : u
         )
       );
@@ -1646,16 +1646,16 @@ function App() {
         prevUsers.map((u) =>
           u.id === userId
             ? {
-              ...u,
-              name: updatedUser.name,
-              email: updatedUser.email,
-              department: updatedUser.department,
-              designation: updatedUser.designation,
-              avatar: updatedUser.avatar,
-              role: updatedUser.role,
-              isDepartmentHead: updatedUser.isDepartmentHead,
-              loginEnabled: updatedUser.loginEnabled,
-            }
+                ...u,
+                name: updatedUser.name,
+                email: updatedUser.email,
+                department: updatedUser.department,
+                designation: updatedUser.designation,
+                avatar: updatedUser.avatar,
+                role: updatedUser.role,
+                isDepartmentHead: updatedUser.isDepartmentHead,
+                loginEnabled: updatedUser.loginEnabled,
+              }
             : u
         )
       );
@@ -1750,12 +1750,12 @@ function App() {
         prevUsers.map((u) =>
           u.id === userId
             ? {
-              ...u,
-              is_active: 0,
-              offboarded_at: offboardDate,
-              offboarded_by: currentUser.id,
-              offboard_reason: reason,
-            }
+                ...u,
+                is_active: 0,
+                offboarded_at: offboardDate,
+                offboarded_by: currentUser.id,
+                offboard_reason: reason,
+              }
             : u
         )
       );
@@ -1800,16 +1800,16 @@ function App() {
         prevUsers.map((u) =>
           u.id === userId
             ? {
-              ...u,
-              name: updatedUser.name,
-              email: updatedUser.email,
-              department: updatedUser.department,
-              designation: updatedUser.designation,
-              avatar: updatedUser.avatar,
-              isDepartmentHead: updatedUser.isDepartmentHead,
-              loginEnabled: updatedUser.loginEnabled,
-              defaultShift: updatedUser.defaultShift,
-            }
+                ...u,
+                name: updatedUser.name,
+                email: updatedUser.email,
+                department: updatedUser.department,
+                designation: updatedUser.designation,
+                avatar: updatedUser.avatar,
+                isDepartmentHead: updatedUser.isDepartmentHead,
+                loginEnabled: updatedUser.loginEnabled,
+                defaultShift: updatedUser.defaultShift,
+              }
             : u
         )
       );
@@ -1898,9 +1898,9 @@ function App() {
         prevUsers.map((u) =>
           u.id === userId
             ? {
-              ...u,
-              username: updatedUser.username,
-            }
+                ...u,
+                username: updatedUser.username,
+              }
             : u
         )
       );
@@ -1992,10 +1992,10 @@ function App() {
         prevUsers.map((u) =>
           u.id === userId
             ? {
-              ...u,
-              username: updatedUser.username,
-              ...(updatedUser.is_active !== undefined && { is_active: updatedUser.is_active }),
-            }
+                ...u,
+                username: updatedUser.username,
+                ...(updatedUser.is_active !== undefined && { is_active: updatedUser.is_active }),
+              }
             : u
         )
       );
@@ -2087,10 +2087,10 @@ function App() {
         prevUsers.map((u) =>
           u.id === userId
             ? {
-              ...u,
-              username: updatedUser.username,
-              ...(updatedUser.is_active !== undefined && { is_active: updatedUser.is_active }),
-            }
+                ...u,
+                username: updatedUser.username,
+                ...(updatedUser.is_active !== undefined && { is_active: updatedUser.is_active }),
+              }
             : u
         )
       );

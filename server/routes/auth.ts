@@ -227,7 +227,7 @@ router.post(
           [userId]
         );
       }
-      //  for non hq user reset password 
+      //  for non hq user reset password
       if (!user) {
         await db.run('UPDATE non_hq_users SET passwordHash = ?, needsPasswordReset = 0 WHERE id = ?', [
           passwordHash,
