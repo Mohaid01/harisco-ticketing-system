@@ -223,26 +223,19 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
         }
 
         try {
-          console.log('Running face detection on frame...');
-
-          // Step 1: Just face detection first (no landmarks/descriptor)
           const detection = await faceapi
             .detectSingleFace(canvas, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.1 }));
 
-          console.log('Detection result:', detection);
-
           if (detection) {
-            console.log('Face detected! Box:', detection.box, 'Score:', (detection as any).score);
             setFaceDetected(true);
 
-            // Only compute landmarks/descriptor if face is detected
             try {
               const withLandmarks = await faceapi
                 .detectSingleFace(canvas, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.1 }))
                 .withFaceLandmarks();
               setFaceDescriptor(Array.from((withLandmarks as any).descriptor || []));
-            } catch (lmErr) {
-              console.warn('Landmarks/descriptor failed:', lmErr);
+            } catch {
+              // silently continue
             }
 
             const box = detection.box;
@@ -296,9 +289,8 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
               ovCtx.fillText('No face detected', 20, 40);
             }
           }
-        } catch (err) {
-          console.error('Face detection error:', err);
-          setFaceHelpMessage('Face detection error - check console');
+        } catch {
+          // silently continue
         }
       } else if (faceModelsLoaded && (video.videoWidth === 0 || video.videoHeight === 0)) {
         // Video not ready yet, keep polling
@@ -884,19 +876,6 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
                     <Camera size={14} strokeWidth={2} />
                   )}
                   {faceHelpMessage}
-                </div>
-              )}
-
-              {/* Debug info */}
-              {process.env.NODE_ENV === 'development' && (
-                <div style={{ marginTop: 0.5313, fontSize: '0.7rem', color: 'var(--text-muted)', textAlign: 'left' }}>
-                  <div>Models: {faceModelsLoaded ? 'loaded' : 'loading'}</div>
-                  <div>Camera: {cameraActive ? 'active' : 'inactive'}</div>
-                  <div>
-                    Video: {videoRef.current?.videoWidth}x{videoRef.current?.videoHeight}
-                  </div>
-                  <div>Face: {faceDetected ? 'detected' : 'none'}</div>
-                  {faceModelsError && <div style={{ color: '#f43f5e' }}>{faceModelsError}</div>}
                 </div>
               )}
 
