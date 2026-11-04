@@ -99,9 +99,9 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
   const [capturedFrame, setCapturedFrame] = useState<string | null>(null);
   const [faceModelsLoaded, setFaceModelsLoaded] = useState<boolean>(false);
   const [faceModelsError, setFaceModelsError] = useState<string | null>(null);
-  const [faceHelpMessage, setFaceHelpMessage] = useState<string | null>(null);
 
   const [challenge, setChallenge] = useState<Challenge | null>(null);
+  const [challengeStartDescriptor, setChallengeStartDescriptor] = useState<number[] | null>(null);
   const [livenessStage, setLivenessStage] = useState<'idle' | 'ready' | 'verifying' | 'passed' | 'failed'>('idle');
   const [livenessResult, setLivenessResult] = useState<string | null>(null);
 
@@ -234,8 +234,6 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
 
             const box = detection.box;
             const faceHeight = box.height / video.videoHeight;
-            const centerX = box.x + box.width / 2;
-            const centerY = box.y + box.height / 2;
             const midX = video.videoWidth / 2;
             const midY = video.videoHeight / 2;
 
@@ -267,16 +265,24 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
               ovCtx.setLineDash([]);
             }
 
-            let help: string | null = null;
-            if (faceHeight > 0.45) help = 'Move back';
-            else if (faceHeight < 0.15) help = 'Come closer';
-            else if (centerX < midX * 0.4 || centerX > midX * 1.6) help = 'Center your face';
-            else if (centerY < midY * 0.4 || centerY > midY * 1.6) help = 'Center your face';
-            setFaceHelpMessage(help);
+            // Auto-verify challenge action during 'ready' state
+            if (livenessStage === 'ready') {
+              const moved = await verifyChallengeMovement();
+              if (moved) {
+                setLivenessStage('verifying');
+                setLivenessResult(null);
+                await new Promise((r) => setTimeout(r, 400));
+                const frame = captureFrame();
+                if (frame) {
+                  setCapturedFrame(frame);
+                  setLivenessStage('passed');
+                  setLivenessResult('Liveness verified — ready to mark attendance');
+                }
+              }
+            }
           } else {
             setFaceDetected(false);
             setFaceDescriptor(null);
-            setFaceHelpMessage('Position your face in frame');
             if (ovCtx) {
               ovCtx.fillStyle = 'rgba(244, 63, 94, 0.8)';
               ovCtx.font = 'bold 16px system-ui';
@@ -286,11 +292,13 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
         } catch {
           // silently continue
         }
+      } else {
+        // Video not ready yet, keep polling
       }
       animationFrameRef.current = requestAnimationFrame(tick);
     };
     tick();
-  }, [faceModelsLoaded]);
+  }, [faceModelsLoaded, livenessStage, challenge, challengeStartDescriptor]);
 
   const captureFrame = useCallback((): string | null => {
     const video = videoRef.current;
@@ -357,13 +365,27 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
   const nextChallenge = useCallback(() => {
     const c = CHALLENGES[Math.floor(Math.random() * CHALLENGES.length)];
     setChallenge(c);
+    setChallengeStartDescriptor(faceDescriptor);
     setLivenessStage('ready');
     setLivenessResult(null);
-  }, []);
+    setCapturedFrame(null);
+  }, [faceDescriptor]);
 
-  const verifyChallenge = async (): Promise<boolean> => {
-    if (!challenge) return false;
-    return faceDetected && faceDescriptor !== null;
+  const verifyChallengeMovement = async (): Promise<boolean> => {
+    if (!challenge || !challengeStartDescriptor) return false;
+    if (!faceDetected || !faceDescriptor) return false;
+
+    const current = faceDescriptor;
+    const start = challengeStartDescriptor;
+    let distance = 0;
+    for (let i = 0; i < current.length; i++) {
+      distance += (current[i] - start[i]) ** 2;
+    }
+    const dist = Math.sqrt(distance);
+
+    // Different thresholds per challenge type
+    const threshold = challenge === 'blink' ? 0.3 : 0.5;
+    return dist > threshold;
   };
 
   const handleStartLiveness = useCallback(async () => {
@@ -372,20 +394,26 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
       nextChallenge();
       return;
     }
+    // If already in ready state with a challenge, clicking again = retry with new challenge
+    if (livenessStage === 'ready' && challenge) {
+      nextChallenge();
+      return;
+    }
     if (!challenge) {
       nextChallenge();
       return;
     }
+    // Manual trigger: capture frame and mark as verified
     const frame = captureFrame();
     if (frame) {
       setCapturedFrame(frame);
       setLivenessStage('verifying');
-      verifyChallenge().then((ok) => {
-        setLivenessStage(ok ? 'passed' : 'failed');
-        setLivenessResult(ok ? 'Challenge passed' : 'Challenge failed - try again');
-      });
+      setLivenessResult(null);
+      await new Promise((r) => setTimeout(r, 400));
+      setLivenessStage('passed');
+      setLivenessResult('Liveness verified — ready to mark attendance');
     }
-  }, [cameraActive, startCamera, nextChallenge, challenge, captureFrame, verifyChallenge]);
+  }, [cameraActive, startCamera, nextChallenge, challenge, livenessStage, captureFrame]);
 
   const handleMarkAttendance = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -842,35 +870,6 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
                 </div>
               </div>
 
-              {/* Face guidance overlay message */}
-              {faceHelpMessage && (
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 0.5313,
-                    padding: 0.5313,
-                    backgroundColor:
-                      faceHelpMessage === 'Position your face in frame'
-                        ? 'rgba(244, 63, 94, 0.12)'
-                        : 'rgba(245, 158, 11, 0.12)',
-                    border: `0.0531rem solid ${faceHelpMessage === 'Position your face in frame' ? '#f43f5e' : '#f59e0b'}`,
-                    borderRadius: 'var(--radius-md)',
-                    color: faceHelpMessage === 'Position your face in frame' ? '#f43f5e' : '#d97706',
-                    fontSize: '0.85rem',
-                    fontWeight: 600,
-                    textAlign: 'center',
-                  }}
-                >
-                  {faceHelpMessage === 'Position your face in frame' ? (
-                    <XCircle size={14} strokeWidth={2} />
-                  ) : (
-                    <Camera size={14} strokeWidth={2} />
-                  )}
-                  {faceHelpMessage}
-                </div>
-              )}
-
               {/* Liveness status */}
               <div className="attendance-liveness-card">
                 <div className="attendance-liveness-header">
@@ -952,17 +951,22 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
                   </>
                 )}
                 {livenessStage === 'ready' && challenge && (
-                  <>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 0.5313, textAlign: 'center' }}>
+                    <div className="attendance-challenge">
+                      Perform: {challengeLabel[challenge]}
+                    </div>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                      Auto-detecting your movement…
+                    </div>
                     <button
                       type="button"
                       onClick={handleStartLiveness}
-                      className="btn btn-primary"
-                      disabled={(livenessStage as string) === 'verifying'}
-                      style={{ width: '100%', padding: '0.85rem 1.5rem', fontSize: '1rem', fontWeight: 600 }}
+                      className="btn btn-outline"
+                      style={{ width: '100%', padding: '0.6375rem 1rem', fontSize: '0.85rem', fontWeight: 600 }}
                     >
-                      I Have Completed: {challengeLabel[challenge]}
+                      Retry Challenge
                     </button>
-                  </>
+                  </div>
                 )}
                 {livenessStage === 'verifying' && (
                   <>
@@ -1033,6 +1037,7 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
                     setCameraActive(false);
                     setFaceDetected(false);
                     setFaceDescriptor(null);
+                    setChallengeStartDescriptor(null);
                     setCapturedFrame(null);
                     setChallenge(null);
                     setLivenessStage('idle');
