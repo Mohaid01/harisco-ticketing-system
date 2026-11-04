@@ -49,7 +49,7 @@ const MENU_ITEMS: MenuItem[] = [
     id: 'noticeboard',
     label: 'Noticeboard',
     icon: Bell,
-    roles: ['it', 'employee', 'manager', 'executive', 'non_hq_user'],
+    roles: ['it', 'employee', 'manager', 'executive', 'non_hq_user', 'field_user'],
   },
   {
     label: 'Tickets',

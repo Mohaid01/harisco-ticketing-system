@@ -62,7 +62,7 @@ function canUserAccessTab(
 ): boolean {
   switch (tab) {
     case 'noticeboard':
-      return ['it', 'employee', 'manager', 'executive', 'non_hq_user'].includes(role);
+      return ['it', 'employee', 'manager', 'executive', 'non_hq_user', 'field_user'].includes(role);
     case 'tickets':
       return ['it', 'employee', 'manager', 'executive', 'non_hq_user'].includes(role);
     case 'admin_tickets':

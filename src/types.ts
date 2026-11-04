@@ -2,7 +2,7 @@ import type { LucideIcon } from 'lucide-react';
 
 // User Types
 export type UserRole =
-  'it' | 'employee' | 'manager' | 'executive' | 'factory_employee' | 'factory_it' | 'factory_manager' | 'external' | 'non_hq_user';
+  'it' | 'employee' | 'manager' | 'executive' | 'factory_employee' | 'factory_it' | 'factory_manager' | 'external' | 'non_hq_user' | 'field_user';
 
 export interface AppUser {
   id: string;
