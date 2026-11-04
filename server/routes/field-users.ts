@@ -60,10 +60,10 @@ router.post(
       return;
     }
 
-    const { username, password } = req.body;
+    const { username, password, name, email, department, designation, active } = req.body;
 
-    if (!username || !password) {
-      res.status(400).json({ error: 'Username and password are required.' });
+    if (!username || !name) {
+      res.status(400).json({ error: 'Username and name are required.' });
       return;
     }
 
@@ -78,23 +78,36 @@ router.post(
         return;
       }
 
-      const passwordHash = await bcrypt.hash(password, 10);
+      const passwordHash = password ? await bcrypt.hash(password, 10) : await bcrypt.hash('DefaultPassword', 10);
       const userId = `usr-${Date.now()}`;
 
       await db.run(
-        'INSERT INTO field_users (id, name, email, username, role, avatar, passwordHash, needsPasswordReset, department, designation, isDepartmentHead, loginEnabled) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)',
-        [userId, finalUsername, null, finalUsername, 'field_user', '', passwordHash, null, null, 0, 1]
+        'INSERT INTO field_users (id, name, email, username, role, avatar, passwordHash, needsPasswordReset, department, designation, isDepartmentHead, loginEnabled, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?)',
+        [
+          userId,
+          name.trim(),
+          email || null,
+          finalUsername,
+          'field_user',
+          '',
+          passwordHash,
+          department || null,
+          designation || null,
+          0,
+          1,
+          active ? 1 : 0,
+        ]
       );
 
       const response: CreateFieldUserResponse = {
         id: userId,
-        name: finalUsername,
-        email: null,
+        name: name.trim(),
+        email: email || null,
         username: finalUsername,
         role: 'field_user',
         avatar: '',
-        department: null,
-        designation: null,
+        department: department || null,
+        designation: designation || null,
         isDepartmentHead: 0,
         loginEnabled: 1,
       };
@@ -152,34 +165,42 @@ router.put(
     }
 
     const userId = String(req.params.id);
-    const { username, password } = req.body;
+    const { name, email, username, password, department, designation, active } = req.body;
 
-    if (!username || !username.trim()) {
+    if (username && !username.trim()) {
       res.status(400).json({ error: 'Username is required.' });
       return;
     }
 
-    const finalUsername = username.trim().toLowerCase();
-
     try {
       const db = getDb();
 
-      const existingUsername = await db.get('SELECT id FROM field_users WHERE LOWER(username) = ? AND id != ?', [
-        finalUsername,
-        userId,
-      ]);
-      if (existingUsername) {
-        res.status(400).json({ error: 'User with this username already exists.' });
-        return;
+      if (username) {
+        const finalUsername = username.trim().toLowerCase();
+        const existingUsername = await db.get('SELECT id FROM field_users WHERE LOWER(username) = ? AND id != ?', [
+          finalUsername,
+          userId,
+        ]);
+        if (existingUsername) {
+          res.status(400).json({ error: 'User with this username already exists.' });
+          return;
+        }
       }
 
-      let query = 'UPDATE field_users SET username = ? WHERE id = ?';
-      const params: (string | undefined)[] = [finalUsername, userId];
+      let query = 'UPDATE field_users SET name = ?, email = ?, department = ?, designation = ?, active = ? WHERE id = ?';
+      const params: (string | number | null)[] = [
+        name.trim(),
+        email || null,
+        department || null,
+        designation || null,
+        active !== undefined ? (active ? 1 : 0) : null,
+        userId,
+      ];
 
       if (password && password.trim()) {
         const passwordHash = await bcrypt.hash(password.trim(), 10);
-        query = 'UPDATE field_users SET username = ?, passwordHash = ?, needsPasswordReset = 1 WHERE id = ?';
-        params.splice(1, 0, passwordHash);
+        query = 'UPDATE field_users SET name = ?, email = ?, department = ?, designation = ?, passwordHash = ?, needsPasswordReset = 1, active = ? WHERE id = ?';
+        params.splice(5, 0, passwordHash);
       }
 
       const result = await db.run(query, params);
@@ -189,15 +210,67 @@ router.put(
         return;
       }
 
+      const updatedUser = await db.get<DbUser>(
+        'SELECT id, name, email, username, role, avatar, department, designation, isDepartmentHead, loginEnabled, is_active FROM field_users WHERE id = ?',
+        [userId]
+      );
+
       const response: UpdateFieldUserResponse = {
         id: userId,
-        username: finalUsername,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        username: updatedUser.username,
+        role: updatedUser.role,
+        avatar: updatedUser.avatar,
+        department: updatedUser.department,
+        designation: updatedUser.designation,
+        isDepartmentHead: updatedUser.isDepartmentHead,
+        loginEnabled: updatedUser.loginEnabled,
       };
 
       res.json(response);
     } catch (error) {
       logger.error('Failed to update field user:', error);
       res.status(500).json({ error: 'Failed to update field user details.' });
+    }
+  }
+);
+
+// POST /api/field/users/:id/offboard
+router.post(
+  '/users/:id/offboard',
+  authenticateToken,
+  async (req: AuthRequest, res: ApiResponse<{ message: string }>) => {
+    if (!req.user || req.user.role !== 'it') {
+      res.status(403).json({
+        error: 'Forbidden. Field user offboarding requires IT role.',
+      });
+      return;
+    }
+
+    const userId = String(req.params.id);
+    const { reason, offboarded_at } = req.body;
+
+    if (!reason || !offboarded_at) {
+      res.status(400).json({ error: 'Reason and offboard date are required.' });
+      return;
+    }
+
+    try {
+      const db = getDb();
+      const result = await db.run(
+        'UPDATE field_users SET is_active = 0, offboarded_at = ?, offboarded_by = ?, offboard_reason = ? WHERE id = ?',
+        [offboarded_at, req.user.id, reason, userId]
+      );
+
+      if (result.changes === 0) {
+        res.status(404).json({ error: 'Field user not found.' });
+        return;
+      }
+
+      res.json({ message: 'Field user offboarded successfully.' });
+    } catch {
+      res.status(500).json({ error: 'Failed to offboard field user.' });
     }
   }
 );

@@ -908,12 +908,22 @@ export interface ResetExternalUserPasswordResponse {
 export interface CreateFieldUserRequestBody {
   username: string;
   password: string;
+  name: string;
+  email: string;
+  avatar?: string;
+  department?: string;
+  designation?: string;
   active: boolean;
 }
 
 export interface UpdateFieldUserRequestBody {
-  username: string;
+  name: string;
+  email: string | null;
+  username?: string;
   password?: string;
+  avatar?: string;
+  department?: string | null;
+  designation?: string | null;
   active?: boolean;
 }
 
@@ -934,7 +944,15 @@ export interface CreateFieldUserResponse {
 
 export interface UpdateFieldUserResponse {
   id: string;
+  name: string;
+  email: string | null;
   username: string;
+  role: UserRoles;
+  avatar?: string;
+  department?: string | null;
+  designation?: string | null;
+  isDepartmentHead: number;
+  loginEnabled: number;
 }
 
 export interface DeleteFieldUserResponse {
@@ -953,12 +971,28 @@ export interface ResetFieldUserPasswordResponse {
 export interface CreateNonHqUserRequestBody {
   username: string;
   password: string;
+  name: string;
+  email: string;
+  avatar?: string;
+  department?: string;
+  designation?: string;
+  isDepartmentHead?: boolean;
+  loginEnabled?: boolean;
+  defaultShift?: string;
   active: boolean;
 }
 
 export interface UpdateNonHqUserRequestBody {
-  username: string;
+  name: string;
+  email: string | null;
+  username?: string;
   password?: string;
+  avatar?: string;
+  department?: string | null;
+  designation?: string | null;
+  isDepartmentHead?: boolean;
+  loginEnabled?: boolean;
+  defaultShift?: string;
   active?: boolean;
 }
 
@@ -979,7 +1013,15 @@ export interface CreateNonHqUserResponse {
 
 export interface UpdateNonHqUserResponse {
   id: string;
+  name: string;
+  email: string | null;
   username: string;
+  role: UserRoles;
+  avatar?: string;
+  department?: string | null;
+  designation?: string | null;
+  isDepartmentHead: number;
+  loginEnabled: number;
 }
 
 export interface DeleteNonHqUserResponse {
