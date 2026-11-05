@@ -408,12 +408,7 @@ export const FieldUserManagement: React.FC<FieldUserManagementProps> = ({
               </label>
             </div>
 
-            <button
-              id="btn-add-field-user-submit"
-              type="submit"
-              className="btn btn-primary"
-              style={{ width: '100%' }}
-            >
+            <button id="btn-add-field-user-submit" type="submit" className="btn btn-primary" style={{ width: '100%' }}>
               Create Account
             </button>
           </form>

@@ -188,7 +188,8 @@ export const NonHqUserManagement: React.FC<NonHqUserManagementProps> = ({
     }
   };
 
-  const getRoleBadgeClass = (r: string) => `role-badge-pill role-badge-${r.replace('factory_', '').replace('non_hq_', '')}`;
+  const getRoleBadgeClass = (r: string) =>
+    `role-badge-pill role-badge-${r.replace('factory_', '').replace('non_hq_', '')}`;
 
   const inlineInputStyle: React.CSSProperties = {
     fontSize: '0.85rem',
@@ -410,12 +411,7 @@ export const NonHqUserManagement: React.FC<NonHqUserManagementProps> = ({
               </label>
             </div>
 
-            <button
-              id="btn-add-non-hq-user-submit"
-              type="submit"
-              className="btn btn-primary"
-              style={{ width: '100%' }}
-            >
+            <button id="btn-add-non-hq-user-submit" type="submit" className="btn btn-primary" style={{ width: '100%' }}>
               Create Account
             </button>
           </form>

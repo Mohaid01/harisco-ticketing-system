@@ -204,7 +204,8 @@ router.put(
         }
       }
 
-      let query = 'UPDATE non_hq_users SET name = ?, email = ?, department = ?, designation = ?, active = ? WHERE id = ?';
+      let query =
+        'UPDATE non_hq_users SET name = ?, email = ?, department = ?, designation = ?, active = ? WHERE id = ?';
       const params: (string | number | null)[] = [
         name.trim(),
         email || null,
@@ -216,7 +217,8 @@ router.put(
 
       if (password && password.trim()) {
         const passwordHash = await bcrypt.hash(password.trim(), 10);
-        query = 'UPDATE non_hq_users SET name = ?, email = ?, department = ?, designation = ?, passwordHash = ?, needsPasswordReset = 1, active = ? WHERE id = ?';
+        query =
+          'UPDATE non_hq_users SET name = ?, email = ?, department = ?, designation = ?, passwordHash = ?, needsPasswordReset = 1, active = ? WHERE id = ?';
         params.splice(5, 0, passwordHash);
       }
 

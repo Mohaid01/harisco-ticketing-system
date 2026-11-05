@@ -344,24 +344,24 @@ router.post(
           'UPDATE factory_users SET passwordHash = ?, needsPasswordReset = 0 WHERE id = ?',
           [newPasswordHash, userId]
         );
+        if (factoryResult.changes === 0) {
+          await db.run('UPDATE external_users SET passwordHash = ?, needsPasswordReset = 0 WHERE id = ?', [
+            newPasswordHash,
+            userId,
+          ]);
           if (factoryResult.changes === 0) {
-            await db.run('UPDATE external_users SET passwordHash = ?, needsPasswordReset = 0 WHERE id = ?', [
+            await db.run('UPDATE non_hq_users SET passwordHash = ?, needsPasswordReset = 0 WHERE id = ?', [
               newPasswordHash,
               userId,
             ]);
             if (factoryResult.changes === 0) {
-              await db.run('UPDATE non_hq_users SET passwordHash = ?, needsPasswordReset = 0 WHERE id = ?', [
+              await db.run('UPDATE field_users SET passwordHash = ?, needsPasswordReset = 0 WHERE id = ?', [
                 newPasswordHash,
                 userId,
               ]);
-              if (factoryResult.changes === 0) {
-                await db.run('UPDATE field_users SET passwordHash = ?, needsPasswordReset = 0 WHERE id = ?', [
-                  newPasswordHash,
-                  userId,
-                ]);
-              }
             }
           }
+        }
       }
 
       res.json({ message: 'Password updated successfully.' });
