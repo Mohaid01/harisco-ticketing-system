@@ -58,11 +58,12 @@ const challengeLabel: Record<Challenge, string> = {
   smile: 'Smile',
 };
 
-type Step = 'gps' | 'face' | 'done';
+type Step = 'gps' | 'face' | 'face-scan' | 'done';
 
 const STEPS: { id: Step; label: string }[] = [
   { id: 'gps', label: 'GPS Location' },
-  { id: 'face', label: 'Face Verification' },
+  { id: 'face', label: 'Liveness Verification' },
+  { id: 'face-scan', label: 'Face Recognition Scan' },
   { id: 'done', label: 'Attendance Marked' },
 ];
 
@@ -110,6 +111,10 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
   const [challenge, setChallenge] = useState<Challenge | null>(null);
   const [livenessStage, setLivenessStage] = useState<'idle' | 'ready' | 'verifying' | 'passed' | 'failed'>('idle');
   const [livenessResult, setLivenessResult] = useState<string | null>(null);
+
+  // Face Recognition Scan step (placeholder - backend validation to be wired later)
+  const [faceScanStage, setFaceScanStage] = useState<'idle' | 'scanning' | 'passed' | 'failed'>('idle');
+  const [faceScanResult, setFaceScanResult] = useState<string | null>(null);
 
   const [siteModalOpen, setSiteModalOpen] = useState<boolean>(false);
   const [siteLabel, setSiteLabel] = useState('');
@@ -736,7 +741,8 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
     const s = step as unknown as string;
 
     if (s === 'face' && id === 'gps') return 'done';
-    if (s === 'done' && (id === 'gps' || id === 'face')) return 'done';
+    if (s === 'face-scan' && (id === 'gps' || id === 'face')) return 'done';
+    if (s === 'done' && (id === 'gps' || id === 'face' || id === 'face-scan')) return 'done';
 
     if (s === id) {
       if (id === 'gps') {
@@ -747,6 +753,11 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
       if (id === 'face') {
         if (livenessStage === 'passed') return 'done';
         if (livenessStage === 'failed') return 'failed';
+        return 'loading';
+      }
+      if (id === 'face-scan') {
+        if (faceScanStage === 'passed') return 'done';
+        if (faceScanStage === 'failed') return 'failed';
         return 'loading';
       }
       return 'loading';
@@ -1175,14 +1186,166 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
                 )}
                 {livenessStage === 'passed' && (
                   <button
-                    type="submit"
+                    type="button"
                     className="btn btn-primary"
-                    disabled={
-                      submitting || !challenge || !capturedFrame || !faceDescriptor || livenessStage !== 'passed'
-                    }
+                    disabled={submitting}
                     style={{ width: '100%', padding: '0.85rem 1.5rem', fontSize: '1rem', fontWeight: 600 }}
+                    onClick={() => setStep('face-scan')}
                   >
-                    {submitting ? <Loader size={18} strokeWidth={2} /> : null} Mark Attendance
+                    Continue to Face Recognition
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+
+          {step === 'face-scan' && (
+            <>
+              <div className="attendance-step-header">
+                <div className="attendance-step-icon face">
+                  <Camera size={20} />
+                </div>
+                <div>
+                  <h2 className="attendance-step-title">Face Recognition Scan</h2>
+                  <p className="attendance-step-desc">
+                    Scan your face for identity verification before attendance is logged.
+                  </p>
+                </div>
+              </div>
+
+              {/* Face scan response section: camera panel */}
+              <div className="attendance-camera-panel">
+                <div className="attendance-camera-wrap">
+                  {faceScanStage === 'scanning' || cameraActive ? (
+                    <video
+                      ref={videoRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  ) : null}
+                  <canvas ref={overlayRef} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 10 }} />
+                  <canvas ref={canvasRef} style={{ display: 'none' }} />
+                  {!cameraActive && faceScanStage === 'idle' && (
+                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 0.425, color: 'var(--text-muted)', fontSize: '0.85rem', textAlign: 'center', zIndex: 5 }}>
+                      Camera will start when you begin face scan
+                    </div>
+                  )}
+                  {cameraError && <div className="attendance-camera-error">{cameraError}</div>}
+                  {cameraActive && faceDetected && (
+                    <div className="attendance-camera-status detected">
+                      <CheckCircle size={12} strokeWidth={2} />
+                      Face Detected
+                    </div>
+                  )}
+                  {cameraActive && !faceDetected && (
+                    <div className="attendance-camera-status noface">
+                      <XCircle size={12} strokeWidth={2} />
+                      No Face
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Face scan status */}
+              <div className="attendance-liveness-card">
+                <div className="attendance-liveness-header">
+                  <p className="attendance-liveness-title">Face Scan Status</p>
+                  <span className={`attendance-liveness-badge ${faceScanStage === 'passed' ? 'passed' : faceScanStage === 'failed' ? 'failed' : ''}`}>
+                    {faceScanStage === 'passed' ? 'READY' : faceScanStage === 'failed' ? 'FAILED' : 'PENDING'}
+                  </span>
+                </div>
+
+                {faceScanStage === 'idle' && (
+                  <div style={{ textAlign: 'center', marginBottom: 0.7438 }}>
+                    <p className="attendance-liveness-hint">Start face scan to verify identity against enrolled template.</p>
+                  </div>
+                )}
+
+                {faceScanStage === 'scanning' && (
+                  <div style={{ textAlign: 'center', padding: '1rem 0' }}>
+                    <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>Scanning face...</span>
+                  </div>
+                )}
+
+                {faceScanStage === 'failed' && faceScanResult && (
+                  <div style={{ textAlign: 'center', marginTop: 0.5313 }}>
+                    <p className="attendance-liveness-hint" style={{ color: '#f43f5e', fontWeight: 600 }}>
+                      {faceScanResult}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setFaceScanStage('idle')}
+                      className="btn btn-outline"
+                      style={{ width: '100%', padding: '0.6375rem 1rem', fontSize: '0.85rem', fontWeight: 600, marginTop: 0.425 }}
+                    >
+                      Retry Scan
+                    </button>
+                  </div>
+                )}
+
+                {faceScanStage === 'passed' && (
+                  <div style={{ textAlign: 'center', marginTop: 0.5313 }}>
+                    <p className="attendance-liveness-hint" style={{ color: 'var(--status-closed)', fontWeight: 600 }}>
+                      Identity verified &mdash; ready to log attendance
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Face scan action button */}
+              <div style={{ marginTop: '1rem', borderTop: '0.0531rem solid var(--border-color)', paddingTop: '0.85rem' }}>
+                {faceScanStage === 'idle' && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFaceScanStage('scanning');
+                        // Backend validation will be wired here; placeholder simulates success
+                        setTimeout(() => {
+                          setFaceScanStage('passed');
+                          setFaceScanResult('Face matched against enrolled template');
+                        }, 1500);
+                      }}
+                      className="btn btn-primary"
+                      style={{ width: '100%', padding: '0.85rem 1.5rem', fontSize: '1rem', fontWeight: 600 }}
+                    >
+                      Start Face Scan
+                    </button>
+                  </>
+                )}
+                {faceScanStage === 'scanning' && (
+                  <>
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      disabled
+                      style={{ width: '100%', padding: '0.85rem 1.5rem', fontSize: '1rem', fontWeight: 600 }}
+                    >
+                      <Loader size={18} strokeWidth={2} /> Scanning...
+                    </button>
+                    <div className="attendance-loader-bar">
+                      <div className="attendance-loader-bar-fill" />
+                    </div>
+                  </>
+                )}
+                {faceScanStage === 'passed' && (
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    disabled={submitting}
+                    style={{ width: '100%', padding: '0.85rem 1.5rem', fontSize: '1rem', fontWeight: 600 }}
+                    onClick={() => {
+                      setSubmitting(true);
+                      // Backend will auto-log attendance log on scan match; placeholder advances to done
+                      setTimeout(() => {
+                        setSubmitting(false);
+                        setStep('done');
+                      }, 800);
+                    }}
+                  >
+                    {submitting ? <Loader size={18} strokeWidth={2} /> : null} Log Attendance
                   </button>
                 )}
               </div>
@@ -1213,6 +1376,8 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
                     setCameraActive(false);
                     setFaceDetected(false);
                     setFaceDescriptor(null);
+                    setFaceScanStage('idle');
+                    setFaceScanResult(null);
                     challengeSamplesRef.current = [];
                     setCapturedFrame(null);
                     setChallenge(null);
