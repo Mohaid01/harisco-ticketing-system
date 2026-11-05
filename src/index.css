@@ -1593,10 +1593,10 @@ h1.page-title {
 .attendance-camera-wrap {
   position: relative;
   width: 100%;
-  max-width: 48rem;
+  max-width: 30rem;
   margin: 0 auto;
-  aspect-ratio: 16 / 9;
-  background-color: #000;
+  aspect-ratio: 3 / 4;
+  background-color: #090d16;
   border: 0.0531rem solid var(--border-color);
   border-radius: var(--radius-lg);
   overflow: hidden;
@@ -1605,11 +1605,6 @@ h1.page-title {
   justify-content: center;
 }
 
-@media screen and (max-width: 48rem) {
-  .attendance-camera-wrap {
-    aspect-ratio: 9 / 16;
-  }
-}
 
 .attendance-camera-video {
   width: 100%;
