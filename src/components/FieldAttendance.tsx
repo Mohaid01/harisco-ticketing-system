@@ -241,43 +241,61 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
     }
 
     // Scale canvas coordinates from raw video space → displayed canvas space.
-    // The canvas element is sized to 100%×100% via CSS, so we must draw
-    // using the video's intrinsic dimensions and let the canvas scale.
+    // The canvas element is sized to 100%×100% via CSS, so we scale drawing
+    // coordinates by sx/sy so they line up with the rendered video.
     const drawOverlay = (
       ovCtx: CanvasRenderingContext2D,
-      vw: number,
-      vh: number,
       detection: faceapi.FaceDetection | null,
       landmarks: faceapi.FaceLandmarks68 | null,
+      sx: number,
+      sy: number,
+      dw: number,
+      dh: number,
     ) => {
-      ovCtx.clearRect(0, 0, vw, vh);
+      ovCtx.clearRect(0, 0, dw, dh);
 
-      const midX = vw / 2;
-      const midY = vh / 2;
+      const midX = dw / 2;
+      const midY = dh / 2;
 
-      // Always draw the guide oval so users know where to position their face
-      // even before detection fires
+      // Always draw the guide frame so users know where to position their face
+      // even before detection fires – face-shaped rounded rectangle
       const guideColor = 'rgba(255,255,255,0.45)';
       ovCtx.save();
       ovCtx.strokeStyle = guideColor;
       ovCtx.lineWidth = 2.5;
       ovCtx.setLineDash([10, 6]);
+
+      // Face-shaped rounded rectangle guide (wider at top, narrower at chin)
+      const gw = dw * 0.28;
+      const gh = dh * 0.42;
+      const gx = midX - gw / 2;
+      const gy = midY - gh / 2;
+      const radius = Math.min(gw, gh) * 0.18;
+
       ovCtx.beginPath();
-      // Draw an oval (face-shaped) guide centred in the frame
-      ovCtx.ellipse(midX, midY, vw * 0.22, vh * 0.37, 0, 0, Math.PI * 2);
+      ovCtx.moveTo(gx + radius, gy);
+      ovCtx.lineTo(gx + gw - radius, gy);
+      ovCtx.quadraticCurveTo(gx + gw, gy, gx + gw, gy + radius);
+      ovCtx.lineTo(gx + gw, gy + gh - radius);
+      ovCtx.quadraticCurveTo(gx + gw, gy + gh, gx + gw - radius, gy + gh);
+      ovCtx.lineTo(gx + radius, gy + gh);
+      ovCtx.quadraticCurveTo(gx, gy + gh, gx, gy + gh - radius);
+      ovCtx.lineTo(gx, gy + radius);
+      ovCtx.quadraticCurveTo(gx, gy, gx + radius, gy);
+      ovCtx.closePath();
       ovCtx.stroke();
       ovCtx.setLineDash([]);
       ovCtx.restore();
 
-      // Label above the oval
-      ovCtx.save();
-      ovCtx.font = 'bold 13px system-ui, sans-serif';
-      ovCtx.textAlign = 'center';
-      ovCtx.fillStyle = guideColor;
-      ovCtx.fillText('Position face here', midX, midY - vh * 0.38 - 8);
-      ovCtx.restore();
-
       if (!detection) {
+        // "Position face here" label when no face is detected
+        ovCtx.save();
+        ovCtx.font = 'bold 13px system-ui, sans-serif';
+        ovCtx.textAlign = 'center';
+        ovCtx.fillStyle = guideColor;
+        ovCtx.fillText('Position face here', midX, gy - 12);
+        ovCtx.restore();
+
         // "No face" label
         ovCtx.save();
         ovCtx.font = 'bold 15px system-ui, sans-serif';
@@ -289,52 +307,67 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
       }
 
       const box = detection.box;
-      const faceHeight = box.height / vh;
-      const faceCenterX = box.x + box.width / 2;
-      const faceCenterY = box.y + box.height / 2;
+      // Scale detection box from video space → canvas display space
+      const sxBox = box.x * sx;
+      const syBox = box.y * sy;
+      const swBox = box.width * sx;
+      const shBox = box.height * sy;
+
+      const faceHeight = shBox / dh;
+      const faceCenterX = (box.x + box.width / 2) * sx;
+      const faceCenterY = (box.y + box.height / 2) * sy;
       const distFromCenter = Math.sqrt((faceCenterX - midX) ** 2 + (faceCenterY - midY) ** 2);
       const isGoodSize = faceHeight > 0.18 && faceHeight < 0.6;
-      const isCentered = distFromCenter < vw * 0.12 && isGoodSize;
+      const isCentered = distFromCenter < dw * 0.12 && isGoodSize;
       const color = isCentered ? '#10b981' : isGoodSize ? '#f59e0b' : '#f43f5e';
 
       // Face bounding box
       ovCtx.save();
       ovCtx.strokeStyle = color;
       ovCtx.lineWidth = 3;
-      ovCtx.strokeRect(box.x, box.y, box.width, box.height);
+      ovCtx.strokeRect(sxBox, syBox, swBox, shBox);
 
       // Confidence label
       ovCtx.font = 'bold 13px system-ui, sans-serif';
       ovCtx.fillStyle = color;
       ovCtx.textAlign = 'left';
       const score = Math.round((detection as unknown as { score: number }).score * 100);
-      ovCtx.fillText(`Face ${score}%`, box.x + 2, box.y > 16 ? box.y - 6 : box.y + box.height + 16);
+      ovCtx.fillText(`Face ${score}%`, sxBox + 2, syBox > 16 ? syBox - 6 : syBox + shBox + 16);
       ovCtx.restore();
 
-      // Landmark dots
+      // Landmark dots (scaled)
       if (landmarks) {
         ovCtx.save();
         ovCtx.fillStyle = isCentered ? '#10b981' : 'rgba(255,255,255,0.7)';
         for (const p of landmarks.positions) {
           ovCtx.beginPath();
-          ovCtx.arc(p.x, p.y, 2, 0, Math.PI * 2);
+          ovCtx.arc(p.x * sx, p.y * sy, 2, 0, Math.PI * 2);
           ovCtx.fill();
         }
         ovCtx.restore();
       }
 
-      // Update guide oval colour to reflect alignment
+      // Update guide frame colour to reflect alignment
       ovCtx.save();
       ovCtx.strokeStyle = isCentered ? 'rgba(16,185,129,0.85)' : 'rgba(255,255,255,0.4)';
       ovCtx.lineWidth = 2.5;
       ovCtx.setLineDash([10, 6]);
       ovCtx.beginPath();
-      ovCtx.ellipse(midX, midY, vw * 0.22, vh * 0.37, 0, 0, Math.PI * 2);
+      ovCtx.moveTo(gx + radius, gy);
+      ovCtx.lineTo(gx + gw - radius, gy);
+      ovCtx.quadraticCurveTo(gx + gw, gy, gx + gw, gy + radius);
+      ovCtx.lineTo(gx + gw, gy + gh - radius);
+      ovCtx.quadraticCurveTo(gx + gw, gy + gh, gx + gw - radius, gy + gh);
+      ovCtx.lineTo(gx + radius, gy + gh);
+      ovCtx.quadraticCurveTo(gx, gy + gh, gx, gy + gh - radius);
+      ovCtx.lineTo(gx, gy + radius);
+      ovCtx.quadraticCurveTo(gx, gy, gx + radius, gy);
+      ovCtx.closePath();
       ovCtx.stroke();
       ovCtx.setLineDash([]);
       ovCtx.restore();
 
-      // Status text above guide oval
+      // Status text above guide frame
       ovCtx.save();
       ovCtx.font = 'bold 13px system-ui, sans-serif';
       ovCtx.textAlign = 'center';
@@ -343,7 +376,7 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
       if (faceHeight > 0.6) hint = 'Move back a little';
       else if (isGoodSize && !isCentered) hint = 'Centre your face';
       else if (isCentered) hint = '✓ Perfect!';
-      ovCtx.fillText(hint, midX, midY - vh * 0.38 - 8);
+      ovCtx.fillText(hint, midX, gy - 12);
       ovCtx.restore();
     };
 
@@ -359,9 +392,18 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
         const ovCtx = overlay.getContext('2d');
         const vw = video.videoWidth;
         const vh = video.videoHeight;
-        // Keep canvas intrinsic size in sync with video resolution
-        if (overlay.width !== vw) overlay.width = vw;
-        if (overlay.height !== vh) overlay.height = vh;
+
+        // Match canvas intrinsic size to CSS display size so drawings align
+        const rect = video.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        const dw = Math.max(rect.width * dpr, 1);
+        const dh = Math.max(rect.height * dpr, 1);
+        if (overlay.width !== dw) overlay.width = dw;
+        if (overlay.height !== dh) overlay.height = dh;
+
+        // Scale factors: video pixel space → canvas display pixel space
+        const sx = dw / vw;
+        const sy = dh / vh;
 
         try {
           // Single pass: detect + landmarks + descriptor together (no double inference)
@@ -376,7 +418,7 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
             setFaceDescriptor(descriptor);
             faceDescriptorRef.current = descriptor;
 
-            if (ovCtx) drawOverlay(ovCtx, vw, vh, result.detection, result.landmarks);
+            if (ovCtx) drawOverlay(ovCtx, result.detection, result.landmarks, sx, sy, dw, dh);
 
             // Auto-detect challenge movement using refs (always fresh values)
             if (!verifying && livenessStageRef.current === 'ready') {
@@ -406,7 +448,7 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
             setFaceDetected(false);
             setFaceDescriptor(null);
             faceDescriptorRef.current = null;
-            if (ovCtx) drawOverlay(ovCtx, vw, vh, null, null);
+            if (ovCtx) drawOverlay(ovCtx, null, null, sx, sy, dw, dh);
           }
         } catch {
           // silently continue on inference errors
@@ -879,7 +921,6 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
                       width: '100%',
                       height: '100%',
                       objectFit: 'cover',
-                      transform: 'scaleX(-1)', // mirror front camera
                     }}
                   />
                   <canvas
@@ -892,7 +933,6 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
                       height: '100%',
                       pointerEvents: 'none',
                       zIndex: 10,
-                      transform: 'scaleX(-1)', // mirror to match video
                     }}
                   />
                   <canvas ref={canvasRef} style={{ display: 'none' }} />
