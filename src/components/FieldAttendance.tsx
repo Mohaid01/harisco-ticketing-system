@@ -73,6 +73,13 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
   const streamRef = useRef<MediaStream | null>(null);
   const animationFrameRef = useRef<number>(0);
 
+  // Refs that mirror state so the rAF loop never sees stale closures
+  const faceModelsLoadedRef = useRef(false);
+  const livenessStageRef = useRef<'idle' | 'ready' | 'verifying' | 'passed' | 'failed'>('idle');
+  const challengeRef = useRef<Challenge | null>(null);
+  const challengeStartDescriptorRef = useRef<number[] | null>(null);
+  const faceDescriptorRef = useRef<number[] | null>(null);
+
   const [logs, setLogs] = useState<FieldAttendanceLog[]>([]);
   const [settings, setSettings] = useState<FieldAttendanceSetting[]>([]);
   const [fieldUsers, setFieldUsers] = useState<{ id: string; username: string }[]>([]);
@@ -110,6 +117,13 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
   const [siteCenterLat, setSiteCenterLat] = useState<number | null>(null);
   const [siteCenterLng, setSiteCenterLng] = useState<number | null>(null);
   const [siteRadius, setSiteRadius] = useState<number | null>(50);
+
+  // Keep mirror-refs in sync with state so the rAF loop always has fresh values
+  useEffect(() => { faceModelsLoadedRef.current = faceModelsLoaded; }, [faceModelsLoaded]);
+  useEffect(() => { livenessStageRef.current = livenessStage; }, [livenessStage]);
+  useEffect(() => { challengeRef.current = challenge; }, [challenge]);
+  useEffect(() => { challengeStartDescriptorRef.current = challengeStartDescriptor; }, [challengeStartDescriptor]);
+  useEffect(() => { faceDescriptorRef.current = faceDescriptor; }, [faceDescriptor]);
 
   const fetchLogs = useCallback(async () => {
     try {
@@ -165,7 +179,7 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
     setCameraLoading(true);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment', width: 640, height: 480 },
+        video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
       });
       streamRef.current = stream;
       const video = videoRef.current;
@@ -174,9 +188,11 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
         video.onplay = () => {
           setCameraActive(true);
           setCameraLoading(false);
-          startFaceDetectionLoop();
         };
         await video.play();
+        // Start the detection loop after play() resolves so we always use the latest
+        // version of the loop (not a stale closure from before models were loaded)
+        startFaceDetectionLoop();
       }
     } catch (err) {
       setCameraError(err instanceof Error ? err.message : 'Failed to access camera.');
@@ -202,104 +218,6 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
     setFaceDescriptor(null);
   }, []);
 
-  const startFaceDetectionLoop = useCallback(() => {
-    const video = videoRef.current;
-    const overlay = overlayRef.current;
-    if (!video || !overlay) return;
-
-    const tick = async () => {
-      if (video.readyState >= 2 && faceModelsLoaded && video.videoWidth > 0 && video.videoHeight > 0) {
-        const ovCtx = overlay.getContext('2d');
-        if (ovCtx) {
-          overlay.width = video.videoWidth;
-          overlay.height = video.videoHeight;
-          ovCtx.clearRect(0, 0, overlay.width, overlay.height);
-        }
-
-        try {
-          const detection = await faceapi
-            .detectSingleFace(video, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.1 }));
-
-          if (detection) {
-            setFaceDetected(true);
-
-            try {
-              const withLandmarks = await faceapi
-                .detectSingleFace(video, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.1 }))
-                .withFaceLandmarks();
-              setFaceDescriptor(Array.from((withLandmarks as any).descriptor || []));
-            } catch {
-              // silently continue
-            }
-
-            const box = detection.box;
-            const faceHeight = box.height / video.videoHeight;
-            const midX = video.videoWidth / 2;
-            const midY = video.videoHeight / 2;
-
-            if (ovCtx) {
-              const isGood = faceHeight > 0.15 && faceHeight < 0.45;
-              ovCtx.strokeStyle = isGood ? '#10b981' : '#f43f5e';
-              ovCtx.lineWidth = 4;
-              ovCtx.strokeRect(box.x, box.y, box.width, box.height);
-
-              ovCtx.fillStyle = isGood ? '#10b981' : '#f43f5e';
-              ovCtx.font = 'bold 14px system-ui';
-              ovCtx.fillText(`Face (${Math.round((detection as any).score * 100)}%)`, box.x, box.y - 10);
-
-              if ((detection as any).landmarks) {
-                (detection as any).landmarks.positions.forEach((p: { x: number; y: number }) => {
-                  ovCtx.fillStyle = '#10b981';
-                  ovCtx.beginPath();
-                  ovCtx.arc(p.x, p.y, 3, 0, Math.PI * 2);
-                  ovCtx.fill();
-                });
-              }
-
-              ovCtx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-              ovCtx.lineWidth = 2;
-              ovCtx.setLineDash([8, 4]);
-              ovCtx.beginPath();
-              ovCtx.arc(midX, midY, 70, 0, Math.PI * 2);
-              ovCtx.stroke();
-              ovCtx.setLineDash([]);
-            }
-
-            // Auto-verify challenge action during 'ready' state
-            if (livenessStage === 'ready') {
-              const moved = await verifyChallengeMovement();
-              if (moved) {
-                setLivenessStage('verifying');
-                setLivenessResult(null);
-                await new Promise((r) => setTimeout(r, 400));
-                const frame = captureFrame();
-                if (frame) {
-                  setCapturedFrame(frame);
-                  setLivenessStage('passed');
-                  setLivenessResult('Liveness verified — ready to mark attendance');
-                }
-              }
-            }
-          } else {
-            setFaceDetected(false);
-            setFaceDescriptor(null);
-            if (ovCtx) {
-              ovCtx.fillStyle = 'rgba(244, 63, 94, 0.8)';
-              ovCtx.font = 'bold 16px system-ui';
-              ovCtx.fillText('No face detected', 20, 40);
-            }
-          }
-        } catch {
-          // silently continue
-        }
-      } else {
-        // Video not ready yet, keep polling
-      }
-      animationFrameRef.current = requestAnimationFrame(tick);
-    };
-    tick();
-  }, [faceModelsLoaded, livenessStage, challenge, challengeStartDescriptor]);
-
   const captureFrame = useCallback((): string | null => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
@@ -311,6 +229,196 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     return canvas.toDataURL('image/jpeg', 0.85);
   }, []);
+
+  const startFaceDetectionLoop = useCallback(() => {
+    const video = videoRef.current;
+    const overlay = overlayRef.current;
+    if (!video || !overlay) return;
+
+    // Cancel any previous loop before starting a fresh one
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+
+    // Scale canvas coordinates from raw video space → displayed canvas space.
+    // The canvas element is sized to 100%×100% via CSS, so we must draw
+    // using the video's intrinsic dimensions and let the canvas scale.
+    const drawOverlay = (
+      ovCtx: CanvasRenderingContext2D,
+      vw: number,
+      vh: number,
+      detection: faceapi.FaceDetection | null,
+      landmarks: faceapi.FaceLandmarks68 | null,
+    ) => {
+      ovCtx.clearRect(0, 0, vw, vh);
+
+      const midX = vw / 2;
+      const midY = vh / 2;
+
+      // Always draw the guide oval so users know where to position their face
+      // even before detection fires
+      const guideColor = 'rgba(255,255,255,0.45)';
+      ovCtx.save();
+      ovCtx.strokeStyle = guideColor;
+      ovCtx.lineWidth = 2.5;
+      ovCtx.setLineDash([10, 6]);
+      ovCtx.beginPath();
+      // Draw an oval (face-shaped) guide centred in the frame
+      ovCtx.ellipse(midX, midY, vw * 0.22, vh * 0.37, 0, 0, Math.PI * 2);
+      ovCtx.stroke();
+      ovCtx.setLineDash([]);
+      ovCtx.restore();
+
+      // Label above the oval
+      ovCtx.save();
+      ovCtx.font = 'bold 13px system-ui, sans-serif';
+      ovCtx.textAlign = 'center';
+      ovCtx.fillStyle = guideColor;
+      ovCtx.fillText('Position face here', midX, midY - vh * 0.38 - 8);
+      ovCtx.restore();
+
+      if (!detection) {
+        // "No face" label
+        ovCtx.save();
+        ovCtx.font = 'bold 15px system-ui, sans-serif';
+        ovCtx.fillStyle = 'rgba(244,63,94,0.9)';
+        ovCtx.textAlign = 'left';
+        ovCtx.fillText('No face detected', 14, 32);
+        ovCtx.restore();
+        return;
+      }
+
+      const box = detection.box;
+      const faceHeight = box.height / vh;
+      const faceCenterX = box.x + box.width / 2;
+      const faceCenterY = box.y + box.height / 2;
+      const distFromCenter = Math.sqrt((faceCenterX - midX) ** 2 + (faceCenterY - midY) ** 2);
+      const isGoodSize = faceHeight > 0.18 && faceHeight < 0.6;
+      const isCentered = distFromCenter < vw * 0.12 && isGoodSize;
+      const color = isCentered ? '#10b981' : isGoodSize ? '#f59e0b' : '#f43f5e';
+
+      // Face bounding box
+      ovCtx.save();
+      ovCtx.strokeStyle = color;
+      ovCtx.lineWidth = 3;
+      ovCtx.strokeRect(box.x, box.y, box.width, box.height);
+
+      // Confidence label
+      ovCtx.font = 'bold 13px system-ui, sans-serif';
+      ovCtx.fillStyle = color;
+      ovCtx.textAlign = 'left';
+      const score = Math.round((detection as unknown as { score: number }).score * 100);
+      ovCtx.fillText(`Face ${score}%`, box.x + 2, box.y > 16 ? box.y - 6 : box.y + box.height + 16);
+      ovCtx.restore();
+
+      // Landmark dots
+      if (landmarks) {
+        ovCtx.save();
+        ovCtx.fillStyle = isCentered ? '#10b981' : 'rgba(255,255,255,0.7)';
+        for (const p of landmarks.positions) {
+          ovCtx.beginPath();
+          ovCtx.arc(p.x, p.y, 2, 0, Math.PI * 2);
+          ovCtx.fill();
+        }
+        ovCtx.restore();
+      }
+
+      // Update guide oval colour to reflect alignment
+      ovCtx.save();
+      ovCtx.strokeStyle = isCentered ? 'rgba(16,185,129,0.85)' : 'rgba(255,255,255,0.4)';
+      ovCtx.lineWidth = 2.5;
+      ovCtx.setLineDash([10, 6]);
+      ovCtx.beginPath();
+      ovCtx.ellipse(midX, midY, vw * 0.22, vh * 0.37, 0, 0, Math.PI * 2);
+      ovCtx.stroke();
+      ovCtx.setLineDash([]);
+      ovCtx.restore();
+
+      // Status text above guide oval
+      ovCtx.save();
+      ovCtx.font = 'bold 13px system-ui, sans-serif';
+      ovCtx.textAlign = 'center';
+      ovCtx.fillStyle = isCentered ? '#10b981' : isGoodSize ? '#f59e0b' : 'rgba(244,63,94,0.9)';
+      let hint = 'Move closer';
+      if (faceHeight > 0.6) hint = 'Move back a little';
+      else if (isGoodSize && !isCentered) hint = 'Centre your face';
+      else if (isCentered) hint = '✓ Perfect!';
+      ovCtx.fillText(hint, midX, midY - vh * 0.38 - 8);
+      ovCtx.restore();
+    };
+
+    let verifying = false;
+
+    const tick = async () => {
+      if (
+        video.readyState >= 2 &&
+        faceModelsLoadedRef.current &&
+        video.videoWidth > 0 &&
+        video.videoHeight > 0
+      ) {
+        const ovCtx = overlay.getContext('2d');
+        const vw = video.videoWidth;
+        const vh = video.videoHeight;
+        // Keep canvas intrinsic size in sync with video resolution
+        if (overlay.width !== vw) overlay.width = vw;
+        if (overlay.height !== vh) overlay.height = vh;
+
+        try {
+          // Single pass: detect + landmarks + descriptor together (no double inference)
+          const result = await faceapi
+            .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.3 }))
+            .withFaceLandmarks()
+            .withFaceDescriptor();
+
+          if (result) {
+            const descriptor = Array.from(result.descriptor);
+            setFaceDetected(true);
+            setFaceDescriptor(descriptor);
+            faceDescriptorRef.current = descriptor;
+
+            if (ovCtx) drawOverlay(ovCtx, vw, vh, result.detection, result.landmarks);
+
+            // Auto-detect challenge movement using refs (always fresh values)
+            if (!verifying && livenessStageRef.current === 'ready') {
+              const start = challengeStartDescriptorRef.current;
+              if (start && start.length === descriptor.length) {
+                let distSq = 0;
+                for (let i = 0; i < descriptor.length; i++) {
+                  distSq += (descriptor[i] - start[i]) ** 2;
+                }
+                const dist = Math.sqrt(distSq);
+                const threshold = challengeRef.current === 'blink' ? 0.25 : 0.4;
+                if (dist > threshold) {
+                  verifying = true;
+                  setLivenessStage('verifying');
+                  setLivenessResult(null);
+                  await new Promise((r) => setTimeout(r, 400));
+                  const frame = captureFrame();
+                  if (frame) {
+                    setCapturedFrame(frame);
+                    setLivenessStage('passed');
+                    setLivenessResult('Liveness verified — ready to mark attendance');
+                  }
+                }
+              }
+            }
+          } else {
+            setFaceDetected(false);
+            setFaceDescriptor(null);
+            faceDescriptorRef.current = null;
+            if (ovCtx) drawOverlay(ovCtx, vw, vh, null, null);
+          }
+        } catch {
+          // silently continue on inference errors
+        }
+      }
+      animationFrameRef.current = requestAnimationFrame(tick);
+    };
+    tick();
+    // No state/closure deps — the loop reads everything through refs
+  }, [captureFrame]);
+
+
 
   const requestGeolocation = useCallback(() => {
     if (!navigator.geolocation) {
@@ -364,29 +472,19 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
 
   const nextChallenge = useCallback(() => {
     const c = CHALLENGES[Math.floor(Math.random() * CHALLENGES.length)];
+    // Snapshot the current descriptor as the baseline for movement comparison.
+    // Also update the refs so the rAF loop sees fresh values immediately.
+    const currentDescriptor = faceDescriptorRef.current;
     setChallenge(c);
-    setChallengeStartDescriptor(faceDescriptor);
+    challengeRef.current = c;
+    setChallengeStartDescriptor(currentDescriptor);
+    challengeStartDescriptorRef.current = currentDescriptor;
     setLivenessStage('ready');
+    livenessStageRef.current = 'ready';
     setLivenessResult(null);
     setCapturedFrame(null);
-  }, [faceDescriptor]);
+  }, []);
 
-  const verifyChallengeMovement = async (): Promise<boolean> => {
-    if (!challenge || !challengeStartDescriptor) return false;
-    if (!faceDetected || !faceDescriptor) return false;
-
-    const current = faceDescriptor;
-    const start = challengeStartDescriptor;
-    let distance = 0;
-    for (let i = 0; i < current.length; i++) {
-      distance += (current[i] - start[i]) ** 2;
-    }
-    const dist = Math.sqrt(distance);
-
-    // Different thresholds per challenge type
-    const threshold = challenge === 'blink' ? 0.3 : 0.5;
-    return dist > threshold;
-  };
 
   const handleStartLiveness = useCallback(async () => {
     if (!cameraActive) {
@@ -541,7 +639,7 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
   const loadFaceModels = useCallback(async () => {
     try {
       await Promise.all([
-        faceapi.nets.ssdMobilenetv1.loadFromUri('/models'),
+        faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
         faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
         faceapi.nets.faceRecognitionNet.loadFromUri('/models'),
       ]);
@@ -775,9 +873,13 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
                     muted
                     style={{
                       display: cameraActive ? 'block' : 'none',
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
                       width: '100%',
                       height: '100%',
                       objectFit: 'cover',
+                      transform: 'scaleX(-1)', // mirror front camera
                     }}
                   />
                   <canvas
@@ -790,6 +892,7 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
                       height: '100%',
                       pointerEvents: 'none',
                       zIndex: 10,
+                      transform: 'scaleX(-1)', // mirror to match video
                     }}
                   />
                   <canvas ref={canvasRef} style={{ display: 'none' }} />
