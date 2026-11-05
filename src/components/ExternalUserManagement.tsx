@@ -3,11 +3,13 @@ import React, { useState } from 'react';
 
 import type { AppUser } from '../types';
 
+import { formatEmployeeCode } from '../utils';
 import { ResetUserPasswordModal } from './Modals/ResetUserPasswordModal';
 import { UserCarousel } from './UserCarousel';
 
 interface ExternalUserManagementProps {
   users: AppUser[];
+  allUsers: AppUser[];
   currentUser: AppUser;
   token: string;
   onAddUser: (data: { username: string; password: string }) => void;
@@ -18,6 +20,7 @@ interface ExternalUserManagementProps {
 
 export const ExternalUserManagement: React.FC<ExternalUserManagementProps> = ({
   users,
+  allUsers,
   currentUser,
   token,
   onAddUser,
@@ -44,13 +47,15 @@ export const ExternalUserManagement: React.FC<ExternalUserManagementProps> = ({
       return;
     }
 
-    if (users.some((u) => u.username?.toLowerCase() === username.trim().toLowerCase())) {
-      setErrorMsg('A user with this username already exists.');
+    const formattedCode = formatEmployeeCode(username.trim());
+
+    if (allUsers.some((u) => u.username?.toLowerCase() === formattedCode.toLowerCase())) {
+      setErrorMsg('A user with this employee code already exists.');
       return;
     }
 
     onAddUser({
-      username: username.trim(),
+      username: formattedCode,
       password: password.trim(),
     });
 
@@ -65,7 +70,7 @@ export const ExternalUserManagement: React.FC<ExternalUserManagementProps> = ({
     }
     if (onUpdateUser) {
       onUpdateUser(userId, {
-        username: editUsername.trim(),
+        username: formatEmployeeCode(editUsername.trim()),
         password: editPassword.trim() || undefined,
       });
     }

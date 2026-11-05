@@ -2458,6 +2458,7 @@ function App() {
           ) : activeTab === 'users' && currentUser.role === 'it' ? (
             <UserManagement
               users={users}
+              allUsers={allAssignableUsers}
               currentUser={currentUser}
               token={token}
               onAddUser={handleAddUser}
@@ -2469,6 +2470,7 @@ function App() {
           ) : activeTab === 'factory_users' && (currentUser.role === 'factory_it' || currentUser.role === 'it') ? (
             <FactoryUserManagement
               users={factoryUsers}
+              allUsers={allAssignableUsers}
               currentUser={currentUser}
               token={token}
               onAddUser={handleAddFactoryUser}
@@ -2480,6 +2482,7 @@ function App() {
           ) : activeTab === 'external_users' && currentUser.role === 'it' ? (
             <ExternalUserManagement
               users={externalUsers}
+              allUsers={allAssignableUsers}
               currentUser={currentUser}
               token={token}
               onAddUser={handleAddExternalUser}
@@ -2490,6 +2493,7 @@ function App() {
           ) : activeTab === 'field_users' && currentUser.role === 'it' ? (
             <FieldUserManagement
               users={fieldUsers}
+              allUsers={allAssignableUsers}
               currentUser={currentUser}
               token={token}
               onAddUser={handleAddFieldUser}
@@ -2501,6 +2505,7 @@ function App() {
           ) : activeTab === 'non_hq_users' && currentUser.role === 'it' ? (
             <NonHqUserManagement
               users={nonHqUsers}
+              allUsers={allAssignableUsers}
               currentUser={currentUser}
               token={token}
               onAddUser={handleAddNonHqUser}

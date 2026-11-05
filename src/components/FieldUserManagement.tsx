@@ -9,6 +9,7 @@ import { UserCarousel } from './UserCarousel';
 
 interface FieldUserManagementProps {
   users: AppUser[];
+  allUsers: AppUser[];
   currentUser: AppUser;
   token: string;
   onAddUser: (data: {
@@ -39,6 +40,7 @@ interface FieldUserManagementProps {
 
 export const FieldUserManagement: React.FC<FieldUserManagementProps> = ({
   users,
+  allUsers,
   currentUser,
   token,
   onAddUser,
@@ -113,7 +115,7 @@ export const FieldUserManagement: React.FC<FieldUserManagementProps> = ({
 
     const formattedCode = formatEmployeeCode(username.trim());
 
-    if (users.some((u) => u.username?.toLowerCase() === formattedCode.toLowerCase())) {
+    if (allUsers.some((u) => u.username?.toLowerCase() === formattedCode.toLowerCase())) {
       setErrorMsg('A user with this employee code already exists.');
       return;
     }

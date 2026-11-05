@@ -67,15 +67,24 @@ router.post(
       return;
     }
 
-    const finalUsername = username.toLowerCase().trim();
+    // Format employee code to HC-XXXXX
+    const rawUsername = username.trim();
+    const numericPart = rawUsername.replace(/\D/g, '');
+    const formattedUsername = numericPart ? `HC-${numericPart.padStart(5, '0')}` : `HC-${rawUsername}`;
 
     try {
       const db = getDb();
 
-      const existingUsername = await db.get('SELECT id FROM external_users WHERE username = ?', [finalUsername]);
-      if (existingUsername) {
-        res.status(400).json({ error: 'User with this username already exists.' });
-        return;
+      // Check username uniqueness across ALL user tables
+      const tables = ['users', 'factory_users', 'external_users', 'field_users', 'non_hq_users'];
+      for (const table of tables) {
+        const existing = await db.get(`SELECT id FROM ${table} WHERE LOWER(username) = ?`, [
+          formattedUsername.toLowerCase(),
+        ]);
+        if (existing) {
+          res.status(400).json({ error: 'Employee code already exists across user tables.' });
+          return;
+        }
       }
 
       const passwordHash = await bcrypt.hash(password, 10);
@@ -85,9 +94,9 @@ router.post(
         'INSERT INTO external_users (id, name, email, username, role, avatar, passwordHash, needsPasswordReset, department, designation, isDepartmentHead, loginEnabled) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)',
         [
           userId,
-          finalUsername, // name same as username for external users
+          formattedUsername, // name same as username for external users
           null, // email
-          finalUsername,
+          formattedUsername,
           'external', // role
           '', // avatar
           passwordHash,
@@ -100,9 +109,9 @@ router.post(
 
       const response: CreateExternalUserResponse = {
         id: userId,
-        name: finalUsername,
+        name: formattedUsername,
         email: null,
-        username: finalUsername,
+        username: formattedUsername,
         role: 'external',
         avatar: '',
         department: null,
@@ -175,23 +184,29 @@ router.put(
       return;
     }
 
-    const finalUsername = username.trim().toLowerCase();
+    // Format employee code to HC-XXXXX
+    const rawUsername = username.trim();
+    const numericPart = rawUsername.replace(/\D/g, '');
+    const formattedUsername = numericPart ? `HC-${numericPart.padStart(5, '0')}` : `HC-${rawUsername}`;
 
     try {
       const db = getDb();
 
-      // Check if username already exists for another user
-      const existingUsername = await db.get('SELECT id FROM external_users WHERE LOWER(username) = ? AND id != ?', [
-        finalUsername,
-        userId,
-      ]);
-      if (existingUsername) {
-        res.status(400).json({ error: 'User with this username already exists.' });
-        return;
+      // Check username uniqueness across ALL user tables (excluding current user)
+      const tables = ['users', 'factory_users', 'external_users', 'field_users', 'non_hq_users'];
+      for (const table of tables) {
+        const existing = await db.get(`SELECT id FROM ${table} WHERE LOWER(username) = ? AND id != ?`, [
+          formattedUsername.toLowerCase(),
+          userId,
+        ]);
+        if (existing) {
+          res.status(400).json({ error: 'Employee code already exists across user tables.' });
+          return;
+        }
       }
 
       let query = 'UPDATE external_users SET username = ? WHERE id = ?';
-      const params: (string | undefined)[] = [finalUsername, userId];
+      const params: (string | undefined)[] = [formattedUsername, userId];
 
       if (password && password.trim()) {
         const passwordHash = await bcrypt.hash(password.trim(), 10);
@@ -208,7 +223,7 @@ router.put(
 
       const response: UpdateExternalUserResponse = {
         id: userId,
-        username: finalUsername,
+        username: formattedUsername,
       };
 
       res.json(response);

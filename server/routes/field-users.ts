@@ -67,15 +67,24 @@ router.post(
       return;
     }
 
-    const finalUsername = username.toLowerCase().trim();
+    // Format employee code to HC-XXXXX
+    const rawUsername = username.trim();
+    const numericPart = rawUsername.replace(/\D/g, '');
+    const formattedUsername = numericPart ? `HC-${numericPart.padStart(5, '0')}` : `HC-${rawUsername}`;
 
     try {
       const db = getDb();
 
-      const existingUsername = await db.get('SELECT id FROM field_users WHERE username = ?', [finalUsername]);
-      if (existingUsername) {
-        res.status(400).json({ error: 'User with this username already exists.' });
-        return;
+      // Check username uniqueness across ALL user tables
+      const tables = ['users', 'factory_users', 'external_users', 'field_users', 'non_hq_users'];
+      for (const table of tables) {
+        const existing = await db.get(`SELECT id FROM ${table} WHERE LOWER(username) = ?`, [
+          formattedUsername.toLowerCase(),
+        ]);
+        if (existing) {
+          res.status(400).json({ error: 'Employee code already exists across user tables.' });
+          return;
+        }
       }
 
       const passwordHash = password ? await bcrypt.hash(password, 10) : await bcrypt.hash('DefaultPassword', 10);
@@ -87,7 +96,7 @@ router.post(
           userId,
           name.trim(),
           email || null,
-          finalUsername,
+          formattedUsername,
           'field_user',
           '',
           passwordHash,
@@ -103,7 +112,7 @@ router.post(
         id: userId,
         name: name.trim(),
         email: email || null,
-        username: finalUsername,
+        username: formattedUsername,
         role: 'field_user',
         avatar: '',
         department: department || null,
@@ -176,14 +185,22 @@ router.put(
       const db = getDb();
 
       if (username) {
-        const finalUsername = username.trim().toLowerCase();
-        const existingUsername = await db.get('SELECT id FROM field_users WHERE LOWER(username) = ? AND id != ?', [
-          finalUsername,
-          userId,
-        ]);
-        if (existingUsername) {
-          res.status(400).json({ error: 'User with this username already exists.' });
-          return;
+        // Format employee code to HC-XXXXX
+        const rawUsername = username.trim();
+        const numericPart = rawUsername.replace(/\D/g, '');
+        const formattedUsername = numericPart ? `HC-${numericPart.padStart(5, '0')}` : `HC-${rawUsername}`;
+
+        // Check username uniqueness across ALL user tables (excluding current user)
+        const tables = ['users', 'factory_users', 'external_users', 'field_users', 'non_hq_users'];
+        for (const table of tables) {
+          const existing = await db.get(`SELECT id FROM ${table} WHERE LOWER(username) = ? AND id != ?`, [
+            formattedUsername.toLowerCase(),
+            userId,
+          ]);
+          if (existing) {
+            res.status(400).json({ error: 'Employee code already exists across user tables.' });
+            return;
+          }
         }
       }
 
@@ -208,6 +225,11 @@ router.put(
       if (result.changes === 0) {
         res.status(404).json({ error: 'Field user not found.' });
         return;
+      }
+
+      // If username was updated, apply the formatted username
+      if (username) {
+        await db.run('UPDATE field_users SET username = ? WHERE id = ?', [formattedUsername, userId]);
       }
 
       const updatedUser = await db.get<DbUser>(
