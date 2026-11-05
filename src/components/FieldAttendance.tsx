@@ -77,8 +77,8 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
   const faceModelsLoadedRef = useRef(false);
   const livenessStageRef = useRef<'idle' | 'ready' | 'verifying' | 'passed' | 'failed'>('idle');
   const challengeRef = useRef<Challenge | null>(null);
-  const challengeStartDescriptorRef = useRef<number[] | null>(null);
   const faceDescriptorRef = useRef<number[] | null>(null);
+  const challengeSamplesRef = useRef<number[]>([]);
 
   const [logs, setLogs] = useState<FieldAttendanceLog[]>([]);
   const [settings, setSettings] = useState<FieldAttendanceSetting[]>([]);
@@ -108,7 +108,6 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
   const [faceModelsError, setFaceModelsError] = useState<string | null>(null);
 
   const [challenge, setChallenge] = useState<Challenge | null>(null);
-  const [challengeStartDescriptor, setChallengeStartDescriptor] = useState<number[] | null>(null);
   const [livenessStage, setLivenessStage] = useState<'idle' | 'ready' | 'verifying' | 'passed' | 'failed'>('idle');
   const [livenessResult, setLivenessResult] = useState<string | null>(null);
 
@@ -122,7 +121,6 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
   useEffect(() => { faceModelsLoadedRef.current = faceModelsLoaded; }, [faceModelsLoaded]);
   useEffect(() => { livenessStageRef.current = livenessStage; }, [livenessStage]);
   useEffect(() => { challengeRef.current = challenge; }, [challenge]);
-  useEffect(() => { challengeStartDescriptorRef.current = challengeStartDescriptor; }, [challengeStartDescriptor]);
   useEffect(() => { faceDescriptorRef.current = faceDescriptor; }, [faceDescriptor]);
 
   const fetchLogs = useCallback(async () => {
@@ -420,31 +418,70 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
 
             if (ovCtx) drawOverlay(ovCtx, result.detection, result.landmarks, sx, sy, dw, dh);
 
-            // Auto-detect challenge movement using refs (always fresh values)
-            if (!verifying && livenessStageRef.current === 'ready') {
-              const start = challengeStartDescriptorRef.current;
-              if (start && start.length === descriptor.length) {
-                let distSq = 0;
-                for (let i = 0; i < descriptor.length; i++) {
-                  distSq += (descriptor[i] - start[i]) ** 2;
-                }
-                const dist = Math.sqrt(distSq);
-                const threshold = challengeRef.current === 'blink' ? 0.25 : 0.4;
-                if (dist > threshold) {
-                  verifying = true;
-                  setLivenessStage('verifying');
-                  setLivenessResult(null);
-                  await new Promise((r) => setTimeout(r, 400));
-                  const frame = captureFrame();
-                  if (frame) {
-                    setCapturedFrame(frame);
-                    setLivenessStage('passed');
-                    setLivenessResult('Liveness verified — ready to mark attendance');
-                  }
+            // Landmark-based liveness detection (descriptor distance is expression-invariant,
+            // so it fails for blink/smile. Use EAR/MAR/head-pose from landmarks instead.)
+            if (!verifying && livenessStageRef.current === 'ready' && result.landmarks) {
+              const landmarks = result.landmarks.positions;
+
+              // Helper: Euclidean distance between two points
+              const dist = (a: { x: number; y: number }, b: { x: number; y: number }) =>
+                Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
+
+              // Face width (eye corner to eye corner) for normalization
+              const faceWidth = dist(landmarks[36], landmarks[45]) || 1;
+
+              // ---- Blink: Eye Aspect Ratio (EAR) ----
+              // Left eye: 36-41, Right eye: 42-47
+              const earLeft =
+                (dist(landmarks[37], landmarks[41]) + dist(landmarks[38], landmarks[40])) /
+                (2 * dist(landmarks[36], landmarks[39]));
+              const earRight =
+                (dist(landmarks[43], landmarks[47]) + dist(landmarks[44], landmarks[46])) /
+                (2 * dist(landmarks[42], landmarks[45]));
+              const ear = (earLeft + earRight) / 2;
+              const blinked = ear < 0.22; // eyes closed
+
+              // ---- Smile: Mouth Aspect Ratio (MAR) ----
+              // Outer lip: 48-67, use 51/57 (top/bottom center) and 48/54 (corners)
+              const mar = dist(landmarks[51], landmarks[57]) / dist(landmarks[48], landmarks[54]);
+              const smiled = mar > 0.35; // mouth open/smiling
+
+              // ---- Head turn: nose tip (30) vs face center ----
+              const nose = landmarks[30];
+              const faceCenterX = (landmarks[36].x + landmarks[45].x) / 2;
+              const noseOffset = Math.abs(nose.x - faceCenterX) / faceWidth;
+              const turned = noseOffset > 0.12; // nose significantly off-center
+
+              // Challenge-specific check
+              let passed = false;
+              if (challengeRef.current === 'blink') passed = blinked;
+              else if (challengeRef.current === 'smile') passed = smiled;
+              else if (challengeRef.current === 'turn_left' || challengeRef.current === 'turn_right') passed = turned;
+              else passed = blinked || smiled || turned;
+
+              // Keep rolling samples for robustness (blink is fleeting)
+              const samples = challengeSamplesRef.current;
+              samples.push(passed ? 1 : 0);
+              if (samples.length > 20) samples.shift();
+              challengeSamplesRef.current = samples;
+
+              const passCount = samples.filter((s) => s === 1).length;
+              // Trigger if 3+ frames in the last 20 showed the action
+              if (passCount >= 3 && samples.length >= 10) {
+                verifying = true;
+                setLivenessStage('verifying');
+                setLivenessResult(null);
+                await new Promise((r) => setTimeout(r, 400));
+                const frame = captureFrame();
+                if (frame) {
+                  setCapturedFrame(frame);
+                  setLivenessStage('passed');
+                  setLivenessResult('Liveness verified — ready to mark attendance');
                 }
               }
             }
           } else {
+            // Face temporarily out of frame during challenge — keep baseline and samples
             setFaceDetected(false);
             setFaceDescriptor(null);
             faceDescriptorRef.current = null;
@@ -514,13 +551,9 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
 
   const nextChallenge = useCallback(() => {
     const c = CHALLENGES[Math.floor(Math.random() * CHALLENGES.length)];
-    // Snapshot the current descriptor as the baseline for movement comparison.
-    // Also update the refs so the rAF loop sees fresh values immediately.
-    const currentDescriptor = faceDescriptorRef.current;
     setChallenge(c);
     challengeRef.current = c;
-    setChallengeStartDescriptor(currentDescriptor);
-    challengeStartDescriptorRef.current = currentDescriptor;
+    challengeSamplesRef.current = [];
     setLivenessStage('ready');
     livenessStageRef.current = 'ready';
     setLivenessResult(null);
@@ -1180,7 +1213,7 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
                     setCameraActive(false);
                     setFaceDetected(false);
                     setFaceDescriptor(null);
-                    setChallengeStartDescriptor(null);
+                    challengeSamplesRef.current = [];
                     setCapturedFrame(null);
                     setChallenge(null);
                     setLivenessStage('idle');
