@@ -22,7 +22,9 @@ export const NoticeBoard: React.FC<NoticeBoardProps> = ({
   onEditNoticeClick,
   loading = false,
 }) => {
-  const isAdmin = currentUser.role !== 'employee' || currentUser.isDepartmentHead;
+  const isAdmin =
+    (currentUser.role !== 'employee' && currentUser.role !== 'non_hq_user' && currentUser.role !== 'field_user') ||
+    currentUser.isDepartmentHead;
   const [activeTab, setActiveTab] = useState<'active' | 'archive'>('active');
   const now = new Date();
 

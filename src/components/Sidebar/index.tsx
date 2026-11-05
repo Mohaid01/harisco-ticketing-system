@@ -49,18 +49,18 @@ const MENU_ITEMS: MenuItem[] = [
     id: 'noticeboard',
     label: 'Noticeboard',
     icon: Bell,
-    roles: ['it', 'employee', 'manager', 'executive'],
+    roles: ['it', 'employee', 'manager', 'executive', 'non_hq_user', 'field_user'],
   },
   {
     label: 'Tickets',
     icon: Ticket,
-    roles: ['it', 'employee', 'manager', 'executive'],
+    roles: ['it', 'employee', 'manager', 'executive', 'non_hq_user'],
     children: [
       {
         id: 'tickets',
         label: 'IT',
         icon: Ticket,
-        roles: ['it', 'employee', 'manager', 'executive'],
+        roles: ['it', 'employee', 'manager', 'executive', 'non_hq_user'],
         notAllowedDepartments: ['Staff'],
       },
       {
@@ -170,6 +170,32 @@ const MENU_ITEMS: MenuItem[] = [
     children: [
       {
         id: 'external_users',
+        label: 'User Management',
+        icon: Users,
+        roles: ['it'],
+      },
+    ],
+  },
+  {
+    label: 'Field',
+    icon: Building2,
+    roles: ['it'],
+    children: [
+      {
+        id: 'field_users',
+        label: 'User Management',
+        icon: Users,
+        roles: ['it'],
+      },
+    ],
+  },
+  {
+    label: 'Non HQ',
+    icon: Building2,
+    roles: ['it'],
+    children: [
+      {
+        id: 'non_hq_users',
         label: 'User Management',
         icon: Users,
         roles: ['it'],

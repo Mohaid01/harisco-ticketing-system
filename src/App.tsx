@@ -26,6 +26,7 @@ import { AdminTicketList } from './components/AdminTicketList';
 import { Attendance } from './components/Attendance';
 import { ExternalUserManagement } from './components/ExternalUserManagement';
 import { FactoryUserManagement } from './components/FactoryUserManagement';
+import { FieldUserManagement } from './components/FieldUserManagement';
 import { HSETicketDetails } from './components/HSETicketDetails';
 import { HSETicketList } from './components/HSETicketList';
 import { AssignInventoryModal } from './components/Modals/AssignInventoryModal';
@@ -37,6 +38,7 @@ import { NewAdminTicketModal } from './components/Modals/NewAdminTicketModal';
 import { NewHSETicketModal } from './components/Modals/NewHSETicketModal';
 import { NewTicketModal } from './components/Modals/NewTicketModal';
 import { RegisterInventoryModal } from './components/Modals/RegisterInventoryModal';
+import { NonHqUserManagement } from './components/NonHqUserManagement';
 import { PasswordReset } from './components/PasswordReset';
 import { Header } from './components/Sidebar';
 import { TicketDetails } from './components/TicketDetails';
@@ -60,11 +62,11 @@ function canUserAccessTab(
 ): boolean {
   switch (tab) {
     case 'noticeboard':
-      return ['it', 'employee', 'manager', 'executive'].includes(role);
+      return ['it', 'employee', 'manager', 'executive', 'non_hq_user', 'field_user'].includes(role);
     case 'tickets':
-      return ['it', 'employee', 'manager', 'executive'].includes(role);
+      return ['it', 'employee', 'manager', 'executive', 'non_hq_user'].includes(role);
     case 'admin_tickets':
-      return ['it', 'executive', 'manager', 'employee'].includes(role);
+      return ['it', 'executive', 'manager', 'employee', 'non_hq_user'].includes(role);
     case 'hse_tickets':
       return role === 'executive' || department === 'HSE';
     case 'users':
@@ -85,6 +87,10 @@ function canUserAccessTab(
       return ['it', 'manager', 'factory_it', 'factory_manager', 'factory_employee'].includes(role);
     case 'external_users':
       return role === 'it';
+    case 'field_users':
+      return role === 'it';
+    case 'non_hq_users':
+      return role === 'it';
     case 'inventory':
       return ['it', 'manager', 'executive'].includes(role);
     default:
@@ -94,7 +100,7 @@ function canUserAccessTab(
 
 function getSafeFallbackTab(role: UserRole): ActiveTab {
   if (role === 'it' || role === 'manager' || role === 'executive') return 'noticeboard';
-  if (role === 'employee') return 'noticeboard';
+  if (role === 'employee' || role === 'non_hq_user') return 'noticeboard';
   if (role === 'factory_it' || role === 'factory_manager' || role === 'factory_employee') return 'factory_attendance';
   if (role === 'external') return 'cv_generator';
   return 'noticeboard';
@@ -123,6 +129,8 @@ function pathToTab(pathname: string): {
     'factory-users': 'factory_users',
     'factory-attendance': 'factory_attendance',
     'external-users': 'external_users',
+    'field-users': 'field_users',
+    'non-hq-users': 'non_hq_users',
     inventory: 'inventory',
   };
 
@@ -193,6 +201,8 @@ function App() {
   const [users, setUsers] = useState<AppUser[]>([]);
   const [factoryUsers, setFactoryUsers] = useState<AppUser[]>([]);
   const [externalUsers, setExternalUsers] = useState<AppUser[]>([]);
+  const [fieldUsers, setFieldUsers] = useState<AppUser[]>([]);
+  const [nonHqUsers, setNonHqUsers] = useState<AppUser[]>([]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [activeTab, setActiveTab] = useState<ActiveTab>(initialTab.tab);
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(initialTab.ticketId);
@@ -231,8 +241,8 @@ function App() {
   const [invEntityFilter, setInvEntityFilter] = useState<string>('all');
 
   const allAssignableUsers = useMemo(
-    () => [...users, ...factoryUsers, ...externalUsers],
-    [users, factoryUsers, externalUsers]
+    () => [...users, ...factoryUsers, ...externalUsers, ...fieldUsers, ...nonHqUsers],
+    [users, factoryUsers, externalUsers, fieldUsers, nonHqUsers]
   );
 
   const handleAttendanceViewModeChange = (mode: 'summary' | 'individual', userId?: string) => {
@@ -505,6 +515,24 @@ function App() {
           setExternalUsers(externalUsersData);
         }
 
+        // Fetch field users
+        const fieldUsersRes = await fetch('/api/field/users', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (fieldUsersRes.ok) {
+          const fieldUsersData = await fieldUsersRes.json();
+          setFieldUsers(fieldUsersData);
+        }
+
+        // Fetch non hq users
+        const nonHqUsersRes = await fetch('/api/non-hq/users', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (nonHqUsersRes.ok) {
+          const nonHqUsersData = await nonHqUsersRes.json();
+          setNonHqUsers(nonHqUsersData);
+        }
+
         // Fetch inventory
         await fetchInventory();
       } catch (err) {
@@ -761,6 +789,8 @@ function App() {
     setUsers([]);
     setFactoryUsers([]);
     setExternalUsers([]);
+    setFieldUsers([]);
+    setNonHqUsers([]);
     setAdminTickets([]);
     setSelectedTicketId(null);
     setSelectedAdminTicketId(null);
@@ -1881,6 +1911,318 @@ function App() {
     }
   };
 
+  // Field User handlers
+  const handleAddFieldUser = async (data: {
+    name: string;
+    email: string;
+    username: string;
+    password?: string;
+    avatar?: string;
+    department?: string;
+    designation?: string;
+    active: boolean;
+  }) => {
+    if (!token || !currentUser) return;
+    try {
+      const res = await fetch('/api/field/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      const responseText = await res.clone().text();
+      let responseData: CreateExternalUserResponse & { error?: string };
+      try {
+        responseData = JSON.parse(responseText) as CreateExternalUserResponse & { error?: string };
+      } catch {
+        throw new Error(`Failed to create field user (HTTP ${res.status}). Server returned a non-JSON response.`);
+      }
+
+      if (!res.ok) {
+        throw new Error(responseData.error || 'Failed to add field user');
+      }
+
+      setFieldUsers((prevUsers) => [...prevUsers, responseData]);
+    } catch (err) {
+      console.error(err);
+      const errMsg = err instanceof Error ? err.message : 'Error creating field user. Please try again.';
+      alert(errMsg);
+    }
+  };
+
+  const handleDeleteFieldUser = async (userId: string) => {
+    if (!token || !currentUser) return;
+    try {
+      const res = await fetch(`/api/field/users/${userId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || 'Failed to delete field user');
+      }
+
+      setFieldUsers((prevUsers) => prevUsers.filter((u) => u.id !== userId));
+    } catch (err) {
+      console.error(err);
+      const errMsg = err instanceof Error ? err.message : 'Error deleting field user. Please try again.';
+      alert(errMsg);
+    }
+  };
+
+  const handleOffboardFieldUser = async (userId: string, reason: string, offboardDate: string) => {
+    if (!token || !currentUser) return;
+    try {
+      const res = await fetch(`/api/field/users/${userId}/offboard`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ reason, offboarded_at: offboardDate }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || 'Failed to offboard field user');
+      }
+
+      setFieldUsers((prevUsers) =>
+        prevUsers.map((u) =>
+          u.id === userId
+            ? {
+                ...u,
+                is_active: 0,
+                offboarded_at: offboardDate,
+                offboarded_by: currentUser.id,
+                offboard_reason: reason,
+              }
+            : u
+        )
+      );
+    } catch (err) {
+      console.error(err);
+      const errMsg = err instanceof Error ? err.message : 'Error offboarding field user. Please try again.';
+      alert(errMsg);
+    }
+  };
+
+  const handleUpdateFieldUser = async (
+    userId: string,
+    data: {
+      name: string;
+      email: string | null;
+      department?: string | null;
+      designation?: string | null;
+      avatar?: string | null;
+      active?: boolean;
+    }
+  ) => {
+    if (!token || !currentUser) return;
+    try {
+      const res = await fetch(`/api/field/users/${userId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || 'Failed to update field user');
+      }
+
+      const updatedUser = await res.json();
+      setFieldUsers((prevUsers) =>
+        prevUsers.map((u) =>
+          u.id === userId
+            ? {
+                ...u,
+                name: updatedUser.name,
+                email: updatedUser.email,
+                department: updatedUser.department,
+                designation: updatedUser.designation,
+                avatar: updatedUser.avatar,
+                ...(updatedUser.is_active !== undefined && { is_active: updatedUser.is_active }),
+              }
+            : u
+        )
+      );
+    } catch (err) {
+      console.error(err);
+      const errMsg = err instanceof Error ? err.message : 'Error updating field user. Please try again.';
+      alert(errMsg);
+    }
+  };
+
+  // Non HQ User handlers
+  const handleAddNonHqUser = async (data: {
+    name: string;
+    email: string;
+    username: string;
+    password?: string;
+    avatar?: string;
+    department?: string;
+    designation?: string;
+    isDepartmentHead?: boolean;
+    loginEnabled?: boolean;
+    defaultShift?: string;
+    active: boolean;
+  }) => {
+    if (!token || !currentUser) return;
+    try {
+      const res = await fetch('/api/non-hq/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      const responseText = await res.clone().text();
+      let responseData: CreateExternalUserResponse & { error?: string };
+      try {
+        responseData = JSON.parse(responseText) as CreateExternalUserResponse & { error?: string };
+      } catch {
+        throw new Error(`Failed to create non hq user (HTTP ${res.status}). Server returned a non-JSON response.`);
+      }
+
+      if (!res.ok) {
+        throw new Error(responseData.error || 'Failed to add non hq user');
+      }
+
+      setNonHqUsers((prevUsers) => [...prevUsers, responseData]);
+    } catch (err) {
+      console.error(err);
+      const errMsg = err instanceof Error ? err.message : 'Error creating non hq user. Please try again.';
+      alert(errMsg);
+    }
+  };
+
+  const handleDeleteNonHqUser = async (userId: string) => {
+    if (!token || !currentUser) return;
+    try {
+      const res = await fetch(`/api/non-hq/users/${userId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || 'Failed to delete non hq user');
+      }
+
+      setNonHqUsers((prevUsers) => prevUsers.filter((u) => u.id !== userId));
+    } catch (err) {
+      console.error(err);
+      const errMsg = err instanceof Error ? err.message : 'Error deleting non hq user. Please try again.';
+      alert(errMsg);
+    }
+  };
+
+  const handleOffboardNonHqUser = async (userId: string, reason: string, offboardDate: string) => {
+    if (!token || !currentUser) return;
+    try {
+      const res = await fetch(`/api/non-hq/users/${userId}/offboard`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ reason, offboarded_at: offboardDate }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || 'Failed to offboard non hq user');
+      }
+
+      setNonHqUsers((prevUsers) =>
+        prevUsers.map((u) =>
+          u.id === userId
+            ? {
+                ...u,
+                is_active: 0,
+                offboarded_at: offboardDate,
+                offboarded_by: currentUser.id,
+                offboard_reason: reason,
+              }
+            : u
+        )
+      );
+    } catch (err) {
+      console.error(err);
+      const errMsg = err instanceof Error ? err.message : 'Error offboarding non hq user. Please try again.';
+      alert(errMsg);
+    }
+  };
+
+  const handleUpdateNonHqUser = async (
+    userId: string,
+    data: {
+      name: string;
+      email: string | null;
+      department?: string | null;
+      designation?: string | null;
+      avatar?: string | null;
+      isDepartmentHead?: boolean;
+      loginEnabled?: boolean;
+      defaultShift?: string;
+      active?: boolean;
+    }
+  ) => {
+    if (!token || !currentUser) return;
+    try {
+      const res = await fetch(`/api/non-hq/users/${userId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || 'Failed to update non hq user');
+      }
+
+      const updatedUser = await res.json();
+      setNonHqUsers((prevUsers) =>
+        prevUsers.map((u) =>
+          u.id === userId
+            ? {
+                ...u,
+                name: updatedUser.name,
+                email: updatedUser.email,
+                department: updatedUser.department,
+                designation: updatedUser.designation,
+                avatar: updatedUser.avatar,
+                isDepartmentHead: updatedUser.isDepartmentHead,
+                loginEnabled: updatedUser.loginEnabled,
+                ...(updatedUser.is_active !== undefined && { is_active: updatedUser.is_active }),
+              }
+            : u
+        )
+      );
+    } catch (err) {
+      console.error(err);
+      const errMsg = err instanceof Error ? err.message : 'Error updating non hq user. Please try again.';
+      alert(errMsg);
+    }
+  };
+
   // Inventory Tracking handlers
   const handleCreateInventory = async (data: {
     company: string;
@@ -2116,6 +2458,7 @@ function App() {
           ) : activeTab === 'users' && currentUser.role === 'it' ? (
             <UserManagement
               users={users}
+              allUsers={allAssignableUsers}
               currentUser={currentUser}
               token={token}
               onAddUser={handleAddUser}
@@ -2127,6 +2470,7 @@ function App() {
           ) : activeTab === 'factory_users' && (currentUser.role === 'factory_it' || currentUser.role === 'it') ? (
             <FactoryUserManagement
               users={factoryUsers}
+              allUsers={allAssignableUsers}
               currentUser={currentUser}
               token={token}
               onAddUser={handleAddFactoryUser}
@@ -2138,11 +2482,36 @@ function App() {
           ) : activeTab === 'external_users' && currentUser.role === 'it' ? (
             <ExternalUserManagement
               users={externalUsers}
+              allUsers={allAssignableUsers}
               currentUser={currentUser}
               token={token}
               onAddUser={handleAddExternalUser}
               onDeleteUser={handleDeleteExternalUser}
               onUpdateUser={handleUpdateExternalUser}
+              loading={loading}
+            />
+          ) : activeTab === 'field_users' && currentUser.role === 'it' ? (
+            <FieldUserManagement
+              users={fieldUsers}
+              allUsers={allAssignableUsers}
+              currentUser={currentUser}
+              token={token}
+              onAddUser={handleAddFieldUser}
+              onDeleteUser={handleDeleteFieldUser}
+              onUpdateUser={handleUpdateFieldUser}
+              onOffboardUser={handleOffboardFieldUser}
+              loading={loading}
+            />
+          ) : activeTab === 'non_hq_users' && currentUser.role === 'it' ? (
+            <NonHqUserManagement
+              users={nonHqUsers}
+              allUsers={allAssignableUsers}
+              currentUser={currentUser}
+              token={token}
+              onAddUser={handleAddNonHqUser}
+              onDeleteUser={handleDeleteNonHqUser}
+              onUpdateUser={handleUpdateNonHqUser}
+              onOffboardUser={handleOffboardNonHqUser}
               loading={loading}
             />
           ) : activeTab === 'inventory' ? (

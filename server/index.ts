@@ -16,11 +16,13 @@ import authRouter from './routes/auth.ts';
 import cvGeneratorRouter from './routes/cv-generator.ts';
 import externalUsersRouter from './routes/external-users.ts';
 import factoryRouter from './routes/factory.ts';
+import fieldUsersRouter from './routes/field-users.ts';
 import healthRouter from './routes/health.ts';
 import holidaysRouter from './routes/holidays.ts';
 import hseTicketsRouter from './routes/hse-tickets.ts';
 import inventoryRouter from './routes/inventory.ts';
 import leavesRouter from './routes/leaves.ts';
+import nonHqUsersRouter from './routes/non-hq-users.ts';
 import noticesRouter from './routes/notices.ts';
 import screenOverridesRouter from './routes/screen-overrides.ts';
 import siteDutiesRouter from './routes/site-duties.ts';
@@ -128,6 +130,8 @@ app.use('/api/site-duties', siteDutiesRouter);
 app.use('/api/tickets', ticketsRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/external', externalUsersRouter);
+app.use('/api/field', fieldUsersRouter);
+app.use('/api/non-hq', nonHqUsersRouter);
 
 // Start Database and Server
 // Serve static frontend files in production

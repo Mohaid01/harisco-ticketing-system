@@ -3,7 +3,16 @@ import type { Request, Response } from 'express';
 import { IncomingMessage } from 'http';
 
 type UserRoles =
-  'it' | 'employee' | 'manager' | 'executive' | 'factory_employee' | 'factory_it' | 'factory_manager' | 'external';
+  | 'it'
+  | 'employee'
+  | 'manager'
+  | 'executive'
+  | 'factory_employee'
+  | 'factory_it'
+  | 'factory_manager'
+  | 'external'
+  | 'field_user'
+  | 'non_hq_user';
 
 type TicketTypes = 'hardware' | 'software' | 'maintenance' | 'upgrade' | 'installation' | 'email' | 'others';
 
@@ -892,6 +901,138 @@ export interface ResetExternalUserPasswordRequestBody {
 }
 
 export interface ResetExternalUserPasswordResponse {
+  message: string;
+}
+
+// Field User Types
+export interface CreateFieldUserRequestBody {
+  username: string;
+  password: string;
+  name: string;
+  email: string;
+  avatar?: string;
+  department?: string;
+  designation?: string;
+  active: boolean;
+}
+
+export interface UpdateFieldUserRequestBody {
+  name: string;
+  email: string | null;
+  username?: string;
+  password?: string;
+  avatar?: string;
+  department?: string | null;
+  designation?: string | null;
+  active?: boolean;
+}
+
+export type FieldUsersResponse = DbUser[];
+
+export interface CreateFieldUserResponse {
+  id: string;
+  name: string;
+  email: string | null;
+  username: string;
+  role: UserRoles;
+  avatar?: string;
+  department?: string | null;
+  designation?: string | null;
+  isDepartmentHead: number;
+  loginEnabled: number;
+}
+
+export interface UpdateFieldUserResponse {
+  id: string;
+  name: string;
+  email: string | null;
+  username: string;
+  role: UserRoles;
+  avatar?: string;
+  department?: string | null;
+  designation?: string | null;
+  isDepartmentHead: number;
+  loginEnabled: number;
+}
+
+export interface DeleteFieldUserResponse {
+  message: string;
+}
+
+export interface ResetFieldUserPasswordRequestBody {
+  newPassword: string;
+}
+
+export interface ResetFieldUserPasswordResponse {
+  message: string;
+}
+
+// Non HQ User Types
+export interface CreateNonHqUserRequestBody {
+  username: string;
+  password: string;
+  name: string;
+  email: string;
+  avatar?: string;
+  department?: string;
+  designation?: string;
+  isDepartmentHead?: boolean;
+  loginEnabled?: boolean;
+  defaultShift?: string;
+  active: boolean;
+}
+
+export interface UpdateNonHqUserRequestBody {
+  name: string;
+  email: string | null;
+  username?: string;
+  password?: string;
+  avatar?: string;
+  department?: string | null;
+  designation?: string | null;
+  isDepartmentHead?: boolean;
+  loginEnabled?: boolean;
+  defaultShift?: string;
+  active?: boolean;
+}
+
+export type NonHqUsersResponse = DbUser[];
+
+export interface CreateNonHqUserResponse {
+  id: string;
+  name: string;
+  email: string | null;
+  username: string;
+  role: UserRoles;
+  avatar?: string;
+  department?: string | null;
+  designation?: string | null;
+  isDepartmentHead: number;
+  loginEnabled: number;
+}
+
+export interface UpdateNonHqUserResponse {
+  id: string;
+  name: string;
+  email: string | null;
+  username: string;
+  role: UserRoles;
+  avatar?: string;
+  department?: string | null;
+  designation?: string | null;
+  isDepartmentHead: number;
+  loginEnabled: number;
+}
+
+export interface DeleteNonHqUserResponse {
+  message: string;
+}
+
+export interface ResetNonHqUserPasswordRequestBody {
+  newPassword: string;
+}
+
+export interface ResetNonHqUserPasswordResponse {
   message: string;
 }
 
