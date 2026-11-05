@@ -10,6 +10,7 @@ import { UserCarousel } from './UserCarousel';
 
 interface FactoryUserManagementProps {
   users: AppUser[];
+  allUsers: AppUser[];
   currentUser: AppUser;
   token: string;
   onAddUser: (data: {
@@ -45,6 +46,7 @@ interface FactoryUserManagementProps {
 
 export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
   users,
+  allUsers,
   currentUser,
   token,
   onAddUser,
@@ -119,7 +121,7 @@ export const FactoryUserManagement: React.FC<FactoryUserManagementProps> = ({
 
     const formattedCode = formatEmployeeCode(username.trim());
 
-    if (users.some((u) => u.username?.toLowerCase() === formattedCode.toLowerCase())) {
+    if (allUsers.some((u) => u.username?.toLowerCase() === formattedCode.toLowerCase())) {
       setErrorMsg('A user with this employee code already exists.');
       return;
     }

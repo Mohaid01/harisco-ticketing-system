@@ -1916,7 +1916,16 @@ function App() {
   };
 
   // Field User handlers
-  const handleAddFieldUser = async (data: { username: string; password: string; active: boolean }) => {
+  const handleAddFieldUser = async (data: {
+    name: string;
+    email: string;
+    username: string;
+    password?: string;
+    avatar?: string;
+    department?: string;
+    designation?: string;
+    active: boolean;
+  }) => {
     if (!token || !currentUser) return;
     try {
       const res = await fetch('/api/field/users', {
@@ -1971,9 +1980,53 @@ function App() {
     }
   };
 
+  const handleOffboardFieldUser = async (userId: string, reason: string, offboardDate: string) => {
+    if (!token || !currentUser) return;
+    try {
+      const res = await fetch(`/api/field/users/${userId}/offboard`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ reason, offboarded_at: offboardDate }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || 'Failed to offboard field user');
+      }
+
+      setFieldUsers((prevUsers) =>
+        prevUsers.map((u) =>
+          u.id === userId
+            ? {
+                ...u,
+                is_active: 0,
+                offboarded_at: offboardDate,
+                offboarded_by: currentUser.id,
+                offboard_reason: reason,
+              }
+            : u
+        )
+      );
+    } catch (err) {
+      console.error(err);
+      const errMsg = err instanceof Error ? err.message : 'Error offboarding field user. Please try again.';
+      alert(errMsg);
+    }
+  };
+
   const handleUpdateFieldUser = async (
     userId: string,
-    data: { username: string; password?: string; active?: boolean }
+    data: {
+      name: string;
+      email: string | null;
+      department?: string | null;
+      designation?: string | null;
+      avatar?: string | null;
+      active?: boolean;
+    }
   ) => {
     if (!token || !currentUser) return;
     try {
@@ -1997,7 +2050,11 @@ function App() {
           u.id === userId
             ? {
                 ...u,
-                username: updatedUser.username,
+                name: updatedUser.name,
+                email: updatedUser.email,
+                department: updatedUser.department,
+                designation: updatedUser.designation,
+                avatar: updatedUser.avatar,
                 ...(updatedUser.is_active !== undefined && { is_active: updatedUser.is_active }),
               }
             : u
@@ -2011,7 +2068,19 @@ function App() {
   };
 
   // Non HQ User handlers
-  const handleAddNonHqUser = async (data: { username: string; password: string; active: boolean }) => {
+  const handleAddNonHqUser = async (data: {
+    name: string;
+    email: string;
+    username: string;
+    password?: string;
+    avatar?: string;
+    department?: string;
+    designation?: string;
+    isDepartmentHead?: boolean;
+    loginEnabled?: boolean;
+    defaultShift?: string;
+    active: boolean;
+  }) => {
     if (!token || !currentUser) return;
     try {
       const res = await fetch('/api/non-hq/users', {
@@ -2066,9 +2135,56 @@ function App() {
     }
   };
 
+  const handleOffboardNonHqUser = async (userId: string, reason: string, offboardDate: string) => {
+    if (!token || !currentUser) return;
+    try {
+      const res = await fetch(`/api/non-hq/users/${userId}/offboard`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ reason, offboarded_at: offboardDate }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || 'Failed to offboard non hq user');
+      }
+
+      setNonHqUsers((prevUsers) =>
+        prevUsers.map((u) =>
+          u.id === userId
+            ? {
+                ...u,
+                is_active: 0,
+                offboarded_at: offboardDate,
+                offboarded_by: currentUser.id,
+                offboard_reason: reason,
+              }
+            : u
+        )
+      );
+    } catch (err) {
+      console.error(err);
+      const errMsg = err instanceof Error ? err.message : 'Error offboarding non hq user. Please try again.';
+      alert(errMsg);
+    }
+  };
+
   const handleUpdateNonHqUser = async (
     userId: string,
-    data: { username: string; password?: string; active?: boolean }
+    data: {
+      name: string;
+      email: string | null;
+      department?: string | null;
+      designation?: string | null;
+      avatar?: string | null;
+      isDepartmentHead?: boolean;
+      loginEnabled?: boolean;
+      defaultShift?: string;
+      active?: boolean;
+    }
   ) => {
     if (!token || !currentUser) return;
     try {
@@ -2092,7 +2208,13 @@ function App() {
           u.id === userId
             ? {
                 ...u,
-                username: updatedUser.username,
+                name: updatedUser.name,
+                email: updatedUser.email,
+                department: updatedUser.department,
+                designation: updatedUser.designation,
+                avatar: updatedUser.avatar,
+                isDepartmentHead: updatedUser.isDepartmentHead,
+                loginEnabled: updatedUser.loginEnabled,
                 ...(updatedUser.is_active !== undefined && { is_active: updatedUser.is_active }),
               }
             : u
@@ -2340,6 +2462,7 @@ function App() {
           ) : activeTab === 'users' && currentUser.role === 'it' ? (
             <UserManagement
               users={users}
+              allUsers={allAssignableUsers}
               currentUser={currentUser}
               token={token}
               onAddUser={handleAddUser}
@@ -2351,6 +2474,7 @@ function App() {
           ) : activeTab === 'factory_users' && (currentUser.role === 'factory_it' || currentUser.role === 'it') ? (
             <FactoryUserManagement
               users={factoryUsers}
+              allUsers={allAssignableUsers}
               currentUser={currentUser}
               token={token}
               onAddUser={handleAddFactoryUser}
@@ -2362,6 +2486,7 @@ function App() {
           ) : activeTab === 'external_users' && currentUser.role === 'it' ? (
             <ExternalUserManagement
               users={externalUsers}
+              allUsers={allAssignableUsers}
               currentUser={currentUser}
               token={token}
               onAddUser={handleAddExternalUser}
@@ -2372,11 +2497,13 @@ function App() {
           ) : activeTab === 'field_users' && currentUser.role === 'it' ? (
             <FieldUserManagement
               users={fieldUsers}
+              allUsers={allAssignableUsers}
               currentUser={currentUser}
               token={token}
               onAddUser={handleAddFieldUser}
               onDeleteUser={handleDeleteFieldUser}
               onUpdateUser={handleUpdateFieldUser}
+              onOffboardUser={handleOffboardFieldUser}
               loading={loading}
             />
           ) : activeTab === 'field_attendance' && currentUser.role === 'it' ? (
@@ -2384,11 +2511,13 @@ function App() {
           ) : activeTab === 'non_hq_users' && currentUser.role === 'it' ? (
             <NonHqUserManagement
               users={nonHqUsers}
+              allUsers={allAssignableUsers}
               currentUser={currentUser}
               token={token}
               onAddUser={handleAddNonHqUser}
               onDeleteUser={handleDeleteNonHqUser}
               onUpdateUser={handleUpdateNonHqUser}
+              onOffboardUser={handleOffboardNonHqUser}
               loading={loading}
             />
           ) : activeTab === 'inventory' ? (

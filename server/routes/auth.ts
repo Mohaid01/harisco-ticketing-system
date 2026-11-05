@@ -61,6 +61,13 @@ router.post('/login', loginLimiter, async (req: ApiRequest<LoginRequestBody>, re
         [normalizedUsername]
       );
     }
+    // for field user login route
+    if (!user) {
+      user = await db.get<DbUser>(
+        'SELECT id, name, email, username, role, avatar, passwordHash, needsPasswordReset, department, designation, isDepartmentHead, loginEnabled, is_active, NULL as casualLeaves, NULL as annualLeaves, NULL as medicalLeaves FROM field_users WHERE LOWER(username) = ? AND is_active = 1',
+        [normalizedUsername]
+      );
+    }
 
     if (!user) {
       logger.security('Login failed - invalid credentials', {
@@ -168,6 +175,12 @@ router.get('/me', authenticateToken, async (req: AuthRequest, res: ApiResponse<M
         [req.user?.id]
       );
     }
+    if (!user) {
+      user = await db.get<DbUser>(
+        'SELECT id, name, email, username, role, avatar, needsPasswordReset, department, designation, isDepartmentHead, loginEnabled, NULL as casualLeaves, NULL as annualLeaves, NULL as medicalLeaves FROM field_users WHERE id = ?',
+        [req.user?.id]
+      );
+    }
 
     if (!user) {
       res.status(404).json({ error: 'User not found.' });
@@ -238,6 +251,17 @@ router.post(
           [userId]
         );
       }
+      //  for field user reset password
+      if (!user) {
+        await db.run('UPDATE field_users SET passwordHash = ?, needsPasswordReset = 0 WHERE id = ?', [
+          passwordHash,
+          userId,
+        ]);
+        user = await db.get<DbUser>(
+          'SELECT id, name, email, username, role, avatar, needsPasswordReset FROM field_users WHERE id = ?',
+          [userId]
+        );
+      }
 
       if (!user) {
         res.status(404).json({ error: 'User not found.' });
@@ -293,6 +317,9 @@ router.post(
       if (!user) {
         user = await db.get<DbUser>('SELECT passwordHash FROM non_hq_users WHERE id = ?', [userId]);
       }
+      if (!user) {
+        user = await db.get<DbUser>('SELECT passwordHash FROM field_users WHERE id = ?', [userId]);
+      }
 
       if (!user) {
         res.status(404).json({ error: 'User not found.' });
@@ -327,6 +354,12 @@ router.post(
               newPasswordHash,
               userId,
             ]);
+            if (factoryResult.changes === 0) {
+              await db.run('UPDATE field_users SET passwordHash = ?, needsPasswordReset = 0 WHERE id = ?', [
+                newPasswordHash,
+                userId,
+              ]);
+            }
           }
         }
       }
