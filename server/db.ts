@@ -614,7 +614,7 @@ export async function initDb() {
       id TEXT PRIMARY KEY,
       company TEXT NOT NULL,
       entity TEXT NOT NULL CHECK(entity IN ('HQ','Factory','External','Others')),
-      category TEXT NOT NULL CHECK(category IN ('Laptop','Monitor','Mouse','Keyboard','Printer','Mobile')),
+      category TEXT NOT NULL CHECK(category IN ('Laptop','Monitor','Mouse','Keyboard','Printer','Mobile','AccessPoint','Switch','Router','IPPhones','DoorLocks','Charger')),
       details TEXT NOT NULL,
       device_id TEXT NOT NULL UNIQUE,
       sn_mac_address TEXT NOT NULL UNIQUE,

@@ -105,7 +105,7 @@ export interface DbActivityLog {
 }
 
 export type InventoryStatus = 'Stocked' | 'Assigned' | 'Under Repair' | 'Retired' | 'Lost';
-export type InventoryCategory = 'Laptop' | 'Monitor' | 'Mouse' | 'Keyboard' | 'Printer' | 'Mobile';
+export type InventoryCategory = 'Laptop' | 'Monitor' | 'Mouse' | 'Keyboard' | 'Printer' | 'Mobile' | 'AccessPoint' | 'Switch' | 'Router' | 'IPPhones' | 'DoorLocks' | 'Charger';
 export type InventoryEntity = 'HQ' | 'Factory' | 'External' | 'Others';
 
 export interface DbInventory {

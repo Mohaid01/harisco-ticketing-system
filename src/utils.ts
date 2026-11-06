@@ -19,13 +19,18 @@ export function formatEmployeeCode(rawCode: string | undefined): string {
  * Short codes used in the Device ID for each inventory category.
  */
 export const CATEGORY_DEVICE_CODES: Record<InventoryCategory, string> = {
-  Laptop: 'Lap',
-  Monitor: 'Mon',
-  Mouse: 'Mou',
-  Keyboard: 'Key',
-  Printer: 'Pri',
-  Mobile: 'Mob',
-  Others: 'Oth',
+  Laptop: 'LAP',
+  Monitor: 'MON',
+  Mouse: 'MOU',
+  Keyboard: 'KEY',
+  Printer: 'PRI',
+  Mobile: 'MOB',
+  AccessPoint: 'AP',
+  Switch: 'SWC',
+  Router: 'RTR',
+  IPPhones: 'IPP',
+  DoorLocks: 'DLK',
+  Charger: 'CHG',
 };
 
 export const DEVICE_ID_PREFIX = 'HC-';
