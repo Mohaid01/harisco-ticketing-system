@@ -268,7 +268,7 @@ export const createInventorySchema = z.object({
   entity: z.enum(['HQ', 'Factory', 'External', 'Others'], {
     errorMap: () => ({ message: 'Entity is required' }),
   }),
-  category: z.enum(['Laptop', 'Monitor', 'Mouse', 'Keyboard', 'Printer', 'Mobile'], {
+  category: z.enum(['Laptop', 'Monitor', 'Mouse', 'Keyboard', 'Printer', 'Mobile', 'Others'], {
     errorMap: () => ({ message: 'Category is required' }),
   }),
   details: z.string().min(1, 'Details is required'),
@@ -285,7 +285,7 @@ export const assignInventorySchema = z.object({
 export const updateInventorySchema = z.object({
   company: z.string().min(1).optional(),
   entity: z.enum(['HQ', 'Factory', 'External', 'Others']).optional(),
-  category: z.enum(['Laptop', 'Monitor', 'Mouse', 'Keyboard', 'Printer', 'Mobile']).optional(),
+  category: z.enum(['Laptop', 'Monitor', 'Mouse', 'Keyboard', 'Printer', 'Mobile', 'Others']).optional(),
   details: z.string().min(1).optional(),
   device_id: z.string().min(1).optional(),
   sn_mac_address: z.string().min(1).optional(),

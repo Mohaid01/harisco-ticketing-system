@@ -652,6 +652,37 @@ export async function initDb() {
   await db.exec('CREATE INDEX IF NOT EXISTS idx_inventory_entity ON inventory(entity)');
   await db.exec('CREATE INDEX IF NOT EXISTS idx_inventory_category ON inventory(category)');
 
+  // Migrate existing inventory data: capitalize manufacturer and category code within device_id
+  // Format: HC-{Manufacturer}-{CategoryCode}-{sequence} -> uppercase Manufacturer + CategoryCode segments
+  try {
+    const rows = await db.all<{ id: string; device_id: string }[]>('SELECT id, device_id FROM inventory');
+    for (const row of rows) {
+      const parts = row.device_id.split('-');
+      if (parts.length >= 4) {
+        const catIdx = parts.length - 2;
+        const upperedManuf = parts[1].toUpperCase();
+        const upperedCat = parts[catIdx].toUpperCase();
+        if (upperedManuf !== parts[1] || upperedCat !== parts[catIdx]) {
+          parts[1] = upperedManuf;
+          parts[catIdx] = upperedCat;
+          const newDeviceId = parts.join('-');
+          await db.run('UPDATE inventory SET device_id = ? WHERE id = ?', [newDeviceId, row.id]);
+        }
+      }
+    }
+    logger.info('Migrated inventory device_id manufacturer and category codes to uppercase.');
+  } catch (err) {
+    logger.error('Failed to migrate inventory device_id manufacturer and category codes:', err);
+  }
+
+  // Migrate existing inventory data: capitalize manufacturer (company) column
+  try {
+    await db.exec('UPDATE inventory SET company = UPPER(company)');
+    logger.info('Migrated inventory manufacturer (company) to uppercase.');
+  } catch (err) {
+    logger.error('Failed to migrate inventory manufacturer to uppercase:', err);
+  }
+
   // Create Factory Attendance Logs Table
   await db.exec(`
     CREATE TABLE IF NOT EXISTS factory_attendance_logs (

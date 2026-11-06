@@ -242,7 +242,7 @@ export const RegisterInventoryModal: React.FC<RegisterInventoryModalProps> = ({
                   type="text"
                   className="form-input"
                   value={company}
-                  onChange={(e) => setCompany(e.target.value)}
+                  onChange={(e) => setCompany(e.target.value.toUpperCase())}
                   required
                 />
               </div>
