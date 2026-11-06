@@ -46,8 +46,8 @@ export function generateDeviceId(params: {
   const categoryCode = CATEGORY_DEVICE_CODES[category] ?? category;
   const manuf = manufacturer.trim().replace(/\s+/g, '-');
   const prefix = `${DEVICE_ID_PREFIX}${manuf}-${categoryCode}`;
-  const matching = inventory.filter((i) =>
-    i.company.trim().toUpperCase() === manufacturer.trim().toUpperCase() && i.category === category
+  const matching = inventory.filter(
+    (i) => i.company.trim().toUpperCase() === manufacturer.trim().toUpperCase() && i.category === category
   );
   const existingSeqs = matching
     .map((i) => {
