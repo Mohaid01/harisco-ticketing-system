@@ -268,9 +268,25 @@ export const createInventorySchema = z.object({
   entity: z.enum(['HQ', 'Factory', 'External', 'Others'], {
     errorMap: () => ({ message: 'Entity is required' }),
   }),
-  category: z.enum(['Laptop', 'Monitor', 'Mouse', 'Keyboard', 'Printer', 'Mobile', 'AccessPoint', 'Switch', 'Router', 'IPPhones', 'DoorLocks', 'Charger'], {
-    errorMap: () => ({ message: 'Category is required' }),
-  }),
+  category: z.enum(
+    [
+      'Laptop',
+      'Monitor',
+      'Mouse',
+      'Keyboard',
+      'Printer',
+      'Mobile',
+      'AccessPoint',
+      'Switch',
+      'Router',
+      'IPPhones',
+      'DoorLocks',
+      'Charger',
+    ],
+    {
+      errorMap: () => ({ message: 'Category is required' }),
+    }
+  ),
   details: z.string().min(1, 'Details is required'),
   device_id: z.string().min(1, 'Device ID is required'),
   sn_mac_address: z.string().min(1, 'SN/MAC Address is required'),
@@ -285,7 +301,22 @@ export const assignInventorySchema = z.object({
 export const updateInventorySchema = z.object({
   company: z.string().min(1).optional(),
   entity: z.enum(['HQ', 'Factory', 'External', 'Others']).optional(),
-  category: z.enum(['Laptop', 'Monitor', 'Mouse', 'Keyboard', 'Printer', 'Mobile', 'AccessPoint', 'Switch', 'Router', 'IPPhones', 'DoorLocks', 'Charger']).optional(),
+  category: z
+    .enum([
+      'Laptop',
+      'Monitor',
+      'Mouse',
+      'Keyboard',
+      'Printer',
+      'Mobile',
+      'AccessPoint',
+      'Switch',
+      'Router',
+      'IPPhones',
+      'DoorLocks',
+      'Charger',
+    ])
+    .optional(),
   details: z.string().min(1).optional(),
   device_id: z.string().min(1).optional(),
   sn_mac_address: z.string().min(1).optional(),
