@@ -621,6 +621,8 @@ export async function initDb() {
       status TEXT NOT NULL DEFAULT 'Stocked' CHECK(status IN ('Stocked','Assigned','Under Repair','Retired','Lost')),
       assigned_user_id TEXT,
       assigned_user_name TEXT,
+      assignment_scope TEXT CHECK(assignment_scope IN ('user','entity')),
+      location TEXT,
       attachment TEXT,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
@@ -634,6 +636,8 @@ export async function initDb() {
     const requiredCols: Record<string, string> = {
       assigned_user_id: 'TEXT',
       assigned_user_name: 'TEXT',
+      assignment_scope: 'TEXT',
+      location: 'TEXT',
       attachment: 'TEXT',
     };
     for (const [colName, colType] of Object.entries(requiredCols)) {
@@ -641,6 +645,8 @@ export async function initDb() {
         await db.exec(`ALTER TABLE inventory ADD COLUMN ${colName} ${colType}`);
       }
     }
+    // Backfill assignment_scope for existing rows
+    await db.exec("UPDATE inventory SET assignment_scope = 'user' WHERE assigned_user_id IS NOT NULL AND (assignment_scope IS NULL OR assignment_scope = '')");
   } catch {
     // Table may not exist yet or already has all columns
   }

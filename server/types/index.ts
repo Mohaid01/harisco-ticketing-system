@@ -123,7 +123,7 @@ export type InventoryEntity = 'HQ' | 'Factory' | 'External' | 'Others';
 export interface DbInventory {
   id: string;
   company: string;
-  entity: InventoryEntity;
+  entity: InventoryEntity | null;
   category: InventoryCategory;
   details: string;
   device_id: string;
@@ -131,6 +131,8 @@ export interface DbInventory {
   status: InventoryStatus;
   assigned_user_id: string | null;
   assigned_user_name: string | null;
+  assignment_scope: 'user' | 'entity' | null;
+  location: string | null;
   attachment: string | null;
   created_at: string;
   updated_at: string;
@@ -138,31 +140,35 @@ export interface DbInventory {
 
 export interface CreateInventoryRequestBody {
   company: string;
-  entity: InventoryEntity;
+  entity: InventoryEntity | null;
   category: InventoryCategory;
   details: string;
   device_id: string;
   sn_mac_address: string;
   assigned_user_id?: string | null;
+  assignment_scope?: 'user' | 'entity' | null;
+  location?: string | null;
   attachment?: string | null;
 }
 
 export interface UpdateInventoryRequestBody {
   company?: string;
-  entity?: InventoryEntity;
+  entity?: InventoryEntity | null;
   category?: InventoryCategory;
   details?: string;
   device_id?: string;
   sn_mac_address?: string;
   status?: InventoryStatus;
   assigned_user_id?: string | null;
+  assignment_scope?: 'user' | 'entity' | null;
+  location?: string | null;
   attachment?: string | null;
 }
 
 export interface InventoryResponse {
   id: string;
   company: string;
-  entity: InventoryEntity;
+  entity: InventoryEntity | null;
   category: InventoryCategory;
   details: string;
   device_id: string;
@@ -170,6 +176,8 @@ export interface InventoryResponse {
   status: InventoryStatus;
   assigned_user_id: string | null;
   assigned_user_name: string | null;
+  assignment_scope: 'user' | 'entity' | null;
+  location: string | null;
   attachment: string | null;
   created_at: string;
   updated_at: string;

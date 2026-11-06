@@ -274,7 +274,7 @@ export type InventoryEntity = 'HQ' | 'Factory' | 'External' | 'Others';
 export interface Inventory {
   id: string;
   company: string;
-  entity: InventoryEntity;
+  entity: InventoryEntity | null;
   category: InventoryCategory;
   details: string;
   device_id: string;
@@ -282,6 +282,8 @@ export interface Inventory {
   status: InventoryStatus;
   assigned_user_id: string | null;
   assigned_user_name?: string | null;
+  assignment_scope: 'user' | 'entity' | null;
+  location?: string | null;
   attachment?: string | null;
   created_at: string;
   updated_at: string;

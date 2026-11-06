@@ -265,9 +265,7 @@ export const revertHSEStatusSchema = z.object({
 // Inventory schemas
 export const createInventorySchema = z.object({
   company: z.string().min(1, 'Company is required'),
-  entity: z.enum(['HQ', 'Factory', 'External', 'Others'], {
-    errorMap: () => ({ message: 'Entity is required' }),
-  }),
+  entity: z.enum(['HQ', 'Factory', 'External', 'Others']).optional().nullable(),
   category: z.enum(
     [
       'Laptop',
@@ -291,6 +289,8 @@ export const createInventorySchema = z.object({
   device_id: z.string().min(1, 'Device ID is required'),
   sn_mac_address: z.string().min(1, 'SN/MAC Address is required'),
   assigned_user_id: z.string().optional().nullable(),
+  assignment_scope: z.enum(['user', 'entity']).optional().nullable(),
+  location: z.string().optional().nullable(),
   attachment: z.string().optional().nullable(),
 });
 
@@ -300,7 +300,7 @@ export const assignInventorySchema = z.object({
 
 export const updateInventorySchema = z.object({
   company: z.string().min(1).optional(),
-  entity: z.enum(['HQ', 'Factory', 'External', 'Others']).optional(),
+  entity: z.enum(['HQ', 'Factory', 'External', 'Others']).optional().nullable(),
   category: z
     .enum([
       'Laptop',
@@ -322,5 +322,7 @@ export const updateInventorySchema = z.object({
   sn_mac_address: z.string().min(1).optional(),
   status: z.enum(['Stocked', 'Assigned', 'Under Repair', 'Retired', 'Lost']).optional(),
   assigned_user_id: z.string().nullable().optional(),
+  assignment_scope: z.enum(['user', 'entity']).optional().nullable(),
+  location: z.string().nullable().optional(),
   attachment: z.string().nullable().optional(),
 });
