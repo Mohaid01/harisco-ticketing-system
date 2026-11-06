@@ -2681,7 +2681,7 @@ function App() {
           inventoryId={selectedInventoryIdForAssign}
           inventory={inventory}
           company={inventory.find((i) => i.id === selectedInventoryIdForAssign)?.company ?? ''}
-          category={inventory.find((i) => i.id === selectedInventoryIdForAssign)?.category ?? 'Others'}
+          category={inventory.find((i) => i.id === selectedInventoryIdForAssign)?.category ?? 'Laptop'}
           users={allAssignableUsers}
           isOpen={!!selectedInventoryIdForAssign}
           onClose={() => setSelectedInventoryIdForAssign(null)}

@@ -25,7 +25,6 @@ export const CATEGORY_DEVICE_CODES: Record<InventoryCategory, string> = {
   Keyboard: 'KEY',
   Printer: 'PRI',
   Mobile: 'MOB',
-  Others: 'OTH',
 };
 
 export const DEVICE_ID_PREFIX = 'HC-';

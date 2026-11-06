@@ -336,7 +336,6 @@ export const INVENTORY_CATEGORY_LABELS: Record<InventoryCategory, string> = {
   Keyboard: 'Keyboard',
   Printer: 'Printer',
   Mobile: 'Mobile',
-  Others: 'Others',
 };
 
 export const INVENTORY_CATEGORY_OPTIONS = [
@@ -346,7 +345,6 @@ export const INVENTORY_CATEGORY_OPTIONS = [
   { value: 'Keyboard' as InventoryCategory, label: 'Keyboard', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.12)' },
   { value: 'Printer' as InventoryCategory, label: 'Printer', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.12)' },
   { value: 'Mobile' as InventoryCategory, label: 'Mobile', color: '#10b981', bg: 'rgba(16, 185, 129, 0.12)' },
-  { value: 'Others' as InventoryCategory, label: 'Others', color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.12)' },
 ];
 
 // Inventory Entity Constants
