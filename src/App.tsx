@@ -2248,7 +2248,7 @@ function App() {
 
     const payload: Record<string, unknown> = {
       company: data.company,
-      entity: data.entity ?? 'Others',
+      entity: data.entity,
       category: data.category,
       details: data.details,
       device_id: generatedDeviceId,

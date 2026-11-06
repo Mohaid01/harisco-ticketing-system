@@ -49,7 +49,6 @@ export const RegisterInventoryModal: React.FC<RegisterInventoryModalProps> = ({
     HQ: hqRoles,
     Factory: factoryRoles,
     External: externalRoles,
-    Others: [],
   };
 
   const generatedDeviceId = React.useMemo(() => {
@@ -291,7 +290,8 @@ export const RegisterInventoryModal: React.FC<RegisterInventoryModalProps> = ({
                   className="form-input inv-select-primary-bg"
                   value={entity ?? ''}
                   onChange={(e) => {
-                    setEntity(e.target.value as InventoryEntity);
+                    const val = e.target.value;
+                    setEntity(val ? (val as InventoryEntity) : null);
                     setAssignedUserId(null);
                     setAssigneeInput('');
                   }}

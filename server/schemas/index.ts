@@ -265,9 +265,7 @@ export const revertHSEStatusSchema = z.object({
 // Inventory schemas
 export const createInventorySchema = z.object({
   company: z.string().min(1, 'Company is required'),
-  entity: z.enum(['HQ', 'Factory', 'External', 'Others'], {
-    errorMap: () => ({ message: 'Entity is required' }),
-  }),
+  entity: z.enum(['HQ', 'Factory', 'External']).optional().nullable(),
   category: z.enum(['Laptop', 'Monitor', 'Mouse', 'Keyboard', 'Printer', 'Mobile'], {
     errorMap: () => ({ message: 'Category is required' }),
   }),
@@ -284,7 +282,7 @@ export const assignInventorySchema = z.object({
 
 export const updateInventorySchema = z.object({
   company: z.string().min(1).optional(),
-  entity: z.enum(['HQ', 'Factory', 'External', 'Others']).optional(),
+  entity: z.enum(['HQ', 'Factory', 'External']).optional().nullable(),
   category: z.enum(['Laptop', 'Monitor', 'Mouse', 'Keyboard', 'Printer', 'Mobile']).optional(),
   details: z.string().min(1).optional(),
   device_id: z.string().min(1).optional(),
