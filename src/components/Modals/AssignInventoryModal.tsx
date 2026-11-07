@@ -14,7 +14,14 @@ interface AssignInventoryModalProps {
   users: AppUser[];
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (inventoryId: string, entity: InventoryEntity | null, userId: string | null, deviceId: string) => void;
+  onSubmit: (
+    inventoryId: string,
+    entity: InventoryEntity | null,
+    userId: string | null,
+    deviceId: string,
+    assignmentScope: 'user' | 'entity' | null,
+    location: string | null
+  ) => void;
 }
 
 export const AssignInventoryModal: React.FC<AssignInventoryModalProps> = ({
@@ -32,12 +39,14 @@ export const AssignInventoryModal: React.FC<AssignInventoryModalProps> = ({
   const [assigneeOpen, setAssigneeOpen] = useState(false);
   const [assigneeInput, setAssigneeInput] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isInfrastructure, setIsInfrastructure] = useState(false);
+  const [location, setLocation] = useState('');
 
   const activeUsers = users.filter((u) => u.is_active !== 0);
   const hqRoles = ['it', 'employee', 'manager', 'executive'];
   const factoryRoles = ['factory_employee', 'factory_it', 'factory_manager'];
   const externalRoles = ['external'];
-  const entityRoleMap: Record<InventoryEntity, string[]> = {
+  const entityRoleMap: Record<string, string[]> = {
     HQ: hqRoles,
     Factory: factoryRoles,
     External: externalRoles,
@@ -80,10 +89,24 @@ export const AssignInventoryModal: React.FC<AssignInventoryModalProps> = ({
       return;
     }
 
-    await onSubmit(inventoryId, entity, assignedUserId, generatedDeviceId);
+    if (isInfrastructure && !location.trim()) {
+      setErrorMsg('Location is required for infrastructure devices.');
+      return;
+    }
+
+    await onSubmit(
+      inventoryId,
+      isInfrastructure ? entity : null,
+      isInfrastructure ? null : assignedUserId,
+      generatedDeviceId,
+      isInfrastructure ? 'entity' : 'user',
+      isInfrastructure ? location.trim() : null
+    );
     setEntity(null);
     setAssignedUserId(null);
     setAssigneeInput('');
+    setLocation('');
+    setIsInfrastructure(false);
     onClose();
   };
 
@@ -122,8 +145,27 @@ export const AssignInventoryModal: React.FC<AssignInventoryModalProps> = ({
               </div>
 
               <div className="form-group inv-span-2">
+                <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <input
+                    id="assign-inventory-infrastructure-checkbox"
+                    type="checkbox"
+                    checked={isInfrastructure}
+                    onChange={(e) => {
+                      setIsInfrastructure(e.target.checked);
+                      if (e.target.checked) {
+                        setAssignedUserId(null);
+                        setAssigneeInput('');
+                      }
+                    }}
+                    className="form-checkbox"
+                  />
+                  Infrastructure (Entity-Level Device)
+                </label>
+              </div>
+
+              <div className="form-group inv-span-2">
                 <label htmlFor="assign-inventory-entity-select" className="form-label">
-                  Entity
+                  Entity{isInfrastructure ? ' *' : ''}
                 </label>
                 <select
                   id="assign-inventory-entity-select"
@@ -135,6 +177,7 @@ export const AssignInventoryModal: React.FC<AssignInventoryModalProps> = ({
                     setAssignedUserId(null);
                     setAssigneeInput('');
                   }}
+                  required={isInfrastructure}
                 >
                   <option value="">-- Select Entity --</option>
                   {INVENTORY_ENTITY_OPTIONS.map((opt) => (
@@ -145,51 +188,68 @@ export const AssignInventoryModal: React.FC<AssignInventoryModalProps> = ({
                 </select>
               </div>
 
-              <div className="form-group inv-span-2">
-                <label htmlFor="assign-inventory-assignee-select" className="form-label">
-                  Assignee (Optional)
-                </label>
-                <div id="assign-inventory-assignee-select" className="inv-assignee-wrap">
+              {isInfrastructure ? (
+                <div className="form-group inv-span-2">
+                  <label htmlFor="assign-inventory-location-input" className="form-label">
+                    Location *
+                  </label>
                   <input
-                    id="assign-inventory-assignee-input"
+                    id="assign-inventory-location-input"
                     type="text"
-                    className="form-input inv-select-primary-bg"
-                    disabled={!entity}
-                    value={assigneeInput}
-                    placeholder="-- Select User (Optional) --"
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setAssigneeInput(val);
-                      if (!val) setAssignedUserId(null);
-                      setAssigneeOpen(true);
-                    }}
-                    onFocus={() => setAssigneeOpen(true)}
-                    onBlur={() => setTimeout(() => setAssigneeOpen(false), 150)}
+                    className="form-input"
+                    value={location}
+                    placeholder="e.g. Factory Floor A, HQ Building 2, Field Site 3"
+                    onChange={(e) => setLocation(e.target.value)}
+                    required
                   />
-                  {assigneeOpen && (
-                    <div className="inv-assignee-dropdown">
-                      {filteredAssignees.length === 0 ? (
-                        <div className="inv-assignee-empty">No matching users available.</div>
-                      ) : (
-                        filteredAssignees.map((u) => (
-                          <div
-                            key={u.id}
-                            className={`inv-assignee-item ${assignedUserId === u.id ? 'inv-assignee-item-active' : ''}`}
-                            onMouseDown={(e) => {
-                              e.stopPropagation();
-                              setAssignedUserId(u.id);
-                              setAssigneeInput(`${u.name} (${formatEmployeeCode(u.username || u.id)})`);
-                              setAssigneeOpen(false);
-                            }}
-                          >
-                            {u.name} ({formatEmployeeCode(u.username || u.id)})
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  )}
                 </div>
-              </div>
+              ) : (
+                <div className="form-group inv-span-2">
+                  <label htmlFor="assign-inventory-assignee-select" className="form-label">
+                    Assignee (Optional)
+                  </label>
+                  <div id="assign-inventory-assignee-select" className="inv-assignee-wrap">
+                    <input
+                      id="assign-inventory-assignee-input"
+                      type="text"
+                      className="form-input inv-select-primary-bg"
+                      disabled={!entity}
+                      value={assigneeInput}
+                      placeholder="-- Select User (Optional) --"
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setAssigneeInput(val);
+                        if (!val) setAssignedUserId(null);
+                        setAssigneeOpen(true);
+                      }}
+                      onFocus={() => setAssigneeOpen(true)}
+                      onBlur={() => setTimeout(() => setAssigneeOpen(false), 150)}
+                    />
+                    {assigneeOpen && (
+                      <div className="inv-assignee-dropdown">
+                        {filteredAssignees.length === 0 ? (
+                          <div className="inv-assignee-empty">No matching users available.</div>
+                        ) : (
+                          filteredAssignees.map((u) => (
+                            <div
+                              key={u.id}
+                              className={`inv-assignee-item ${assignedUserId === u.id ? 'inv-assignee-item-active' : ''}`}
+                              onMouseDown={(e) => {
+                                e.stopPropagation();
+                                setAssignedUserId(u.id);
+                                setAssigneeInput(`${u.name} (${formatEmployeeCode(u.username || u.id)})`);
+                                setAssigneeOpen(false);
+                              }}
+                            >
+                              {u.name} ({formatEmployeeCode(u.username || u.id)})
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

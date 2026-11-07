@@ -613,14 +613,16 @@ export async function initDb() {
     CREATE TABLE IF NOT EXISTS inventory (
       id TEXT PRIMARY KEY,
       company TEXT NOT NULL,
-      entity TEXT CHECK(entity IN ('HQ','Factory','External')),
-      category TEXT NOT NULL CHECK(category IN ('Laptop','Monitor','Mouse','Keyboard','Printer','Mobile')),
+      entity TEXT NOT NULL CHECK(entity IN ('HQ','Factory','External','Others')),
+      category TEXT NOT NULL CHECK(category IN ('Laptop','Monitor','Mouse','Keyboard','Printer','Mobile','AccessPoint','Switch','Router','IPPhones','DoorLocks','Charger')),
       details TEXT NOT NULL,
       device_id TEXT NOT NULL UNIQUE,
       sn_mac_address TEXT NOT NULL UNIQUE,
       status TEXT NOT NULL DEFAULT 'Stocked' CHECK(status IN ('Stocked','Assigned','Under Repair','Retired','Lost')),
       assigned_user_id TEXT,
       assigned_user_name TEXT,
+      assignment_scope TEXT CHECK(assignment_scope IN ('user','entity')),
+      location TEXT,
       attachment TEXT,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
@@ -634,6 +636,8 @@ export async function initDb() {
     const requiredCols: Record<string, string> = {
       assigned_user_id: 'TEXT',
       assigned_user_name: 'TEXT',
+      assignment_scope: 'TEXT',
+      location: 'TEXT',
       attachment: 'TEXT',
     };
     for (const [colName, colType] of Object.entries(requiredCols)) {
@@ -641,6 +645,10 @@ export async function initDb() {
         await db.exec(`ALTER TABLE inventory ADD COLUMN ${colName} ${colType}`);
       }
     }
+    // Backfill assignment_scope for existing rows
+    await db.exec(
+      "UPDATE inventory SET assignment_scope = 'user' WHERE assigned_user_id IS NOT NULL AND (assignment_scope IS NULL OR assignment_scope = '')"
+    );
   } catch {
     // Table may not exist yet or already has all columns
   }
