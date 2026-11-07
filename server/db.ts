@@ -646,7 +646,9 @@ export async function initDb() {
       }
     }
     // Backfill assignment_scope for existing rows
-    await db.exec("UPDATE inventory SET assignment_scope = 'user' WHERE assigned_user_id IS NOT NULL AND (assignment_scope IS NULL OR assignment_scope = '')");
+    await db.exec(
+      "UPDATE inventory SET assignment_scope = 'user' WHERE assigned_user_id IS NOT NULL AND (assignment_scope IS NULL OR assignment_scope = '')"
+    );
   } catch {
     // Table may not exist yet or already has all columns
   }

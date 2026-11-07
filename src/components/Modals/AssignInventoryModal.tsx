@@ -14,7 +14,14 @@ interface AssignInventoryModalProps {
   users: AppUser[];
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (inventoryId: string, entity: InventoryEntity | null, userId: string | null, deviceId: string, assignmentScope: 'user' | 'entity' | null, location: string | null) => void;
+  onSubmit: (
+    inventoryId: string,
+    entity: InventoryEntity | null,
+    userId: string | null,
+    deviceId: string,
+    assignmentScope: 'user' | 'entity' | null,
+    location: string | null
+  ) => void;
 }
 
 export const AssignInventoryModal: React.FC<AssignInventoryModalProps> = ({
@@ -87,7 +94,14 @@ export const AssignInventoryModal: React.FC<AssignInventoryModalProps> = ({
       return;
     }
 
-    await onSubmit(inventoryId, isInfrastructure ? entity : null, isInfrastructure ? null : assignedUserId, generatedDeviceId, isInfrastructure ? 'entity' : 'user', isInfrastructure ? location.trim() : null);
+    await onSubmit(
+      inventoryId,
+      isInfrastructure ? entity : null,
+      isInfrastructure ? null : assignedUserId,
+      generatedDeviceId,
+      isInfrastructure ? 'entity' : 'user',
+      isInfrastructure ? location.trim() : null
+    );
     setEntity(null);
     setAssignedUserId(null);
     setAssigneeInput('');

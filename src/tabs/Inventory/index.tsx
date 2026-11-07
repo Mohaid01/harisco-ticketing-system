@@ -88,7 +88,10 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({
   };
 
   const companies = useMemo(() => [...new Set(inventory.map((i) => i.company).filter(Boolean))].sort(), [inventory]);
-  const entities = useMemo(() => [...new Set(inventory.map((i) => i.entity).filter(Boolean))].sort() as string[], [inventory]);
+  const entities = useMemo(
+    () => [...new Set(inventory.map((i) => i.entity).filter(Boolean))].sort() as string[],
+    [inventory]
+  );
 
   // Accurate counts across the whole inventory
   const allCount = inventory.length;

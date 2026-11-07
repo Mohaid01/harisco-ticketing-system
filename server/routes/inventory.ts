@@ -82,7 +82,18 @@ router.post(
       return res.status(400).json({ error: parsed.error.message || 'Invalid inventory data.' });
     }
 
-    const { company, entity, category, details, device_id, sn_mac_address, assigned_user_id, assignment_scope, location, attachment } = parsed.data;
+    const {
+      company,
+      entity,
+      category,
+      details,
+      device_id,
+      sn_mac_address,
+      assigned_user_id,
+      assignment_scope,
+      location,
+      attachment,
+    } = parsed.data;
 
     try {
       const db = getDb();
