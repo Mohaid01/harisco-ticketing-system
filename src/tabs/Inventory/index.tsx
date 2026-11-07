@@ -434,7 +434,10 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({
                             className="form-input"
                             style={{ width: '100%', height: '38px', backgroundColor: 'var(--bg-primary)' }}
                             value={draft.entity ?? item.entity ?? ''}
-                            onChange={(e) => setEditDraft({ ...draft, entity: e.target.value as InventoryEntity })}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setEditDraft({ ...draft, entity: val ? (val as InventoryEntity) : null });
+                            }}
                           >
                             <option value="">-- Select Entity --</option>
                             {INVENTORY_ENTITY_OPTIONS.map((opt) => (
@@ -444,7 +447,7 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({
                             ))}
                           </select>
                         ) : (
-                          item.entity
+                          item.entity || 'N/A'
                         )}
                       </td>
                       <td>

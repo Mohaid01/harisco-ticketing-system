@@ -52,8 +52,18 @@ export function generateDeviceId(params: {
   const categoryCode = CATEGORY_DEVICE_CODES[category] ?? category;
   const manuf = manufacturer.trim().replace(/\s+/g, '-');
   const prefix = `${DEVICE_ID_PREFIX}${manuf}-${categoryCode}`;
-  const count = inventory.filter((i) => i.company.trim() === manufacturer.trim() && i.category === category).length;
-  const seq = (count + 1).toString().padStart(DEVICE_ID_SEQ_PAD, '0');
+  const matching = inventory.filter(
+    (i) => i.company.trim().toUpperCase() === manufacturer.trim().toUpperCase() && i.category === category
+  );
+  const existingSeqs = matching
+    .map((i) => {
+      const parts = i.device_id.split('-');
+      const last = parts[parts.length - 1];
+      return /^\d+$/.test(last) ? parseInt(last, 10) : 0;
+    })
+    .filter((n) => !isNaN(n));
+  const nextSeq = existingSeqs.length > 0 ? Math.max(...existingSeqs) + 1 : 1;
+  const seq = nextSeq.toString().padStart(DEVICE_ID_SEQ_PAD, '0');
   return `${prefix}-${seq}`;
 }
 

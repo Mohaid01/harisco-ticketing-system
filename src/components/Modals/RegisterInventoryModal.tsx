@@ -257,7 +257,7 @@ export const RegisterInventoryModal: React.FC<RegisterInventoryModalProps> = ({
                   type="text"
                   className="form-input"
                   value={company}
-                  onChange={(e) => setCompany(e.target.value)}
+                  onChange={(e) => setCompany(e.target.value.toUpperCase())}
                   required
                 />
               </div>
@@ -325,7 +325,8 @@ export const RegisterInventoryModal: React.FC<RegisterInventoryModalProps> = ({
                   className="form-input inv-select-primary-bg"
                   value={entity ?? ''}
                   onChange={(e) => {
-                    setEntity(e.target.value as InventoryEntity);
+                    const val = e.target.value;
+                    setEntity(val ? (val as InventoryEntity) : null);
                     setAssignedUserId(null);
                     setAssigneeInput('');
                   }}
