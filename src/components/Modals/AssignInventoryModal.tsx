@@ -41,7 +41,6 @@ export const AssignInventoryModal: React.FC<AssignInventoryModalProps> = ({
     HQ: hqRoles,
     Factory: factoryRoles,
     External: externalRoles,
-    Others: [],
   };
 
   const matchesAssignee = (term: string, u: AppUser): boolean => {

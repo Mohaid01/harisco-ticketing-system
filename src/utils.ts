@@ -19,13 +19,12 @@ export function formatEmployeeCode(rawCode: string | undefined): string {
  * Short codes used in the Device ID for each inventory category.
  */
 export const CATEGORY_DEVICE_CODES: Record<InventoryCategory, string> = {
-  Laptop: 'Lap',
-  Monitor: 'Mon',
-  Mouse: 'Mou',
-  Keyboard: 'Key',
-  Printer: 'Pri',
-  Mobile: 'Mob',
-  Others: 'Oth',
+  Laptop: 'LAP',
+  Monitor: 'MON',
+  Mouse: 'MOU',
+  Keyboard: 'KEY',
+  Printer: 'PRI',
+  Mobile: 'MOB',
 };
 
 export const DEVICE_ID_PREFIX = 'HC-';
@@ -47,8 +46,18 @@ export function generateDeviceId(params: {
   const categoryCode = CATEGORY_DEVICE_CODES[category] ?? category;
   const manuf = manufacturer.trim().replace(/\s+/g, '-');
   const prefix = `${DEVICE_ID_PREFIX}${manuf}-${categoryCode}`;
-  const count = inventory.filter((i) => i.company.trim() === manufacturer.trim() && i.category === category).length;
-  const seq = (count + 1).toString().padStart(DEVICE_ID_SEQ_PAD, '0');
+  const matching = inventory.filter(
+    (i) => i.company.trim().toUpperCase() === manufacturer.trim().toUpperCase() && i.category === category
+  );
+  const existingSeqs = matching
+    .map((i) => {
+      const parts = i.device_id.split('-');
+      const last = parts[parts.length - 1];
+      return /^\d+$/.test(last) ? parseInt(last, 10) : 0;
+    })
+    .filter((n) => !isNaN(n));
+  const nextSeq = existingSeqs.length > 0 ? Math.max(...existingSeqs) + 1 : 1;
+  const seq = nextSeq.toString().padStart(DEVICE_ID_SEQ_PAD, '0');
   return `${prefix}-${seq}`;
 }
 

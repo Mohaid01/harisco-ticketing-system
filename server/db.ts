@@ -613,7 +613,7 @@ export async function initDb() {
     CREATE TABLE IF NOT EXISTS inventory (
       id TEXT PRIMARY KEY,
       company TEXT NOT NULL,
-      entity TEXT NOT NULL CHECK(entity IN ('HQ','Factory','External','Others')),
+      entity TEXT CHECK(entity IN ('HQ','Factory','External')),
       category TEXT NOT NULL CHECK(category IN ('Laptop','Monitor','Mouse','Keyboard','Printer','Mobile')),
       details TEXT NOT NULL,
       device_id TEXT NOT NULL UNIQUE,
@@ -651,6 +651,87 @@ export async function initDb() {
   await db.exec('CREATE INDEX IF NOT EXISTS idx_inventory_status ON inventory(status)');
   await db.exec('CREATE INDEX IF NOT EXISTS idx_inventory_entity ON inventory(entity)');
   await db.exec('CREATE INDEX IF NOT EXISTS idx_inventory_category ON inventory(category)');
+
+  // Migrate existing inventory data: allow NULL entity and backfill empty/invalid values
+  try {
+    const tableInfo = await db.all<{ name: string; notnull: number }[]>('PRAGMA table_info(inventory)');
+    const entityCol = tableInfo.find((c) => c.name === 'entity');
+    if (entityCol && entityCol.notnull === 1) {
+      logger.info('Migrating inventory entity column to allow NULL...');
+      await db.exec('PRAGMA foreign_keys=OFF;');
+      await db.exec('BEGIN TRANSACTION;');
+      await db.exec(`
+        CREATE TABLE inventory_new (
+          id TEXT PRIMARY KEY,
+          company TEXT NOT NULL,
+          entity TEXT CHECK(entity IN ('HQ','Factory','External')),
+          category TEXT NOT NULL CHECK(category IN ('Laptop','Monitor','Mouse','Keyboard','Printer','Mobile')),
+          details TEXT NOT NULL,
+          device_id TEXT NOT NULL UNIQUE,
+          sn_mac_address TEXT NOT NULL UNIQUE,
+          status TEXT NOT NULL DEFAULT 'Stocked' CHECK(status IN ('Stocked','Assigned','Under Repair','Retired','Lost')),
+          assigned_user_id TEXT,
+          assigned_user_name TEXT,
+          attachment TEXT,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL
+        );
+      `);
+      await db.exec(`
+        INSERT INTO inventory_new (id, company, entity, category, details, device_id, sn_mac_address, status, assigned_user_id, assigned_user_name, attachment, created_at, updated_at)
+        SELECT id, company,
+          CASE WHEN entity IN ('HQ','Factory','External') THEN entity ELSE NULL END,
+          category, details, device_id, sn_mac_address, status, assigned_user_id, assigned_user_name, attachment, created_at, updated_at
+        FROM inventory;
+      `);
+      await db.exec('DROP TABLE inventory;');
+      await db.exec('ALTER TABLE inventory_new RENAME TO inventory;');
+      await db.exec('COMMIT;');
+      await db.exec('PRAGMA foreign_keys=ON;');
+      logger.info('inventory entity column migrated to allow NULL.');
+    }
+  } catch (err) {
+    logger.error('Failed to migrate inventory entity column to NULL:', err);
+  }
+
+  // Backfill empty or invalid entity values to NULL
+  try {
+    await db.exec("UPDATE inventory SET entity = NULL WHERE entity = '' OR entity NOT IN ('HQ','Factory','External')");
+    logger.info('Backfilled invalid inventory entity values to NULL.');
+  } catch (err) {
+    logger.error('Failed to backfill inventory entity values:', err);
+  }
+
+  // Migrate existing inventory data: capitalize manufacturer and category code within device_id
+  // Format: HC-{Manufacturer}-{CategoryCode}-{sequence} -> uppercase Manufacturer + CategoryCode segments
+  try {
+    const rows = await db.all<{ id: string; device_id: string }[]>('SELECT id, device_id FROM inventory');
+    for (const row of rows) {
+      const parts = row.device_id.split('-');
+      if (parts.length >= 4) {
+        const catIdx = parts.length - 2;
+        const upperedManuf = parts[1].toUpperCase();
+        const upperedCat = parts[catIdx].toUpperCase();
+        if (upperedManuf !== parts[1] || upperedCat !== parts[catIdx]) {
+          parts[1] = upperedManuf;
+          parts[catIdx] = upperedCat;
+          const newDeviceId = parts.join('-');
+          await db.run('UPDATE inventory SET device_id = ? WHERE id = ?', [newDeviceId, row.id]);
+        }
+      }
+    }
+    logger.info('Migrated inventory device_id manufacturer and category codes to uppercase.');
+  } catch (err) {
+    logger.error('Failed to migrate inventory device_id manufacturer and category codes:', err);
+  }
+
+  // Migrate existing inventory data: capitalize manufacturer (company) column
+  try {
+    await db.exec('UPDATE inventory SET company = UPPER(company)');
+    logger.info('Migrated inventory manufacturer (company) to uppercase.');
+  } catch (err) {
+    logger.error('Failed to migrate inventory manufacturer to uppercase:', err);
+  }
 
   // Create Factory Attendance Logs Table
   await db.exec(`
