@@ -369,6 +369,7 @@ export const INVENTORY_ENTITY_LABELS: Record<InventoryEntity, string> = {
   HQ: 'HQ',
   Factory: 'Factory',
   External: 'External',
+  Others: 'Others,'
 };
 
 export const INVENTORY_ENTITY_OPTIONS = [
