@@ -89,7 +89,7 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({
 
   const companies = useMemo(() => [...new Set(inventory.map((i) => i.company).filter(Boolean))].sort(), [inventory]);
   const entities = useMemo(
-    () => [...new Set(inventory.map((i) => i.entity).filter(Boolean))].sort() as InventoryEntity[],
+    () => [...new Set(inventory.map((i) => i.entity).filter(Boolean))].sort() as string[],
     [inventory]
   );
 
@@ -499,7 +499,11 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({
                         )}
                       </td>
                       <td style={{ fontSize: '0.85rem' }}>
-                        {item.assigned_user_id || item.assigned_user_name ? (
+                        {item.assignment_scope === 'entity' ? (
+                          <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>
+                            {item.location} ({item.entity})
+                          </span>
+                        ) : item.assigned_user_id || item.assigned_user_name ? (
                           <span style={{ color: 'var(--text-primary)' }}>
                             {getAssignedUserName(item.assigned_user_id, item.assigned_user_name, userMap)}
                           </span>

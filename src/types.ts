@@ -256,8 +256,20 @@ export type HSEStatus = 'open' | 'escalated' | 'in_progress' | 'rejected' | 'clo
 
 // Inventory Types
 export type InventoryStatus = 'Stocked' | 'Assigned' | 'Under Repair' | 'Retired' | 'Lost';
-export type InventoryCategory = 'Laptop' | 'Monitor' | 'Mouse' | 'Keyboard' | 'Printer' | 'Mobile';
-export type InventoryEntity = 'HQ' | 'Factory' | 'External';
+export type InventoryCategory =
+  | 'Laptop'
+  | 'Monitor'
+  | 'Mouse'
+  | 'Keyboard'
+  | 'Printer'
+  | 'Mobile'
+  | 'AccessPoint'
+  | 'Switch'
+  | 'Router'
+  | 'IPPhones'
+  | 'DoorLocks'
+  | 'Charger';
+export type InventoryEntity = 'HQ' | 'Factory' | 'External' | 'Others';
 
 export interface Inventory {
   id: string;
@@ -270,6 +282,8 @@ export interface Inventory {
   status: InventoryStatus;
   assigned_user_id: string | null;
   assigned_user_name?: string | null;
+  assignment_scope: 'user' | 'entity' | null;
+  location?: string | null;
   attachment?: string | null;
   created_at: string;
   updated_at: string;
