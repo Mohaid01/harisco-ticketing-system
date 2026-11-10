@@ -35,6 +35,8 @@ export const useDocumentGenerator = ({ currentUser, token }: UseDocumentGenerato
   const [controlledData, setControlledData] = useState<ControlledDocumentData>({
     title: '',
     description: '',
+    appendixNumber: '',
+    formNumber: '',
   });
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);

@@ -3,10 +3,10 @@ import React, { useState } from 'react';
 import type { DocumentGeneratorProps, GeneratedDocumentRecord } from './types';
 
 import ScreenAccessManager from '../../components/ScreenAccessManager';
-import { CorporateSchemeSelector } from './components/CorporateSchemeSelector';
 import { ControlledDocumentForm } from './components/ControlledDocumentForm';
-import { SignOffSection } from './components/SignOffSection';
+import { CorporateSchemeSelector } from './components/CorporateSchemeSelector';
 import { DocumentRegistryTable } from './components/DocumentRegistryTable';
+import { SignOffSection } from './components/SignOffSection';
 import { useDocumentGenerator } from './hooks/useDocumentGenerator';
 import { useDocumentRegistry } from './hooks/useDocumentRegistry';
 import { downloadExcelBlob, generateDocumentExcel } from './utils/excelGenerator';
@@ -104,6 +104,8 @@ export const DocumentGenerator: React.FC<DocumentGeneratorProps> = ({ currentUse
         docDate: todayIso,
         title: doc.title,
         content,
+        appendixNumber: content.appendixNumber,
+        formNumber: content.formNumber,
       });
 
       downloadWordBlob(bytes, doc.documentId);

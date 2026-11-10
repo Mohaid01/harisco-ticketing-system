@@ -26,6 +26,8 @@ export interface DocumentSignOff {
 export interface ControlledDocumentData {
   title: string;
   description: string;
+  appendixNumber: string;
+  formNumber: string;
 }
 
 export interface GeneratedDocumentRecord {

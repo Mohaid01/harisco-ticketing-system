@@ -51,6 +51,35 @@ export const ControlledDocumentForm: React.FC<ControlledDocumentFormProps> = ({ 
           placeholder="State the purpose, scope, and key details of this controlled document."
         />
       </div>
+
+      <div className="docgen-input-group" style={{ marginBottom: '1rem' }}>
+        <label htmlFor="controlled-appendix-number" className="docgen-label">
+          Appendix Number
+        </label>
+        <input
+          id="controlled-appendix-number"
+          type="text"
+          className="docgen-input"
+          value={data.appendixNumber}
+          onChange={(e) => updateField('appendixNumber', e.target.value)}
+          placeholder="e.g. Appendix -1"
+        />
+      </div>
+
+      <div className="docgen-input-group">
+        <label htmlFor="controlled-form-number" className="docgen-label">
+          Form / Document Number
+        </label>
+        <input
+          id="controlled-form-number"
+          type="text"
+          className="docgen-input"
+          value={data.formNumber}
+          onChange={(e) => updateField('formNumber', e.target.value)}
+          placeholder="e.g. HC/ HSE-F -1.19"
+          required
+        />
+      </div>
     </div>
   );
 };
