@@ -91,7 +91,6 @@ export const useDocumentGenerator = ({ currentUser, token }: UseDocumentGenerato
     setErrorMessage(null);
     setSuccessInfo(null);
 
-    const title = getEffectiveTitle();
     const content = getContentPayload();
 
     try {
@@ -107,7 +106,7 @@ export const useDocumentGenerator = ({ currentUser, token }: UseDocumentGenerato
           docTypeCode,
           year,
           revision,
-          title,
+          title: content.title,
           preparedByName: signOff.preparedByName,
           checkedByName: signOff.checkedByName,
           approvedByName: signOff.approvedByName,

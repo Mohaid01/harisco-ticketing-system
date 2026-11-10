@@ -16,7 +16,7 @@ interface GenerateWordParams {
 const COMPANY_NAME = 'HARIS & Co Engineering Concern Pvt Ltd.';
 
 export const generateDocumentWord = async (params: GenerateWordParams): Promise<Uint8Array> => {
-  const { documentId, revision, entityCode, departmentCode, docTypeCode, docDate, title, content, appendixNumber, formNumber } = params;
+  const { revision, appendixNumber, formNumber, content } = params;
 
   const HARISCO_LOGO_URL = new URL('../assets/harisco-logo.png', import.meta.url).href;
 
@@ -185,6 +185,7 @@ export const generateDocumentWord = async (params: GenerateWordParams): Promise<
       file.async('text').then((xmlContent) => {
         console.log(`[WordGenerator] Processing ${relativePath}, length: ${xmlContent.length}`);
         let newContent = replaceWithinNodes(xmlContent);
+        // Second pass: handle cross-run placeholders
         newContent = replaceAcrossRuns(newContent);
         zip.file(relativePath, newContent);
         console.log(`[WordGenerator] Finished ${relativePath}`);
