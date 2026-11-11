@@ -9,7 +9,6 @@ import { DocumentRegistryTable } from './components/DocumentRegistryTable';
 import { SignOffSection } from './components/SignOffSection';
 import { useDocumentGenerator } from './hooks/useDocumentGenerator';
 import { useDocumentRegistry } from './hooks/useDocumentRegistry';
-import { downloadExcelBlob, generateDocumentExcel } from './utils/excelGenerator';
 import { downloadWordBlob, generateDocumentWord } from './utils/wordGenerator';
 import './DocumentGenerator.css';
 
@@ -58,35 +57,6 @@ export const DocumentGenerator: React.FC<DocumentGeneratorProps> = ({ currentUse
 
   const isIT = currentUser.role === 'it';
 
-  const handleGenerateExcelAndDownload = async () => {
-    const doc = await submitDocument();
-    if (!doc) return;
-
-    try {
-      const todayIso = doc.docDate || new Date().toISOString().split('T')[0];
-      const content = getContentPayload();
-
-      const bytes = await generateDocumentExcel({
-        documentId: doc.documentId,
-        revision: doc.revision,
-        entityCode: doc.entityCode,
-        departmentCode: doc.departmentCode,
-        docTypeCode: doc.docTypeCode,
-        docDate: todayIso,
-        title: doc.title,
-        content,
-        preparedByName: signOff.preparedByName,
-        checkedByName: signOff.checkedByName,
-        approvedByName: signOff.approvedByName,
-      });
-
-      downloadExcelBlob(bytes, doc.documentId);
-      refreshDocuments();
-    } catch (err) {
-      console.error('Failed to build Excel after registering:', err);
-    }
-  };
-
   const handleGenerateWordAndDownload = async () => {
     const doc = await submitDocument();
     if (!doc) return;
@@ -112,43 +82,6 @@ export const DocumentGenerator: React.FC<DocumentGeneratorProps> = ({ currentUse
       refreshDocuments();
     } catch (err) {
       console.error('Failed to build Word after registering:', err);
-    }
-  };
-
-  const handleDownloadExcelFromRegistry = async (record: GeneratedDocumentRecord) => {
-    try {
-      let parsedContent: { title: string; description: string } = { title: '', description: '' };
-      try {
-        if (record.content_json) {
-          const parsed = JSON.parse(record.content_json) as { title?: string; description?: string };
-          parsedContent = {
-            title: parsed.title ?? record.title,
-            description: parsed.description ?? '',
-          };
-        } else {
-          parsedContent = { title: record.title, description: '' };
-        }
-      } catch {
-        parsedContent = { title: record.title, description: '' };
-      }
-
-      const bytes = await generateDocumentExcel({
-        documentId: record.document_id,
-        revision: record.revision,
-        entityCode: record.entity_code,
-        departmentCode: record.department_code,
-        docTypeCode: record.doc_type_code,
-        docDate: record.doc_date,
-        title: record.title,
-        content: parsedContent,
-        preparedByName: record.prepared_by_name,
-        checkedByName: record.checked_by_name || '',
-        approvedByName: record.approved_by_name || '',
-      });
-
-      downloadExcelBlob(bytes, record.document_id);
-    } catch (err) {
-      console.error('Failed to download existing document Excel:', err);
     }
   };
 
@@ -262,14 +195,6 @@ export const DocumentGenerator: React.FC<DocumentGeneratorProps> = ({ currentUse
             <div className="docgen-actions-right">
               <button
                 type="button"
-                className="docgen-btn docgen-btn-secondary"
-                onClick={handleGenerateExcelAndDownload}
-                disabled={isSubmitting}
-              >
-                Download Excel
-              </button>
-              <button
-                type="button"
                 className="docgen-btn docgen-btn-primary"
                 onClick={handleGenerateWordAndDownload}
                 disabled={isSubmitting}
@@ -296,7 +221,6 @@ export const DocumentGenerator: React.FC<DocumentGeneratorProps> = ({ currentUse
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
           onRefresh={refreshDocuments}
-          onDownloadExcel={handleDownloadExcelFromRegistry}
           onDownloadWord={handleDownloadWordFromRegistry}
           onUpdateRevision={updateRevision}
         />

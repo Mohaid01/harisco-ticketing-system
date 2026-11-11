@@ -18,7 +18,6 @@ interface DocumentRegistryTableProps {
   searchQuery: string;
   setSearchQuery: (val: string) => void;
   onRefresh: () => void;
-  onDownloadExcel: (doc: GeneratedDocumentRecord) => void;
   onDownloadWord: (doc: GeneratedDocumentRecord) => void;
   onUpdateRevision: (docId: string, newRev: string) => Promise<boolean>;
 }
@@ -37,7 +36,6 @@ export const DocumentRegistryTable: React.FC<DocumentRegistryTableProps> = ({
   searchQuery,
   setSearchQuery,
   onRefresh,
-  onDownloadExcel,
   onDownloadWord,
   onUpdateRevision,
 }) => {
@@ -187,15 +185,7 @@ export const DocumentRegistryTable: React.FC<DocumentRegistryTableProps> = ({
                   </td>
                   <td>{doc.prepared_by_name}</td>
                   <td style={{ whiteSpace: 'nowrap' }}>{doc.doc_date}</td>
-                  <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                    <button
-                      type="button"
-                      className="docgen-btn docgen-btn-secondary"
-                      style={{ padding: '0.25rem 0.55rem', fontSize: '0.75rem', marginRight: '0.4rem' }}
-                      onClick={() => onDownloadExcel(doc)}
-                    >
-                      Excel
-                    </button>
+                      <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                     <button
                       type="button"
                       className="docgen-btn docgen-btn-primary"
