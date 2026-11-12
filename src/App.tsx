@@ -2225,7 +2225,7 @@ function App() {
           ) : activeTab === 'cv_generator' ? (
             <CVGenerator currentUser={currentUser} token={token!} allUsers={users} />
           ) : activeTab === 'document_generator' ? (
-            <DocumentGenerator currentUser={currentUser} token={token!} allUsers={users} />
+            <DocumentGenerator currentUser={currentUser} token={token!} allUsers={allAssignableUsers} />
           ) : activeTab === 'admin_tickets' ? (
             currentAdminTicket ? (
               <AdminTicketDetails

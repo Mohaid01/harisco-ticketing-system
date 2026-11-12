@@ -3,8 +3,6 @@ import React, { useState } from 'react';
 import type { AppUser } from '../../../types';
 import type { DocumentSignOff } from '../types';
 
-const HQ_ROLES = ['it', 'employee', 'manager', 'executive'];
-
 interface SignOffSectionProps {
   signOff: DocumentSignOff;
   setSignOff: React.Dispatch<React.SetStateAction<DocumentSignOff>>;
@@ -12,21 +10,28 @@ interface SignOffSectionProps {
 }
 
 export const SignOffSection: React.FC<SignOffSectionProps> = ({ signOff, setSignOff, allUsers }) => {
-  const hqUsers = allUsers.filter((u) => HQ_ROLES.includes(u.role));
-
+  const [searchPrepared, setSearchPrepared] = useState('');
   const [searchChecked, setSearchChecked] = useState('');
   const [searchApproved, setSearchApproved] = useState('');
+  const [openPrepared, setOpenPrepared] = useState(false);
   const [openChecked, setOpenChecked] = useState(false);
   const [openApproved, setOpenApproved] = useState(false);
 
-  const filteredChecked = hqUsers.filter(
+  const filteredPrepared = allUsers.filter(
+    (u) =>
+      !searchPrepared ||
+      u.name.toLowerCase().includes(searchPrepared.toLowerCase()) ||
+      (u.designation || '').toLowerCase().includes(searchPrepared.toLowerCase())
+  );
+
+  const filteredChecked = allUsers.filter(
     (u) =>
       !searchChecked ||
       u.name.toLowerCase().includes(searchChecked.toLowerCase()) ||
       (u.designation || '').toLowerCase().includes(searchChecked.toLowerCase())
   );
 
-  const filteredApproved = hqUsers.filter(
+  const filteredApproved = allUsers.filter(
     (u) =>
       !searchApproved ||
       u.name.toLowerCase().includes(searchApproved.toLowerCase()) ||
@@ -70,11 +75,12 @@ export const SignOffSection: React.FC<SignOffSectionProps> = ({ signOff, setSign
           id={`signoff-${field}`}
           type="text"
           className="form-input inv-select-primary-bg"
-          value={value || searchTerm}
+          value={searchTerm || value}
           onChange={(e) => {
-            setSearchTerm(e.target.value);
+            const val = e.target.value;
+            setSearchTerm(val);
             setOpen(true);
-            if (!value) handleChange(field, '');
+            handleChange(field, val);
           }}
           onFocus={() => setOpen(true)}
           onBlur={() => setTimeout(() => setOpen(false), 150)}
@@ -86,7 +92,7 @@ export const SignOffSection: React.FC<SignOffSectionProps> = ({ signOff, setSign
             style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10 }}
           >
             {filtered.length === 0 ? (
-              <div className="inv-assignee-empty">No matching HQ users available.</div>
+              <div className="inv-assignee-empty">No matching users available.</div>
             ) : (
               filtered.map((u) => (
                 <div
@@ -94,7 +100,10 @@ export const SignOffSection: React.FC<SignOffSectionProps> = ({ signOff, setSign
                   className={`inv-assignee-item ${value && value.includes(u.name) ? 'inv-assignee-item-active' : ''}`}
                   onMouseDown={(e) => {
                     e.stopPropagation();
-                    selectUser(field, u, () => setOpen(false));
+                    selectUser(field, u, () => {
+                      setOpen(false);
+                      setSearchTerm('');
+                    });
                   }}
                 >
                   {u.name} ({u.designation || ''})
@@ -117,19 +126,16 @@ export const SignOffSection: React.FC<SignOffSectionProps> = ({ signOff, setSign
       </div>
 
       <div className="docgen-grid-3">
-        <div className="docgen-input-group">
-          <label htmlFor="signoff-preparedByName" className="docgen-label">
-            Prepared By
-          </label>
-          <input
-            id="signoff-preparedByName"
-            type="text"
-            className="form-input"
-            value={signOff.preparedByName}
-            placeholder="Enter name"
-            onChange={(e) => handleChange('preparedByName', e.target.value)}
-          />
-        </div>
+        {renderSearchableSelect({
+          field: 'preparedByName',
+          value: signOff.preparedByName,
+          filtered: filteredPrepared,
+          searchTerm: searchPrepared,
+          setSearchTerm: setSearchPrepared,
+          setOpen: setOpenPrepared,
+          isOpen: openPrepared,
+          label: 'Prepared By',
+        })}
         {renderSearchableSelect({
           field: 'checkedByName',
           value: signOff.checkedByName,
