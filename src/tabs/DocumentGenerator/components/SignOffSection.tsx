@@ -14,19 +14,10 @@ interface SignOffSectionProps {
 export const SignOffSection: React.FC<SignOffSectionProps> = ({ signOff, setSignOff, allUsers }) => {
   const hqUsers = allUsers.filter((u) => HQ_ROLES.includes(u.role));
 
-  const [searchPrepared, setSearchPrepared] = useState('');
   const [searchChecked, setSearchChecked] = useState('');
   const [searchApproved, setSearchApproved] = useState('');
-  const [openPrepared, setOpenPrepared] = useState(false);
   const [openChecked, setOpenChecked] = useState(false);
   const [openApproved, setOpenApproved] = useState(false);
-
-  const filteredPrepared = hqUsers.filter(
-    (u) =>
-      !searchPrepared ||
-      u.name.toLowerCase().includes(searchPrepared.toLowerCase()) ||
-      (u.designation || '').toLowerCase().includes(searchPrepared.toLowerCase())
-  );
 
   const filteredChecked = hqUsers.filter(
     (u) =>
@@ -126,16 +117,19 @@ export const SignOffSection: React.FC<SignOffSectionProps> = ({ signOff, setSign
       </div>
 
       <div className="docgen-grid-3">
-        {renderSearchableSelect({
-          field: 'preparedByName',
-          value: signOff.preparedByName,
-          filtered: filteredPrepared,
-          searchTerm: searchPrepared,
-          setSearchTerm: setSearchPrepared,
-          setOpen: setOpenPrepared,
-          isOpen: openPrepared,
-          label: 'Prepared By',
-        })}
+        <div className="docgen-input-group">
+          <label htmlFor="signoff-preparedByName" className="docgen-label">
+            Prepared By
+          </label>
+          <input
+            id="signoff-preparedByName"
+            type="text"
+            className="form-input"
+            value={signOff.preparedByName}
+            placeholder="Enter name"
+            onChange={(e) => handleChange('preparedByName', e.target.value)}
+          />
+        </div>
         {renderSearchableSelect({
           field: 'checkedByName',
           value: signOff.checkedByName,
