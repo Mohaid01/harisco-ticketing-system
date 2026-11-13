@@ -150,6 +150,9 @@ export const DocumentRegistryTable: React.FC<DocumentRegistryTableProps> = ({
               <th>Type</th>
               <th>Document Title</th>
               <th>Prepared By</th>
+              <th>Prepared Date</th>
+              <th>Checked Date</th>
+              <th>Approved Date</th>
               <th>Date</th>
               <th style={{ textAlign: 'right' }}>Actions</th>
             </tr>
@@ -157,13 +160,13 @@ export const DocumentRegistryTable: React.FC<DocumentRegistryTableProps> = ({
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={9} style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--text-muted)' }}>
+                <td colSpan={12} style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--text-muted)' }}>
                   Loading Master Document Register...
                 </td>
               </tr>
             ) : documents.length === 0 ? (
               <tr>
-                <td colSpan={9} style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--text-muted)' }}>
+                <td colSpan={12} style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--text-muted)' }}>
                   No documents found matching the filter criteria.
                 </td>
               </tr>
@@ -184,6 +187,9 @@ export const DocumentRegistryTable: React.FC<DocumentRegistryTableProps> = ({
                     {doc.title}
                   </td>
                   <td>{doc.prepared_by_name}</td>
+                  <td style={{ whiteSpace: 'nowrap' }}>{doc.prepared_by_date || '-'}</td>
+                  <td style={{ whiteSpace: 'nowrap' }}>{doc.checked_by_date || '-'}</td>
+                  <td style={{ whiteSpace: 'nowrap' }}>{doc.approved_by_date || '-'}</td>
                   <td style={{ whiteSpace: 'nowrap' }}>{doc.doc_date}</td>
                       <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                     <button

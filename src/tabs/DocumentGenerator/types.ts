@@ -17,6 +17,9 @@ export interface DocumentSignOff {
   preparedByName: string;
   checkedByName: string;
   approvedByName: string;
+  preparedByDate: string;
+  checkedByDate: string;
+  approvedByDate: string;
 }
 
 /**
@@ -44,6 +47,9 @@ export interface GeneratedDocumentRecord {
   prepared_by_name: string;
   checked_by_name: string | null;
   approved_by_name: string | null;
+  prepared_by_date: string | null;
+  checked_by_date: string | null;
+  approved_by_date: string | null;
   doc_date: string;
   content_json: string | null;
   file_name: string;

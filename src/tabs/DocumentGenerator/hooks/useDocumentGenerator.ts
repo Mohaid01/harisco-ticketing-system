@@ -29,6 +29,9 @@ export const useDocumentGenerator = ({ currentUser, token }: UseDocumentGenerato
     preparedByName: currentUser.name,
     checkedByName: '',
     approvedByName: '',
+    preparedByDate: todayIso,
+    checkedByDate: todayIso,
+    approvedByDate: todayIso,
   });
 
   // Single controlled content shared by all document types.
@@ -110,6 +113,9 @@ export const useDocumentGenerator = ({ currentUser, token }: UseDocumentGenerato
           preparedByName: signOff.preparedByName,
           checkedByName: signOff.checkedByName,
           approvedByName: signOff.approvedByName,
+          preparedByDate: signOff.preparedByDate || todayIso,
+          checkedByDate: signOff.checkedByDate || todayIso,
+          approvedByDate: signOff.approvedByDate || todayIso,
           docDate: todayIso,
           contentJson: JSON.stringify(content),
         }),

@@ -89,6 +89,9 @@ interface GenerateRequestBody {
   preparedByName: string;
   checkedByName?: string;
   approvedByName?: string;
+  preparedByDate?: string;
+  checkedByDate?: string;
+  approvedByDate?: string;
   docDate: string;
   contentJson?: string;
 }
@@ -110,6 +113,9 @@ router.post('/generate', authenticateToken, async (req: ApiAuthRequest<GenerateR
     preparedByName,
     checkedByName,
     approvedByName,
+    preparedByDate,
+    checkedByDate,
+    approvedByDate,
     docDate,
     contentJson,
   } = req.body;
@@ -167,9 +173,10 @@ router.post('/generate', authenticateToken, async (req: ApiAuthRequest<GenerateR
       `INSERT INTO generated_documents (
         id, document_id, entity_code, department_code, doc_type_code, year,
         sequence_number, revision, title, prepared_by_id, prepared_by_name,
-        checked_by_name, approved_by_name, doc_date, content_json, file_name,
+        checked_by_name, approved_by_name, prepared_by_date, checked_by_date, approved_by_date,
+        doc_date, content_json, file_name,
         created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         docUuid,
         documentId,
@@ -184,6 +191,9 @@ router.post('/generate', authenticateToken, async (req: ApiAuthRequest<GenerateR
         preparedByName?.trim() || user.name,
         checkedByName?.trim() || null,
         approvedByName?.trim() || null,
+        preparedByDate || null,
+        checkedByDate || null,
+        approvedByDate || null,
         docDate || nowIso.split('T')[0],
         contentJson || null,
         fileName,
@@ -213,6 +223,9 @@ router.post('/generate', authenticateToken, async (req: ApiAuthRequest<GenerateR
         preparedByName: preparedByName?.trim() || user.name,
         checkedByName: checkedByName?.trim() || null,
         approvedByName: approvedByName?.trim() || null,
+        preparedByDate: preparedByDate || null,
+        checkedByDate: checkedByDate || null,
+        approvedByDate: approvedByDate || null,
         docDate: docDate || nowIso.split('T')[0],
         fileName,
         createdAt: nowIso,

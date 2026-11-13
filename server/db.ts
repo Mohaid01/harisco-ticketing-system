@@ -779,6 +779,24 @@ export async function initDb() {
   await db.exec('CREATE INDEX IF NOT EXISTS idx_gen_docs_doctype ON generated_documents(doc_type_code)');
   await db.exec('CREATE INDEX IF NOT EXISTS idx_gen_docs_year ON generated_documents(year)');
 
+  // Self-healing migration: add sign-off date columns to existing generated_documents tables
+  try {
+    const genDocsCols = await db.all<{ name: string }[]>('PRAGMA table_info(generated_documents)');
+    const genDocColNames = genDocsCols.map((c) => c.name);
+    const requiredDateCols: Record<string, string> = {
+      prepared_by_date: 'TEXT',
+      checked_by_date: 'TEXT',
+      approved_by_date: 'TEXT',
+    };
+    for (const [colName, colType] of Object.entries(requiredDateCols)) {
+      if (!genDocColNames.includes(colName)) {
+        await db.exec(`ALTER TABLE generated_documents ADD COLUMN ${colName} ${colType}`);
+      }
+    }
+  } catch {
+    // Table may not exist yet or already has all columns
+  }
+
   // Seed initial admin user if table is empty
   const userCount = await db.get<{ count: number }>('SELECT COUNT(*) as count FROM users');
   if (userCount && userCount.count === 0) {

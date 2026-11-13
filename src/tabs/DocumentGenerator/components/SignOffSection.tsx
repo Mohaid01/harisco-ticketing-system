@@ -43,7 +43,9 @@ export const SignOffSection: React.FC<SignOffSectionProps> = ({ signOff, setSign
   };
 
   const selectUser = (field: keyof DocumentSignOff, user: AppUser, closeFn: () => void) => {
-    setSignOff((prev) => ({ ...prev, [field]: `${user.name} (${user.designation || ''})`.trimEnd() }));
+    const designation = user.designation || '';
+    const label = user.name + ' (' + designation + ')';
+    setSignOff((prev) => ({ ...prev, [field]: label }));
     closeFn();
   };
 
@@ -126,36 +128,78 @@ export const SignOffSection: React.FC<SignOffSectionProps> = ({ signOff, setSign
       </div>
 
       <div className="docgen-grid-3">
-        {renderSearchableSelect({
-          field: 'preparedByName',
-          value: signOff.preparedByName,
-          filtered: filteredPrepared,
-          searchTerm: searchPrepared,
-          setSearchTerm: setSearchPrepared,
-          setOpen: setOpenPrepared,
-          isOpen: openPrepared,
-          label: 'Prepared By',
-        })}
-        {renderSearchableSelect({
-          field: 'checkedByName',
-          value: signOff.checkedByName,
-          filtered: filteredChecked,
-          searchTerm: searchChecked,
-          setSearchTerm: setSearchChecked,
-          setOpen: setOpenChecked,
-          isOpen: openChecked,
-          label: 'Checked / Reviewed By',
-        })}
-        {renderSearchableSelect({
-          field: 'approvedByName',
-          value: signOff.approvedByName,
-          filtered: filteredApproved,
-          searchTerm: searchApproved,
-          setSearchTerm: setSearchApproved,
-          setOpen: setOpenApproved,
-          isOpen: openApproved,
-          label: 'Approved By',
-        })}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.425rem' }}>
+          {renderSearchableSelect({
+            field: 'preparedByName',
+            value: signOff.preparedByName,
+            filtered: filteredPrepared,
+            searchTerm: searchPrepared,
+            setSearchTerm: setSearchPrepared,
+            setOpen: setOpenPrepared,
+            isOpen: openPrepared,
+            label: 'Prepared By',
+          })}
+          <div className="docgen-input-group">
+            <label htmlFor="signoff-preparedByDate" className="docgen-label">
+              Prepared Date
+            </label>
+            <input
+              id="signoff-preparedByDate"
+              type="date"
+              className="form-input"
+              value={signOff.preparedByDate || ''}
+              onChange={(e) => handleChange('preparedByDate', e.target.value)}
+            />
+          </div>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.425rem' }}>
+          {renderSearchableSelect({
+            field: 'checkedByName',
+            value: signOff.checkedByName,
+            filtered: filteredChecked,
+            searchTerm: searchChecked,
+            setSearchTerm: setSearchChecked,
+            setOpen: setOpenChecked,
+            isOpen: openChecked,
+            label: 'Checked / Reviewed By',
+          })}
+          <div className="docgen-input-group">
+            <label htmlFor="signoff-checkedByDate" className="docgen-label">
+              Checked / Reviewed Date
+            </label>
+            <input
+              id="signoff-checkedByDate"
+              type="date"
+              className="form-input"
+              value={signOff.checkedByDate || ''}
+              onChange={(e) => handleChange('checkedByDate', e.target.value)}
+            />
+          </div>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.425rem' }}>
+          {renderSearchableSelect({
+            field: 'approvedByName',
+            value: signOff.approvedByName,
+            filtered: filteredApproved,
+            searchTerm: searchApproved,
+            setSearchTerm: setSearchApproved,
+            setOpen: setOpenApproved,
+            isOpen: openApproved,
+            label: 'Approved By',
+          })}
+          <div className="docgen-input-group">
+            <label htmlFor="signoff-approvedByDate" className="docgen-label">
+              Approved Date
+            </label>
+            <input
+              id="signoff-approvedByDate"
+              type="date"
+              className="form-input"
+              value={signOff.approvedByDate || ''}
+              onChange={(e) => handleChange('approvedByDate', e.target.value)}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
