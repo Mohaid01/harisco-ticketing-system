@@ -2236,6 +2236,8 @@ function App() {
     device_id: string;
     sn_mac_address: string;
     assigned_user_id: string | null;
+    assignment_scope: 'user' | 'entity' | null;
+    location: string | null;
     attachment: string | null;
   }) => {
     if (!token || !currentUser) return;
@@ -2252,12 +2254,14 @@ function App() {
 
     const payload: Record<string, unknown> = {
       company: data.company,
-      entity: data.entity ?? 'Others',
+      entity: data.entity ?? null,
       category: data.category,
       details: data.details,
       device_id: generatedDeviceId,
       sn_mac_address: data.sn_mac_address,
       assigned_user_id: data.assigned_user_id,
+      assignment_scope: data.assignment_scope,
+      location: data.location,
       attachment: data.attachment,
     };
 
@@ -2325,7 +2329,9 @@ function App() {
     id: string,
     entity: InventoryEntity | null,
     userId: string | null,
-    deviceId: string
+    deviceId: string,
+    assignmentScope: 'user' | 'entity' | null,
+    location: string | null
   ) => {
     if (!token || !currentUser) return;
 
@@ -2336,9 +2342,11 @@ function App() {
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
-        status: 'Assigned',
-        assigned_user_id: userId,
+        status: assignmentScope === 'entity' ? 'Stocked' : 'Assigned',
+        assigned_user_id: assignmentScope === 'entity' ? null : userId,
         entity: entity ?? undefined,
+        assignment_scope: assignmentScope,
+        location,
         device_id: deviceId,
       }),
     });
@@ -2687,7 +2695,7 @@ function App() {
           inventoryId={selectedInventoryIdForAssign}
           inventory={inventory}
           company={inventory.find((i) => i.id === selectedInventoryIdForAssign)?.company ?? ''}
-          category={inventory.find((i) => i.id === selectedInventoryIdForAssign)?.category ?? 'Others'}
+          category={inventory.find((i) => i.id === selectedInventoryIdForAssign)?.category ?? 'Laptop'}
           users={allAssignableUsers}
           isOpen={!!selectedInventoryIdForAssign}
           onClose={() => setSelectedInventoryIdForAssign(null)}
