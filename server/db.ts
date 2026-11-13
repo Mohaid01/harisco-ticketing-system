@@ -779,6 +779,25 @@ export async function initDb() {
   await db.exec('CREATE INDEX IF NOT EXISTS idx_gen_docs_doctype ON generated_documents(doc_type_code)');
   await db.exec('CREATE INDEX IF NOT EXISTS idx_gen_docs_year ON generated_documents(year)');
 
+  // Create Document Versions table for revision history and file storage
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS document_versions (
+      id TEXT PRIMARY KEY,
+      document_id TEXT NOT NULL,
+      revision TEXT NOT NULL,
+      file_name TEXT NOT NULL,
+      file_path TEXT NOT NULL,
+      file_size INTEGER NOT NULL,
+      uploaded_by TEXT NOT NULL,
+      uploaded_at TEXT NOT NULL,
+      note TEXT,
+      FOREIGN KEY (document_id) REFERENCES generated_documents(id) ON DELETE CASCADE
+    )
+  `);
+
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_doc_versions_document ON document_versions(document_id)');
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_doc_versions_revision ON document_versions(revision)');
+
   // Self-healing migration: add sign-off date columns to existing generated_documents tables
   try {
     const genDocsCols = await db.all<{ name: string }[]>('PRAGMA table_info(generated_documents)');

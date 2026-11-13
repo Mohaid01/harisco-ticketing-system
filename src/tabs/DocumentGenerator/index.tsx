@@ -52,7 +52,6 @@ export const DocumentGenerator: React.FC<DocumentGeneratorProps> = ({ currentUse
     searchQuery,
     setSearchQuery,
     refreshDocuments,
-    updateRevision,
   } = useDocumentRegistry({ token });
 
   const isIT = currentUser.role === 'it';
@@ -222,7 +221,7 @@ export const DocumentGenerator: React.FC<DocumentGeneratorProps> = ({ currentUse
           setSearchQuery={setSearchQuery}
           onRefresh={refreshDocuments}
           onDownloadWord={handleDownloadWordFromRegistry}
-          onUpdateRevision={updateRevision}
+          token={token}
         />
       )}
 

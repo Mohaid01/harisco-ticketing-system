@@ -1,7 +1,10 @@
 import crypto from 'crypto';
 import { Router } from 'express';
+import fs from 'fs';
+import multer from 'multer';
+import path from 'path';
 
-import type { ApiAuthRequest, AuthRequest } from '../types/index.ts';
+import type { ApiAuthRequest, AuthRequest, DocumentVersion } from '../types/index.ts';
 
 import { DEPARTMENTS, DOC_PREFIX, DOCUMENT_TYPES, ENTITIES } from '../constants/documentGenerator.ts';
 import { getDb } from '../db.ts';
@@ -10,6 +13,36 @@ import logger from '../utils/logger.ts';
 
 const router = Router();
 const SCREEN_NAME = 'document_generator';
+
+// Ensure upload directory exists
+const UPLOAD_DIR = path.resolve(process.cwd(), 'uploads', 'documents');
+if (!fs.existsSync(UPLOAD_DIR)) {
+  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    cb(null, UPLOAD_DIR);
+  },
+  filename: (_req, file, cb) => {
+    const uniqueSuffix = `${Date.now()}-${crypto.randomUUID()}`;
+    const ext = path.extname(file.originalname);
+    cb(null, `${uniqueSuffix}${ext}`);
+  },
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 15 * 1024 * 1024 }, // 15 MB
+  fileFilter: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (ext === '.doc' || ext === '.docx') {
+      cb(null, true);
+    } else {
+      cb(new Error('Only .doc and .docx files are allowed.'));
+    }
+  },
+});
 
 const checkAccess = async (userId: string, role: string): Promise<boolean> => {
   if (role === 'it') return true;
@@ -135,7 +168,7 @@ router.post('/generate', authenticateToken, async (req: ApiAuthRequest<GenerateR
 
     logger.info('CHECKPOINT 2');
 
-    let seqRow = await db.get<{ last_sequence: number }>(
+    const seqRow = await db.get<{ last_sequence: number }>(
       `SELECT last_sequence FROM document_sequences
        WHERE entity_code = ? AND department_code = ? AND doc_type_code = ?`,
       [entityCode, departmentCode, docTypeCode]
@@ -345,6 +378,165 @@ router.post('/documents/:id/revision', authenticateToken, async (req: AuthReques
   } catch (err) {
     logger.error('[docgen] Failed to update revision:', err);
     res.status(500).json({ error: 'Failed to update revision.' });
+  }
+});
+
+// POST /api/document-generator/documents/:id/upload — upload a new revision file
+router.post(
+  '/documents/:id/upload',
+  authenticateToken,
+  upload.single('file'),
+  async (req: ApiAuthRequest<UploadDocumentVersionRequestBody>, res) => {
+    const user = req.user;
+    if (!user) return res.status(401).json({ error: 'Unauthorized.' });
+
+    const hasAccess = await checkAccess(user.id, user.role);
+    if (!hasAccess) return res.status(403).json({ error: 'Access denied.' });
+
+    const docId = String(req.params.id);
+    const file = req.file;
+    if (!file) {
+      return res.status(400).json({ error: 'No file uploaded.' });
+    }
+
+    const { revision, note } = req.body;
+
+    try {
+      const db = getDb();
+
+      const existing = await db.get<{
+        id: string;
+        document_id: string;
+        revision: string;
+      }>(`SELECT id, document_id, revision FROM generated_documents WHERE id = ? OR document_id = ?`, [docId, docId]);
+
+      if (!existing) {
+        // Clean up uploaded file since document not found
+        fs.unlinkSync(file.path);
+        return res.status(404).json({ error: 'Document not found.' });
+      }
+
+      // Determine next revision: use provided revision if given, otherwise auto-increment
+      let nextRevision: string;
+      if (revision && revision.trim()) {
+        nextRevision = revision.trim();
+      } else {
+        const currentRev = existing.revision || 'Rev 00';
+        const match = currentRev.match(/Rev\s*(\d+)/i);
+        const num = match ? parseInt(match[1], 10) + 1 : 1;
+        nextRevision = `Rev ${String(num).padStart(2, '0')}`;
+      }
+
+      const versionId = crypto.randomUUID();
+      const nowIso = new Date().toISOString();
+      const relativePath = path.relative(process.cwd(), file.path);
+
+      await db.run(
+        `INSERT INTO document_versions (
+          id, document_id, revision, file_name, file_path, file_size,
+          uploaded_by, uploaded_at, note
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          versionId,
+          existing.id,
+          nextRevision,
+          file.originalname,
+          relativePath,
+          file.size,
+          user.id,
+          nowIso,
+          note ? note.trim() : null,
+        ]
+      );
+
+      // Update generated_documents to latest revision
+      await db.run(`UPDATE generated_documents SET revision = ?, updated_at = ? WHERE id = ?`, [
+        nextRevision,
+        nowIso,
+        existing.id,
+      ]);
+
+      logger.info(`[docgen] Uploaded revision ${nextRevision} for document ${existing.document_id} by ${user.name}`);
+
+      return res.status(201).json({
+        success: true,
+        id: versionId,
+        document_id: existing.id,
+        revision: nextRevision,
+        file_name: file.originalname,
+        file_path: relativePath,
+        file_size: file.size,
+        uploaded_by: user.id,
+        uploaded_at: nowIso,
+      });
+    } catch (err) {
+      // Clean up uploaded file on error
+      try {
+        fs.unlinkSync(file.path);
+      } catch {
+        // intentional: file cleanup is best-effort
+      }
+      logger.error('[docgen] Failed to upload document version:', err);
+      return res.status(500).json({ error: 'Failed to upload document version.' });
+    }
+  }
+);
+
+// GET /api/document-generator/documents/:id/versions — list all revisions for a document
+router.get('/documents/:id/versions', authenticateToken, async (req: AuthRequest, res) => {
+  const user = req.user;
+  if (!user) return res.status(401).json({ error: 'Unauthorized.' });
+
+  const hasAccess = await checkAccess(user.id, user.role);
+  if (!hasAccess) return res.status(403).json({ error: 'Access denied.' });
+
+  const docId = String(req.params.id);
+
+  try {
+    const db = getDb();
+    const versions = await db.all<DocumentVersion[]>(
+      `SELECT * FROM document_versions WHERE document_id = ? ORDER BY uploaded_at ASC`,
+      [docId]
+    );
+
+    res.json({ versions });
+  } catch (err) {
+    logger.error('[docgen] Failed to fetch document versions:', err);
+    return res.status(500).json({ error: 'Failed to fetch document versions.' });
+  }
+});
+
+// GET /api/document-generator/documents/:id/versions/:versionId/download — download a specific revision file
+router.get('/documents/:id/versions/:versionId/download', authenticateToken, async (req: AuthRequest, res) => {
+  const user = req.user;
+  if (!user) return res.status(401).json({ error: 'Unauthorized.' });
+
+  const hasAccess = await checkAccess(user.id, user.role);
+  if (!hasAccess) return res.status(403).json({ error: 'Access denied.' });
+
+  const docId = String(req.params.id);
+  const versionId = String(req.params.versionId);
+
+  try {
+    const db = getDb();
+    const version = await db.get<DocumentVersion>(
+      `SELECT * FROM document_versions WHERE id = ? AND document_id = ?`,
+      [versionId, docId]
+    );
+
+    if (!version) {
+      return res.status(404).json({ error: 'Document version not found.' });
+    }
+
+    const filePath = path.resolve(process.cwd(), version.file_path);
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'File not found on server.' });
+    }
+
+    res.download(filePath, version.file_name);
+  } catch (err) {
+    logger.error('[docgen] Failed to download document version:', err);
+    return res.status(500).json({ error: 'Failed to download document version.' });
   }
 });
 
