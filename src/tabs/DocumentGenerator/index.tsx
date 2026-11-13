@@ -3,19 +3,18 @@ import React, { useState } from 'react';
 import type { DocumentGeneratorProps, GeneratedDocumentRecord } from './types';
 
 import ScreenAccessManager from '../../components/ScreenAccessManager';
-import { ControlledDocumentForm } from './components/ControlledDocumentForm';
-import { CorporateSchemeSelector } from './components/CorporateSchemeSelector';
 import { DocumentRegistryTable } from './components/DocumentRegistryTable';
-import { SignOffSection } from './components/SignOffSection';
+import { NewDocumentModal } from './components/NewDocumentModal';
 import { useDocumentGenerator } from './hooks/useDocumentGenerator';
 import { useDocumentRegistry } from './hooks/useDocumentRegistry';
 import { downloadWordBlob, generateDocumentWord } from './utils/wordGenerator';
 import './DocumentGenerator.css';
 
-type SubTab = 'generate' | 'registry' | 'access';
+type SubTab = 'registry' | 'access';
 
 export const DocumentGenerator: React.FC<DocumentGeneratorProps> = ({ currentUser, token, allUsers }) => {
-  const [activeSubTab, setActiveSubTab] = useState<SubTab>('generate');
+  const [activeSubTab, setActiveSubTab] = useState<SubTab>('registry');
+  const [newDocumentOpen, setNewDocumentOpen] = useState<boolean>(false);
 
   const {
     entityCode,
@@ -35,7 +34,8 @@ export const DocumentGenerator: React.FC<DocumentGeneratorProps> = ({ currentUse
     errorMessage,
     successInfo,
     getContentPayload,
-    submitDocument,
+    saveDraft,
+    downloadDocument,
   } = useDocumentGenerator({ currentUser, token });
 
   const {
@@ -56,8 +56,15 @@ export const DocumentGenerator: React.FC<DocumentGeneratorProps> = ({ currentUse
 
   const isIT = currentUser.role === 'it';
 
-  const handleGenerateWordAndDownload = async () => {
-    const doc = await submitDocument();
+  const handleSaveDraft = async () => {
+    const doc = await saveDraft();
+    if (!doc) return;
+    refreshDocuments();
+    setNewDocumentOpen(false);
+  };
+
+  const handleDownload = async () => {
+    const doc = await downloadDocument();
     if (!doc) return;
 
     try {
@@ -79,6 +86,7 @@ export const DocumentGenerator: React.FC<DocumentGeneratorProps> = ({ currentUse
 
       downloadWordBlob(bytes, doc.documentId);
       refreshDocuments();
+      setNewDocumentOpen(false);
     } catch (err) {
       console.error('Failed to build Word after registering:', err);
     }
@@ -118,6 +126,10 @@ export const DocumentGenerator: React.FC<DocumentGeneratorProps> = ({ currentUse
     }
   };
 
+  const handleCloseModal = () => {
+    setNewDocumentOpen(false);
+  };
+
   return (
     <div className="docgen-container">
       <div className="docgen-header">
@@ -131,8 +143,8 @@ export const DocumentGenerator: React.FC<DocumentGeneratorProps> = ({ currentUse
         <div className="docgen-tabs">
           <button
             type="button"
-            className={`docgen-tab-btn ${activeSubTab === 'generate' ? 'active' : ''}`}
-            onClick={() => setActiveSubTab('generate')}
+            className="docgen-btn docgen-btn-secondary"
+            onClick={() => setNewDocumentOpen(true)}
           >
             New Document
           </button>
@@ -162,49 +174,6 @@ export const DocumentGenerator: React.FC<DocumentGeneratorProps> = ({ currentUse
         </div>
       )}
 
-      {activeSubTab === 'generate' && (
-        <>
-          <CorporateSchemeSelector
-            entityCode={entityCode}
-            setEntityCode={setEntityCode}
-            departmentCode={departmentCode}
-            setDepartmentCode={setDepartmentCode}
-            docTypeCode={docTypeCode}
-            setDocTypeCode={setDocTypeCode}
-            revision={revision}
-            setRevision={setRevision}
-            previewId={previewId}
-            previewLoading={false}
-          />
-
-          <ControlledDocumentForm data={controlledData} onChange={setControlledData} />
-
-          <SignOffSection signOff={signOff} setSignOff={setSignOff} allUsers={allUsers} />
-
-          <div className="docgen-actions">
-            <div>
-              <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                Target Document ID:{' '}
-                <strong style={{ fontFamily: 'var(--font-mono)', color: '#38bdf8' }}>
-                  {previewId || 'HC-01-COR-LE-0001'}
-                </strong>{' '}
-                ({revision})
-              </span>
-            </div>
-            <div className="docgen-actions-right">
-              <button
-                type="button"
-                className="docgen-btn docgen-btn-primary"
-                onClick={handleGenerateWordAndDownload}
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? 'Registering...' : 'Download Word'}
-              </button>
-            </div>
-          </div>
-        </>
-      )}
-
       {activeSubTab === 'registry' && (
         <DocumentRegistryTable
           documents={documents}
@@ -232,6 +201,31 @@ export const DocumentGenerator: React.FC<DocumentGeneratorProps> = ({ currentUse
           users={allUsers}
           currentUser={currentUser}
           token={token}
+        />
+      )}
+
+      {newDocumentOpen && (
+        <NewDocumentModal
+          isOpen={newDocumentOpen}
+          onClose={handleCloseModal}
+          allUsers={allUsers}
+          entityCode={entityCode}
+          setEntityCode={setEntityCode}
+          departmentCode={departmentCode}
+          setDepartmentCode={setDepartmentCode}
+          docTypeCode={docTypeCode}
+          setDocTypeCode={setDocTypeCode}
+          revision={revision}
+          setRevision={setRevision}
+          previewId={previewId}
+          previewLoading={false}
+          signOff={signOff}
+          setSignOff={setSignOff}
+          controlledData={controlledData}
+          setControlledData={setControlledData}
+          isSubmitting={isSubmitting}
+          onSaveDraft={handleSaveDraft}
+          onDownload={handleDownload}
         />
       )}
     </div>

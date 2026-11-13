@@ -47,6 +47,7 @@ export const useDocumentGenerator = ({ currentUser, token }: UseDocumentGenerato
     documentId: string;
     fileName: string;
   } | null>(null);
+  const [savedDocument, setSavedDocument] = useState<any>(null);
 
   useEffect(() => {
     let isCancelled = false;
@@ -89,12 +90,32 @@ export const useDocumentGenerator = ({ currentUser, token }: UseDocumentGenerato
     return controlledData;
   }, [controlledData]);
 
-  const submitDocument = async () => {
+  const buildGeneratePayload = () => {
+    const content = getContentPayload();
+    return {
+      entityCode,
+      departmentCode,
+      docTypeCode,
+      year,
+      revision,
+      title: content.title,
+      preparedByName: signOff.preparedByName,
+      checkedByName: signOff.checkedByName,
+      approvedByName: signOff.approvedByName,
+      preparedByDate: signOff.preparedByDate || todayIso,
+      checkedByDate: signOff.checkedByDate || todayIso,
+      approvedByDate: signOff.approvedByDate || todayIso,
+      docDate: todayIso,
+      contentJson: JSON.stringify(content),
+    };
+  };
+
+  const callGenerate = async () => {
     setIsSubmitting(true);
     setErrorMessage(null);
     setSuccessInfo(null);
 
-    const content = getContentPayload();
+    const payload = buildGeneratePayload();
 
     try {
       const res = await fetch('/api/document-generator/generate', {
@@ -103,22 +124,7 @@ export const useDocumentGenerator = ({ currentUser, token }: UseDocumentGenerato
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          entityCode,
-          departmentCode,
-          docTypeCode,
-          year,
-          revision,
-          title: content.title,
-          preparedByName: signOff.preparedByName,
-          checkedByName: signOff.checkedByName,
-          approvedByName: signOff.approvedByName,
-          preparedByDate: signOff.preparedByDate || todayIso,
-          checkedByDate: signOff.checkedByDate || todayIso,
-          approvedByDate: signOff.approvedByDate || todayIso,
-          docDate: todayIso,
-          contentJson: JSON.stringify(content),
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
@@ -127,11 +133,6 @@ export const useDocumentGenerator = ({ currentUser, token }: UseDocumentGenerato
       }
 
       const data = await res.json();
-      setSuccessInfo({
-        documentId: data.document.documentId,
-        fileName: data.document.fileName,
-      });
-
       return data.document;
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'An unexpected error occurred';
@@ -140,6 +141,35 @@ export const useDocumentGenerator = ({ currentUser, token }: UseDocumentGenerato
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const saveDraft = async () => {
+    const doc = await callGenerate();
+    if (!doc) return null;
+    setSavedDocument(doc);
+    setSuccessInfo({ documentId: doc.documentId, fileName: doc.fileName });
+    return doc;
+  };
+
+  const submitDocument = async () => {
+    const doc = await callGenerate();
+    if (!doc) return null;
+    setSuccessInfo({
+      documentId: doc.documentId,
+      fileName: doc.fileName,
+    });
+    return doc;
+  };
+
+  const downloadDocument = async () => {
+    let doc = savedDocument;
+    if (!doc) {
+      doc = await callGenerate();
+      if (!doc) return null;
+      setSavedDocument(doc);
+    }
+    setSuccessInfo({ documentId: doc.documentId, fileName: doc.fileName });
+    return doc;
   };
 
   return {
@@ -164,8 +194,11 @@ export const useDocumentGenerator = ({ currentUser, token }: UseDocumentGenerato
     isSubmitting,
     errorMessage,
     successInfo,
+    savedDocument,
     getEffectiveTitle,
     getContentPayload,
     submitDocument,
+    saveDraft,
+    downloadDocument,
   };
 };
