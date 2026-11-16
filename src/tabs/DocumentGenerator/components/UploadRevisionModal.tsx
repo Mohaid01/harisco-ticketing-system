@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 
+import { REVISION_OPTIONS } from '../constants';
+
 interface UploadRevisionModalProps {
   document: {
     id: string;
@@ -20,7 +22,12 @@ export const UploadRevisionModal: React.FC<UploadRevisionModalProps> = ({
   onClose,
   onSuccess,
 }) => {
-  const [revision, setRevision] = useState(document.revision);
+  const currentRev = document.revision || 'Rev 00';
+  const defaultRev = currentRev.startsWith('Rev 0')
+    ? `Rev 0${parseInt(currentRev.replace('Rev 0', ''), 10) + 1}`
+    : 'Rev 01';
+
+  const [revision, setRevision] = useState(defaultRev);
   const [file, setFile] = useState<File | null>(null);
   const [note, setNote] = useState('');
   const [uploading, setUploading] = useState(false);
@@ -34,28 +41,26 @@ export const UploadRevisionModal: React.FC<UploadRevisionModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!file) {
-      setError('Please select a file to upload.');
-      return;
-    }
+    setError(null);
 
-    const ext = file.name.split('.').pop()?.toLowerCase();
-    if (ext !== 'doc' && ext !== 'docx') {
-      setError('Only .doc and .docx files are allowed.');
-      return;
-    }
+    if (file) {
+      const ext = file.name.split('.').pop()?.toLowerCase();
+      if (ext !== 'doc' && ext !== 'docx') {
+        setError('Only .doc and .docx files are allowed.');
+        return;
+      }
 
-    if (file.size > 15 * 1024 * 1024) {
-      setError('File size must not exceed 15 MB.');
-      return;
+      if (file.size > 15 * 1024 * 1024) {
+        setError('File size must not exceed 15 MB.');
+        return;
+      }
     }
 
     setUploading(true);
-    setError(null);
 
     try {
       const formData = new FormData();
-      formData.append('file', file);
+      if (file) formData.append('file', file);
       if (revision) formData.append('revision', revision);
       if (note) formData.append('note', note);
 
@@ -169,15 +174,19 @@ export const UploadRevisionModal: React.FC<UploadRevisionModalProps> = ({
             className="docgen-label"
             style={{ fontSize: '0.78rem', textTransform: 'uppercase', display: 'block', marginBottom: '0.3rem' }}
           >
-            New Revision (editable)
+            New Revision
           </label>
-          <input
-            type="text"
+          <select
             className="form-input"
             value={revision}
             onChange={(e) => setRevision(e.target.value)}
-            placeholder="e.g. Rev 01"
-          />
+          >
+            {REVISION_OPTIONS.map((r) => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div style={{ marginBottom: '0.85rem' }}>
@@ -185,7 +194,7 @@ export const UploadRevisionModal: React.FC<UploadRevisionModalProps> = ({
             className="docgen-label"
             style={{ fontSize: '0.78rem', textTransform: 'uppercase', display: 'block', marginBottom: '0.3rem' }}
           >
-            File (.doc / .docx, max 15 MB)
+            File (.doc / .docx, max 15 MB) (optional)
           </label>
           <input
             type="file"
@@ -241,7 +250,7 @@ export const UploadRevisionModal: React.FC<UploadRevisionModalProps> = ({
             type="submit"
             className="docgen-btn docgen-btn-primary"
             onClick={handleSubmit}
-            disabled={uploading || !file}
+            disabled={uploading}
           >
             {uploading ? 'Uploading...' : 'Upload Revision'}
           </button>

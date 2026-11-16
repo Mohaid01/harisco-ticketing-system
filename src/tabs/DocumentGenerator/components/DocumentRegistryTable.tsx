@@ -20,6 +20,7 @@ interface DocumentRegistryTableProps {
   setSearchQuery: (val: string) => void;
   onRefresh: () => void;
   onDownloadWord: (doc: GeneratedDocumentRecord) => void;
+  onViewDocument: (doc: GeneratedDocumentRecord) => void;
   token: string;
 }
 
@@ -38,6 +39,7 @@ export const DocumentRegistryTable: React.FC<DocumentRegistryTableProps> = ({
   setSearchQuery,
   onRefresh,
   onDownloadWord,
+  onViewDocument,
   token,
 }) => {
   const [uploadDoc, setUploadDoc] = useState<{
@@ -195,10 +197,18 @@ export const DocumentRegistryTable: React.FC<DocumentRegistryTableProps> = ({
                     <button
                       type="button"
                       className="docgen-btn docgen-btn-secondary"
-                      style={{ padding: '0.25rem 0.55rem', fontSize: '0.75rem' }}
+                      style={{ padding: '0.25rem 0.55rem', fontSize: '0.75rem', marginRight: '0.4rem' }}
                       onClick={() => handleOpenUpload(doc)}
                     >
                       Upload Rev
+                    </button>
+                    <button
+                      type="button"
+                      className="docgen-btn docgen-btn-secondary"
+                      style={{ padding: '0.25rem 0.55rem', fontSize: '0.75rem' }}
+                      onClick={() => onViewDocument(doc)}
+                    >
+                      View
                     </button>
                   </td>
                 </tr>

@@ -395,10 +395,6 @@ router.post(
 
     const docId = String(req.params.id);
     const file = req.file;
-    if (!file) {
-      return res.status(400).json({ error: 'No file uploaded.' });
-    }
-
     const { revision, note } = req.body;
 
     try {
@@ -412,7 +408,13 @@ router.post(
 
       if (!existing) {
         // Clean up uploaded file since document not found
-        fs.unlinkSync(file.path);
+        if (file) {
+          try {
+            fs.unlinkSync(file.path);
+          } catch {
+            // intentional: file cleanup is best-effort
+          }
+        }
         return res.status(404).json({ error: 'Document not found.' });
       }
 
@@ -427,27 +429,31 @@ router.post(
         nextRevision = `Rev ${String(num).padStart(2, '0')}`;
       }
 
-      const versionId = crypto.randomUUID();
       const nowIso = new Date().toISOString();
-      const relativePath = path.relative(process.cwd(), file.path);
 
-      await db.run(
-        `INSERT INTO document_versions (
-          id, document_id, revision, file_name, file_path, file_size,
-          uploaded_by, uploaded_at, note
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          versionId,
-          existing.id,
-          nextRevision,
-          file.originalname,
-          relativePath,
-          file.size,
-          user.id,
-          nowIso,
-          note ? note.trim() : null,
-        ]
-      );
+      // If a file was uploaded, store it as a new version
+      if (file) {
+        const versionId = crypto.randomUUID();
+        const relativePath = path.relative(process.cwd(), file.path);
+
+        await db.run(
+          `INSERT INTO document_versions (
+            id, document_id, revision, file_name, file_path, file_size,
+            uploaded_by, uploaded_at, note
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            versionId,
+            existing.id,
+            nextRevision,
+            file.originalname,
+            relativePath,
+            file.size,
+            user.id,
+            nowIso,
+            note ? note.trim() : null,
+          ]
+        );
+      }
 
       // Update generated_documents to latest revision
       await db.run(`UPDATE generated_documents SET revision = ?, updated_at = ? WHERE id = ?`, [
@@ -460,12 +466,12 @@ router.post(
 
       return res.status(201).json({
         success: true,
-        id: versionId,
+        id: file ? crypto.randomUUID() : undefined,
         document_id: existing.id,
         revision: nextRevision,
-        file_name: file.originalname,
-        file_path: relativePath,
-        file_size: file.size,
+        file_name: file ? file.originalname : null,
+        file_path: file ? path.relative(process.cwd(), file.path) : null,
+        file_size: file ? file.size : 0,
         uploaded_by: user.id,
         uploaded_at: nowIso,
       });

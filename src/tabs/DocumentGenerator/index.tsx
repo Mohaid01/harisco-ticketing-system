@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import type { DocumentGeneratorProps, GeneratedDocumentRecord } from './types';
 
 import ScreenAccessManager from '../../components/ScreenAccessManager';
+import { DocumentDetailModal } from './components/DocumentDetailModal';
 import { DocumentRegistryTable } from './components/DocumentRegistryTable';
 import { NewDocumentModal } from './components/NewDocumentModal';
 import { useDocumentGenerator } from './hooks/useDocumentGenerator';
@@ -15,6 +16,7 @@ type SubTab = 'registry' | 'access';
 export const DocumentGenerator: React.FC<DocumentGeneratorProps> = ({ currentUser, token, allUsers }) => {
   const [activeSubTab, setActiveSubTab] = useState<SubTab>('registry');
   const [newDocumentOpen, setNewDocumentOpen] = useState<boolean>(false);
+  const [detailDocId, setDetailDocId] = useState<string | null>(null);
 
   const {
     entityCode,
@@ -130,6 +132,10 @@ export const DocumentGenerator: React.FC<DocumentGeneratorProps> = ({ currentUse
     setNewDocumentOpen(false);
   };
 
+  const handleViewDocument = (doc: GeneratedDocumentRecord) => {
+    setDetailDocId(doc.id);
+  };
+
   return (
     <div className="docgen-container">
       <div className="docgen-header">
@@ -190,6 +196,7 @@ export const DocumentGenerator: React.FC<DocumentGeneratorProps> = ({ currentUse
           setSearchQuery={setSearchQuery}
           onRefresh={refreshDocuments}
           onDownloadWord={handleDownloadWordFromRegistry}
+          onViewDocument={handleViewDocument}
           token={token}
         />
       )}
@@ -226,6 +233,16 @@ export const DocumentGenerator: React.FC<DocumentGeneratorProps> = ({ currentUse
           isSubmitting={isSubmitting}
           onSaveDraft={handleSaveDraft}
           onDownload={handleDownload}
+        />
+      )}
+
+      {detailDocId && (
+        <DocumentDetailModal
+          key={detailDocId}
+          isOpen={!!detailDocId}
+          onClose={() => setDetailDocId(null)}
+          document={documents.find((d) => d.id === detailDocId) || null}
+          token={token}
         />
       )}
     </div>
