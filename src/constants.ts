@@ -14,7 +14,7 @@ import type {
 
 // Brand Configuration
 export const PRIMARY_COLOR = '#0e529b';
-export const APP_TITLE = 'Haris & Co Ticketing System';
+export const APP_TITLE = 'Haris & Co Integrated Management System';
 export const EMPLOYEE_ID_PREFIX = 'HC-';
 
 export const ROLE_LABELS: Record<UserRole, string> = {

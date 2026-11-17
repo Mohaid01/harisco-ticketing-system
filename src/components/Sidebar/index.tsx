@@ -294,7 +294,7 @@ export const Header: React.FC<HeaderProps> = ({
       {/* Row 1: Date | Title | Time */}
       <div className="header-top-strip">
         <span className="header-date">{currentDate}</span>
-        <span className="header-title">Haris & Co. Dashboard</span>
+        <span className="header-title">Haris & Co Integrated Management System</span>
         <span className="header-time">{currentTime}</span>
       </div>
 
