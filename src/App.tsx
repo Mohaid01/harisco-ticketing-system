@@ -539,6 +539,9 @@ function App() {
 
         // Fetch inventory
         await fetchInventory();
+
+        // Fetch inventory
+        await fetchInventory();
       } catch (err) {
         console.error('Session verification failed:', err);
         if (err instanceof Error && err.message === 'Session expired') {

@@ -140,6 +140,12 @@ export interface AdminTicket {
   }[];
 }
 
+// Holiday Types
+export interface Holiday {
+  date: string;
+  name: string;
+}
+
 // Sidebar Types
 export type ActiveTab =
   | 'noticeboard'

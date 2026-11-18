@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import React, { startTransition, useCallback, useEffect, useMemo, useState } from 'react';
 
-import type { AppUser, AttendanceLog } from '../types';
+import type { AppUser, AttendanceLog, Holiday } from '../types';
 
 import { formatEmployeeCode, formatHours } from '../utils';
 import {
@@ -70,9 +70,9 @@ export const Attendance: React.FC<AttendanceProps> = ({
 
   const canViewAll = isFactory
     ? currentUser.role === 'factory_it' ||
-      currentUser.role === 'factory_manager' ||
-      currentUser.role === 'manager' ||
-      currentUser.role === 'it'
+    currentUser.role === 'factory_manager' ||
+    currentUser.role === 'manager' ||
+    currentUser.role === 'it'
     : currentUser.role === 'it' || currentUser.role === 'manager' || currentUser.role === 'executive';
   const canViewDepartment = currentUser.isDepartmentHead;
   const canWrite = isFactory
@@ -120,6 +120,16 @@ export const Attendance: React.FC<AttendanceProps> = ({
   const [logs, setLogs] = useState<AttendanceLog[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
+
+  // Holiday management state
+  const [holidays, setHolidays] = useState<Holiday[]>([]);
+  const [isHolidayModalOpen, setIsHolidayModalOpen] = useState(false);
+  const [holidayDate, setHolidayDate] = useState('');
+  const [holidayName, setHolidayName] = useState('');
+  const [holidayLoading, setHolidayLoading] = useState(false);
+  const [holidayMessage, setHolidayMessage] = useState<{ text: string; type: 'success' | 'error' | null }>({ text: '', type: null });
+
+  const canManageHolidays = ['it', 'manager'].includes(currentUser.role);
 
   // Device status tracking
   const [deviceOnline, setDeviceOnline] = useState<boolean | null>(null);
@@ -196,6 +206,25 @@ export const Attendance: React.FC<AttendanceProps> = ({
     [apiBase]
   );
 
+  useEffect(() => {
+    const fetchHolidays = async () => {
+      const token = localStorage.getItem('harisco_token');
+      if (!token) return;
+      try {
+        const res = await fetch('/api/holidays', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setHolidays(data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch holidays:', err);
+      }
+    };
+    fetchHolidays();
+  }, []);
+
   const fetchDeviceStatus = useCallback(() => {
     const token = localStorage.getItem('harisco_token');
     fetch(`${deviceStatusApiBase}/device-status`, {
@@ -220,6 +249,61 @@ export const Attendance: React.FC<AttendanceProps> = ({
         setDeviceOnline(false);
       });
   }, [deviceStatusApiBase]);
+
+  const handleCreateHoliday = async () => {
+    if (!holidayDate || !holidayName) {
+      setHolidayMessage({ text: 'Date and holiday name are required.', type: 'error' });
+      return;
+    }
+    const token = localStorage.getItem('harisco_token');
+    if (!token) return;
+    setHolidayLoading(true);
+    try {
+      const res = await fetch('/api/holidays', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ date: holidayDate, name: holidayName }),
+      });
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || 'Failed to add holiday');
+      }
+      const newHoliday = await res.json();
+      setHolidays((prev) => [...prev, newHoliday]);
+      setHolidayDate('');
+      setHolidayName('');
+      setHolidayMessage({ text: 'Holiday added successfully.', type: 'success' });
+    } catch (err) {
+      setHolidayMessage({ text: err instanceof Error ? err.message : 'Error adding holiday.', type: 'error' });
+    } finally {
+      setHolidayLoading(false);
+    }
+    setTimeout(() => setHolidayMessage({ text: '', type: null }), 3000);
+  };
+
+  const handleDeleteHoliday = async (date: string) => {
+    if (!window.confirm(`Remove holiday on ${date}?`)) return;
+    const token = localStorage.getItem('harisco_token');
+    if (!token) return;
+    try {
+      const res = await fetch(`/api/holidays/${date}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || 'Failed to delete holiday');
+      }
+      setHolidays((prev) => prev.filter((h) => h.date !== date));
+      setHolidayMessage({ text: 'Holiday removed successfully.', type: 'success' });
+    } catch (err) {
+      setHolidayMessage({ text: err instanceof Error ? err.message : 'Error deleting holiday.', type: 'error' });
+    }
+    setTimeout(() => setHolidayMessage({ text: '', type: null }), 3000);
+  };
 
   const handleDeletePunchOut = async (logId: number, dateStr: string) => {
     const confirmMessage = ['Are you sure you want to delete the punch out (second punch) for ', dateStr, '?'].join('');
@@ -390,8 +474,8 @@ export const Attendance: React.FC<AttendanceProps> = ({
 
     const sundayCount = isFactory
       ? Array.from({ length: daysInMonth }, (_, d) => new Date(sYear, sMonth - 1, d + 1).getUTCDay() === 0).filter(
-          Boolean
-        ).length
+        Boolean
+      ).length
       : 0;
 
     return allUsers
@@ -748,90 +832,109 @@ export const Attendance: React.FC<AttendanceProps> = ({
           status: 'Weekend' as string,
         });
       } else {
-        const isOffboarded = selectedEmployee.offboarded_at && dateStr > selectedEmployee.offboarded_at;
-        list.push({
-          date: dateStr,
-          firstIn: '--',
-          lastOut: '--',
-          hours: 0,
-          status: isOffboarded ? ('Offboarded' as const) : ('No Data' as const),
-        });
+        const holiday = holidays.find((h) => h.date === dateStr);
+        if (holiday) {
+          const dayShift = getEffectiveShift(
+            selectedEmployee.defaultShift || defaultFallbackShift,
+            shiftOverrides,
+            dateStr
+          );
+          list.push({
+            date: dateStr,
+            firstIn: '--',
+            lastOut: '--',
+            hours: dayShift.baseHours,
+            status: 'Holiday' as const,
+          });
+        } else {
+          const isOffboarded = selectedEmployee.offboarded_at && dateStr > selectedEmployee.offboarded_at;
+          list.push({
+            date: dateStr,
+            firstIn: '--',
+            lastOut: '--',
+            hours: 0,
+            status: isOffboarded ? ('Offboarded' as const) : ('No Data' as const),
+          });
+        }
       }
     }
     return list;
-  }, [selectedEmployee, logs, selectedMonth, tick, shiftOverrides, defaultFallbackShift, isFactory, parseLogPKT]);
+  }, [selectedEmployee, logs, selectedMonth, tick, shiftOverrides, defaultFallbackShift, isFactory, parseLogPKT, holidays]);
 
   // Today's specific shift progress calculations
   const todayShiftProgress = useMemo(() => {
     if (!selectedEmployee) return { hours: 0, firstIn: '--', lastOut: '--', status: 'No Data' };
 
+    // const todayStr = new Intl.DateTimeFormat('en-CA', {
+    //   timeZone: 'Asia/Karachi',
+    // }).format(new Date());
+
+    // const uId = selectedEmployee.id;
+    // const formattedCode = selectedEmployee.formattedCode;
+    // const userLogs = logs.filter(
+    //   (log) =>
+    //     log.userId === uId ||
+    //     log.userId === selectedEmployee.username ||
+    //     formatEmployeeCode(log.userId) === formattedCode
+    // );
+
+    // const todayShift = getEffectiveShift(
+    //   selectedEmployee.defaultShift || defaultFallbackShift,
+    //   shiftOverrides,
+    //   todayStr
+    // );
+    // const todayPunches = userLogs.filter((log) => getLogShiftDate(log, todayShift, parseLogPKT) === todayStr);
+
+    // if (todayPunches.length > 0) {
+    //   const sorted = [...todayPunches].sort((a, b) => {
+    //     const tA = parseLogPKT(a).timestamp;
+    //     const tB = parseLogPKT(b).timestamp;
+    //     return tA.localeCompare(tB);
+    //   });
+
+    //   const first = sorted[0];
+    //   const last = sorted.length > 1 ? sorted[sorted.length - 1] : null;
+
+    //   const firstInTime = parseLogPKT(first).time;
+    //   const lastOutTime = last ? parseLogPKT(last).time : '--';
+
+    //   let hours = 0;
+    //   const firstStr = parseLogPKT(first).timestamp;
+    //   const fDate = new Date(firstStr.replace(' ', 'T'));
+
+    //   if (last) {
+    //     const lastStr = parseLogPKT(last).timestamp;
+    //     const lDate = new Date(lastStr.replace(' ', 'T'));
+    //     if (!isNaN(fDate.getTime()) && !isNaN(lDate.getTime())) {
+    //       hours = (lDate.getTime() - fDate.getTime()) / (1000 * 60 * 60);
+    //     }
+    //   } else {
+    //     const currDate = new Date();
+    //     if (!isNaN(fDate.getTime())) {
+    //       hours = Math.max(0, (currDate.getTime() - fDate.getTime()) / (1000 * 60 * 60));
+    //     }
+    //   }
+
+    //   let finalFirstIn = firstInTime;
+    //   let finalLastOut = lastOutTime;
+
+    //   if (first.status === 'Site Duty' || first.status === 'On Leave') {
+    //     finalFirstIn = 'N/A';
+    //     finalLastOut = 'N/A';
+    //   }
+
+    //   return {
+    //     firstIn: finalFirstIn,
+    //     lastOut: finalLastOut,
+    //     hours: Math.round(hours * 100) / 100,
+    //     status: selectedEmployee.todayStatus || 'Present',
+    //   };
+    // }
+
     const todayStr = new Intl.DateTimeFormat('en-CA', {
       timeZone: 'Asia/Karachi',
     }).format(new Date());
-
-    const uId = selectedEmployee.id;
-    const formattedCode = selectedEmployee.formattedCode;
-    const userLogs = logs.filter(
-      (log) =>
-        log.userId === uId ||
-        log.userId === selectedEmployee.username ||
-        formatEmployeeCode(log.userId) === formattedCode
-    );
-
-    const todayShift = getEffectiveShift(
-      selectedEmployee.defaultShift || defaultFallbackShift,
-      shiftOverrides,
-      todayStr
-    );
-    const todayPunches = userLogs.filter((log) => getLogShiftDate(log, todayShift, parseLogPKT) === todayStr);
-
-    if (todayPunches.length > 0) {
-      const sorted = [...todayPunches].sort((a, b) => {
-        const tA = parseLogPKT(a).timestamp;
-        const tB = parseLogPKT(b).timestamp;
-        return tA.localeCompare(tB);
-      });
-
-      const first = sorted[0];
-      const last = sorted.length > 1 ? sorted[sorted.length - 1] : null;
-
-      const firstInTime = parseLogPKT(first).time;
-      const lastOutTime = last ? parseLogPKT(last).time : '--';
-
-      let hours = 0;
-      const firstStr = parseLogPKT(first).timestamp;
-      const fDate = new Date(firstStr.replace(' ', 'T'));
-
-      if (last) {
-        const lastStr = parseLogPKT(last).timestamp;
-        const lDate = new Date(lastStr.replace(' ', 'T'));
-        if (!isNaN(fDate.getTime()) && !isNaN(lDate.getTime())) {
-          hours = (lDate.getTime() - fDate.getTime()) / (1000 * 60 * 60);
-        }
-      } else {
-        const currDate = new Date();
-        if (!isNaN(fDate.getTime())) {
-          hours = Math.max(0, (currDate.getTime() - fDate.getTime()) / (1000 * 60 * 60));
-        }
-      }
-
-      let finalFirstIn = firstInTime;
-      let finalLastOut = lastOutTime;
-
-      if (first.status === 'Site Duty' || first.status === 'On Leave') {
-        finalFirstIn = 'N/A';
-        finalLastOut = 'N/A';
-      }
-
-      return {
-        firstIn: finalFirstIn,
-        lastOut: finalLastOut,
-        hours: Math.round(hours * 100) / 100,
-        status: selectedEmployee.todayStatus || 'Present',
-      };
-    }
-
-    const isHoliday = null;
+    const isHoliday = holidays.find((h) => h.date === todayStr);
     const pktNow = new Date(new Date().getTime() + 5 * 60 * 60 * 1000);
     const isWeekend = pktNow.getUTCDay() === 0;
 
@@ -841,7 +944,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
       hours: 0,
       status: isHoliday ? 'Holiday' : isWeekend ? 'Weekend' : 'No Data',
     };
-  }, [selectedEmployee, logs, shiftOverrides, defaultFallbackShift, parseLogPKT, tick]);
+  }, [selectedEmployee, logs, shiftOverrides, defaultFallbackShift, parseLogPKT, tick, holidays]);
 
   const individualStats = useMemo(() => {
     let present = 0;
@@ -1536,13 +1639,36 @@ export const Attendance: React.FC<AttendanceProps> = ({
         </div>
       </div>
 
+      {canManageHolidays && !isFactory && (
+        <button
+          onClick={() => setIsHolidayModalOpen(true)}
+          style={{
+            background: 'var(--color-primary)',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '0.5rem',
+            padding: '0.5rem 1rem',
+            fontSize: '0.9rem',
+            fontWeight: 600,
+            cursor: 'pointer',
+            marginBottom: '1rem',
+            alignSelf: 'flex-start',
+          }}
+        >
+          Manage Holidays
+        </button>
+      )}
+
       {loading ? (
         <LoadingSpinner type="table" rows={8} />
       ) : (
         <>
           {/* ─────────────────── ALL EMPLOYEES SUMMARY VIEW ─────────────────── */}
           {(() => {
-            const todayHoliday: { name: string } | null = null;
+            const todayStr = new Intl.DateTimeFormat('en-CA', {
+              timeZone: 'Asia/Karachi',
+            }).format(new Date());
+            const todayHoliday = holidays.find((h) => h.date === todayStr) ?? null;
             if (
               !isFactory &&
               resolvedViewMode === 'summary' &&
@@ -2501,9 +2627,9 @@ export const Attendance: React.FC<AttendanceProps> = ({
                               }}
                             >
                               {log.firstIn === '--' &&
-                              log.lastOut === '--' &&
-                              isPastOrToday &&
-                              currentUser.role === 'manager' ? (
+                                log.lastOut === '--' &&
+                                isPastOrToday &&
+                                currentUser.role === 'manager' ? (
                                 <div
                                   style={{
                                     display: 'flex',
@@ -2825,7 +2951,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
                                   const isSat = pktNow.getUTCDay() === 6;
                                   return isSat && shift.code === 'headquarters' ? 6 : shift.baseHours;
                                 })()) *
-                                100,
+                              100,
                               100
                             )}%`,
                             height: '100%',
@@ -3132,6 +3258,191 @@ export const Attendance: React.FC<AttendanceProps> = ({
             <></>
           )}
         </>
+      )}
+
+      {isHolidayModalOpen && (
+        <div
+          className="modal-backdrop"
+          onClick={() => setIsHolidayModalOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.5)',
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <div
+            className="modal"
+            style={{
+              background: '#16213e',
+              border: '1px solid var(--border-color)',
+              borderRadius: '0.875rem',
+              padding: '1.5rem',
+              width: '420px',
+              maxWidth: '90vw',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              color: 'var(--text-primary)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h2 style={{ margin: 0, fontSize: '1.125rem', fontWeight: 600 }}>Manage Gazetted Holidays</h2>
+              <button
+                onClick={() => setIsHolidayModalOpen(false)}
+                style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '1.5rem', lineHeight: 1 }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {holidayMessage.text && (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  padding: '0.5rem 0.75rem',
+                  borderRadius: '0.5rem',
+                  marginBottom: '1rem',
+                  fontSize: '0.9rem',
+                  background: holidayMessage.type === 'success' ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
+                  border: `1px solid ${holidayMessage.type === 'success' ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.25)'}`,
+                  color: holidayMessage.type === 'success' ? '#22c55e' : '#ef4444',
+                }}
+              >
+                {holidayMessage.type === 'success' ? '✓' : '⚠'}
+                <span>{holidayMessage.text}</span>
+              </div>
+            )}
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleCreateHoliday();
+              }}
+              style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}
+            >
+              <div>
+                <label
+                  style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem' }}
+                >
+                  Date
+                </label>
+                <input
+                  type="date"
+                  value={holidayDate}
+                  onChange={(e) => setHolidayDate(e.target.value)}
+                  required
+                  disabled={holidayLoading}
+                  style={{
+                    width: '100%',
+                    padding: '0.5rem 0.75rem',
+                    fontSize: '0.95rem',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '0.5rem',
+                    background: '#16213e',
+                    color: 'var(--text-primary)',
+                  }}
+                />
+              </div>
+              <div>
+                <label
+                  style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem' }}
+                >
+                  Holiday Name
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Independence Day"
+                  value={holidayName}
+                  onChange={(e) => setHolidayName(e.target.value)}
+                  required
+                  disabled={holidayLoading}
+                  style={{
+                    width: '100%',
+                    padding: '0.5rem 0.75rem',
+                    fontSize: '0.95rem',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '0.5rem',
+                    background: '#16213e',
+                    color: 'var(--text-primary)',
+                  }}
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={holidayLoading}
+                style={{
+                  background: 'var(--color-primary)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '0.5rem',
+                  padding: '0.5rem 1rem',
+                  fontSize: '0.9rem',
+                  fontWeight: 600,
+                  cursor: holidayLoading ? 'not-allowed' : 'pointer',
+                  opacity: holidayLoading ? 0.6 : 1,
+                }}
+              >
+                {holidayLoading ? 'Adding...' : 'Add Holiday'}
+              </button>
+            </form>
+
+            <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
+              <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                Existing Holidays ({holidays.length})
+              </h3>
+              {holidays.length === 0 ? (
+                <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                  No holidays configured yet.
+                </p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {[...holidays].sort((a, b) => a.date.localeCompare(b.date)).map((h) => (
+                    <div
+                      key={h.date}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '0.5rem 0.75rem',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '0.5rem',
+                        background: '#111a2c',
+                      }}
+                    >
+                      <span style={{ fontSize: '0.9rem' }}>{h.date}</span>
+                      <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{h.name}</span>
+                      <button
+                        onClick={() => handleDeleteHoliday(h.date)}
+                        disabled={holidayLoading}
+                        style={{
+                          background: 'var(--color-danger)',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: '0.375rem',
+                          padding: '0.25rem 0.6rem',
+                          fontSize: '0.8rem',
+                          cursor: holidayLoading ? 'not-allowed' : 'pointer',
+                        }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <p style={{ marginTop: '1rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+              Holidays apply to all employees and block attendance marking on the selected date.
+            </p>
+          </div>
+        </div>
       )}
 
       {/* No holidays UI — holidays disconnected from factory operations */}
