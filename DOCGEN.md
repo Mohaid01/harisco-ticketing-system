@@ -1,344 +1,520 @@
-# Haris & Co. — Document Generator (DOCGEN) Implementation Plan
+# Harisco Ticketing System — Document Generator Documentation
 
-> **Status:** Ratified & Approved Plan (Ready for Implementation when requested)  
-> **Target Module:** `harisco-ticketing-system` Document Generator Tab  
-> **Document Control:** `HC-IT-DOCGEN-PLAN-2601`  
-> **Revision:** Rev 01  
-> **Scope:** Final Architecture, Master Data Schemes, Database Design, UI Workflows, and PDF Layouts.
-
----
-
-## 1. Executive Summary & Purpose
-
-The **Document Generator** is an enterprise-grade document control, numbering, and generation system embedded inside the Haris & Co. Ticketing System (`harisco-ticketing-system`).
-
-### Core Objectives
-
-1. **Corporate Standard Compliance:** Enforce the official Haris & Co. **Corporate Revision Number Scheme** across all legal entities, departments, and document types.
-2. **Automated Sequence & ID Generation:** Eliminate manual document numbering errors by automatically reserving and generating unique, collision-proof Document IDs with zero-padded sequence counters (`HC-{Entity}-{Department}-{DocType}-{YY}{SN}`).
-3. **Professional Document Production:** Produce standardized, executive-ready documents:
-   - **Excel (.xlsx):** Spreadsheet with Document Control Block (ID, Revision, Entity, Department, Doc Type, Date, Title, Description, Sign-Off).
-   - **Word (.docx):** Word document with Document Control Box and Controlled Document Content (Title + Description), wrapped in Haris & Co. branding.
-4. **Document Registry & Audit Trail:** Maintain a permanent, searchable Master Document Register (MDR) of all generated documents, download histories, and revision versions in SQLite with IT role-based access control (`screen_overrides`).
+**File:** `docgen.md`  
+**Module:** `src/tabs/DocumentGenerator/`  
+**API:** `server/routes/document-generator.ts`  
+**Owner:** Document Control / Engineering Documentation
 
 ---
 
-## 2. Ratified Document ID & Numbering Scheme
+## 1. Overview
 
-Based on alignment with Haris & Co. Corporate and Engineering standards, the unified ID format is:
+The Document Generator (DocGen) is the corporate document control module of the Harisco Ticketing System. It enforces Haris & Co engineering numbering standards, issues official document IDs, maintains a Master Document Register (MDR), handles revision history with per-revision sign-off capture, and generates formatted Word documents from a `.docx` template.
 
-```text
-HC-{Entity}-{Department}-{DocType}-{SN}
+**Core capabilities:**
+- Auto-generated document IDs following the scheme `HC-<Entity>-<Department>-<DocType>-<Seq>`
+- Master Document Register with search, filter, and pagination
+- New document creation (title, description, appendix, form number)
+- Tri-tier sign-off matrix (Prepared / Checked / Approved)
+- Revision upload (.doc / .docx) with per-revision signer capture
+- Word document generation from template with placeholder substitution
+- Revision-table injection (incremental revision log top-to-bottom)
+
+---
+
+## 2. Directory Structure
+
+```
+src/tabs/DocumentGenerator/
+├── index.tsx                  # Main container (registry + new document modal)
+├── types.ts                   # TypeScript interfaces
+├── constants.ts               # Entities, departments, document types, prefix
+├── DocumentGenerator.css      # Module styles
+├── utils/
+│   └── wordGenerator.ts       # Word .docx generation logic
+├── hooks/
+│   ├── useDocumentGenerator.ts  # New document state & generation API calls
+│   └── useDocumentRegistry.ts   # MDR fetch, filter, update revision
+├── assets/
+│   ├── word-new-template.docx   # Word generation template
+│   └── sample-excel.xlsx        # (unused legacy)
+└── components/
+    ├── ControlledDocumentForm.tsx   # Title / description / appendix / form number
+    ├── CorporateSchemeSelector.tsx  # Entity / dept / doc type / revision + ID preview
+    ├── SignOffSection.tsx           # Tri-tier approval matrix (searchable user select)
+    ├── NewDocumentModal.tsx         # "New Document" modal (wraps above 3)
+    ├── DocumentRegistryTable.tsx    # MDR table + upload revision trigger
+    ├── DocumentDetailModal.tsx      # Document details + revision history view
+    └── UploadRevisionModal.tsx      # Revision file upload + per-revision sign-off
 ```
 
-### 2.1 Format Breakdown
-
-| Component           | Code Format | Description / Example                                                            |
-| :------------------ | :---------: | :------------------------------------------------------------------------------- |
-| **Prefix**          |    `HC`     | Harisco Control corporate prefix                                                 |
-| **Entity**          | `01` – `08` | Legal entity code (e.g. `01` for Head Office, `03` for Haris & Co Saudia)        |
-| **Department**      |  3 Letters  | Department / Discipline code (e.g. `ENG`, `COR`, `HSE`, `IT`)                    |
-| **Doc Type**        |  2 Letters  | Standardized Document Type code (e.g. `LE`, `ME`, `TR`, `DR`, `SP`)              |
-| **Sequence (`SN`)** |  4 Digits   | Zero-padded sequential counter starting at `0001` (expands to `1000+` if > 9999) |
-
-- **Example 1 (Memo):** `HC-01-COR-ME-0001` _(Head Office — Corporate — Memo — Seq 0001)_
-- **Example 2 (Letter):** `HC-03-BDV-LE-0002` _(Haris & Co Saudia — Business Development — Letter — Seq 0002)_
-- **Example 3 (Drawing):** `HC-01-ENG-DR-0005` _(Head Office — Engineering — Drawing — Seq 0005)_
-- **Example 4 (Transmittal):** `HC-04-PMT-TR-0001` _(Haris Engineering Saudia — Project Management — Transmittal — Seq 0001)_
-
-The `year` field is stored in the database (`document_sequences`, `generated_documents`) for backward compatibility and audit purposes, but it is **not** part of the displayed Document ID string.
-
-### 2.2 Revision Control
-
-- **Revision Code:** Managed as a dedicated field: `Rev 00` (initial issue), `Rev 01`, `Rev 02`, or alphabetic `Rev A`, `Rev B` for preliminary engineering review.
-- Displayed prominently in the Document Control Block on the generated PDF and stored in the database.
-- A "Create Revision" action allows users to issue an updated version under the same Document ID, incrementing the revision tag and tracking version history.
-
-### 2.3 Sequence Scope & Rules
-
-- **Scope Key:** `Entity + Department + DocType` for ID generation; `year` column is stored in `document_sequences` and `generated_documents` tables for backward compatibility and audit tracking.
-- **Atomic Counter:** Handled via SQLite transactions to guarantee that two users generating documents simultaneously will never receive duplicate sequence numbers.
-- **No Yearly Reset:** Sequence numbers do not reset at the beginning of each calendar year — they continue incrementing per Entity + Department + DocType scope.
-
----
-
-## 3. Master Reference Tables
-
-### 3.1 Entity Reference Table (Dropdown 1)
-
-|  Code  | Entity Description       | Operational Territory / Role             |
-| :----: | :----------------------- | :--------------------------------------- |
-| **01** | Head Office              | Principal Executive Office               |
-| **02** | Manufacturing Shop       | Fabrication & Production Facility        |
-| **03** | Haris & Co Saudia        | Saudi Arabia Branch / Operations         |
-| **04** | Haris Engineering Saudia | Engineering Services KSA                 |
-| **05** | Haris IT Company         | Technology & Digital Solutions           |
-| **06** | XYZ                      | Reserved / Joint Venture / Future Entity |
-| **07** | ABD                      | Reserved / Subsidiary / Future Entity    |
-| **08** | GHT                      | Reserved / Subsidiary / Future Entity    |
-
----
-
-### 3.2 Department / Discipline Reference Table (Dropdown 2)
-
-|  Code   | Description                     | Functional Group                      |
-| :-----: | :------------------------------ | :------------------------------------ |
-| **COR** | Corporate                       | Executive & Governance                |
-| **ADM** | Administration                  | General Admin & Office Services       |
-| **HRC** | Human Resource Capital          | Human Resources & Talent              |
-| **BDV** | Business Development            | Commercial Growth & Client Relations  |
-| **HSE** | Health, Safety and Environment  | Safety, Compliance & Environmental    |
-| **QUA** | Quality Assurance               | QA Systems & Audits                   |
-| **QUC** | Quality Control                 | QC Inspection & Verification          |
-| **PMT** | Project Management              | Project Execution & Delivery          |
-| **CAS** | Commissioning and After Sales   | Field Commissioning & Client Support  |
-| **WRH** | Warehouse                       | Stores & Inventory Control            |
-| **CSL** | Commercial, Shipment, Logistics | Supply Chain, Shipping & Customs      |
-| **ACF** | Accounts & Finance              | Financial Management & Treasury       |
-| **IAU** | Internal Audit                  | Internal Financial & Ops Audit        |
-| **IMS** | Integration Management System   | ISO / Integrated Mgmt Standards       |
-| **PRP** | Proposal                        | Bid Management & Estimations          |
-| **PRC** | Procurement                     | Purchasing & Vendor Sourcing          |
-| **ENG** | Engineering                     | Design, Technical & Drafting          |
-| **PLN** | Planning                        | Master Scheduling & Resource Planning |
-
----
-
-### 3.3 Types Of Document Reference Table (Dropdown 3)
-
-The 37 standard document types are categorized below:
-
-#### A. Correspondence & Communication
-
-|  Code  | Description |  Specialized Phase 1 Form  |
-| :----: | :---------- | :------------------------: |
-| **LE** | Letter      | **Yes (Dedicated Layout)** |
-| **ME** | Memo        | **Yes (Dedicated Layout)** |
-| **TR** | Transmittal | **Yes (Dedicated Layout)** |
-| **FX** | Fax         |      Universal Sheet       |
-| **EM** | Emails      |      Universal Sheet       |
-| **NF** | Information |      Universal Sheet       |
-
-#### B. Engineering, Design & Technical
-
-|  Code  | Description                 | Specialized Phase 1 Form |
-| :----: | :-------------------------- | :----------------------: |
-| **CS** | Calculation Sheet           |     Universal Sheet      |
-| **DB** | Design Basis                |     Universal Sheet      |
-| **DR** | Drawings                    |     Universal Sheet      |
-| **DS** | Data Sheets                 |     Universal Sheet      |
-| **EL** | Equipment List              |     Universal Sheet      |
-| **LI** | Line List                   |     Universal Sheet      |
-| **FC** | Field Change Sheet          |     Universal Sheet      |
-| **SP** | Specifications / Procedures |     Universal Sheet      |
-| **ST** | Standard Tables             |     Universal Sheet      |
-
-#### C. Commercial, Procurement & Estimations
-
-|  Code  | Description                 | Specialized Phase 1 Form |
-| :----: | :-------------------------- | :----------------------: |
-| **BQ** | Bill of Material (Quantity) |     Universal Sheet      |
-| **BU** | Budgets                     |     Universal Sheet      |
-| **CE** | Cost Estimation             |     Universal Sheet      |
-| **CO** | Change Order                |     Universal Sheet      |
-| **NV** | Invoices                    |     Universal Sheet      |
-| **PO** | Purchase Orders             |     Universal Sheet      |
-| **PP** | Proposal                    |     Universal Sheet      |
-| **RQ** | Requisitions                |     Universal Sheet      |
-| **TD** | Tender Documents            |     Universal Sheet      |
-| **WE** | Work Estimates              |     Universal Sheet      |
-
-#### D. Quality, HSE & Field Operations
-
-|  Code  | Description                  | Specialized Phase 1 Form |
-| :----: | :--------------------------- | :----------------------: |
-| **TP** | Inspection and Test Plans    |     Universal Sheet      |
-| **OM** | Operation Manual             |     Universal Sheet      |
-| **PR** | Progress Reports / Write Ups |     Universal Sheet      |
-| **RP** | Reports                      |     Universal Sheet      |
-| **PL** | Plan                         |     Universal Sheet      |
-| **SC** | Schedules / Planning         |     Universal Sheet      |
-
-#### E. Maintenance, Materials & Lists
-
-|  Code  | Description            | Specialized Phase 1 Form |
-| :----: | :--------------------- | :----------------------: |
-| **AL** | List of Accessory      |     Universal Sheet      |
-| **DC** | Document Control Lists |     Universal Sheet      |
-| **SL** | Spare Parts List       |     Universal Sheet      |
-| **TL** | Tool List              |     Universal Sheet      |
-| **LL** | Lubrication List       |     Universal Sheet      |
-| **LM** | List (Miscellaneous)   |     Universal Sheet      |
-| **TM** | Standard Templates     |     Universal Sheet      |
-
----
-
-## 4. Phase 1 Document Layouts
-
-### 4.1 Controlled Document Content (All 38 Doc Types)
-
-Every document type shares the same controlled content form — there are no per-type dedicated layouts (Letter/Memo/Transmittal/Universal are merged into one). The content section contains exactly two input fields:
-
-1. **Document Title / Subject** — free-text title or subject line.
-2. **Document Description** — multi-paragraph description / executive overview.
-
-The Document Control Box surrounding the content displays:
-
-- Document ID (`HC-{Entity}-{Department}-{DocType}-{YY}{SN}`)
-- Revision (`Rev 00`, `Rev 01`, …)
-- Issue Date
-- Entity, Department, Doc Type
-- Year & Sequence
-
-No References/Attachments table and no Tri-Approval sign-off box in Phase 1. Those are deferred to a later phase.
-
----
-
-## 5. System Architecture & Tech Stack
-
-```mermaid
-graph TD
-    SubGraph UI["Frontend (React 19 + TypeScript + Framer Motion)"]
-        Sidebar["Sidebar Nav ('Document Generator')"]
-        AccessGate["ScreenAccessManager (IT Managed via screen_overrides)"]
-        TabContainer["DocumentGenerator Tab Container"]
-
-        SubTab1["New Document (Form & Live Preview)"]
-        SubTab2["Master Document Register (MDR)"]
-        SubTab3["Access Management (IT Only)"]
-
-        CorporateDropdowns["Corporate Scheme Selectors\n(Entity, Dept, DocType)"]
-        LiveIdBadge["Real-Time Document ID Display\n(HC-01-ENG-DR-0001)"]
-        DynamicForm["Controlled Document Content\n(Title + Description)"]
-        ExcelGenerator["Excel (.xlsx) Generation\n(exceljs)"]
-        WordGenerator["Word (.docx) Generation\n(docx)"]
-    end
-
-    subgraph Server ["Backend (Node.js + Express 5)"]
-        AuthMiddleware["authenticateToken & Role Security"]
-        DocRoutes["/api/document-generator/*"]
-
-        NextIdEndpoint["GET /preview-id"]
-        GenerateEndpoint["POST /generate-and-register"]
-        ListEndpoint["GET /documents"]
-        RevisionEndpoint["POST /documents/:id/revision"]
-    end
-
-    subgraph Database ["SQLite Database (WAL Mode)"]
-        SeqTable[("document_sequences\n(entity_code, department_code, doc_type_code, year, last_sequence)")]
-        DocTable[("generated_documents\n(id, document_id, entity_code, department_code, doc_type_code, year, sequence_number, title, ...)")]
-        AuditLog[("activity_logs\n(actor, action, timestamp)")]
-    end
-
-    Sidebar --> AccessGate --> TabContainer
-    TabContainer --> SubTab1 & SubTab2 & SubTab3
-    SubTab1 --> CorporateDropdowns --> LiveIdBadge
-    SubTab1 --> DynamicForm --> ExcelGenerator
-    SubTab1 --> DynamicForm --> WordGenerator
-
-    NextIdEndpoint --> SeqTable
-    GenerateEndpoint --> SeqTable
-    GenerateEndpoint --> DocTable
-    GenerateEndpoint --> AuditLog
-    SubTab2 --> ListEndpoint --> DocTable
+Server side:
+```
+server/
+├── routes/document-generator.ts   # All REST API endpoints
+├── constants/documentGenerator.ts # Server-side constants (entities, depts, types, prefix)
+├── db.ts                          # SQLite schema + migrations (incl. docgen tables)
+└── types/index.ts                 # Shared types (DocumentVersion, etc.)
 ```
 
 ---
 
-## 6. Database Schema Design (SQLite)
+## 3. Data Model
 
-### 6.1 `document_sequences` Table
+### 3.1 Database Tables
 
-Guarantees atomic, collision-free sequence numbers across concurrent requests.
+#### `generated_documents`
 
-```sql
-CREATE TABLE IF NOT EXISTS document_sequences (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  entity_code TEXT NOT NULL,
-  department_code TEXT NOT NULL,
-  doc_type_code TEXT NOT NULL,
-  year TEXT NOT NULL,
-  last_sequence INTEGER NOT NULL DEFAULT 0,
-  updated_at TEXT NOT NULL,
-  UNIQUE(entity_code, department_code, doc_type_code, year)
-);
+Stores each issued controlled document.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | TEXT PK | UUID |
+| `document_id` | TEXT | e.g. `HC-01-COR-LE-0001` |
+| `entity_code` | TEXT | Entity code (`01`..`08`) |
+| `department_code` | TEXT | Dept code (`COR`, `ADM`, `HSE`, ...) |
+| `doc_type_code` | TEXT | Doc type code (`LE`, `ME`, `CS`, ...) |
+| `year` | TEXT | 2-digit year (`26`) |
+| `sequence_number` | INTEGER | 4-digit sequence within entity/dept/type/year |
+| `revision` | TEXT | e.g. `Rev 00` |
+| `title` | TEXT | Document title/subject |
+| `prepared_by_id` | TEXT | User ID of preparer |
+| `prepared_by_name` | TEXT | Preparer name |
+| `checked_by_name` | TEXT | Checker name |
+| `approved_by_name` | TEXT | Approver name |
+| `prepared_by_date` | TEXT | Prepare date (ISO) |
+| `checked_by_date` | TEXT | Check date (ISO) |
+| `approved_by_date` | TEXT | Approve date (ISO) |
+| `doc_date` | TEXT | Document date |
+| `content_json` | TEXT | JSON of title/description/appendix/formNumber |
+| `file_name` | TEXT | Stored file name |
+| `created_at` | TEXT | ISO timestamp |
+| `updated_at` | TEXT | ISO timestamp |
+
+#### `document_versions`
+
+Stores each uploaded revision file plus per-revision sign-off capture.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | TEXT PK | UUID |
+| `document_id` | TEXT FK | References `generated_documents.id` |
+| `revision` | TEXT | Revision identifier |
+| `file_name` | TEXT | Original uploaded filename |
+| `file_path` | TEXT | Relative stored path |
+| `file_size` | INTEGER | Bytes |
+| `uploaded_by` | TEXT | User ID who uploaded |
+| `uploaded_at` | TEXT | ISO timestamp |
+| `note` | TEXT | Change note |
+| `prepared_by_name` | TEXT | Signer at revision time |
+| `checked_by_name` | TEXT | Signer at revision time |
+| `approved_by_name` | TEXT | Signer at revision time |
+| `prepared_by_date` | TEXT | Sign date at revision time |
+| `checked_by_date` | TEXT | Sign date at revision time |
+| `approved_by_date` | TEXT | Sign date at revision time |
+
+#### `document_sequences`
+
+Tracks the last sequence number per entity/department/docType/year combination for ID generation.
+
+| Column | Type |
+|--------|------|
+| `entity_code` | TEXT |
+| `department_code` | TEXT |
+| `doc_type_code` | TEXT |
+| `year` | TEXT |
+| `last_sequence` | INTEGER |
+| `updated_at` | TEXT |
+
+### 3.2 Migration Behavior
+
+`server/db.ts` runs self-healing migrations on startup:
+- Creates `document_versions` if missing
+- Adds signer columns (`prepared_by_name`, `checked_by_name`, `approved_by_name`, `prepared_by_date`, `checked_by_date`, `approved_by_date`) to existing `document_versions` rows via `ALTER TABLE ... ADD COLUMN`
+- Adds sign-off date columns to `generated_documents` if missing
+
+---
+
+## 4. Document Numbering Scheme
+
+**Format:** `HC-<Entity>-<Department>-<DocType>-<Seq>`
+
+Example: `HC-01-COR-LE-0001`
+
+| Segment | Source | Values |
+|---------|--------|--------|
+| `HC` | `DOC_PREFIX` | Fixed prefix |
+| `Entity` | `ENTITIES` | `01` Head Office, `02` Manufacturing Shop, `03` Haris & Co Saudia, ... |
+| `Department` | `DEPARTMENTS` | `COR` Corporate, `ADM` Administration, `HSE` HSE, ... |
+| `DocType` | `DOCUMENT_TYPES` | `LE` Letter, `ME` Memo, `CS` Calculation Sheet, ... |
+| `Seq` | `document_sequences.last_sequence` | Zero-padded 4 digits (`0001`, `0002`, ...) |
+
+The sequence is scoped per `(entity_code, department_code, doc_type_code, year)`. On each new document, the sequence increments by 1.
+
+**Revision options:** `Rev 00`, `Rev 01`, `Rev 02`, `Rev 03`, `Rev 04`, `Rev A`, `Rev B`, `Rev C`
+
+---
+
+## 5. API Endpoints
+
+All endpoints require Bearer token authentication (`Authorization: Bearer <token>`) and screen-access check for `document_generator` (IT role always has access; other roles need a `screen_overrides` row).
+
+Base path: `/api/document-generator`
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/options` | Returns entities, departments, document types, prefix |
+| `GET` | `/preview-id?entity=&department=&docType=` | Computes next document ID without saving |
+| `POST` | `/generate` | Create a new controlled document record |
+| `GET` | `/documents` | List documents (filter by entity/department/docType/year/search) |
+| `GET` | `/documents/:id` | Get single document by ID or document_id |
+| `POST` | `/documents/:id/revision` | Update the revision of an existing document |
+| `POST` | `/documents/:id/upload` | Upload a revision file (.doc/.docx, ≤15 MB) + per-revision sign-off |
+| `GET` | `/documents/:id/versions` | List all revision versions for a document (oldest→newest) |
+| `GET` | `/documents/:id/versions/:versionId/download` | Download a specific revision file |
+
+### `POST /generate` body
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `entityCode` | string | Yes | Entity code |
+| `departmentCode` | string | Yes | Department code |
+| `docTypeCode` | string | Yes | Document type code |
+| `title` | string | Yes | Document title |
+| `year` | string | No | 2-digit year (default: current) |
+| `revision` | string | No | Revision (default: `Rev 00`) |
+| `preparedByName` | string | No | Preparer name |
+| `checkedByName` | string | No | Checker name |
+| `approvedByName` | string | No | Approver name |
+| `preparedByDate` | string | No | Prepare date ISO |
+| `checkedByDate` | string | No | Check date ISO |
+| `approvedByDate` | string | No | Approve date ISO |
+| `docDate` | string | No | Document date ISO |
+| `contentJson` | string | No | JSON string of `{title, description, appendixNumber, formNumber}` |
+
+### `POST /documents/:id/upload` (multipart/form-data)
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `file` | file | No | .doc or .docx, max 15 MB |
+| `revision` | string | No | Revision (auto-incremented if omitted) |
+| `note` | string | No | Change note |
+| `prepared_by_name` | string | No | Signer name at revision time |
+| `checked_by_name` | string | No | Checker name at revision time |
+| `approved_by_name` | string | No | Approver name at revision time |
+| `prepared_by_date` | string | No | Sign date ISO |
+| `checked_by_date` | string | No | Check date ISO |
+| `approved_by_date` | string | No | Approve date ISO |
+
+---
+
+## 6. Frontend Architecture
+
+### 6.1 Main Container (`index.tsx`)
+
+Renders two sub-tabs:
+- **registry** — Master Document Register table
+- **access** — Screen Access Manager (IT role only)
+
+Provides the "New Document" button which opens `NewDocumentModal`. Handles:
+- `handleSaveDraft` — calls `saveDraft()` (generates via API, registers document)
+- `handleDownload` — calls `downloadDocument()` then generates Word .docx via `generateDocumentWord()` and downloads blob
+- `handleDownloadWordFromRegistry` — generates Word for an existing registry record
+- `handleViewDocument` — opens `DocumentDetailModal`
+
+### 6.2 Hook: `useDocumentGenerator`
+
+Manages new-document state:
+- `entityCode`, `departmentCode`, `docTypeCode`, `year`, `revision` — dropdown selections
+- `previewId` — auto-generated document ID (fetched from `/preview-id`)
+- `docTitle` — document title
+- `signOff` — `{preparedByName, checkedByName, approvedByName, preparedByDate, checkedByDate, approvedByDate}`
+- `controlledData` — `{title, description, appendixNumber, formNumber}`
+- `submitDocument()` / `saveDraft()` — POST to `/generate`
+- `downloadDocument()` — triggers Word generation + blob download
+
+### 6.3 Hook: `useDocumentRegistry`
+
+Manages the MDR:
+- `documents`, `loading`, `error`
+- Filters: `filterEntity`, `filterDepartment`, `filterDocType`, `filterYear`, `searchQuery`
+- `refreshDocuments()` — GET `/documents`
+- `updateRevision(documentId, newRevision)` — POST `/documents/:id/revision`
+
+### 6.4 Components
+
+| Component | Purpose |
+|-----------|---------|
+| `CorporateSchemeSelector` | Entity/dept/doctype/revision dropdowns + read-only document ID preview |
+| `ControlledDocumentForm` | Title, description, appendix number, form/document number inputs |
+| `SignOffSection` | Tri-tier approval matrix with searchable user selection from `allUsers` |
+| `NewDocumentModal` | Wraps the three above; Save Draft / Download buttons |
+| `DocumentRegistryTable` | MDR data table; per-row Download Word / Upload Revision / View actions |
+| `UploadRevisionModal` | Revision file upload + per-revision sign-off capture |
+| `DocumentDetailModal` | Document metadata, sign-off matrix, revision history table |
+
+---
+
+## 7. Revision Management
+
+### 7.1 Creating a Document (Rev 00)
+
+User fills entity/dept/doctype, title/description/appendix/form number, sign-off matrix, clicks **Download** (or **Save Draft**). The system:
+1. Fetches/preview next document ID from `/preview-id`
+2. POSTs to `/generate` → inserts into `generated_documents`
+3. Generates Word .docx from `word-new-template.docx` with placeholders replaced
+4. Downloads the `.docx` blob
+
+### 7.2 Uploading a Revision
+
+From the MDR table, click **Upload Rev** on a document. The `UploadRevisionModal` opens:
+- Shows current revision and default next revision
+- Optional file upload (.doc/.docx ≤15 MB)
+- Optional change note
+- **Per-revision sign-off**: Prepared/Checked/Approved name + date captured at upload time
+- Submits multipart/form-data to `/documents/:id/upload`
+
+Server:
+- Inserts into `document_versions` with revision, file, note, and signer fields
+- Updates `generated_documents.revision` to the new revision
+
+### 7.3 Viewing Revision History
+
+Open `DocumentDetailModal` (View button). Fetches `GET /documents/:id/versions` (oldest→newest) and renders a table of revision, change note, uploaded date.
+
+### 7.4 Word Revision Table
+
+The template contains Table 0 with 9 columns. On Word generation, `injectRevisionRows()` writes each version into successive rows starting at row 2:
+
+| Col | Field |
+|-----|-------|
+| 0 | Revision |
+| 1 | Date (DD-MM-YYYY) |
+| 2 | Description / Change Note |
+| 3 | Prepared initials |
+| 4 | Prepared date |
+| 5 | Checked initials |
+| 6 | Checked date |
+| 7 | Approved initials |
+| 8 | Approved date |
+
+Versions are ordered **oldest→newest** so the revision log reads incrementally top-to-bottom. Per-revision signer data is used when available, falling back to current sign-off.
+
+---
+
+## 8. Word Document Generation
+
+### 8.1 Template (`word-new-template.docx`)
+
+A `.docx` file containing placeholder strings wrapped in `{}`. The generator loads it via `JSZip`, iterates all `.xml` parts, and substitutes placeholders with runtime values.
+
+### 8.2 Placeholder Map (`wordGenerator.ts` `values` object)
+
+| Placeholder | Source |
+|-------------|--------|
+| `{Revision}` / `{revision}` | `revision` param |
+| `{DOC_DATE}` / `{docDate}` | `docDate` param |
+| `{DESCRIPTION}` / `{description}` | `content.description` |
+| `{PREPARED_BY}` / `{preparedBy}` | `signOff.preparedByName` |
+| `{PREPARED_BY_DATE}` / `{preparedByDate}` | `signOff.preparedByDate` |
+| `{CHECKED_BY}` / `{checkedBy}` | `signOff.checkedByName` |
+| `{CHECKED_BY_DATE}` / `{checkedByDate}` | `signOff.checkedByDate` |
+| `{APPROVED_BY}` / `{approvedBy}` | `signOff.approvedByName` |
+| `{APPROVED _BY_DATE}` / `{approvedByDate}` | `signOff.approvedByDate` |
+| `{APPENDIX}` / `{appendix}` | `appendixNumber` |
+| `{DOC_NUMBER}` / `{docNumber}` / `{Document Number}` | `formNumber` |
+| `{TITLE}` / `{title}` / `{DocumentTitle}` / `{documentTitle}` | `content.title` |
+| `{COMPANY_NAME}` | `'HARIS & Co Engineering Concern Pvt Ltd.'` |
+| `{REV_TABLE_*}` | Latest version data (rev table summary) |
+| `{harisco logo}` | Logo URL |
+
+Revision-table placeholders (`{REV_TABLE_REVISION}`, `{REV_TABLE_DATE}`, `{REV_TABLE_DESCRIPTION}`, etc.) reflect the **latest** version only.
+
+### 8.3 Revision Table Injection
+
+`injectRevisionRows()` operates on Table 0:
+- Locates `<w:tbl>...</w:tbl>`
+- Reads all `<w:tr>` rows
+- For each version (oldest→newest), writes into `rows[2 + v]`
+- Stops when `rowIdx >= rows.length` (extra versions beyond table rows are not written)
+
+**Note:** The template's table must have at least N+2 rows (2 header + N revisions) to accommodate all versions.
+
+### 8.4 Two-Pass Replacement
+
+1. `replaceWithinNodes()` — replaces placeholders contained entirely within a single `<w:t>` node
+2. `replaceAcrossRuns()` — replaces placeholders that span multiple `<w:t>` runs (combines all text, finds matches, rewrites segments)
+
+---
+
+## 9. Constants Reference
+
+### Entities (`src/tabs/DocumentGenerator/constants.ts`)
+
+| Code | Name |
+|------|------|
+| `01` | Head Office |
+| `02` | Manufacturing Shop |
+| `03` | Haris & Co Saudia |
+| `04` | Haris Engineering Saudia |
+| `05` | Haris IT Company |
+| `06` | XYZ (Reserved) |
+| `07` | ABD (Reserved) |
+| `08` | GHT (Reserved) |
+
+### Departments
+
+`COR`, `ADM`, `HRC`, `BDV`, `HSE`, `QUA`, `QUC`, `PMT`, `CAS`, `WRH`, `CSL`, `ACF`, `IAU`, `IMS`, `PRP`, `PRC`, `ENG`, `PLN`
+
+### Document Types (by category)
+
+**Correspondence:** `LE` Letter, `ME` Memo, `FX` Fax, `TR` Transmittal, `EM` Emails, `NF` Information
+
+**Engineering:** `CS` Calculation Sheet, `DB` Design Basis, `DR` Drawings, `DS` Data Sheets, `EL` Equipment List, `LI` Line List, `FC` Field Change Sheet, `SP` Specifications / Procedures, `ST` Standard Tables
+
+**Commercial:** `BQ` Bill of Material, `BU` Budgets, `CE` Cost Estimation, `CO` Change Order, `NV` Invoices, `PO` Purchase Orders, `PP` Proposal, `RQ` Requisitions, `TD` Tender Documents, `WE` Work Estimates
+
+**Quality & HSE:** `TP` Inspection and Test Plans, `OM` Operation Manual, `PR` Progress Reports, `RP` Reports, `PL` Plan, `SC` Schedules / Planning
+
+**Maintenance & Lists:** `AL` List of Accessory, `DC` Document Control Lists, `SL` Spare Parts List, `TL` Tool List, `TM` Standard Templates, `LM` List (Miscellaneous), `LL` Lubrication List
+
+### Revision Options
+
+`Rev 00`, `Rev 01`, `Rev 02`, `Rev 03`, `Rev 04`, `Rev A`, `Rev B`, `Rev C`
+
+---
+
+## 10. Access Control
+
+Screen name: `document_generator`
+
+- **IT role** (`role === 'it'`): full access to all endpoints
+- **Other roles**: requires a row in `screen_overrides` where `screen_name = 'document_generator'` and `user_id = <current user>` and the user is active
+
+Checked via `checkAccess()` in `server/routes/document-generator.ts` on every endpoint.
+
+---
+
+## 11. Usage Workflow
+
+### Create a New Document
+1. Click **New Document**
+2. Select Entity, Department, Document Type, Revision (document ID auto-previews)
+3. Enter Document Title, Description, Appendix Number, Form Number
+4. Select Prepared / Checked / Approved signers and dates
+5. Click **Download** → generates Word .docx and registers the document
+6. (Optional) Click **Save Draft** to register without downloading
+
+### Upload a Revision
+1. Open **Document Registry** tab
+2. Find the document, click **Upload Rev**
+3. Select revision (auto-increments from current)
+4. Optional: attach .doc/.docx file (≤15 MB)
+5. Optional: change note
+6. **Important:** Fill Prepared/Checked/Approved name + date to capture signers at revision time
+7. Click **Upload Revision**
+
+### View / Download Existing
+1. From MDR table:
+   - **Download** → regenerates Word .docx with latest data + revision table
+   - **Upload Rev** → open revision upload modal
+   - **View** → open document detail modal (metadata, sign-off matrix, revision history)
+
+### Filter the Registry
+Use the toolbar filters: Entity, Department, Doc Type, Year, and free-text search (searches Document ID, Title, Prepared By).
+
+---
+
+## 12. TypeScript Interfaces (`types.ts`)
+
+```ts
+export interface DocumentSignOff {
+  preparedByName: string;
+  checkedByName: string;
+  approvedByName: string;
+  preparedByDate: string;
+  checkedByDate: string;
+  approvedByDate: string;
+}
+
+export interface ControlledDocumentData {
+  title: string;
+  description: string;
+  appendixNumber: string;
+  formNumber: string;
+}
+
+export interface GeneratedDocumentRecord {
+  id: string;
+  document_id: string;
+  entity_code: string;
+  department_code: string;
+  doc_type_code: string;
+  year: string;
+  sequence_number: number;
+  revision: string;
+  title: string;
+  prepared_by_id: string;
+  prepared_by_name: string;
+  checked_by_name: string | null;
+  approved_by_name: string | null;
+  prepared_by_date: string | null;
+  checked_by_date: string | null;
+  approved_by_date: string | null;
+  doc_date: string;
+  content_json: string | null;
+  file_name: string;
+  created_at: string;
+  updated_at: string;
+}
 ```
 
-### 6.2 `generated_documents` Table
+Server `DocumentVersion` (from `server/types/index.ts`):
 
-Master register of all generated corporate documents.
-
-```sql
-CREATE TABLE IF NOT EXISTS generated_documents (
-  id TEXT PRIMARY KEY,                       -- UUID v4
-  document_id TEXT UNIQUE NOT NULL,          -- e.g. HC-01-ENG-DR-0001
-  entity_code TEXT NOT NULL,                 -- e.g. 01
-  department_code TEXT NOT NULL,             -- e.g. ENG
-  doc_type_code TEXT NOT NULL,               -- e.g. DR
-  year TEXT NOT NULL,                        -- e.g. 26
-  sequence_number INTEGER NOT NULL,          -- e.g. 1
-  revision TEXT NOT NULL DEFAULT 'Rev 00',   -- e.g. Rev 00, Rev 01
-  title TEXT NOT NULL,                       -- Document Subject/Title
-  prepared_by_id TEXT NOT NULL,              -- FK users.id
-  checked_by_name TEXT,                      -- Reviewer Name
-  approved_by_name TEXT,                     -- Approver Name
-  doc_date TEXT NOT NULL,                    -- Document issue date (ISO)
-  content_json TEXT,                         -- Form inputs & document body
-  file_name TEXT NOT NULL,                   -- e.g. HC-01-ENG-DR-0001.pdf
-  created_at TEXT NOT NULL,                  -- ISO Timestamp
-  updated_at TEXT NOT NULL,                  -- ISO Timestamp
-  FOREIGN KEY (prepared_by_id) REFERENCES users(id)
-);
-
-CREATE INDEX IF NOT EXISTS idx_gen_docs_entity ON generated_documents(entity_code);
-CREATE INDEX IF NOT EXISTS idx_gen_docs_dept ON generated_documents(department_code);
-CREATE INDEX IF NOT EXISTS idx_gen_docs_doctype ON generated_documents(doc_type_code);
-CREATE INDEX IF NOT EXISTS idx_gen_docs_year ON generated_documents(year);
+```ts
+export interface DocumentVersion {
+  id: string;
+  document_id: string;
+  revision: string;
+  file_name: string;
+  file_path: string;
+  file_size: number;
+  uploaded_by: string;
+  uploaded_at: string;
+  note: string | null;
+  prepared_by_name?: string | null;
+  checked_by_name?: string | null;
+  approved_by_name?: string | null;
+  prepared_by_date?: string | null;
+  checked_by_date?: string | null;
+  approved_by_date?: string | null;
+}
 ```
 
 ---
 
-## 7. Step-by-Step Implementation Roadmap
+## 13. Known Limitations
 
-When authorized to proceed with implementation, development will follow these 5 clear phases:
-
-### Phase 1: Database & Sequence Engine
-
-- Add `document_sequences` and `generated_documents` table creation in [server/db.ts](file:///home/shae/Repos/harisco-ticketing-system/server/db.ts).
-- Implement atomic sequence counter in `server/routes/document-generator.ts` with collision prevention.
-- Register router in `server/index.ts`.
-
-### Phase 2: Frontend Scheme Selectors & State Management
-
-- Create `src/tabs/DocumentGenerator/` folder structure.
-- Build `CorporateSchemeSelector.tsx` dropdowns (Entity, Department, DocType) with live search and descriptions.
-- Implement live ID generator badge that computes previews without burning sequence numbers.
-
-### Phase 3: Single Controlled Document Form Template
-
-- Create `src/tabs/DocumentGenerator/components/ControlledDocumentForm.tsx` with exactly two content inputs:
-  - Document Title / Subject
-  - Document Description
-- Replaces the previous four per-type templates (`LetterForm`, `MemoForm`, `TransmittalForm`, `UniversalDocumentForm`) — one generic form serves all 38 doc types.
-- Add Document Control Box around the content (ID, Revision, Issue Date, Entity, Dept, Doc Type, Year, Sequence).
-
-### Phase 4: Excel & Word Document Generation
-
-- Create `src/tabs/DocumentGenerator/utils/excelGenerator.ts` using `exceljs`.
-  - Document Control Block: Document ID, Revision, Document Type, Entity, Department, Issue Date, Title / Subject, Description, Prepared By, Checked / Reviewed By, Approved By.
-  - Confidentiality footer.
-- Create `src/tabs/DocumentGenerator/utils/wordGenerator.ts` using `docx`.
-  - Document Control Box with shaded header row + Controlled Document Content (Title + Description).
-  - Confidentiality footer.
-- Live download buttons for Excel (.xlsx) and Word (.docx); no PDF generation.
-
-### Phase 5: Master Document Register (MDR), RBAC & Navigation
-
-- Build `DocumentRegistryTable.tsx` for searching, filtering, and re-downloading documents.
-- Implement "Create Revision" workflow.
-- Integrate with `ScreenAccessManager` and `screen_overrides` with `screen_name = 'document_generator'`.
-- Add menu item to [src/components/Sidebar/index.tsx](file:///home/shae/Repos/harisco-ticketing-system/src/components/Sidebar/index.tsx) with Lucide icon.
+1. **Revision table row capacity:** The Word template's Table 0 must have enough data rows (≥ 2 header + number of revisions). Extra versions beyond available rows are silently dropped.
+2. **Per-revision signers for old versions:** Versions uploaded before the signer-capture feature was added will fall back to the current sign-off in the revision table (no historical signer data exists).
+3. **Single file per version:** Only one .doc/.docx file can be attached per revision upload.
+4. **No PDF generation:** The `file_name` stored is `.pdf` but generation produces `.docx`; this is a legacy naming convention.
 
 ---
 
-_Created by AI Pair Programmer for Haris & Co. Engineering & Corporate Documentation System._
+## 14. Verification Commands
+
+```bash
+# TypeScript typecheck
+npm run typecheck
+
+# Lint
+npm run lint
+
+# Build
+npm run build
+```
+
+---
+
+*End of documentation*

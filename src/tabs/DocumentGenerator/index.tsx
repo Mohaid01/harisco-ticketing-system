@@ -73,6 +73,21 @@ export const DocumentGenerator: React.FC<DocumentGeneratorProps> = ({ currentUse
       const todayIso = doc.docDate || new Date().toISOString().split('T')[0];
       const content = getContentPayload();
 
+      // Fetch revision versions for the revision table in Word
+      let versions: { revision: string; uploaded_at: string; note: string | null }[] = [];
+      try {
+        const res = await fetch(
+          `/api/document-generator/documents/${doc.id}/versions`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (res.ok) {
+          const data = await res.json();
+          versions = data.versions || [];
+        }
+      } catch {
+        versions = [];
+      }
+
       const bytes = await generateDocumentWord({
         documentId: doc.documentId,
         revision: doc.revision,
@@ -84,12 +99,16 @@ export const DocumentGenerator: React.FC<DocumentGeneratorProps> = ({ currentUse
         content,
         appendixNumber: content.appendixNumber,
         formNumber: content.formNumber,
+        signOff: signOff,
+        versions,
       });
 
       downloadWordBlob(bytes, doc.documentId);
       refreshDocuments();
       setNewDocumentOpen(false);
-    } catch (err) {
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Unknown error generating Word document';
+      alert('Word generation failed: ' + msg);
       console.error('Failed to build Word after registering:', err);
     }
   };
@@ -111,6 +130,21 @@ export const DocumentGenerator: React.FC<DocumentGeneratorProps> = ({ currentUse
         parsedContent = { title: record.title, description: '' };
       }
 
+      // Fetch revision versions for the revision table in Word
+      let versions: { revision: string; uploaded_at: string; note: string | null }[] = [];
+      try {
+        const res = await fetch(
+          `/api/document-generator/documents/${record.id}/versions`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (res.ok) {
+          const data = await res.json();
+          versions = data.versions || [];
+        }
+      } catch {
+        versions = [];
+      }
+
       const bytes = await generateDocumentWord({
         documentId: record.document_id,
         revision: record.revision,
@@ -120,10 +154,21 @@ export const DocumentGenerator: React.FC<DocumentGeneratorProps> = ({ currentUse
         docDate: record.doc_date,
         title: record.title,
         content: parsedContent,
+        signOff: {
+          preparedByName: record.prepared_by_name,
+          checkedByName: record.checked_by_name || '',
+          approvedByName: record.approved_by_name || '',
+          preparedByDate: record.prepared_by_date || '',
+          checkedByDate: record.checked_by_date || '',
+          approvedByDate: record.approved_by_date || '',
+        },
+        versions,
       });
 
       downloadWordBlob(bytes, record.document_id);
-    } catch (err) {
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Unknown error generating Word document';
+      alert('Word generation failed: ' + msg);
       console.error('Failed to download existing document Word:', err);
     }
   };

@@ -1,5 +1,19 @@
 import JSZip from 'jszip';
 
+import type { DocumentSignOff } from '../types';
+
+interface DocumentVersion {
+  id: string;
+  document_id: string;
+  revision: string;
+  file_name: string;
+  file_path: string;
+  file_size: number;
+  uploaded_by: string;
+  uploaded_at: string;
+  note: string | null;
+}
+
 interface GenerateWordParams {
   documentId: string;
   revision: string;
@@ -11,24 +25,109 @@ interface GenerateWordParams {
   content: { title: string; description: string };
   appendixNumber: string;
   formNumber: string;
+  signOff: DocumentSignOff;
+  versions: DocumentVersion[];
 }
 
 const COMPANY_NAME = 'HARIS & Co Engineering Concern Pvt Ltd.';
 
+const getInitials = (name: string): string => {
+  if (!name) return '';
+  return name
+    .split(' ')
+    .map((part) => part.charAt(0).toUpperCase())
+    .join('');
+};
+
+const formatDateDDMMYYYY = (isoDate: string): string => {
+  if (!isoDate) return '';
+  const d = new Date(isoDate);
+  if (isNaN(d.getTime())) return isoDate;
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  return `${day}-${month}-${year}`;
+};
+
 export const generateDocumentWord = async (params: GenerateWordParams): Promise<Uint8Array> => {
-  const { revision, appendixNumber, formNumber, content } = params;
+  const { revision, appendixNumber, formNumber, content, signOff, versions } = params;
 
   const HARISCO_LOGO_URL = new URL('../assets/harisco-logo.png', import.meta.url).href;
+
+  const latestVersion = versions.length > 0 ? versions[versions.length - 1] : null;
 
   const values: Record<string, string> = {
     '{COMPANY_NAME}': COMPANY_NAME,
     '{DOCUMENT_TITLE}': content.title,
     '{DocumentTitle}': content.title,
     '{documentTitle}': content.title,
+    '{TITLE}': content.title,
+    '{title}': content.title,
+    '{DESCRIPTION}': content.description,
+    '{Description}': content.description,
+    '{description}': content.description,
+    '{DOCUMENT DESCRIPTION}': content.description,
     '{APPENDIX}': appendixNumber,
+    '{Appendix}': appendixNumber,
+    '{appendix}': appendixNumber,
     '{DOC_NUMBER}': formNumber,
+    '{DocNumber}': formNumber,
+    '{docNumber}': formNumber,
+    '{FORM_NUMBER}': formNumber,
+    '{Document Number}': formNumber,
     '{REVISION}': revision,
-    '{documentRevision}': revision,
+    '{Revision}': revision,
+    '{revision}': revision,
+    '{DOCUMENT_ID}': params.documentId,
+    '{DocumentId}': params.documentId,
+    '{documentId}': params.documentId,
+    '{ENTITY}': params.entityCode,
+    '{Entity}': params.entityCode,
+    '{entity}': params.entityCode,
+    '{DEPARTMENT}': params.departmentCode,
+    '{Department}': params.departmentCode,
+    '{department}': params.departmentCode,
+    '{DOC_TYPE}': params.docTypeCode,
+    '{DocType}': params.docTypeCode,
+    '{docType}': params.docTypeCode,
+    '{DOC_DATE}': params.docDate,
+    '{DocDate}': params.docDate,
+    '{docDate}': params.docDate,
+    '{PREPARED_BY}': signOff.preparedByName,
+    '{PreparedBy}': signOff.preparedByName,
+    '{preparedBy}': signOff.preparedByName,
+    '{PREPARED_BY_INITIALS}': getInitials(signOff.preparedByName),
+    '{CHECKED_BY}': signOff.checkedByName,
+    '{CheckedBy}': signOff.checkedByName,
+    '{checkedBy}': signOff.checkedByName,
+    '{CHECKED_BY_INITIALS}': getInitials(signOff.checkedByName),
+    '{APPROVED_BY}': signOff.approvedByName,
+    '{ApprovedBy}': signOff.approvedByName,
+    '{approvedBy}': signOff.approvedByName,
+    '{APPROVED_BY_INITIALS}': getInitials(signOff.approvedByName),
+    '{PREPARED_BY_DATE}': signOff.preparedByDate,
+    '{PreparedByDate}': signOff.preparedByDate,
+    '{preparedByDate}': signOff.preparedByDate,
+    '{CHECKED_BY_DATE}': signOff.checkedByDate,
+    '{CheckedByDate}': signOff.checkedByDate,
+    '{checkedByDate}': signOff.checkedByDate,
+    '{APPROVED_BY_DATE}': signOff.approvedByDate,
+    '{APPROVED _BY_DATE}': signOff.approvedByDate,
+    '{ApprovedByDate}': signOff.approvedByDate,
+    '{approvedByDate}': signOff.approvedByDate,
+    // Revision table placeholders (latest version data)
+    '{REV_TABLE_REVISION}': latestVersion?.revision || revision,
+    '{REV_TABLE_DATE}': latestVersion ? formatDateDDMMYYYY(latestVersion.uploaded_at) : formatDateDDMMYYYY(params.docDate),
+    '{REV_TABLE_DESCRIPTION}': latestVersion?.note || content.description,
+    '{REV_TABLE_PREPARED_BY}': signOff.preparedByName,
+    '{REV_TABLE_PREPARED_BY_INITIALS}': getInitials(signOff.preparedByName),
+    '{REV_TABLE_PREPARED_DATE}': signOff.preparedByDate,
+    '{REV_TABLE_CHECKED_BY}': signOff.checkedByName,
+    '{REV_TABLE_CHECKED_BY_INITIALS}': getInitials(signOff.checkedByName),
+    '{REV_TABLE_CHECKED_DATE}': signOff.checkedByDate,
+    '{REV_TABLE_APPROVED_BY}': signOff.approvedByName,
+    '{REV_TABLE_APPROVED_BY_INITIALS}': getInitials(signOff.approvedByName),
+    '{REV_TABLE_APPROVED_DATE}': signOff.approvedByDate,
     '{harisco logo}': HARISCO_LOGO_URL,
   };
 
@@ -92,16 +191,12 @@ export const generateDocumentWord = async (params: GenerateWordParams): Promise<
       combinedText += node.text;
     });
 
-    console.log(`[WordGenerator] replaceAcrossRuns: ${nodes.length} nodes, combined text length: ${combinedText.length}`);
-    console.log(`[WordGenerator] combined text sample:`, combinedText.substring(0, 500));
-
     const matches: Array<{ start: number; end: number; replacement: string; placeholder: string }> = [];
     for (const [placeholder, replacement] of Object.entries(values)) {
       const regex = new RegExp(placeholder, 'g');
       let match: RegExpExecArray | null;
       while ((match = regex.exec(combinedText)) !== null) {
         matches.push({ start: match.index, end: match.index + placeholder.length, replacement, placeholder });
-        console.log(`[WordGenerator] Found placeholder '${placeholder}' at position ${match.index}`);
       }
     }
 
@@ -156,7 +251,99 @@ export const generateDocumentWord = async (params: GenerateWordParams): Promise<
     return result;
   }
 
-  // Resolve the template asset URL
+  /**
+   * Inject revision data into Table 0 data rows starting at Row 2.
+   * Column mapping (9 columns):
+   *   0: Rev, 1: Date, 2: Description, 3: Prepared by initials, 4: Prepared date,
+   *   5: Checked by initials, 6: Checked date, 7: Approved by initials, 8: Approved date
+   */
+  function injectRevisionRows(xml: string): string {
+    const tblStart = xml.indexOf('<w:tbl>');
+    if (tblStart === -1) return xml;
+    const tblEnd = xml.indexOf('</w:tbl>', tblStart);
+    if (tblEnd === -1) return xml;
+
+    const tableXml = xml.slice(tblStart, tblEnd + '</w:tbl>'.length);
+
+    const rowRegex = /<w:tr[\s\S]*?<\/w:tr>/g;
+    const rows: string[] = [];
+    let rowMatch: RegExpExecArray | null;
+    while ((rowMatch = rowRegex.exec(tableXml)) !== null) {
+      rows.push(rowMatch[0]);
+    }
+
+    if (rows.length < 3) return xml;
+
+    const getCells = (rowXml: string): string[] => {
+      const cellRegex = /<w:tc[\s\S]*?<\/w:tc>/g;
+      const cells: string[] = [];
+      let m: RegExpExecArray | null;
+      while ((m = cellRegex.exec(rowXml)) !== null) {
+        cells.push(m[0]);
+      }
+      return cells;
+    };
+
+    const setCellText = (cellXml: string, value: string): string => {
+      const wTRegex = /<w:t([^>]*)>([\s\S]*?)<\/w:t>/g;
+      const hasTextNode = wTRegex.test(cellXml);
+      if (!hasTextNode) {
+        const tcClose = cellXml.indexOf('</w:tc>');
+        if (tcClose === -1) return cellXml;
+        const tcPrClose = cellXml.indexOf('</w:tcPr>');
+        const insertPos = tcPrClose !== -1 ? tcPrClose + '</w:tcPr>'.length : tcClose;
+        return (
+          cellXml.slice(0, insertPos) +
+          `<w:r><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/><w:sz w:val="24"/></w:rPr><w:t xml:space="preserve">${value}</w:t></w:r>` +
+          cellXml.slice(insertPos)
+        );
+      }
+      return cellXml.replace(wTRegex, (_match, attrs, oldText) => {
+        return `<w:t${attrs}>${value}</w:t>`;
+      });
+    };
+
+    const revisionRows: Array<{ revision: string; uploaded_at: string; note: string | null }> = [];
+    if (versions.length > 0) {
+      for (let i = versions.length - 1; i >= 0; i--) {
+        revisionRows.push(versions[i]);
+      }
+    } else {
+      revisionRows.push({
+        revision,
+        uploaded_at: params.docDate,
+        note: content.description,
+      });
+    }
+
+    let newTableXml = tableXml;
+    for (let v = 0; v < revisionRows.length; v++) {
+      const rowIdx = 2 + v;
+      if (rowIdx >= rows.length) break;
+
+      const version = revisionRows[v];
+      const rowXml = rows[v];
+      const cells = getCells(rowXml);
+
+      if (cells.length < 9) continue;
+
+      let newRowXml = rowXml;
+      newRowXml = newRowXml.replace(cells[0], setCellText(cells[0], version.revision || ''));
+      newRowXml = newRowXml.replace(cells[1], setCellText(cells[1], version.uploaded_at ? formatDateDDMMYYYY(version.uploaded_at) : ''));
+      newRowXml = newRowXml.replace(cells[2], setCellText(cells[2], version.note || ''));
+      newRowXml = newRowXml.replace(cells[3], setCellText(cells[3], getInitials(signOff.preparedByName)));
+      newRowXml = newRowXml.replace(cells[4], setCellText(cells[4], signOff.preparedByDate || ''));
+      newRowXml = newRowXml.replace(cells[5], setCellText(cells[5], getInitials(signOff.checkedByName)));
+      newRowXml = newRowXml.replace(cells[6], setCellText(cells[6], signOff.checkedByDate || ''));
+      newRowXml = newRowXml.replace(cells[7], setCellText(cells[7], getInitials(signOff.approvedByName)));
+      newRowXml = newRowXml.replace(cells[8], setCellText(cells[8], signOff.approvedByDate || ''));
+
+      newTableXml = newTableXml.replace(rowXml, newRowXml);
+    }
+
+    return xml.slice(0, tblStart) + newTableXml + xml.slice(tblEnd + '</w:tbl>'.length);
+  }
+
   const templateUrl = new URL('../assets/word-new-template.docx', import.meta.url).href;
   console.log(`[WordGenerator] Template URL: ${templateUrl}`);
 
@@ -166,18 +353,8 @@ export const generateDocumentWord = async (params: GenerateWordParams): Promise<
   }
   const templateBuffer = await response.arrayBuffer();
 
-  // Load the docx as a zip
   const zip = await JSZip.loadAsync(templateBuffer);
 
-  const xmlFiles: string[] = [];
-  zip.forEach((relativePath, file) => {
-    if (!file.dir && file.name.endsWith('.xml')) {
-      xmlFiles.push(relativePath);
-    }
-  });
-  console.log(`[WordGenerator] XML files found:`, xmlFiles);
-
-  // Replace placeholders in every XML file inside the docx
   const promises: Promise<void>[] = [];
   zip.forEach((relativePath, file) => {
     if (file.dir || !file.name.endsWith('.xml')) return;
@@ -185,7 +362,6 @@ export const generateDocumentWord = async (params: GenerateWordParams): Promise<
       file.async('text').then((xmlContent) => {
         console.log(`[WordGenerator] Processing ${relativePath}, length: ${xmlContent.length}`);
         let newContent = replaceWithinNodes(xmlContent);
-        // Second pass: handle cross-run placeholders
         newContent = replaceAcrossRuns(newContent);
         zip.file(relativePath, newContent);
         console.log(`[WordGenerator] Finished ${relativePath}`);
@@ -194,7 +370,18 @@ export const generateDocumentWord = async (params: GenerateWordParams): Promise<
   });
   await Promise.all(promises);
 
-  // Package the modified zip back into a docx
+  const docXml = zip.file('word/document.xml');
+  if (docXml) {
+    try {
+      let docContent = await docXml.async('text');
+      docContent = injectRevisionRows(docContent);
+      zip.file('word/document.xml', docContent);
+      console.log('[WordGenerator] Injected revision rows into Table 0');
+    } catch (err) {
+      console.error('[WordGenerator] Table injection failed:', err);
+    }
+  }
+
   const newBuffer = await zip.generateAsync({ type: 'uint8array' });
   return newBuffer;
 };
