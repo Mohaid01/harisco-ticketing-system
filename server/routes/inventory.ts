@@ -82,7 +82,18 @@ router.post(
       return res.status(400).json({ error: parsed.error.message || 'Invalid inventory data.' });
     }
 
-    const { company, entity, category, details, device_id, sn_mac_address, assigned_user_id, attachment } = parsed.data;
+    const {
+      company,
+      entity,
+      category,
+      details,
+      device_id,
+      sn_mac_address,
+      assigned_user_id,
+      assignment_scope,
+      location,
+      attachment,
+    } = parsed.data;
 
     try {
       const db = getDb();
@@ -104,21 +115,27 @@ router.post(
       const id = `inv-${Date.now()}`;
       let status: DbInventory['status'] = 'Stocked';
       let assigned_user_name: string | null = null;
+      let scope: 'user' | 'entity' | null = null;
 
-      if (assigned_user_id) {
+      if (assignment_scope === 'entity') {
+        // Infrastructure device assigned to entity pool
+        scope = 'entity';
+        status = 'Stocked';
+      } else if (assigned_user_id) {
         const assignee = await resolveUserAcrossTables(db, assigned_user_id);
         if (!assignee) {
           return res.status(400).json({ error: 'Assigned user not found or inactive.' });
         }
         status = 'Assigned';
         assigned_user_name = assignee.name;
+        scope = 'user';
       }
 
       await db.run(
         `INSERT INTO inventory (
             id, company, entity, category, details, device_id, sn_mac_address, status,
-            assigned_user_id, assigned_user_name, attachment, created_at, updated_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            assigned_user_id, assigned_user_name, assignment_scope, location, attachment, created_at, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           id,
           company,
@@ -130,6 +147,8 @@ router.post(
           status,
           assigned_user_id ?? null,
           assigned_user_name,
+          scope,
+          location ?? null,
           attachment ?? null,
           timestamp,
           timestamp,
@@ -147,6 +166,8 @@ router.post(
         status,
         assigned_user_id: assigned_user_id ?? null,
         assigned_user_name,
+        assignment_scope: scope,
+        location: location ?? null,
         attachment: attachment ?? null,
         created_at: timestamp,
         updated_at: timestamp,
@@ -245,6 +266,7 @@ router.patch(
       const patch = parsed.data;
       let assigned_user_name = existing.assigned_user_name;
       let assigned_user_id = existing.assigned_user_id;
+      let status = patch.status !== undefined ? patch.status : existing.status;
 
       if ('assigned_user_id' in patch) {
         if (patch.assigned_user_id) {
@@ -260,9 +282,21 @@ router.patch(
         }
       }
 
+      // Handle assignment_scope change
+      let assignment_scope = existing.assignment_scope;
+      if ('assignment_scope' in patch) {
+        assignment_scope = patch.assignment_scope;
+        if (assignment_scope === 'entity') {
+          assigned_user_id = null;
+          assigned_user_name = null;
+          status = 'Stocked';
+        } else if (assignment_scope === 'user' && assigned_user_id) {
+          status = 'Assigned';
+        }
+      }
+
       // If status changed to Stocked and no explicit assigned_user_id was passed, unassign
-      const status = patch.status !== undefined ? patch.status : existing.status;
-      if (status === 'Stocked' && !('assigned_user_id' in patch)) {
+      if (status === 'Stocked' && !('assigned_user_id' in patch) && !('assignment_scope' in patch)) {
         assigned_user_id = null;
         assigned_user_name = null;
       }
@@ -274,13 +308,14 @@ router.patch(
       const device_id = patch.device_id ?? existing.device_id;
       const sn_mac_address = patch.sn_mac_address ?? existing.sn_mac_address;
       const attachment = patch.attachment !== undefined ? patch.attachment : existing.attachment;
+      const location = patch.location !== undefined ? patch.location : existing.location;
       const updated_at = new Date().toISOString();
 
       await db.run(
         `UPDATE inventory SET
           company = ?, entity = ?, category = ?, details = ?, device_id = ?,
           sn_mac_address = ?, status = ?, assigned_user_id = ?, assigned_user_name = ?,
-          attachment = ?, updated_at = ?
+          assignment_scope = ?, location = ?, attachment = ?, updated_at = ?
          WHERE id = ?`,
         [
           company,
@@ -292,6 +327,8 @@ router.patch(
           status,
           assigned_user_id,
           assigned_user_name,
+          assignment_scope,
+          location,
           attachment,
           updated_at,
           inventoryId,
@@ -309,6 +346,8 @@ router.patch(
         status,
         assigned_user_id,
         assigned_user_name,
+        assignment_scope,
+        location,
         attachment,
         created_at: existing.created_at,
         updated_at,

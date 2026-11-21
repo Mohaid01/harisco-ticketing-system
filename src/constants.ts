@@ -26,6 +26,8 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   factory_it: 'IT Administrator',
   factory_manager: 'Manager',
   external: 'External User',
+  non_hq_user: 'Non HQ User',
+  field_user: 'Field User',
 };
 
 export const TICKET_TYPE_LABELS: Record<TicketType, string> = {
@@ -334,7 +336,12 @@ export const INVENTORY_CATEGORY_LABELS: Record<InventoryCategory, string> = {
   Keyboard: 'Keyboard',
   Printer: 'Printer',
   Mobile: 'Mobile',
-  Others: 'Others',
+  AccessPoint: 'Access Point',
+  Switch: 'Switch',
+  Router: 'Router',
+  IPPhones: 'IP Phones',
+  DoorLocks: 'Door Locks',
+  Charger: 'Charger',
 };
 
 export const INVENTORY_CATEGORY_OPTIONS = [
@@ -344,7 +351,17 @@ export const INVENTORY_CATEGORY_OPTIONS = [
   { value: 'Keyboard' as InventoryCategory, label: 'Keyboard', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.12)' },
   { value: 'Printer' as InventoryCategory, label: 'Printer', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.12)' },
   { value: 'Mobile' as InventoryCategory, label: 'Mobile', color: '#10b981', bg: 'rgba(16, 185, 129, 0.12)' },
-  { value: 'Others' as InventoryCategory, label: 'Others', color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.12)' },
+  {
+    value: 'AccessPoint' as InventoryCategory,
+    label: 'Access Point',
+    color: '#7c3aed',
+    bg: 'rgba(124, 58, 237, 0.12)',
+  },
+  { value: 'Switch' as InventoryCategory, label: 'Switch', color: '#f97316', bg: 'rgba(249, 115, 22, 0.12)' },
+  { value: 'Router' as InventoryCategory, label: 'Router', color: '#059669', bg: 'rgba(5, 150, 105, 0.12)' },
+  { value: 'IPPhones' as InventoryCategory, label: 'IP Phones', color: '#db2777', bg: 'rgba(219, 39, 119, 0.12)' },
+  { value: 'DoorLocks' as InventoryCategory, label: 'Door Locks', color: '#84cc16', bg: 'rgba(132, 204, 22, 0.12)' },
+  { value: 'Charger' as InventoryCategory, label: 'Charger', color: '#0ea5e9', bg: 'rgba(14, 165, 233, 0.12)' },
 ];
 
 // Inventory Entity Constants
@@ -352,12 +369,11 @@ export const INVENTORY_ENTITY_LABELS: Record<InventoryEntity, string> = {
   HQ: 'HQ',
   Factory: 'Factory',
   External: 'External',
-  Others: 'Others',
+  Others: 'Others,',
 };
 
 export const INVENTORY_ENTITY_OPTIONS = [
   { value: 'HQ' as InventoryEntity, label: 'HQ', color: '#0e529b', bg: 'rgba(14, 82, 155, 0.12)' },
   { value: 'Factory' as InventoryEntity, label: 'Factory', color: '#64748b', bg: 'rgba(100, 116, 139, 0.12)' },
   { value: 'External' as InventoryEntity, label: 'External', color: '#06b6d4', bg: 'rgba(6, 182, 212, 0.12)' },
-  { value: 'Others' as InventoryEntity, label: 'Others', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.12)' },
 ];

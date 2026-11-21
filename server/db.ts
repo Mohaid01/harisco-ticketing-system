@@ -558,19 +558,71 @@ export async function initDb() {
   await db.exec('CREATE INDEX IF NOT EXISTS idx_external_users_username ON external_users(username)');
   await db.exec('CREATE INDEX IF NOT EXISTS idx_external_users_email ON external_users(email)');
 
+  // Create Field Users Table
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS field_users (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      email TEXT UNIQUE,
+      username TEXT UNIQUE NOT NULL,
+      role TEXT CHECK(role IN ('field_user')) NOT NULL,
+      avatar TEXT NOT NULL,
+      passwordHash TEXT NOT NULL,
+      needsPasswordReset INTEGER DEFAULT 1,
+      department TEXT,
+      designation TEXT,
+      isDepartmentHead INTEGER DEFAULT 0,
+      loginEnabled INTEGER DEFAULT 1,
+      is_active INTEGER DEFAULT 1,
+      offboarded_at TEXT,
+      offboarded_by TEXT,
+      offboard_reason TEXT
+    )
+  `);
+
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_field_users_username ON field_users(username)');
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_field_users_email ON field_users(email)');
+
+  // Create Non HQ Users Table
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS non_hq_users (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      email TEXT UNIQUE,
+      username TEXT UNIQUE NOT NULL,
+      role TEXT CHECK(role IN ('non_hq_user')) NOT NULL,
+      avatar TEXT NOT NULL,
+      passwordHash TEXT NOT NULL,
+      needsPasswordReset INTEGER DEFAULT 1,
+      department TEXT,
+      designation TEXT,
+      isDepartmentHead INTEGER DEFAULT 0,
+      loginEnabled INTEGER DEFAULT 1,
+      is_active INTEGER DEFAULT 1,
+      offboarded_at TEXT,
+      offboarded_by TEXT,
+      offboard_reason TEXT
+    )
+  `);
+
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_non_hq_users_username ON non_hq_users(username)');
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_non_hq_users_email ON non_hq_users(email)');
+
   // Create Inventory Table
   await db.exec(`
     CREATE TABLE IF NOT EXISTS inventory (
       id TEXT PRIMARY KEY,
       company TEXT NOT NULL,
       entity TEXT NOT NULL CHECK(entity IN ('HQ','Factory','External','Others')),
-      category TEXT NOT NULL CHECK(category IN ('Laptop','Monitor','Mouse','Keyboard','Printer','Mobile')),
+      category TEXT NOT NULL CHECK(category IN ('Laptop','Monitor','Mouse','Keyboard','Printer','Mobile','AccessPoint','Switch','Router','IPPhones','DoorLocks','Charger')),
       details TEXT NOT NULL,
       device_id TEXT NOT NULL UNIQUE,
       sn_mac_address TEXT NOT NULL UNIQUE,
       status TEXT NOT NULL DEFAULT 'Stocked' CHECK(status IN ('Stocked','Assigned','Under Repair','Retired','Lost')),
       assigned_user_id TEXT,
       assigned_user_name TEXT,
+      assignment_scope TEXT CHECK(assignment_scope IN ('user','entity')),
+      location TEXT,
       attachment TEXT,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
@@ -584,6 +636,8 @@ export async function initDb() {
     const requiredCols: Record<string, string> = {
       assigned_user_id: 'TEXT',
       assigned_user_name: 'TEXT',
+      assignment_scope: 'TEXT',
+      location: 'TEXT',
       attachment: 'TEXT',
     };
     for (const [colName, colType] of Object.entries(requiredCols)) {
@@ -591,6 +645,10 @@ export async function initDb() {
         await db.exec(`ALTER TABLE inventory ADD COLUMN ${colName} ${colType}`);
       }
     }
+    // Backfill assignment_scope for existing rows
+    await db.exec(
+      "UPDATE inventory SET assignment_scope = 'user' WHERE assigned_user_id IS NOT NULL AND (assignment_scope IS NULL OR assignment_scope = '')"
+    );
   } catch {
     // Table may not exist yet or already has all columns
   }
@@ -601,6 +659,87 @@ export async function initDb() {
   await db.exec('CREATE INDEX IF NOT EXISTS idx_inventory_status ON inventory(status)');
   await db.exec('CREATE INDEX IF NOT EXISTS idx_inventory_entity ON inventory(entity)');
   await db.exec('CREATE INDEX IF NOT EXISTS idx_inventory_category ON inventory(category)');
+
+  // Migrate existing inventory data: allow NULL entity and backfill empty/invalid values
+  try {
+    const tableInfo = await db.all<{ name: string; notnull: number }[]>('PRAGMA table_info(inventory)');
+    const entityCol = tableInfo.find((c) => c.name === 'entity');
+    if (entityCol && entityCol.notnull === 1) {
+      logger.info('Migrating inventory entity column to allow NULL...');
+      await db.exec('PRAGMA foreign_keys=OFF;');
+      await db.exec('BEGIN TRANSACTION;');
+      await db.exec(`
+        CREATE TABLE inventory_new (
+          id TEXT PRIMARY KEY,
+          company TEXT NOT NULL,
+          entity TEXT CHECK(entity IN ('HQ','Factory','External')),
+          category TEXT NOT NULL CHECK(category IN ('Laptop','Monitor','Mouse','Keyboard','Printer','Mobile')),
+          details TEXT NOT NULL,
+          device_id TEXT NOT NULL UNIQUE,
+          sn_mac_address TEXT NOT NULL UNIQUE,
+          status TEXT NOT NULL DEFAULT 'Stocked' CHECK(status IN ('Stocked','Assigned','Under Repair','Retired','Lost')),
+          assigned_user_id TEXT,
+          assigned_user_name TEXT,
+          attachment TEXT,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL
+        );
+      `);
+      await db.exec(`
+        INSERT INTO inventory_new (id, company, entity, category, details, device_id, sn_mac_address, status, assigned_user_id, assigned_user_name, attachment, created_at, updated_at)
+        SELECT id, company,
+          CASE WHEN entity IN ('HQ','Factory','External') THEN entity ELSE NULL END,
+          category, details, device_id, sn_mac_address, status, assigned_user_id, assigned_user_name, attachment, created_at, updated_at
+        FROM inventory;
+      `);
+      await db.exec('DROP TABLE inventory;');
+      await db.exec('ALTER TABLE inventory_new RENAME TO inventory;');
+      await db.exec('COMMIT;');
+      await db.exec('PRAGMA foreign_keys=ON;');
+      logger.info('inventory entity column migrated to allow NULL.');
+    }
+  } catch (err) {
+    logger.error('Failed to migrate inventory entity column to NULL:', err);
+  }
+
+  // Backfill empty or invalid entity values to NULL
+  try {
+    await db.exec("UPDATE inventory SET entity = NULL WHERE entity = '' OR entity NOT IN ('HQ','Factory','External')");
+    logger.info('Backfilled invalid inventory entity values to NULL.');
+  } catch (err) {
+    logger.error('Failed to backfill inventory entity values:', err);
+  }
+
+  // Migrate existing inventory data: capitalize manufacturer and category code within device_id
+  // Format: HC-{Manufacturer}-{CategoryCode}-{sequence} -> uppercase Manufacturer + CategoryCode segments
+  try {
+    const rows = await db.all<{ id: string; device_id: string }[]>('SELECT id, device_id FROM inventory');
+    for (const row of rows) {
+      const parts = row.device_id.split('-');
+      if (parts.length >= 4) {
+        const catIdx = parts.length - 2;
+        const upperedManuf = parts[1].toUpperCase();
+        const upperedCat = parts[catIdx].toUpperCase();
+        if (upperedManuf !== parts[1] || upperedCat !== parts[catIdx]) {
+          parts[1] = upperedManuf;
+          parts[catIdx] = upperedCat;
+          const newDeviceId = parts.join('-');
+          await db.run('UPDATE inventory SET device_id = ? WHERE id = ?', [newDeviceId, row.id]);
+        }
+      }
+    }
+    logger.info('Migrated inventory device_id manufacturer and category codes to uppercase.');
+  } catch (err) {
+    logger.error('Failed to migrate inventory device_id manufacturer and category codes:', err);
+  }
+
+  // Migrate existing inventory data: capitalize manufacturer (company) column
+  try {
+    await db.exec('UPDATE inventory SET company = UPPER(company)');
+    logger.info('Migrated inventory manufacturer (company) to uppercase.');
+  } catch (err) {
+    logger.error('Failed to migrate inventory manufacturer to uppercase:', err);
+  }
 
   // Create Factory Attendance Logs Table
   await db.exec(`

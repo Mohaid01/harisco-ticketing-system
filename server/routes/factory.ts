@@ -115,6 +115,11 @@ router.post(
     if (!defaultPassword) throw new Error('DEFAULT_USER_PASSWORD required');
     const clearPassword = password || defaultPassword;
 
+    // Format employee code to HC-XXXXX
+    const rawUsername = username.trim();
+    const numericPart = rawUsername.replace(/\D/g, '');
+    const formattedUsername = numericPart ? `HC-${numericPart.padStart(5, '0')}` : `HC-${rawUsername}`;
+
     const normalizedIsDepartmentHead = isDepartmentHead ? 1 : 0;
     const normalizedLoginEnabled = loginEnabled === false || loginEnabled === 0 ? 0 : 1;
 
@@ -129,12 +134,16 @@ router.post(
         }
       }
 
-      const existingUsername = await db.get('SELECT id FROM factory_users WHERE username = ?', [
-        username.toLowerCase().trim(),
-      ]);
-      if (existingUsername) {
-        res.status(400).json({ error: 'User with this username already exists.' });
-        return;
+      // Check username uniqueness across ALL user tables
+      const tables = ['users', 'factory_users', 'external_users', 'field_users', 'non_hq_users'];
+      for (const table of tables) {
+        const existing = await db.get(`SELECT id FROM ${table} WHERE LOWER(username) = ?`, [
+          formattedUsername.toLowerCase(),
+        ]);
+        if (existing) {
+          res.status(400).json({ error: 'Employee code already exists across user tables.' });
+          return;
+        }
       }
 
       const passwordHash = await bcrypt.hash(clearPassword, 10);
@@ -146,7 +155,7 @@ router.post(
           userId,
           name,
           finalEmail,
-          username.toLowerCase().trim(),
+          formattedUsername,
           role,
           avatar ? avatar.trim() : '',
           passwordHash,
@@ -162,7 +171,7 @@ router.post(
         id: userId,
         name,
         email: finalEmail,
-        username: username.toLowerCase().trim(),
+        username: formattedUsername,
         role,
         avatar: avatar ? avatar.trim() : '',
         department: department ? department.trim() : null,
