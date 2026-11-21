@@ -1125,6 +1125,13 @@ export type DocumentVersionsResponse = DocumentVersion[];
 export interface UploadDocumentVersionRequestBody {
   revision: string;
   note?: string;
+  // Optional sign-off data captured at the time of this revision
+  prepared_by_name?: string | null;
+  checked_by_name?: string | null;
+  approved_by_name?: string | null;
+  prepared_by_date?: string | null;
+  checked_by_date?: string | null;
+  approved_by_date?: string | null;
 }
 
 export interface UploadDocumentVersionResponse {

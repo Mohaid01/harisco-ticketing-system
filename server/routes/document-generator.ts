@@ -4,7 +4,7 @@ import fs from 'fs';
 import multer from 'multer';
 import path from 'path';
 
-import type { ApiAuthRequest, AuthRequest, DocumentVersion } from '../types/index.ts';
+import type { ApiAuthRequest, AuthRequest, DocumentVersion, UploadDocumentVersionRequestBody } from '../types/index.ts';
 
 import { DEPARTMENTS, DOC_PREFIX, DOCUMENT_TYPES, ENTITIES } from '../constants/documentGenerator.ts';
 import { getDb } from '../db.ts';
@@ -395,7 +395,16 @@ router.post(
 
     const docId = String(req.params.id);
     const file = req.file;
-    const { revision, note } = req.body;
+    const {
+      revision,
+      note,
+      prepared_by_name,
+      checked_by_name,
+      approved_by_name,
+      prepared_by_date,
+      checked_by_date,
+      approved_by_date,
+    } = req.body;
 
     try {
       const db = getDb();
@@ -439,8 +448,10 @@ router.post(
         await db.run(
           `INSERT INTO document_versions (
             id, document_id, revision, file_name, file_path, file_size,
-            uploaded_by, uploaded_at, note
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            uploaded_by, uploaded_at, note,
+            prepared_by_name, checked_by_name, approved_by_name,
+            prepared_by_date, checked_by_date, approved_by_date
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             versionId,
             existing.id,
@@ -451,6 +462,12 @@ router.post(
             user.id,
             nowIso,
             note ? note.trim() : null,
+            prepared_by_name ?? null,
+            checked_by_name ?? null,
+            approved_by_name ?? null,
+            prepared_by_date ?? null,
+            checked_by_date ?? null,
+            approved_by_date ?? null,
           ]
         );
       }
@@ -478,7 +495,9 @@ router.post(
     } catch (err) {
       // Clean up uploaded file on error
       try {
-        fs.unlinkSync(file.path);
+        if (file) {
+          fs.unlinkSync(file.path);
+        }
       } catch {
         // intentional: file cleanup is best-effort
       }
