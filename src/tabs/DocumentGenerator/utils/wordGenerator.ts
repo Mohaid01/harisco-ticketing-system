@@ -2,7 +2,7 @@ import JSZip from 'jszip';
 
 import type { DocumentSignOff } from '../types';
 
-interface DocumentVersion {
+export interface DocumentVersion {
   id: string;
   document_id: string;
   revision: string;
@@ -298,7 +298,7 @@ export const generateDocumentWord = async (params: GenerateWordParams): Promise<
           cellXml.slice(insertPos)
         );
       }
-      return cellXml.replace(wTRegex, (_match, attrs, oldText) => {
+      return cellXml.replace(wTRegex, (_match, attrs) => {
         return `<w:t${attrs}>${value}</w:t>`;
       });
     };

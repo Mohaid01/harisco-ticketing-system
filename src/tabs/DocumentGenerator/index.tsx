@@ -8,7 +8,7 @@ import { DocumentRegistryTable } from './components/DocumentRegistryTable';
 import { NewDocumentModal } from './components/NewDocumentModal';
 import { useDocumentGenerator } from './hooks/useDocumentGenerator';
 import { useDocumentRegistry } from './hooks/useDocumentRegistry';
-import { downloadWordBlob, generateDocumentWord } from './utils/wordGenerator';
+import { downloadWordBlob, generateDocumentWord, type DocumentVersion } from './utils/wordGenerator';
 import './DocumentGenerator.css';
 
 type SubTab = 'registry' | 'access';
@@ -74,14 +74,14 @@ export const DocumentGenerator: React.FC<DocumentGeneratorProps> = ({ currentUse
       const content = getContentPayload();
 
       // Fetch revision versions for the revision table in Word
-      let versions: { revision: string; uploaded_at: string; note: string | null }[] = [];
+      let versions: DocumentVersion[] = [];
       try {
         const res = await fetch(`/api/document-generator/documents/${doc.id}/versions`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.ok) {
           const data = await res.json();
-          versions = data.versions || [];
+          versions = (data.versions || []) as DocumentVersion[];
         }
       } catch {
         versions = [];
@@ -114,30 +114,32 @@ export const DocumentGenerator: React.FC<DocumentGeneratorProps> = ({ currentUse
 
   const handleDownloadWordFromRegistry = async (record: GeneratedDocumentRecord) => {
     try {
-      let parsedContent: { title: string; description: string } = { title: '', description: '' };
+      let parsedContent: { title: string; description: string; appendixNumber: string; formNumber: string } = { title: '', description: '', appendixNumber: '', formNumber: '' };
       try {
         if (record.content_json) {
-          const parsed = JSON.parse(record.content_json) as { title?: string; description?: string };
+          const parsed = JSON.parse(record.content_json) as { title?: string; description?: string; appendixNumber?: string; formNumber?: string };
           parsedContent = {
             title: parsed.title ?? record.title,
             description: parsed.description ?? '',
+            appendixNumber: parsed.appendixNumber ?? '',
+            formNumber: parsed.formNumber ?? '',
           };
         } else {
-          parsedContent = { title: record.title, description: '' };
+          parsedContent = { title: record.title, description: '', appendixNumber: '', formNumber: '' };
         }
       } catch {
-        parsedContent = { title: record.title, description: '' };
+        parsedContent = { title: record.title, description: '', appendixNumber: '', formNumber: '' };
       }
 
       // Fetch revision versions for the revision table in Word
-      let versions: { revision: string; uploaded_at: string; note: string | null }[] = [];
+      let versions: DocumentVersion[] = [];
       try {
         const res = await fetch(`/api/document-generator/documents/${record.id}/versions`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.ok) {
           const data = await res.json();
-          versions = data.versions || [];
+          versions = (data.versions || []) as DocumentVersion[];
         }
       } catch {
         versions = [];
@@ -151,6 +153,8 @@ export const DocumentGenerator: React.FC<DocumentGeneratorProps> = ({ currentUse
         docTypeCode: record.doc_type_code,
         docDate: record.doc_date,
         title: record.title,
+        appendixNumber: parsedContent.appendixNumber,
+        formNumber: parsedContent.formNumber,
         content: parsedContent,
         signOff: {
           preparedByName: record.prepared_by_name,
