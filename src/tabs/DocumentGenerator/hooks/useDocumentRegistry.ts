@@ -46,7 +46,10 @@ export const useDocumentRegistry = ({ token }: UseDocumentRegistryProps) => {
   }, [filterEntity, filterDepartment, filterDocType, filterYear, searchQuery, token]);
 
   useEffect(() => {
-    fetchDocuments();
+    const loadDocuments = async () => {
+      await fetchDocuments();
+    };
+    loadDocuments();
   }, [fetchDocuments]);
 
   const updateRevision = async (documentId: string, newRevision: string) => {
