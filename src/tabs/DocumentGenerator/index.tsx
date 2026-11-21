@@ -114,10 +114,20 @@ export const DocumentGenerator: React.FC<DocumentGeneratorProps> = ({ currentUse
 
   const handleDownloadWordFromRegistry = async (record: GeneratedDocumentRecord) => {
     try {
-      let parsedContent: { title: string; description: string; appendixNumber: string; formNumber: string } = { title: '', description: '', appendixNumber: '', formNumber: '' };
+      let parsedContent: { title: string; description: string; appendixNumber: string; formNumber: string } = {
+        title: '',
+        description: '',
+        appendixNumber: '',
+        formNumber: '',
+      };
       try {
         if (record.content_json) {
-          const parsed = JSON.parse(record.content_json) as { title?: string; description?: string; appendixNumber?: string; formNumber?: string };
+          const parsed = JSON.parse(record.content_json) as {
+            title?: string;
+            description?: string;
+            appendixNumber?: string;
+            formNumber?: string;
+          };
           parsedContent = {
             title: parsed.title ?? record.title,
             description: parsed.description ?? '',
