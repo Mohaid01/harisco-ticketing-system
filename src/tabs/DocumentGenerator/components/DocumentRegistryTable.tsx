@@ -70,9 +70,7 @@ export const DocumentRegistryTable: React.FC<DocumentRegistryTableProps> = ({
       <div className="docgen-card-header">
         <div>
           <h3 className="docgen-card-title">Master Document Register (MDR)</h3>
-          <span className="docgen-card-subtitle">
-            Complete registry of issued corporate documents
-          </span>
+          <span className="docgen-card-subtitle">Complete registry of issued corporate documents</span>
         </div>
       </div>
 

@@ -76,10 +76,9 @@ export const DocumentGenerator: React.FC<DocumentGeneratorProps> = ({ currentUse
       // Fetch revision versions for the revision table in Word
       let versions: { revision: string; uploaded_at: string; note: string | null }[] = [];
       try {
-        const res = await fetch(
-          `/api/document-generator/documents/${doc.id}/versions`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        const res = await fetch(`/api/document-generator/documents/${doc.id}/versions`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         if (res.ok) {
           const data = await res.json();
           versions = data.versions || [];
@@ -133,10 +132,9 @@ export const DocumentGenerator: React.FC<DocumentGeneratorProps> = ({ currentUse
       // Fetch revision versions for the revision table in Word
       let versions: { revision: string; uploaded_at: string; note: string | null }[] = [];
       try {
-        const res = await fetch(
-          `/api/document-generator/documents/${record.id}/versions`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        const res = await fetch(`/api/document-generator/documents/${record.id}/versions`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         if (res.ok) {
           const data = await res.json();
           versions = data.versions || [];
@@ -192,11 +190,7 @@ export const DocumentGenerator: React.FC<DocumentGeneratorProps> = ({ currentUse
         </div>
 
         <div className="docgen-tabs">
-          <button
-            type="button"
-            className="docgen-btn docgen-btn-secondary"
-            onClick={() => setNewDocumentOpen(true)}
-          >
+          <button type="button" className="docgen-btn docgen-btn-secondary" onClick={() => setNewDocumentOpen(true)}>
             New Document
           </button>
           <button

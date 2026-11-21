@@ -117,7 +117,9 @@ export const generateDocumentWord = async (params: GenerateWordParams): Promise<
     '{approvedByDate}': signOff.approvedByDate,
     // Revision table placeholders (latest version data)
     '{REV_TABLE_REVISION}': latestVersion?.revision || revision,
-    '{REV_TABLE_DATE}': latestVersion ? formatDateDDMMYYYY(latestVersion.uploaded_at) : formatDateDDMMYYYY(params.docDate),
+    '{REV_TABLE_DATE}': latestVersion
+      ? formatDateDDMMYYYY(latestVersion.uploaded_at)
+      : formatDateDDMMYYYY(params.docDate),
     '{REV_TABLE_DESCRIPTION}': latestVersion?.note || content.description,
     '{REV_TABLE_PREPARED_BY}': signOff.preparedByName,
     '{REV_TABLE_PREPARED_BY_INITIALS}': getInitials(signOff.preparedByName),
@@ -216,9 +218,7 @@ export const generateDocumentWord = async (params: GenerateWordParams): Promise<
         const offset = match.start - charsBefore;
         const len = match.end - match.start;
         segments[startNodeIdx] =
-          segments[startNodeIdx].slice(0, offset) +
-          match.replacement +
-          segments[startNodeIdx].slice(offset + len);
+          segments[startNodeIdx].slice(0, offset) + match.replacement + segments[startNodeIdx].slice(offset + len);
         continue;
       }
 
@@ -329,7 +329,10 @@ export const generateDocumentWord = async (params: GenerateWordParams): Promise<
 
       let newRowXml = rowXml;
       newRowXml = newRowXml.replace(cells[0], setCellText(cells[0], version.revision || ''));
-      newRowXml = newRowXml.replace(cells[1], setCellText(cells[1], version.uploaded_at ? formatDateDDMMYYYY(version.uploaded_at) : ''));
+      newRowXml = newRowXml.replace(
+        cells[1],
+        setCellText(cells[1], version.uploaded_at ? formatDateDDMMYYYY(version.uploaded_at) : '')
+      );
       newRowXml = newRowXml.replace(cells[2], setCellText(cells[2], version.note || ''));
       newRowXml = newRowXml.replace(cells[3], setCellText(cells[3], getInitials(signOff.preparedByName)));
       newRowXml = newRowXml.replace(cells[4], setCellText(cells[4], signOff.preparedByDate || ''));

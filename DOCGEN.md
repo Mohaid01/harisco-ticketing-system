@@ -12,6 +12,7 @@
 The Document Generator (DocGen) is the corporate document control module of the Harisco Ticketing System. It enforces Haris & Co engineering numbering standards, issues official document IDs, maintains a Master Document Register (MDR), handles revision history with per-revision sign-off capture, and generates formatted Word documents from a `.docx` template.
 
 **Core capabilities:**
+
 - Auto-generated document IDs following the scheme `HC-<Entity>-<Department>-<DocType>-<Seq>`
 - Master Document Register with search, filter, and pagination
 - New document creation (title, description, appendix, form number)
@@ -49,6 +50,7 @@ src/tabs/DocumentGenerator/
 ```
 
 Server side:
+
 ```
 server/
 ├── routes/document-generator.ts   # All REST API endpoints
@@ -67,68 +69,69 @@ server/
 
 Stores each issued controlled document.
 
-| Column | Type | Notes |
-|--------|------|-------|
-| `id` | TEXT PK | UUID |
-| `document_id` | TEXT | e.g. `HC-01-COR-LE-0001` |
-| `entity_code` | TEXT | Entity code (`01`..`08`) |
-| `department_code` | TEXT | Dept code (`COR`, `ADM`, `HSE`, ...) |
-| `doc_type_code` | TEXT | Doc type code (`LE`, `ME`, `CS`, ...) |
-| `year` | TEXT | 2-digit year (`26`) |
-| `sequence_number` | INTEGER | 4-digit sequence within entity/dept/type/year |
-| `revision` | TEXT | e.g. `Rev 00` |
-| `title` | TEXT | Document title/subject |
-| `prepared_by_id` | TEXT | User ID of preparer |
-| `prepared_by_name` | TEXT | Preparer name |
-| `checked_by_name` | TEXT | Checker name |
-| `approved_by_name` | TEXT | Approver name |
-| `prepared_by_date` | TEXT | Prepare date (ISO) |
-| `checked_by_date` | TEXT | Check date (ISO) |
-| `approved_by_date` | TEXT | Approve date (ISO) |
-| `doc_date` | TEXT | Document date |
-| `content_json` | TEXT | JSON of title/description/appendix/formNumber |
-| `file_name` | TEXT | Stored file name |
-| `created_at` | TEXT | ISO timestamp |
-| `updated_at` | TEXT | ISO timestamp |
+| Column             | Type    | Notes                                         |
+| ------------------ | ------- | --------------------------------------------- |
+| `id`               | TEXT PK | UUID                                          |
+| `document_id`      | TEXT    | e.g. `HC-01-COR-LE-0001`                      |
+| `entity_code`      | TEXT    | Entity code (`01`..`08`)                      |
+| `department_code`  | TEXT    | Dept code (`COR`, `ADM`, `HSE`, ...)          |
+| `doc_type_code`    | TEXT    | Doc type code (`LE`, `ME`, `CS`, ...)         |
+| `year`             | TEXT    | 2-digit year (`26`)                           |
+| `sequence_number`  | INTEGER | 4-digit sequence within entity/dept/type/year |
+| `revision`         | TEXT    | e.g. `Rev 00`                                 |
+| `title`            | TEXT    | Document title/subject                        |
+| `prepared_by_id`   | TEXT    | User ID of preparer                           |
+| `prepared_by_name` | TEXT    | Preparer name                                 |
+| `checked_by_name`  | TEXT    | Checker name                                  |
+| `approved_by_name` | TEXT    | Approver name                                 |
+| `prepared_by_date` | TEXT    | Prepare date (ISO)                            |
+| `checked_by_date`  | TEXT    | Check date (ISO)                              |
+| `approved_by_date` | TEXT    | Approve date (ISO)                            |
+| `doc_date`         | TEXT    | Document date                                 |
+| `content_json`     | TEXT    | JSON of title/description/appendix/formNumber |
+| `file_name`        | TEXT    | Stored file name                              |
+| `created_at`       | TEXT    | ISO timestamp                                 |
+| `updated_at`       | TEXT    | ISO timestamp                                 |
 
 #### `document_versions`
 
 Stores each uploaded revision file plus per-revision sign-off capture.
 
-| Column | Type | Notes |
-|--------|------|-------|
-| `id` | TEXT PK | UUID |
-| `document_id` | TEXT FK | References `generated_documents.id` |
-| `revision` | TEXT | Revision identifier |
-| `file_name` | TEXT | Original uploaded filename |
-| `file_path` | TEXT | Relative stored path |
-| `file_size` | INTEGER | Bytes |
-| `uploaded_by` | TEXT | User ID who uploaded |
-| `uploaded_at` | TEXT | ISO timestamp |
-| `note` | TEXT | Change note |
-| `prepared_by_name` | TEXT | Signer at revision time |
-| `checked_by_name` | TEXT | Signer at revision time |
-| `approved_by_name` | TEXT | Signer at revision time |
-| `prepared_by_date` | TEXT | Sign date at revision time |
-| `checked_by_date` | TEXT | Sign date at revision time |
-| `approved_by_date` | TEXT | Sign date at revision time |
+| Column             | Type    | Notes                               |
+| ------------------ | ------- | ----------------------------------- |
+| `id`               | TEXT PK | UUID                                |
+| `document_id`      | TEXT FK | References `generated_documents.id` |
+| `revision`         | TEXT    | Revision identifier                 |
+| `file_name`        | TEXT    | Original uploaded filename          |
+| `file_path`        | TEXT    | Relative stored path                |
+| `file_size`        | INTEGER | Bytes                               |
+| `uploaded_by`      | TEXT    | User ID who uploaded                |
+| `uploaded_at`      | TEXT    | ISO timestamp                       |
+| `note`             | TEXT    | Change note                         |
+| `prepared_by_name` | TEXT    | Signer at revision time             |
+| `checked_by_name`  | TEXT    | Signer at revision time             |
+| `approved_by_name` | TEXT    | Signer at revision time             |
+| `prepared_by_date` | TEXT    | Sign date at revision time          |
+| `checked_by_date`  | TEXT    | Sign date at revision time          |
+| `approved_by_date` | TEXT    | Sign date at revision time          |
 
 #### `document_sequences`
 
 Tracks the last sequence number per entity/department/docType/year combination for ID generation.
 
-| Column | Type |
-|--------|------|
-| `entity_code` | TEXT |
-| `department_code` | TEXT |
-| `doc_type_code` | TEXT |
-| `year` | TEXT |
-| `last_sequence` | INTEGER |
-| `updated_at` | TEXT |
+| Column            | Type    |
+| ----------------- | ------- |
+| `entity_code`     | TEXT    |
+| `department_code` | TEXT    |
+| `doc_type_code`   | TEXT    |
+| `year`            | TEXT    |
+| `last_sequence`   | INTEGER |
+| `updated_at`      | TEXT    |
 
 ### 3.2 Migration Behavior
 
 `server/db.ts` runs self-healing migrations on startup:
+
 - Creates `document_versions` if missing
 - Adds signer columns (`prepared_by_name`, `checked_by_name`, `approved_by_name`, `prepared_by_date`, `checked_by_date`, `approved_by_date`) to existing `document_versions` rows via `ALTER TABLE ... ADD COLUMN`
 - Adds sign-off date columns to `generated_documents` if missing
@@ -141,13 +144,13 @@ Tracks the last sequence number per entity/department/docType/year combination f
 
 Example: `HC-01-COR-LE-0001`
 
-| Segment | Source | Values |
-|---------|--------|--------|
-| `HC` | `DOC_PREFIX` | Fixed prefix |
-| `Entity` | `ENTITIES` | `01` Head Office, `02` Manufacturing Shop, `03` Haris & Co Saudia, ... |
-| `Department` | `DEPARTMENTS` | `COR` Corporate, `ADM` Administration, `HSE` HSE, ... |
-| `DocType` | `DOCUMENT_TYPES` | `LE` Letter, `ME` Memo, `CS` Calculation Sheet, ... |
-| `Seq` | `document_sequences.last_sequence` | Zero-padded 4 digits (`0001`, `0002`, ...) |
+| Segment      | Source                             | Values                                                                 |
+| ------------ | ---------------------------------- | ---------------------------------------------------------------------- |
+| `HC`         | `DOC_PREFIX`                       | Fixed prefix                                                           |
+| `Entity`     | `ENTITIES`                         | `01` Head Office, `02` Manufacturing Shop, `03` Haris & Co Saudia, ... |
+| `Department` | `DEPARTMENTS`                      | `COR` Corporate, `ADM` Administration, `HSE` HSE, ...                  |
+| `DocType`    | `DOCUMENT_TYPES`                   | `LE` Letter, `ME` Memo, `CS` Calculation Sheet, ...                    |
+| `Seq`        | `document_sequences.last_sequence` | Zero-padded 4 digits (`0001`, `0002`, ...)                             |
 
 The sequence is scoped per `(entity_code, department_code, doc_type_code, year)`. On each new document, the sequence increments by 1.
 
@@ -161,50 +164,50 @@ All endpoints require Bearer token authentication (`Authorization: Bearer <token
 
 Base path: `/api/document-generator`
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/options` | Returns entities, departments, document types, prefix |
-| `GET` | `/preview-id?entity=&department=&docType=` | Computes next document ID without saving |
-| `POST` | `/generate` | Create a new controlled document record |
-| `GET` | `/documents` | List documents (filter by entity/department/docType/year/search) |
-| `GET` | `/documents/:id` | Get single document by ID or document_id |
-| `POST` | `/documents/:id/revision` | Update the revision of an existing document |
-| `POST` | `/documents/:id/upload` | Upload a revision file (.doc/.docx, ≤15 MB) + per-revision sign-off |
-| `GET` | `/documents/:id/versions` | List all revision versions for a document (oldest→newest) |
-| `GET` | `/documents/:id/versions/:versionId/download` | Download a specific revision file |
+| Method | Endpoint                                      | Description                                                         |
+| ------ | --------------------------------------------- | ------------------------------------------------------------------- |
+| `GET`  | `/options`                                    | Returns entities, departments, document types, prefix               |
+| `GET`  | `/preview-id?entity=&department=&docType=`    | Computes next document ID without saving                            |
+| `POST` | `/generate`                                   | Create a new controlled document record                             |
+| `GET`  | `/documents`                                  | List documents (filter by entity/department/docType/year/search)    |
+| `GET`  | `/documents/:id`                              | Get single document by ID or document_id                            |
+| `POST` | `/documents/:id/revision`                     | Update the revision of an existing document                         |
+| `POST` | `/documents/:id/upload`                       | Upload a revision file (.doc/.docx, ≤15 MB) + per-revision sign-off |
+| `GET`  | `/documents/:id/versions`                     | List all revision versions for a document (oldest→newest)           |
+| `GET`  | `/documents/:id/versions/:versionId/download` | Download a specific revision file                                   |
 
 ### `POST /generate` body
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `entityCode` | string | Yes | Entity code |
-| `departmentCode` | string | Yes | Department code |
-| `docTypeCode` | string | Yes | Document type code |
-| `title` | string | Yes | Document title |
-| `year` | string | No | 2-digit year (default: current) |
-| `revision` | string | No | Revision (default: `Rev 00`) |
-| `preparedByName` | string | No | Preparer name |
-| `checkedByName` | string | No | Checker name |
-| `approvedByName` | string | No | Approver name |
-| `preparedByDate` | string | No | Prepare date ISO |
-| `checkedByDate` | string | No | Check date ISO |
-| `approvedByDate` | string | No | Approve date ISO |
-| `docDate` | string | No | Document date ISO |
-| `contentJson` | string | No | JSON string of `{title, description, appendixNumber, formNumber}` |
+| Field            | Type   | Required | Description                                                       |
+| ---------------- | ------ | -------- | ----------------------------------------------------------------- |
+| `entityCode`     | string | Yes      | Entity code                                                       |
+| `departmentCode` | string | Yes      | Department code                                                   |
+| `docTypeCode`    | string | Yes      | Document type code                                                |
+| `title`          | string | Yes      | Document title                                                    |
+| `year`           | string | No       | 2-digit year (default: current)                                   |
+| `revision`       | string | No       | Revision (default: `Rev 00`)                                      |
+| `preparedByName` | string | No       | Preparer name                                                     |
+| `checkedByName`  | string | No       | Checker name                                                      |
+| `approvedByName` | string | No       | Approver name                                                     |
+| `preparedByDate` | string | No       | Prepare date ISO                                                  |
+| `checkedByDate`  | string | No       | Check date ISO                                                    |
+| `approvedByDate` | string | No       | Approve date ISO                                                  |
+| `docDate`        | string | No       | Document date ISO                                                 |
+| `contentJson`    | string | No       | JSON string of `{title, description, appendixNumber, formNumber}` |
 
 ### `POST /documents/:id/upload` (multipart/form-data)
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `file` | file | No | .doc or .docx, max 15 MB |
-| `revision` | string | No | Revision (auto-incremented if omitted) |
-| `note` | string | No | Change note |
-| `prepared_by_name` | string | No | Signer name at revision time |
-| `checked_by_name` | string | No | Checker name at revision time |
-| `approved_by_name` | string | No | Approver name at revision time |
-| `prepared_by_date` | string | No | Sign date ISO |
-| `checked_by_date` | string | No | Check date ISO |
-| `approved_by_date` | string | No | Approve date ISO |
+| Field              | Type   | Required | Description                            |
+| ------------------ | ------ | -------- | -------------------------------------- |
+| `file`             | file   | No       | .doc or .docx, max 15 MB               |
+| `revision`         | string | No       | Revision (auto-incremented if omitted) |
+| `note`             | string | No       | Change note                            |
+| `prepared_by_name` | string | No       | Signer name at revision time           |
+| `checked_by_name`  | string | No       | Checker name at revision time          |
+| `approved_by_name` | string | No       | Approver name at revision time         |
+| `prepared_by_date` | string | No       | Sign date ISO                          |
+| `checked_by_date`  | string | No       | Check date ISO                         |
+| `approved_by_date` | string | No       | Approve date ISO                       |
 
 ---
 
@@ -213,10 +216,12 @@ Base path: `/api/document-generator`
 ### 6.1 Main Container (`index.tsx`)
 
 Renders two sub-tabs:
+
 - **registry** — Master Document Register table
 - **access** — Screen Access Manager (IT role only)
 
 Provides the "New Document" button which opens `NewDocumentModal`. Handles:
+
 - `handleSaveDraft` — calls `saveDraft()` (generates via API, registers document)
 - `handleDownload` — calls `downloadDocument()` then generates Word .docx via `generateDocumentWord()` and downloads blob
 - `handleDownloadWordFromRegistry` — generates Word for an existing registry record
@@ -225,6 +230,7 @@ Provides the "New Document" button which opens `NewDocumentModal`. Handles:
 ### 6.2 Hook: `useDocumentGenerator`
 
 Manages new-document state:
+
 - `entityCode`, `departmentCode`, `docTypeCode`, `year`, `revision` — dropdown selections
 - `previewId` — auto-generated document ID (fetched from `/preview-id`)
 - `docTitle` — document title
@@ -236,6 +242,7 @@ Manages new-document state:
 ### 6.3 Hook: `useDocumentRegistry`
 
 Manages the MDR:
+
 - `documents`, `loading`, `error`
 - Filters: `filterEntity`, `filterDepartment`, `filterDocType`, `filterYear`, `searchQuery`
 - `refreshDocuments()` — GET `/documents`
@@ -243,15 +250,15 @@ Manages the MDR:
 
 ### 6.4 Components
 
-| Component | Purpose |
-|-----------|---------|
-| `CorporateSchemeSelector` | Entity/dept/doctype/revision dropdowns + read-only document ID preview |
-| `ControlledDocumentForm` | Title, description, appendix number, form/document number inputs |
-| `SignOffSection` | Tri-tier approval matrix with searchable user selection from `allUsers` |
-| `NewDocumentModal` | Wraps the three above; Save Draft / Download buttons |
-| `DocumentRegistryTable` | MDR data table; per-row Download Word / Upload Revision / View actions |
-| `UploadRevisionModal` | Revision file upload + per-revision sign-off capture |
-| `DocumentDetailModal` | Document metadata, sign-off matrix, revision history table |
+| Component                 | Purpose                                                                 |
+| ------------------------- | ----------------------------------------------------------------------- |
+| `CorporateSchemeSelector` | Entity/dept/doctype/revision dropdowns + read-only document ID preview  |
+| `ControlledDocumentForm`  | Title, description, appendix number, form/document number inputs        |
+| `SignOffSection`          | Tri-tier approval matrix with searchable user selection from `allUsers` |
+| `NewDocumentModal`        | Wraps the three above; Save Draft / Download buttons                    |
+| `DocumentRegistryTable`   | MDR data table; per-row Download Word / Upload Revision / View actions  |
+| `UploadRevisionModal`     | Revision file upload + per-revision sign-off capture                    |
+| `DocumentDetailModal`     | Document metadata, sign-off matrix, revision history table              |
 
 ---
 
@@ -260,6 +267,7 @@ Manages the MDR:
 ### 7.1 Creating a Document (Rev 00)
 
 User fills entity/dept/doctype, title/description/appendix/form number, sign-off matrix, clicks **Download** (or **Save Draft**). The system:
+
 1. Fetches/preview next document ID from `/preview-id`
 2. POSTs to `/generate` → inserts into `generated_documents`
 3. Generates Word .docx from `word-new-template.docx` with placeholders replaced
@@ -268,6 +276,7 @@ User fills entity/dept/doctype, title/description/appendix/form number, sign-off
 ### 7.2 Uploading a Revision
 
 From the MDR table, click **Upload Rev** on a document. The `UploadRevisionModal` opens:
+
 - Shows current revision and default next revision
 - Optional file upload (.doc/.docx ≤15 MB)
 - Optional change note
@@ -275,6 +284,7 @@ From the MDR table, click **Upload Rev** on a document. The `UploadRevisionModal
 - Submits multipart/form-data to `/documents/:id/upload`
 
 Server:
+
 - Inserts into `document_versions` with revision, file, note, and signer fields
 - Updates `generated_documents.revision` to the new revision
 
@@ -286,17 +296,17 @@ Open `DocumentDetailModal` (View button). Fetches `GET /documents/:id/versions` 
 
 The template contains Table 0 with 9 columns. On Word generation, `injectRevisionRows()` writes each version into successive rows starting at row 2:
 
-| Col | Field |
-|-----|-------|
-| 0 | Revision |
-| 1 | Date (DD-MM-YYYY) |
-| 2 | Description / Change Note |
-| 3 | Prepared initials |
-| 4 | Prepared date |
-| 5 | Checked initials |
-| 6 | Checked date |
-| 7 | Approved initials |
-| 8 | Approved date |
+| Col | Field                     |
+| --- | ------------------------- |
+| 0   | Revision                  |
+| 1   | Date (DD-MM-YYYY)         |
+| 2   | Description / Change Note |
+| 3   | Prepared initials         |
+| 4   | Prepared date             |
+| 5   | Checked initials          |
+| 6   | Checked date              |
+| 7   | Approved initials         |
+| 8   | Approved date             |
 
 Versions are ordered **oldest→newest** so the revision log reads incrementally top-to-bottom. Per-revision signer data is used when available, falling back to current sign-off.
 
@@ -310,29 +320,30 @@ A `.docx` file containing placeholder strings wrapped in `{}`. The generator loa
 
 ### 8.2 Placeholder Map (`wordGenerator.ts` `values` object)
 
-| Placeholder | Source |
-|-------------|--------|
-| `{Revision}` / `{revision}` | `revision` param |
-| `{DOC_DATE}` / `{docDate}` | `docDate` param |
-| `{DESCRIPTION}` / `{description}` | `content.description` |
-| `{PREPARED_BY}` / `{preparedBy}` | `signOff.preparedByName` |
-| `{PREPARED_BY_DATE}` / `{preparedByDate}` | `signOff.preparedByDate` |
-| `{CHECKED_BY}` / `{checkedBy}` | `signOff.checkedByName` |
-| `{CHECKED_BY_DATE}` / `{checkedByDate}` | `signOff.checkedByDate` |
-| `{APPROVED_BY}` / `{approvedBy}` | `signOff.approvedByName` |
-| `{APPROVED _BY_DATE}` / `{approvedByDate}` | `signOff.approvedByDate` |
-| `{APPENDIX}` / `{appendix}` | `appendixNumber` |
-| `{DOC_NUMBER}` / `{docNumber}` / `{Document Number}` | `formNumber` |
-| `{TITLE}` / `{title}` / `{DocumentTitle}` / `{documentTitle}` | `content.title` |
-| `{COMPANY_NAME}` | `'HARIS & Co Engineering Concern Pvt Ltd.'` |
-| `{REV_TABLE_*}` | Latest version data (rev table summary) |
-| `{harisco logo}` | Logo URL |
+| Placeholder                                                   | Source                                      |
+| ------------------------------------------------------------- | ------------------------------------------- |
+| `{Revision}` / `{revision}`                                   | `revision` param                            |
+| `{DOC_DATE}` / `{docDate}`                                    | `docDate` param                             |
+| `{DESCRIPTION}` / `{description}`                             | `content.description`                       |
+| `{PREPARED_BY}` / `{preparedBy}`                              | `signOff.preparedByName`                    |
+| `{PREPARED_BY_DATE}` / `{preparedByDate}`                     | `signOff.preparedByDate`                    |
+| `{CHECKED_BY}` / `{checkedBy}`                                | `signOff.checkedByName`                     |
+| `{CHECKED_BY_DATE}` / `{checkedByDate}`                       | `signOff.checkedByDate`                     |
+| `{APPROVED_BY}` / `{approvedBy}`                              | `signOff.approvedByName`                    |
+| `{APPROVED _BY_DATE}` / `{approvedByDate}`                    | `signOff.approvedByDate`                    |
+| `{APPENDIX}` / `{appendix}`                                   | `appendixNumber`                            |
+| `{DOC_NUMBER}` / `{docNumber}` / `{Document Number}`          | `formNumber`                                |
+| `{TITLE}` / `{title}` / `{DocumentTitle}` / `{documentTitle}` | `content.title`                             |
+| `{COMPANY_NAME}`                                              | `'HARIS & Co Engineering Concern Pvt Ltd.'` |
+| `{REV_TABLE_*}`                                               | Latest version data (rev table summary)     |
+| `{harisco logo}`                                              | Logo URL                                    |
 
 Revision-table placeholders (`{REV_TABLE_REVISION}`, `{REV_TABLE_DATE}`, `{REV_TABLE_DESCRIPTION}`, etc.) reflect the **latest** version only.
 
 ### 8.3 Revision Table Injection
 
 `injectRevisionRows()` operates on Table 0:
+
 - Locates `<w:tbl>...</w:tbl>`
 - Reads all `<w:tr>` rows
 - For each version (oldest→newest), writes into `rows[2 + v]`
@@ -351,16 +362,16 @@ Revision-table placeholders (`{REV_TABLE_REVISION}`, `{REV_TABLE_DATE}`, `{REV_T
 
 ### Entities (`src/tabs/DocumentGenerator/constants.ts`)
 
-| Code | Name |
-|------|------|
-| `01` | Head Office |
-| `02` | Manufacturing Shop |
-| `03` | Haris & Co Saudia |
+| Code | Name                     |
+| ---- | ------------------------ |
+| `01` | Head Office              |
+| `02` | Manufacturing Shop       |
+| `03` | Haris & Co Saudia        |
 | `04` | Haris Engineering Saudia |
-| `05` | Haris IT Company |
-| `06` | XYZ (Reserved) |
-| `07` | ABD (Reserved) |
-| `08` | GHT (Reserved) |
+| `05` | Haris IT Company         |
+| `06` | XYZ (Reserved)           |
+| `07` | ABD (Reserved)           |
+| `08` | GHT (Reserved)           |
 
 ### Departments
 
@@ -398,6 +409,7 @@ Checked via `checkAccess()` in `server/routes/document-generator.ts` on every en
 ## 11. Usage Workflow
 
 ### Create a New Document
+
 1. Click **New Document**
 2. Select Entity, Department, Document Type, Revision (document ID auto-previews)
 3. Enter Document Title, Description, Appendix Number, Form Number
@@ -406,6 +418,7 @@ Checked via `checkAccess()` in `server/routes/document-generator.ts` on every en
 6. (Optional) Click **Save Draft** to register without downloading
 
 ### Upload a Revision
+
 1. Open **Document Registry** tab
 2. Find the document, click **Upload Rev**
 3. Select revision (auto-increments from current)
@@ -415,12 +428,14 @@ Checked via `checkAccess()` in `server/routes/document-generator.ts` on every en
 7. Click **Upload Revision**
 
 ### View / Download Existing
+
 1. From MDR table:
    - **Download** → regenerates Word .docx with latest data + revision table
    - **Upload Rev** → open revision upload modal
    - **View** → open document detail modal (metadata, sign-off matrix, revision history)
 
 ### Filter the Registry
+
 Use the toolbar filters: Entity, Department, Doc Type, Year, and free-text search (searches Document ID, Title, Prepared By).
 
 ---
@@ -517,4 +532,4 @@ npm run build
 
 ---
 
-*End of documentation*
+_End of documentation_

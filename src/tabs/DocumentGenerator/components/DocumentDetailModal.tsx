@@ -21,22 +21,16 @@ interface DocumentDetailModalProps {
   token: string;
 }
 
-export const DocumentDetailModal: React.FC<DocumentDetailModalProps> = ({
-  isOpen,
-  onClose,
-  document,
-  token,
-}) => {
+export const DocumentDetailModal: React.FC<DocumentDetailModalProps> = ({ isOpen, onClose, document, token }) => {
   const [versions, setVersions] = useState<DocumentVersion[]>([]);
 
   useEffect(() => {
     if (!isOpen || !document) return;
     const loadVersions = async () => {
       try {
-        const res = await fetch(
-          `/api/document-generator/documents/${document.id}/versions`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        const res = await fetch(`/api/document-generator/documents/${document.id}/versions`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         if (res.ok) {
           const data = await res.json();
           setVersions(data.versions || []);
@@ -113,7 +107,14 @@ export const DocumentDetailModal: React.FC<DocumentDetailModalProps> = ({
         </div>
 
         <div style={{ marginBottom: '1rem' }}>
-          <p style={{ fontSize: '0.78rem', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>
+          <p
+            style={{
+              fontSize: '0.78rem',
+              textTransform: 'uppercase',
+              color: 'var(--text-muted)',
+              marginBottom: '0.3rem',
+            }}
+          >
             Document ID
           </p>
           <p style={{ fontSize: '1rem', fontWeight: 700, fontFamily: 'var(--font-mono)', color: '#38bdf8', margin: 0 }}>
@@ -122,7 +123,14 @@ export const DocumentDetailModal: React.FC<DocumentDetailModalProps> = ({
         </div>
 
         <div style={{ marginBottom: '1rem' }}>
-          <p style={{ fontSize: '0.78rem', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>
+          <p
+            style={{
+              fontSize: '0.78rem',
+              textTransform: 'uppercase',
+              color: 'var(--text-muted)',
+              marginBottom: '0.3rem',
+            }}
+          >
             Document Title
           </p>
           <p style={{ fontSize: '1rem', fontWeight: 600, margin: 0, color: 'var(--text-primary)' }}>
@@ -131,7 +139,14 @@ export const DocumentDetailModal: React.FC<DocumentDetailModalProps> = ({
         </div>
 
         <div style={{ marginBottom: '1rem' }}>
-          <p style={{ fontSize: '0.78rem', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>
+          <p
+            style={{
+              fontSize: '0.78rem',
+              textTransform: 'uppercase',
+              color: 'var(--text-muted)',
+              marginBottom: '0.3rem',
+            }}
+          >
             Revision
           </p>
           <p style={{ fontSize: '1rem', fontWeight: 600, margin: 0, color: 'var(--text-secondary)' }}>
@@ -139,7 +154,14 @@ export const DocumentDetailModal: React.FC<DocumentDetailModalProps> = ({
           </p>
           {versions.length > 0 && (
             <div style={{ marginTop: '0.4rem' }}>
-              <p style={{ fontSize: '0.78rem', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.2rem' }}>
+              <p
+                style={{
+                  fontSize: '0.78rem',
+                  textTransform: 'uppercase',
+                  color: 'var(--text-muted)',
+                  marginBottom: '0.2rem',
+                }}
+              >
                 Revision History Record
               </p>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
@@ -155,7 +177,9 @@ export const DocumentDetailModal: React.FC<DocumentDetailModalProps> = ({
                     <tr key={v.id} style={{ borderBottom: '0.0531rem solid var(--border-color)' }}>
                       <td style={{ padding: '0.4rem', fontWeight: 600 }}>{v.revision}</td>
                       <td style={{ padding: '0.4rem', color: 'var(--text-secondary)' }}>{v.note || '-'}</td>
-                      <td style={{ padding: '0.4rem', color: 'var(--text-secondary)' }}>{new Date(v.uploaded_at).toLocaleDateString()}</td>
+                      <td style={{ padding: '0.4rem', color: 'var(--text-secondary)' }}>
+                        {new Date(v.uploaded_at).toLocaleDateString()}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -165,7 +189,14 @@ export const DocumentDetailModal: React.FC<DocumentDetailModalProps> = ({
         </div>
 
         <div style={{ marginBottom: '1rem' }}>
-          <p style={{ fontSize: '0.78rem', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>
+          <p
+            style={{
+              fontSize: '0.78rem',
+              textTransform: 'uppercase',
+              color: 'var(--text-muted)',
+              marginBottom: '0.3rem',
+            }}
+          >
             Entity / Department / Type
           </p>
           <p style={{ fontSize: '0.9rem', margin: 0, color: 'var(--text-secondary)' }}>
@@ -174,12 +205,17 @@ export const DocumentDetailModal: React.FC<DocumentDetailModalProps> = ({
         </div>
 
         <div style={{ marginBottom: '1rem' }}>
-          <p style={{ fontSize: '0.78rem', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>
+          <p
+            style={{
+              fontSize: '0.78rem',
+              textTransform: 'uppercase',
+              color: 'var(--text-muted)',
+              marginBottom: '0.3rem',
+            }}
+          >
             Document Date
           </p>
-          <p style={{ fontSize: '0.9rem', margin: 0, color: 'var(--text-secondary)' }}>
-            {document?.doc_date || '-'}
-          </p>
+          <p style={{ fontSize: '0.9rem', margin: 0, color: 'var(--text-secondary)' }}>{document?.doc_date || '-'}</p>
         </div>
 
         <div style={{ marginBottom: '1rem' }}>
@@ -192,7 +228,9 @@ export const DocumentDetailModal: React.FC<DocumentDetailModalProps> = ({
                 <td style={{ padding: '0.4rem', width: '35%', fontWeight: 600, color: 'var(--text-primary)' }}>
                   Prepared By
                 </td>
-                <td style={{ padding: '0.4rem', color: 'var(--text-secondary)' }}>{document?.prepared_by_name || '-'}</td>
+                <td style={{ padding: '0.4rem', color: 'var(--text-secondary)' }}>
+                  {document?.prepared_by_name || '-'}
+                </td>
                 <td style={{ padding: '0.4rem', textAlign: 'right', color: 'var(--text-secondary)' }}>
                   {document?.prepared_by_date || '-'}
                 </td>
@@ -201,16 +239,18 @@ export const DocumentDetailModal: React.FC<DocumentDetailModalProps> = ({
                 <td style={{ padding: '0.4rem', fontWeight: 600, color: 'var(--text-primary)' }}>
                   Checked / Reviewed By
                 </td>
-                <td style={{ padding: '0.4rem', color: 'var(--text-secondary)' }}>{document?.checked_by_name || '-'}</td>
+                <td style={{ padding: '0.4rem', color: 'var(--text-secondary)' }}>
+                  {document?.checked_by_name || '-'}
+                </td>
                 <td style={{ padding: '0.4rem', textAlign: 'right', color: 'var(--text-secondary)' }}>
                   {document?.checked_by_date || '-'}
                 </td>
               </tr>
               <tr style={{ borderTop: '0.0531rem solid var(--border-color)' }}>
-                <td style={{ padding: '0.4rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                  Approved By
+                <td style={{ padding: '0.4rem', fontWeight: 600, color: 'var(--text-primary)' }}>Approved By</td>
+                <td style={{ padding: '0.4rem', color: 'var(--text-secondary)' }}>
+                  {document?.approved_by_name || '-'}
                 </td>
-                <td style={{ padding: '0.4rem', color: 'var(--text-secondary)' }}>{document?.approved_by_name || '-'}</td>
                 <td style={{ padding: '0.4rem', textAlign: 'right', color: 'var(--text-secondary)' }}>
                   {document?.approved_by_date || '-'}
                 </td>
@@ -220,11 +260,7 @@ export const DocumentDetailModal: React.FC<DocumentDetailModalProps> = ({
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
-          <button
-            type="button"
-            className="docgen-btn docgen-btn-secondary"
-            onClick={onClose}
-          >
+          <button type="button" className="docgen-btn docgen-btn-secondary" onClick={onClose}>
             Close
           </button>
         </div>

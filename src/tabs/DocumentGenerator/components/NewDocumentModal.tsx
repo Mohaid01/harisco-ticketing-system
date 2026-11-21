@@ -97,9 +97,7 @@ export const NewDocumentModal: React.FC<NewDocumentModalProps> = ({
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <h4 style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
-            New Document
-          </h4>
+          <h4 style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>New Document</h4>
           <button
             type="button"
             onClick={onClose}

@@ -70,9 +70,9 @@ export const Attendance: React.FC<AttendanceProps> = ({
 
   const canViewAll = isFactory
     ? currentUser.role === 'factory_it' ||
-    currentUser.role === 'factory_manager' ||
-    currentUser.role === 'manager' ||
-    currentUser.role === 'it'
+      currentUser.role === 'factory_manager' ||
+      currentUser.role === 'manager' ||
+      currentUser.role === 'it'
     : currentUser.role === 'it' || currentUser.role === 'manager' || currentUser.role === 'executive';
   const canViewDepartment = currentUser.isDepartmentHead;
   const canWrite = isFactory
@@ -127,7 +127,10 @@ export const Attendance: React.FC<AttendanceProps> = ({
   const [holidayDate, setHolidayDate] = useState('');
   const [holidayName, setHolidayName] = useState('');
   const [holidayLoading, setHolidayLoading] = useState(false);
-  const [holidayMessage, setHolidayMessage] = useState<{ text: string; type: 'success' | 'error' | null }>({ text: '', type: null });
+  const [holidayMessage, setHolidayMessage] = useState<{ text: string; type: 'success' | 'error' | null }>({
+    text: '',
+    type: null,
+  });
 
   const canManageHolidays = ['it', 'manager'].includes(currentUser.role);
 
@@ -474,8 +477,8 @@ export const Attendance: React.FC<AttendanceProps> = ({
 
     const sundayCount = isFactory
       ? Array.from({ length: daysInMonth }, (_, d) => new Date(sYear, sMonth - 1, d + 1).getUTCDay() === 0).filter(
-        Boolean
-      ).length
+          Boolean
+        ).length
       : 0;
 
     return allUsers
@@ -859,7 +862,17 @@ export const Attendance: React.FC<AttendanceProps> = ({
       }
     }
     return list;
-  }, [selectedEmployee, logs, selectedMonth, tick, shiftOverrides, defaultFallbackShift, isFactory, parseLogPKT, holidays]);
+  }, [
+    selectedEmployee,
+    logs,
+    selectedMonth,
+    tick,
+    shiftOverrides,
+    defaultFallbackShift,
+    isFactory,
+    parseLogPKT,
+    holidays,
+  ]);
 
   // Today's specific shift progress calculations
   const todayShiftProgress = useMemo(() => {
@@ -2627,9 +2640,9 @@ export const Attendance: React.FC<AttendanceProps> = ({
                               }}
                             >
                               {log.firstIn === '--' &&
-                                log.lastOut === '--' &&
-                                isPastOrToday &&
-                                currentUser.role === 'manager' ? (
+                              log.lastOut === '--' &&
+                              isPastOrToday &&
+                              currentUser.role === 'manager' ? (
                                 <div
                                   style={{
                                     display: 'flex',
@@ -2951,7 +2964,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
                                   const isSat = pktNow.getUTCDay() === 6;
                                   return isSat && shift.code === 'headquarters' ? 6 : shift.baseHours;
                                 })()) *
-                              100,
+                                100,
                               100
                             )}%`,
                             height: '100%',
@@ -3289,11 +3302,20 @@ export const Attendance: React.FC<AttendanceProps> = ({
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <div
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}
+            >
               <h2 style={{ margin: 0, fontSize: '1.125rem', fontWeight: 600 }}>Manage Gazetted Holidays</h2>
               <button
                 onClick={() => setIsHolidayModalOpen(false)}
-                style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '1.5rem', lineHeight: 1 }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--text-secondary)',
+                  cursor: 'pointer',
+                  fontSize: '1.5rem',
+                  lineHeight: 1,
+                }}
               >
                 ✕
               </button>
@@ -3328,7 +3350,13 @@ export const Attendance: React.FC<AttendanceProps> = ({
             >
               <div>
                 <label
-                  style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem' }}
+                  style={{
+                    display: 'block',
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                    color: 'var(--text-secondary)',
+                    marginBottom: '0.25rem',
+                  }}
                 >
                   Date
                 </label>
@@ -3351,7 +3379,13 @@ export const Attendance: React.FC<AttendanceProps> = ({
               </div>
               <div>
                 <label
-                  style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem' }}
+                  style={{
+                    display: 'block',
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                    color: 'var(--text-secondary)',
+                    marginBottom: '0.25rem',
+                  }}
                 >
                   Holiday Name
                 </label>
@@ -3402,38 +3436,40 @@ export const Attendance: React.FC<AttendanceProps> = ({
                 </p>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  {[...holidays].sort((a, b) => a.date.localeCompare(b.date)).map((h) => (
-                    <div
-                      key={h.date}
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        padding: '0.5rem 0.75rem',
-                        border: '1px solid var(--border-color)',
-                        borderRadius: '0.5rem',
-                        background: '#111a2c',
-                      }}
-                    >
-                      <span style={{ fontSize: '0.9rem' }}>{h.date}</span>
-                      <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{h.name}</span>
-                      <button
-                        onClick={() => handleDeleteHoliday(h.date)}
-                        disabled={holidayLoading}
+                  {[...holidays]
+                    .sort((a, b) => a.date.localeCompare(b.date))
+                    .map((h) => (
+                      <div
+                        key={h.date}
                         style={{
-                          background: 'var(--color-danger)',
-                          color: '#fff',
-                          border: 'none',
-                          borderRadius: '0.375rem',
-                          padding: '0.25rem 0.6rem',
-                          fontSize: '0.8rem',
-                          cursor: holidayLoading ? 'not-allowed' : 'pointer',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          padding: '0.5rem 0.75rem',
+                          border: '1px solid var(--border-color)',
+                          borderRadius: '0.5rem',
+                          background: '#111a2c',
                         }}
                       >
-                        Remove
-                      </button>
-                    </div>
-                  ))}
+                        <span style={{ fontSize: '0.9rem' }}>{h.date}</span>
+                        <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{h.name}</span>
+                        <button
+                          onClick={() => handleDeleteHoliday(h.date)}
+                          disabled={holidayLoading}
+                          style={{
+                            background: 'var(--color-danger)',
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: '0.375rem',
+                            padding: '0.25rem 0.6rem',
+                            fontSize: '0.8rem',
+                            cursor: holidayLoading ? 'not-allowed' : 'pointer',
+                          }}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
                 </div>
               )}
             </div>

@@ -176,11 +176,7 @@ export const UploadRevisionModal: React.FC<UploadRevisionModalProps> = ({
           >
             New Revision
           </label>
-          <select
-            className="form-input"
-            value={revision}
-            onChange={(e) => setRevision(e.target.value)}
-          >
+          <select className="form-input" value={revision} onChange={(e) => setRevision(e.target.value)}>
             {REVISION_OPTIONS.map((r) => (
               <option key={r} value={r}>
                 {r}
@@ -238,20 +234,10 @@ export const UploadRevisionModal: React.FC<UploadRevisionModalProps> = ({
         )}
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.65rem' }}>
-          <button
-            type="button"
-            className="docgen-btn docgen-btn-secondary"
-            onClick={onClose}
-            disabled={uploading}
-          >
+          <button type="button" className="docgen-btn docgen-btn-secondary" onClick={onClose} disabled={uploading}>
             Cancel
           </button>
-          <button
-            type="submit"
-            className="docgen-btn docgen-btn-primary"
-            onClick={handleSubmit}
-            disabled={uploading}
-          >
+          <button type="submit" className="docgen-btn docgen-btn-primary" onClick={handleSubmit} disabled={uploading}>
             {uploading ? 'Uploading...' : 'Upload Revision'}
           </button>
         </div>

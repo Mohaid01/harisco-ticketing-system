@@ -525,10 +525,10 @@ router.get('/documents/:id/versions/:versionId/download', authenticateToken, asy
 
   try {
     const db = getDb();
-    const version = await db.get<DocumentVersion>(
-      `SELECT * FROM document_versions WHERE id = ? AND document_id = ?`,
-      [versionId, docId]
-    );
+    const version = await db.get<DocumentVersion>(`SELECT * FROM document_versions WHERE id = ? AND document_id = ?`, [
+      versionId,
+      docId,
+    ]);
 
     if (!version) {
       return res.status(404).json({ error: 'Document version not found.' });
