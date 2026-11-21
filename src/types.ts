@@ -2,7 +2,16 @@ import type { LucideIcon } from 'lucide-react';
 
 // User Types
 export type UserRole =
-  'it' | 'employee' | 'manager' | 'executive' | 'factory_employee' | 'factory_it' | 'factory_manager' | 'external';
+  | 'it'
+  | 'employee'
+  | 'manager'
+  | 'executive'
+  | 'factory_employee'
+  | 'factory_it'
+  | 'factory_manager'
+  | 'external'
+  | 'non_hq_user'
+  | 'field_user';
 
 export interface AppUser {
   id: string;
@@ -163,6 +172,8 @@ export type ActiveTab =
   | 'document_generator'
   | 'users_statistics'
   | 'external_users'
+  | 'field_users'
+  | 'non_hq_users'
   | 'inventory';
 
 export interface MenuItems {
@@ -252,13 +263,25 @@ export type HSEStatus = 'open' | 'escalated' | 'in_progress' | 'rejected' | 'clo
 
 // Inventory Types
 export type InventoryStatus = 'Stocked' | 'Assigned' | 'Under Repair' | 'Retired' | 'Lost';
-export type InventoryCategory = 'Laptop' | 'Monitor' | 'Mouse' | 'Keyboard' | 'Printer' | 'Mobile' | 'Others';
+export type InventoryCategory =
+  | 'Laptop'
+  | 'Monitor'
+  | 'Mouse'
+  | 'Keyboard'
+  | 'Printer'
+  | 'Mobile'
+  | 'AccessPoint'
+  | 'Switch'
+  | 'Router'
+  | 'IPPhones'
+  | 'DoorLocks'
+  | 'Charger';
 export type InventoryEntity = 'HQ' | 'Factory' | 'External' | 'Others';
 
 export interface Inventory {
   id: string;
   company: string;
-  entity: InventoryEntity;
+  entity: InventoryEntity | null;
   category: InventoryCategory;
   details: string;
   device_id: string;
@@ -266,6 +289,8 @@ export interface Inventory {
   status: InventoryStatus;
   assigned_user_id: string | null;
   assigned_user_name?: string | null;
+  assignment_scope: 'user' | 'entity' | null;
+  location?: string | null;
   attachment?: string | null;
   created_at: string;
   updated_at: string;

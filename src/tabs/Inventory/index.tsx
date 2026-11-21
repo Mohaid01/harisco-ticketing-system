@@ -88,7 +88,10 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({
   };
 
   const companies = useMemo(() => [...new Set(inventory.map((i) => i.company).filter(Boolean))].sort(), [inventory]);
-  const entities = useMemo(() => [...new Set(inventory.map((i) => i.entity).filter(Boolean))].sort(), [inventory]);
+  const entities = useMemo(
+    () => [...new Set(inventory.map((i) => i.entity).filter(Boolean))].sort() as string[],
+    [inventory]
+  );
 
   // Accurate counts across the whole inventory
   const allCount = inventory.length;
@@ -431,7 +434,10 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({
                             className="form-input"
                             style={{ width: '100%', height: '38px', backgroundColor: 'var(--bg-primary)' }}
                             value={draft.entity ?? item.entity ?? ''}
-                            onChange={(e) => setEditDraft({ ...draft, entity: e.target.value as InventoryEntity })}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setEditDraft({ ...draft, entity: val ? (val as InventoryEntity) : null });
+                            }}
                           >
                             <option value="">-- Select Entity --</option>
                             {INVENTORY_ENTITY_OPTIONS.map((opt) => (
@@ -441,7 +447,7 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({
                             ))}
                           </select>
                         ) : (
-                          item.entity
+                          item.entity || 'N/A'
                         )}
                       </td>
                       <td>
@@ -493,7 +499,11 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({
                         )}
                       </td>
                       <td style={{ fontSize: '0.85rem' }}>
-                        {item.assigned_user_id || item.assigned_user_name ? (
+                        {item.assignment_scope === 'entity' ? (
+                          <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>
+                            {item.location} ({item.entity})
+                          </span>
+                        ) : item.assigned_user_id || item.assigned_user_name ? (
                           <span style={{ color: 'var(--text-primary)' }}>
                             {getAssignedUserName(item.assigned_user_id, item.assigned_user_name, userMap)}
                           </span>

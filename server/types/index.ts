@@ -3,7 +3,16 @@ import type { Request, Response } from 'express';
 import { IncomingMessage } from 'http';
 
 type UserRoles =
-  'it' | 'employee' | 'manager' | 'executive' | 'factory_employee' | 'factory_it' | 'factory_manager' | 'external';
+  | 'it'
+  | 'employee'
+  | 'manager'
+  | 'executive'
+  | 'factory_employee'
+  | 'factory_it'
+  | 'factory_manager'
+  | 'external'
+  | 'field_user'
+  | 'non_hq_user';
 
 type TicketTypes = 'hardware' | 'software' | 'maintenance' | 'upgrade' | 'installation' | 'email' | 'others';
 
@@ -96,13 +105,25 @@ export interface DbActivityLog {
 }
 
 export type InventoryStatus = 'Stocked' | 'Assigned' | 'Under Repair' | 'Retired' | 'Lost';
-export type InventoryCategory = 'Laptop' | 'Monitor' | 'Mouse' | 'Keyboard' | 'Printer' | 'Mobile';
+export type InventoryCategory =
+  | 'Laptop'
+  | 'Monitor'
+  | 'Mouse'
+  | 'Keyboard'
+  | 'Printer'
+  | 'Mobile'
+  | 'AccessPoint'
+  | 'Switch'
+  | 'Router'
+  | 'IPPhones'
+  | 'DoorLocks'
+  | 'Charger';
 export type InventoryEntity = 'HQ' | 'Factory' | 'External' | 'Others';
 
 export interface DbInventory {
   id: string;
   company: string;
-  entity: InventoryEntity;
+  entity: InventoryEntity | null;
   category: InventoryCategory;
   details: string;
   device_id: string;
@@ -110,6 +131,8 @@ export interface DbInventory {
   status: InventoryStatus;
   assigned_user_id: string | null;
   assigned_user_name: string | null;
+  assignment_scope: 'user' | 'entity' | null;
+  location: string | null;
   attachment: string | null;
   created_at: string;
   updated_at: string;
@@ -117,31 +140,35 @@ export interface DbInventory {
 
 export interface CreateInventoryRequestBody {
   company: string;
-  entity: InventoryEntity;
+  entity: InventoryEntity | null;
   category: InventoryCategory;
   details: string;
   device_id: string;
   sn_mac_address: string;
   assigned_user_id?: string | null;
+  assignment_scope?: 'user' | 'entity' | null;
+  location?: string | null;
   attachment?: string | null;
 }
 
 export interface UpdateInventoryRequestBody {
   company?: string;
-  entity?: InventoryEntity;
+  entity?: InventoryEntity | null;
   category?: InventoryCategory;
   details?: string;
   device_id?: string;
   sn_mac_address?: string;
   status?: InventoryStatus;
   assigned_user_id?: string | null;
+  assignment_scope?: 'user' | 'entity' | null;
+  location?: string | null;
   attachment?: string | null;
 }
 
 export interface InventoryResponse {
   id: string;
   company: string;
-  entity: InventoryEntity;
+  entity: InventoryEntity | null;
   category: InventoryCategory;
   details: string;
   device_id: string;
@@ -149,6 +176,8 @@ export interface InventoryResponse {
   status: InventoryStatus;
   assigned_user_id: string | null;
   assigned_user_name: string | null;
+  assignment_scope: 'user' | 'entity' | null;
+  location: string | null;
   attachment: string | null;
   created_at: string;
   updated_at: string;
@@ -892,6 +921,138 @@ export interface ResetExternalUserPasswordRequestBody {
 }
 
 export interface ResetExternalUserPasswordResponse {
+  message: string;
+}
+
+// Field User Types
+export interface CreateFieldUserRequestBody {
+  username: string;
+  password: string;
+  name: string;
+  email: string;
+  avatar?: string;
+  department?: string;
+  designation?: string;
+  active: boolean;
+}
+
+export interface UpdateFieldUserRequestBody {
+  name: string;
+  email: string | null;
+  username?: string;
+  password?: string;
+  avatar?: string;
+  department?: string | null;
+  designation?: string | null;
+  active?: boolean;
+}
+
+export type FieldUsersResponse = DbUser[];
+
+export interface CreateFieldUserResponse {
+  id: string;
+  name: string;
+  email: string | null;
+  username: string;
+  role: UserRoles;
+  avatar?: string;
+  department?: string | null;
+  designation?: string | null;
+  isDepartmentHead: number;
+  loginEnabled: number;
+}
+
+export interface UpdateFieldUserResponse {
+  id: string;
+  name: string;
+  email: string | null;
+  username: string;
+  role: UserRoles;
+  avatar?: string;
+  department?: string | null;
+  designation?: string | null;
+  isDepartmentHead: number;
+  loginEnabled: number;
+}
+
+export interface DeleteFieldUserResponse {
+  message: string;
+}
+
+export interface ResetFieldUserPasswordRequestBody {
+  newPassword: string;
+}
+
+export interface ResetFieldUserPasswordResponse {
+  message: string;
+}
+
+// Non HQ User Types
+export interface CreateNonHqUserRequestBody {
+  username: string;
+  password: string;
+  name: string;
+  email: string;
+  avatar?: string;
+  department?: string;
+  designation?: string;
+  isDepartmentHead?: boolean;
+  loginEnabled?: boolean;
+  defaultShift?: string;
+  active: boolean;
+}
+
+export interface UpdateNonHqUserRequestBody {
+  name: string;
+  email: string | null;
+  username?: string;
+  password?: string;
+  avatar?: string;
+  department?: string | null;
+  designation?: string | null;
+  isDepartmentHead?: boolean;
+  loginEnabled?: boolean;
+  defaultShift?: string;
+  active?: boolean;
+}
+
+export type NonHqUsersResponse = DbUser[];
+
+export interface CreateNonHqUserResponse {
+  id: string;
+  name: string;
+  email: string | null;
+  username: string;
+  role: UserRoles;
+  avatar?: string;
+  department?: string | null;
+  designation?: string | null;
+  isDepartmentHead: number;
+  loginEnabled: number;
+}
+
+export interface UpdateNonHqUserResponse {
+  id: string;
+  name: string;
+  email: string | null;
+  username: string;
+  role: UserRoles;
+  avatar?: string;
+  department?: string | null;
+  designation?: string | null;
+  isDepartmentHead: number;
+  loginEnabled: number;
+}
+
+export interface DeleteNonHqUserResponse {
+  message: string;
+}
+
+export interface ResetNonHqUserPasswordRequestBody {
+  newPassword: string;
+}
+
+export interface ResetNonHqUserPasswordResponse {
   message: string;
 }
 
