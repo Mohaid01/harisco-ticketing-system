@@ -318,7 +318,10 @@ export const NonHqUserManagement: React.FC<NonHqUserManagementProps> = ({
                   <option value="" disabled>
                     -- Select Department --
                   </option>
-                  <option value="Non HQ">Non HQ</option>
+                  <option value="Telecom">Telecom</option>
+                  <option value="Civil">Civil</option>
+                  <option value="HSE">HSE</option>
+                  <option value="Projects">Projects</option>
                 </select>
               </div>
 
@@ -551,7 +554,10 @@ export const NonHqUserManagement: React.FC<NonHqUserManagementProps> = ({
                           <option value="" selected disabled>
                             -- Select Department --
                           </option>
-                          <option value="Non HQ">Non HQ</option>
+                          <option value="Telecom">Telecom</option>
+                          <option value="Civil">Civil</option>
+                          <option value="HSE">HSE</option>
+                          <option value="Projects">Projects</option>
                         </select>
                       </div>
                       <div className="form-group">
