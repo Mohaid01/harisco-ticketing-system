@@ -52,8 +52,6 @@ const formatDateDDMMYYYY = (isoDate: string): string => {
 export const generateDocumentWord = async (params: GenerateWordParams): Promise<Uint8Array> => {
   const { revision, appendixNumber, formNumber, content, signOff, versions } = params;
 
-  const HARISCO_LOGO_URL = new URL('../assets/harisco-logo.png', import.meta.url).href;
-
   const latestVersion = versions.length > 0 ? versions[versions.length - 1] : null;
 
   const values: Record<string, string> = {
@@ -130,7 +128,6 @@ export const generateDocumentWord = async (params: GenerateWordParams): Promise<
     '{REV_TABLE_APPROVED_BY}': signOff.approvedByName,
     '{REV_TABLE_APPROVED_BY_INITIALS}': getInitials(signOff.approvedByName),
     '{REV_TABLE_APPROVED_DATE}': signOff.approvedByDate,
-    '{harisco logo}': HARISCO_LOGO_URL,
   };
 
   // Debug: log what values we're trying to replace
