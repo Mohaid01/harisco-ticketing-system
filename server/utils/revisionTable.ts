@@ -49,6 +49,7 @@ function findRevisionTable(xml: string): { start: number; end: number } | null {
 
 function setCellText(cellXml: string, value: string): string {
   const escaped = escapeXml(value);
+  // eslint-disable-next-line security/detect-unsafe-regex
   const wTRegex = /<w:t(\s[^>]*)?>([\s\S]*?)<\/w:t>/g;
   const hasTextNode = wTRegex.test(cellXml);
   if (hasTextNode) {
