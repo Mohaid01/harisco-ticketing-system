@@ -6,7 +6,8 @@
   "scripts": {
     "dev:client": "vite",
     "dev:server": "tsx server/index.ts",
-    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:python": "cd python-service && pip install -q -r requirements.txt && python -m uvicorn api:app --host 0.0.0.0 --port 8000 --reload",
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\" \"npm run dev:python\"",
     "dev:host": "concurrently \"npm run dev:server\" \"vite --host\"",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
@@ -20,11 +21,19 @@
   "overrides": {
     "uuid": "^11.1.1",
     "qs": "^6.16.0",
-    "minimatch": "^11.0.1"
+    "minimatch": "^11.0.1",
+    "append-field": "1.0.0"
   },
   "dependencies": {
+    "@mediapipe/tasks-vision": "1.2.3",
+    "@types/axios": "^0.9.36",
+    "@types/form-data": "^2.2.1",
     "@vladmandic/face-api": "^1.7.15",
+    "@vladmandic/human": "3.3.6",
+    "append-field": "^1.0.0",
+    "axios": "^1.21.1",
     "bcryptjs": "^3.0.3",
+    "compression": "1.7.4",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "exceljs": "^4.1.1",
@@ -32,6 +41,7 @@
     "express": "^5.2.1",
     "express-rate-limit": "^8.6.2",
     "face-api.js": "^0.22.2",
+    "form-data": "^4.0.6",
     "framer-motion": "^13.4.5",
     "helmet": "^8.2.0",
     "jsonwebtoken": "^9.0.3",
@@ -50,6 +60,7 @@
   "devDependencies": {
     "@eslint/js": "^9.39.5",
     "@types/bcryptjs": "^3.0.0",
+    "@types/compression": "1.7.5",
     "@types/cors": "^2.8.19",
     "@types/exceljs": "^1.3.2",
     "@types/express": "^5.0.6",

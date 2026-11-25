@@ -25,41 +25,21 @@ import type {
 
 import { getDb } from '../db.ts';
 import { authenticateToken } from '../middleware/auth.ts';
+import { FaceServiceError, recognizeFace } from '../services/face-service.ts';
+import { validateLivenessEvidence } from '../services/liveness.ts';
 import logger from '../utils/logger.ts';
 
 const router = Router();
 
 const toRad = (deg: number): number => (deg * Math.PI) / 180;
 
-const haversineMeters = (
-  lat1: number,
-  lng1: number,
-  lat2: number,
-  lng2: number
-): number => {
+const haversineMeters = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
   const R = 6371000;
   const dLat = toRad(lat2 - lat1);
   const dLng = toRad(lng2 - lng1);
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
-};
-
-const cosineSimilarity = (a: number[], b: number[]): number => {
-  if (a.length !== b.length || a.length === 0) return 0;
-  let dot = 0;
-  let normA = 0;
-  let normB = 0;
-  for (let i = 0; i < a.length; i++) {
-    dot += a[i] * b[i];
-    normA += a[i] * a[i];
-    normB += b[i] * b[i];
-  }
-  const denom = Math.sqrt(normA) * Math.sqrt(normB);
-  if (denom === 0) return 0;
-  return dot / denom;
 };
 
 const uploadDir = path.resolve(process.cwd(), 'public/uploads/field-attendance');
@@ -116,12 +96,19 @@ const faceRefUpload = multer({
   },
 });
 
-const dmsToDecimal = (
-  degrees: number,
-  minutes: number,
-  seconds: number,
-  direction: string
-): number => {
+const punchUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed.'));
+    }
+  },
+});
+
+const dmsToDecimal = (degrees: number, minutes: number, seconds: number, direction: string): number => {
   let decimal = degrees + minutes / 60 + seconds / 3600;
   if (direction === 'S' || direction === 'W') {
     decimal = -decimal;
@@ -164,7 +151,9 @@ const getTagString = (tag: unknown): string | null => {
   return String(raw);
 };
 
-const extractGpsFromExif = (filePath: string): {
+const extractGpsFromExif = (
+  filePath: string
+): {
   lat: number | null;
   lng: number | null;
   takenAt: string | null;
@@ -213,56 +202,47 @@ const extractGpsFromExif = (filePath: string): {
 };
 
 // GET /api/field/attendance
-router.get(
-  '/',
-  authenticateToken,
-  async (req: AuthRequest, res: ApiResponse<FieldAttendanceLogsResponse>) => {
-    if (req.user?.role !== 'it') {
-      return res.status(403).json({ error: 'Forbidden. IT role required.' });
-    }
-
-    try {
-      const db = getDb();
-      const logs = await db.all<FieldAttendanceLog[]>(
-        'SELECT id, name, userId, ioTime, method, status, timestamp, gpsLat, gpsLng, faceMatchScore, faceMatchConfidence, photoUrl, verified, withinRadius, distanceMeters, debugInfo FROM field_attendance_logs ORDER BY timestamp DESC'
-      );
-      return res.json(logs);
-    } catch (error) {
-      logger.error('Failed to retrieve field attendance logs:', error);
-      res.status(500).json({ error: 'Failed to retrieve field attendance logs.' });
-    }
+router.get('/', authenticateToken, async (req: AuthRequest, res: ApiResponse<FieldAttendanceLogsResponse>) => {
+  if (req.user?.role !== 'it') {
+    return res.status(403).json({ error: 'Forbidden. IT role required.' });
   }
-);
 
-// POST /api/field/attendance/punch — server-side face match + GPS + liveness verification
+  try {
+    const db = getDb();
+    const logs = await db.all<FieldAttendanceLog[]>(
+      'SELECT id, name, userId, ioTime, method, status, timestamp, gpsLat, gpsLng, faceMatchScore, faceMatchConfidence, photoUrl, verified, withinRadius, distanceMeters, debugInfo FROM field_attendance_logs ORDER BY timestamp DESC'
+    );
+    return res.json(logs);
+  } catch (error) {
+    logger.error('Failed to retrieve field attendance logs:', error);
+    res.status(500).json({ error: 'Failed to retrieve field attendance logs.' });
+  }
+});
+
+// POST /api/field/attendance/punch — frame-based face match + liveness + GPS
 router.post(
   '/punch',
   authenticateToken,
-  async (
-    req: ApiAuthRequest<PunchFieldAttendanceRequestBody>,
-    res: ApiResponse<PunchFieldAttendanceResponse>
-  ) => {
+  punchUpload.single('frame'),
+  async (req: AuthRequest, res: ApiResponse<PunchFieldAttendanceResponse>) => {
     if (req.user?.role !== 'it') {
       return res.status(403).json({ error: 'Forbidden. IT role required.' });
     }
 
-    const {
-      userId,
-      name,
-      method,
-      status,
-      gpsLat,
-      gpsLng,
-      photoUrl,
-      debugInfo,
-      faceDescriptor,
-      livenessPassed,
-      challenge,
-    } = req.body;
+    // Identity always comes from the token, never from the request body.
+    const userId = String(req.user.id || '');
+    const name = String(req.user.name || req.user.username || userId);
+    const { method, status, gpsLat, gpsLng, debugInfo } = req.body as Partial<PunchFieldAttendanceRequestBody>;
 
-    if (!userId || !name || !method || !status) {
+    if (!userId || !method || !status) {
       return res.status(400).json({ error: 'Missing required fields.' });
     }
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'A face frame is required.' });
+    }
+
+    const hasGps = gpsLat !== null && gpsLat !== undefined && gpsLng !== null && gpsLng !== undefined;
 
     try {
       const db = getDb();
@@ -272,18 +252,13 @@ router.post(
       let distanceMeters: number | null = null;
       let matchedSettingId: number | null = null;
 
-      if (gpsLat !== null && gpsLat !== undefined && gpsLng !== null && gpsLng !== undefined) {
+      if (hasGps) {
         const settings = await db.all<FieldAttendanceSetting[]>(
           'SELECT id, centerLat, centerLng, radiusMeters FROM field_attendance_settings WHERE isActive = 1'
         );
 
         for (const setting of settings) {
-          const dist = haversineMeters(
-            Number(gpsLat),
-            Number(gpsLng),
-            setting.centerLat,
-            setting.centerLng
-          );
+          const dist = haversineMeters(Number(gpsLat), Number(gpsLng), setting.centerLat, setting.centerLng);
           distanceMeters = dist;
           if (dist <= setting.radiusMeters) {
             withinRadius = true;
@@ -293,51 +268,36 @@ router.post(
         }
       }
 
-      // --- Face match + liveness verification ---
-      let serverFaceMatchScore: number | null = null;
-      const serverLivenessPassed = livenessPassed === true;
+      // --- Identity: SFace 1:1 match against stored embeddings ---
+      let faceMatchScore: number | null = null;
+      let matched = false;
 
-      if (faceDescriptor && Array.isArray(faceDescriptor) && faceDescriptor.length > 0) {
-        const references = await db.all<{
-          id: number;
-          userId: string;
-          photoUrl: string;
-          descriptor: string;
-        }>('SELECT id, userId, photoUrl, descriptor FROM field_attendance_face_references WHERE userId = ?', [
-          userId,
-        ]);
-
-        let bestScore = 0;
-        for (const ref of references) {
-          try {
-            const refDescriptor = JSON.parse(ref.descriptor) as number[];
-            const score = cosineSimilarity(faceDescriptor as number[], refDescriptor);
-            if (score > bestScore) bestScore = score;
-          } catch {
-            // skip malformed descriptor
-          }
-        }
-        serverFaceMatchScore = bestScore;
+      try {
+        const match = await recognizeFace(
+          req.file.buffer,
+          req.file.originalname,
+          req.file.mimetype,
+          userId
+        );
+        matched = match.matched === true;
+        faceMatchScore = typeof match.confidence === 'number' ? match.confidence : null;
+      } catch (error) {
+        const reason = error instanceof FaceServiceError ? error.message : 'Face recognition unavailable.';
+        logger.error(`[FIELD ATTENDANCE PUNCH] recognition failed userId=${userId}`, error);
+        return res.status(502).json({ error: `Face recognition unavailable: ${reason}` });
       }
 
-      const faceOk =
-        serverFaceMatchScore !== null &&
-        serverFaceMatchScore !== undefined &&
-        serverFaceMatchScore >= 0.6;
+      const faceOk = matched && faceMatchScore !== null && faceMatchScore >= 0.6;
 
       const debugParts: string[] = [];
-      if (challenge) debugParts.push(`challenge=${challenge}`);
-      if (serverFaceMatchScore !== null) debugParts.push(`faceScore=${serverFaceMatchScore.toFixed(3)}`);
-      if (serverLivenessPassed) debugParts.push('liveness=passed');
-      else debugParts.push('liveness=failed');
-      if (gpsLat !== null && gpsLat !== undefined) {
-        debugParts.push(`gps=${gpsLat.toFixed(4)},${gpsLng.toFixed(4)}`);
-      }
+      if (faceMatchScore !== null) debugParts.push(`faceScore=${faceMatchScore.toFixed(3)}`);
+      debugParts.push('liveness=passed');
+      debugParts.push(`blinks=${liveness.evidence?.blinks.length ?? 0}`);
+      if (hasGps) debugParts.push(`gps=${Number(gpsLat).toFixed(4)},${Number(gpsLng).toFixed(4)}`);
       debugParts.push(`withinRadius=${withinRadius}`);
       const finalDebugInfo = [debugInfo, debugParts.join(' | ')].filter(Boolean).join('; ');
 
-      const verified =
-        faceOk && serverLivenessPassed && (withinRadius || !gpsLat) ? 1 : 0;
+      const verified = faceOk && (withinRadius || !hasGps) ? 1 : 0;
 
       const result = await db.run(
         'INSERT INTO field_attendance_logs (name, userId, ioTime, method, status, gpsLat, gpsLng, faceMatchScore, faceMatchConfidence, photoUrl, verified, withinRadius, distanceMeters, debugInfo) VALUES (?, ?, CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
@@ -346,11 +306,11 @@ router.post(
           userId,
           method,
           status,
-          gpsLat ?? null,
-          gpsLng ?? null,
-          serverFaceMatchScore ?? null,
-          serverFaceMatchScore !== null ? serverFaceMatchScore.toFixed(3) : null,
-          photoUrl ?? null,
+          hasGps ? Number(gpsLat) : null,
+          hasGps ? Number(gpsLng) : null,
+          faceMatchScore,
+          faceMatchScore !== null ? faceMatchScore.toFixed(3) : null,
+          null,
           verified,
           withinRadius ? 1 : 0,
           distanceMeters ?? null,
@@ -359,7 +319,7 @@ router.post(
       );
 
       logger.info(
-        `[FIELD ATTENDANCE PUNCH] userId=${userId} name=${name} status=${status} verified=${verified === 1} withinRadius=${withinRadius} faceScore=${serverFaceMatchScore ?? 'null'} liveness=${serverLivenessPassed} distanceMeters=${distanceMeters ?? 'null'}`
+        `[FIELD ATTENDANCE PUNCH] userId=${userId} name=${name} status=${status} verified=${verified === 1} matched=${matched} withinRadius=${withinRadius} faceScore=${faceMatchScore ?? 'null'} distanceMeters=${distanceMeters ?? 'null'}`
       );
 
       res.json({
@@ -369,8 +329,8 @@ router.post(
         withinRadius,
         matchedSettingId,
         distanceMeters,
-        faceMatchScore: serverFaceMatchScore,
-        livenessPassed: serverLivenessPassed,
+        faceMatchScore,
+        livenessPassed: true,
         debugInfo: finalDebugInfo,
       });
     } catch (error) {
@@ -432,9 +392,10 @@ router.get(
         photoUrl: string;
         descriptor: string;
         createdAt: string;
-      }>('SELECT id, userId, photoUrl, descriptor, createdAt FROM field_attendance_face_references WHERE userId = ? ORDER BY createdAt DESC', [
-        userId,
-      ]);
+      }>(
+        'SELECT id, userId, photoUrl, descriptor, createdAt FROM field_attendance_face_references WHERE userId = ? ORDER BY createdAt DESC',
+        [userId]
+      );
 
       const result: FieldAttendanceFaceReference[] = references.map((r) => ({
         id: r.id,
@@ -457,10 +418,7 @@ router.post(
   '/face-reference',
   authenticateToken,
   faceRefUpload.single('photo'),
-  async (
-    req: ApiAuthRequest<UploadFaceReferenceRequestBody>,
-    res: ApiResponse<UploadFaceReferenceResponse>
-  ) => {
+  async (req: ApiAuthRequest<UploadFaceReferenceRequestBody>, res: ApiResponse<UploadFaceReferenceResponse>) => {
     if (req.user?.role !== 'it') {
       return res.status(403).json({ error: 'Forbidden. IT role required.' });
     }
@@ -540,31 +498,27 @@ router.post(
 );
 
 // DELETE /api/field/attendance/settings/:id
-router.delete(
-  '/settings/:id',
-  authenticateToken,
-  async (req: AuthRequest, res: ApiResponse<{ success: boolean }>) => {
-    if (req.user?.role !== 'it') {
-      return res.status(403).json({ error: 'Forbidden. IT role required.' });
-    }
-
-    const id = parseInt(String(req.params.id), 10);
-    if (isNaN(id)) {
-      return res.status(400).json({ error: 'Invalid setting ID.' });
-    }
-
-    try {
-      const db = getDb();
-      const result = await db.run('DELETE FROM field_attendance_settings WHERE id = ?', [id]);
-      if (result.changes === 0) {
-        return res.status(404).json({ error: 'Setting not found.' });
-      }
-      res.json({ success: true });
-    } catch (error) {
-      logger.error('Failed to delete field attendance setting:', error);
-      res.status(500).json({ error: 'Failed to delete field attendance setting.' });
-    }
+router.delete('/settings/:id', authenticateToken, async (req: AuthRequest, res: ApiResponse<{ success: boolean }>) => {
+  if (req.user?.role !== 'it') {
+    return res.status(403).json({ error: 'Forbidden. IT role required.' });
   }
-);
+
+  const id = parseInt(String(req.params.id), 10);
+  if (isNaN(id)) {
+    return res.status(400).json({ error: 'Invalid setting ID.' });
+  }
+
+  try {
+    const db = getDb();
+    const result = await db.run('DELETE FROM field_attendance_settings WHERE id = ?', [id]);
+    if (result.changes === 0) {
+      return res.status(404).json({ error: 'Setting not found.' });
+    }
+    res.json({ success: true });
+  } catch (error) {
+    logger.error('Failed to delete field attendance setting:', error);
+    res.status(500).json({ error: 'Failed to delete field attendance setting.' });
+  }
+});
 
 export default router;

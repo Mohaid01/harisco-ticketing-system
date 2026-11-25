@@ -1,3 +1,4 @@
+import compression from 'compression';
 import cors from 'cors';
 import 'dotenv/config';
 import express, { NextFunction, Request, Response } from 'express';
@@ -15,6 +16,7 @@ import attendanceRouter from './routes/attendance.ts';
 import authRouter from './routes/auth.ts';
 import cvGeneratorRouter from './routes/cv-generator.ts';
 import externalUsersRouter from './routes/external-users.ts';
+import faceRecognitionRouter from './routes/face-recognition.ts';
 import factoryRouter from './routes/factory.ts';
 import fieldAttendanceRouter from './routes/field-attendance.ts';
 import fieldUsersRouter from './routes/field-users.ts';
@@ -33,6 +35,9 @@ import logger from './utils/logger.ts';
 import { performanceTiming, requestId } from './utils/middleware.ts';
 
 const app = express();
+
+// Compress responses — the MediaPipe wasm payload is ~14 MB uncompressed.
+app.use(compression());
 
 // Request ID middleware for correlation
 app.use(requestId);
@@ -54,34 +59,21 @@ const __dirname = path.dirname(__filename);
 // Security Headers — keep CSP enabled in all environments; relax directives in dev for Vite HMR
 app.use(
   helmet({
-    contentSecurityPolicy:
-      process.env.NODE_ENV === 'production'
-        ? {
-            directives: {
-              defaultSrc: ["'self'"],
-              scriptSrc: ["'self'"],
-              styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
-              imgSrc: ["'self'", 'data:', 'https:'],
-              connectSrc: ["'self'", 'ws:', 'wss:'],
-              fontSrc: ["'self'", 'https://fonts.gstatic.com'],
-              objectSrc: ["'none'"],
-              mediaSrc: ["'self'"],
-              frameSrc: ["'none'"],
-            },
-          }
-        : {
-            directives: {
-              defaultSrc: ["'self'"],
-              scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", 'http://localhost:5173'],
-              styleSrc: ["'self'", "'unsafe-inline'", 'http://localhost:5173'],
-              imgSrc: ["'self'", 'data:', 'https:', 'http://localhost:5173'],
-              connectSrc: ["'self'", 'http://localhost:5173', 'ws://localhost:5173', 'wss:'],
-              fontSrc: ["'self'", 'data:', 'http://localhost:5173'],
-              objectSrc: ["'none'"],
-              mediaSrc: ["'self'"],
-              frameSrc: ["'none'"],
-            },
-          },
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        // 'wasm-unsafe-eval' is required by MediaPipe to compile its wasm runtime.
+        scriptSrc: ["'self'", "'wasm-unsafe-eval'"],
+        workerSrc: ["'self'", 'blob:'],
+        styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+        imgSrc: ["'self'", 'data:', 'https:'],
+        connectSrc: ["'self'", 'ws:', 'wss:'],
+        fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+        objectSrc: ["'none'"],
+        mediaSrc: ["'self'", 'blob:'],
+        frameSrc: ["'none'"],
+      },
+    },
   })
 );
 
@@ -134,6 +126,7 @@ app.use('/api/external', externalUsersRouter);
 app.use('/api/field', fieldUsersRouter);
 app.use('/api/field/attendance', fieldAttendanceRouter);
 app.use('/api/non-hq', nonHqUsersRouter);
+app.use('/api/face', faceRecognitionRouter);
 
 // Serve uploaded field attendance photos
 app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));

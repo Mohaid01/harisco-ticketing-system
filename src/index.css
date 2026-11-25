@@ -1605,7 +1605,6 @@ h1.page-title {
   justify-content: center;
 }
 
-
 .attendance-camera-video {
   width: 100%;
   height: 100%;
@@ -2096,3 +2095,1098 @@ h1.page-title {
 .spin {
   animation: spin 1s linear infinite;
 }
+
+/* ============================================================
+   Field Attendance - Premium Portal Styling
+   ============================================================ */
+.attendance-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.425rem;
+  margin-bottom: 1.275rem;
+}
+
+.attendance-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: white;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.attendance-subtitle {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* Stepper */
+.attendance-stepper {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin-bottom: 1.275rem;
+  padding: 0 0.2125rem;
+}
+
+.attendance-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3188rem;
+  flex: 1;
+  position: relative;
+}
+
+.attendance-step:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  top: 1.3281rem;
+  left: 50%;
+  right: 50%;
+  height: 0.0531rem;
+  background-color: var(--border-color);
+  z-index: 0;
+}
+
+.attendance-step:first-child::before {
+  left: 50%;
+}
+
+.attendance-step:last-child::before {
+  right: 50%;
+  left: auto;
+}
+
+.attendance-step-connector {
+  flex: 1;
+  height: 0.0531rem;
+  background-color: var(--border-color);
+}
+
+.attendance-step-marker {
+  width: 2.125rem;
+  height: 2.125rem;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+  border: 0.0531rem solid var(--border-color);
+  background-color: var(--bg-tertiary);
+  color: var(--text-muted);
+  z-index: 1;
+  transition: all var(--transition-fast);
+}
+
+.attendance-step-marker.done {
+  background-color: var(--status-closed);
+  border-color: var(--status-closed);
+  color: white;
+}
+
+.attendance-step-marker.active {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+  box-shadow: 0 0 0 0.2125rem var(--color-primary-glow);
+}
+
+.attendance-step-marker.loading {
+  background-color: var(--bg-tertiary);
+  border-color: var(--border-color-hover);
+  color: var(--color-primary);
+}
+
+.attendance-step-marker.failed {
+  background-color: rgba(244, 63, 94, 0.1);
+  border-color: #f43f5e;
+  color: #f43f5e;
+}
+
+.attendance-step-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-align: center;
+  color: var(--text-secondary);
+  transition: color var(--transition-fast);
+}
+
+.attendance-step-label.label-done {
+  color: var(--status-closed);
+}
+
+.attendance-step-label.label-active {
+  color: white;
+}
+
+.attendance-step-label.label-failed {
+  color: #f43f5e;
+}
+
+.attendance-step-label.label-pending {
+  color: var(--text-muted);
+}
+
+/* Main layout */
+.attendance-main {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.275rem;
+  align-items: start;
+  margin-bottom: 1.275rem;
+}
+
+/* Step card */
+.attendance-step-card {
+  background-color: var(--bg-secondary);
+  border: 0.0531rem solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1.275rem;
+  box-shadow: var(--shadow-sm);
+  min-height: 0;
+}
+
+.attendance-step-card.gps {
+  border-color: var(--border-color);
+}
+
+.attendance-step-card.face {
+  border-color: var(--border-color);
+}
+
+.attendance-step-card.done {
+  border-color: var(--status-closed-border);
+}
+
+.attendance-step-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6375rem;
+  margin-bottom: 0.85rem;
+}
+
+.attendance-step-icon {
+  width: 2.3375rem;
+  height: 2.3375rem;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.attendance-step-icon.gps {
+  background-color: rgba(14, 82, 155, 0.15);
+  color: var(--color-primary);
+}
+
+.attendance-step-icon.face {
+  background-color: rgba(6, 182, 212, 0.15);
+  color: var(--status-handover);
+}
+
+.attendance-step-icon.done {
+  background-color: rgba(16, 185, 129, 0.15);
+  color: var(--status-closed);
+}
+
+.attendance-step-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: white;
+  margin: 0;
+}
+
+.attendance-step-desc {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  margin: 0 0 1.0625rem 0;
+  line-height: 1.5;
+}
+
+/* GPS card */
+.attendance-gps-box {
+  border: 0.0531rem solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1.0625rem;
+  background-color: var(--bg-tertiary);
+  margin-bottom: 1.0625rem;
+}
+
+.attendance-gps-box.granted {
+  border-color: var(--status-closed-border);
+  background-color: rgba(16, 185, 129, 0.08);
+}
+
+.attendance-gps-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin: 0 0 0.6375rem 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.attendance-gps-value {
+  display: flex;
+  align-items: center;
+  gap: 0.5313rem;
+  font-size: 0.88rem;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+}
+
+.attendance-gps-dot {
+  width: 0.5313rem;
+  height: 0.5313rem;
+  border-radius: var(--radius-full);
+  background-color: var(--status-closed);
+  box-shadow: 0 0 0.5313rem var(--status-closed);
+}
+
+/* Camera panel */
+.attendance-camera-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  min-height: 0;
+  width: 100%;
+  max-width: 48rem;
+  margin: 0 auto;
+}
+
+.attendance-camera-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background-color: #000;
+  border: 0.0531rem solid var(--border-color);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.attendance-camera-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.attendance-camera-overlay-btn {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+  background-color: var(--color-primary);
+  color: white;
+  border: none;
+  padding: 0.7438rem 1.4875rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.425rem;
+  transition: all var(--transition-fast);
+}
+
+.attendance-camera-overlay-btn:hover {
+  background-color: var(--color-primary-hover);
+  transform: translate(-50%, -50%) scale(1.02);
+}
+
+.attendance-camera-status {
+  position: absolute;
+  top: 0.7438rem;
+  right: 0.7438rem;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 0.3188rem;
+  padding: 0.3188rem 0.7438rem;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.attendance-camera-status.detected {
+  background-color: rgba(16, 185, 129, 0.9);
+  color: white;
+}
+
+.attendance-camera-status.noface {
+  background-color: rgba(245, 158, 11, 0.9);
+  color: white;
+}
+
+.attendance-camera-error {
+  position: absolute;
+  inset: 0;
+  background-color: rgba(244, 63, 94, 0.95);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  font-size: 0.85rem;
+  z-index: 10;
+  text-align: center;
+  border-radius: var(--radius-lg);
+}
+
+/* Liveness card */
+.attendance-liveness-card {
+  border: 0.0531rem solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1.0625rem;
+  background-color: var(--bg-tertiary);
+}
+
+.attendance-liveness-card.passed {
+  border-color: var(--status-closed-border);
+  background-color: rgba(16, 185, 129, 0.08);
+}
+
+.attendance-liveness-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.7438rem;
+}
+
+.attendance-liveness-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.attendance-liveness-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.2125rem 0.5313rem;
+  border-radius: var(--radius-full);
+}
+
+.attendance-liveness-badge.passed {
+  background-color: var(--status-closed-bg);
+  color: var(--status-closed);
+  border: 0.0531rem solid var(--status-closed-border);
+}
+
+.attendance-liveness-badge.failed {
+  background-color: rgba(244, 63, 94, 0.12);
+  color: #f43f5e;
+  border: 0.0531rem solid rgba(244, 63, 94, 0.3);
+}
+
+.attendance-challenge {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: white;
+  text-align: center;
+  margin: 0 0 0.7438rem 0;
+  padding: 0.85rem;
+  border-radius: var(--radius-md);
+  background-color: var(--bg-primary);
+  border: 0.0531rem solid var(--border-color);
+}
+
+.attendance-liveness-hint {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  text-align: center;
+  margin: 0 0 0.7438rem 0;
+}
+
+/* Done card */
+.attendance-done-card {
+  border: 0.0531rem solid var(--status-closed-border);
+  border-radius: var(--radius-lg);
+  padding: 1.7rem;
+  background-color: rgba(16, 185, 129, 0.08);
+  text-align: center;
+  min-height: 22rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.attendance-done-icon {
+  font-size: 3rem;
+  color: var(--status-closed);
+  margin-bottom: 1.0625rem;
+}
+
+.attendance-done-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: white;
+  margin: 0 0 0.425rem 0;
+}
+
+.attendance-done-desc {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* Action bar */
+.attendance-action-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6375rem;
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 0.0531rem solid var(--border-color);
+}
+
+.attendance-action-bar .btn {
+  min-width: 140px;
+}
+
+.attendance-action-bar .btn-primary {
+  min-width: 180px;
+}
+
+/* Punch result */
+.attendance-punch-result {
+  margin-top: 0.85rem;
+  padding: 0.85rem;
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+  background-color: var(--bg-tertiary);
+  border: 0.0531rem solid var(--border-color);
+}
+
+.attendance-punch-alert {
+  margin-top: 0.85rem;
+  padding: 0.85rem;
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.attendance-punch-alert.verified {
+  background-color: rgba(16, 185, 129, 0.12);
+  border: 0.0531rem solid rgba(16, 185, 129, 0.35);
+  color: var(--status-closed);
+}
+
+.attendance-punch-alert.failed {
+  background-color: rgba(244, 63, 94, 0.12);
+  border: 0.0531rem solid rgba(244, 63, 94, 0.35);
+  color: #f43f5e;
+}
+
+/* Error alert */
+.attendance-error {
+  background-color: rgba(244, 63, 94, 0.12);
+  border: 0.0531rem solid rgba(244, 63, 94, 0.3);
+  color: #f43f5e;
+  padding: 0.85rem;
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+  margin-bottom: 1.0625rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5313rem;
+}
+
+/* Notice */
+.attendance-notice {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 0.5313rem;
+  padding: 0.6375rem 0.85rem;
+  background-color: var(--bg-tertiary);
+  border: 0.0531rem solid var(--border-color);
+  border-radius: var(--radius-md);
+}
+
+/* Enrollment card */
+.attendance-enrollment-card {
+  border: 0.0531rem solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1.275rem;
+  background-color: var(--bg-tertiary);
+  text-align: center;
+  margin-bottom: 1.0625rem;
+}
+
+.attendance-enrollment-header {
+  margin-bottom: 1rem;
+}
+
+.attendance-enrollment-header h3 {
+  margin: 0 0 0.425rem 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: white;
+}
+
+.attendance-enrollment-header p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+/* Loader bars */
+.attendance-loader-bar {
+  margin-top: 0.425rem;
+  height: 0.1594rem;
+  background-color: var(--bg-tertiary);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  width: 100%;
+}
+
+.attendance-loader-bar-fill {
+  height: 100%;
+  background-color: var(--color-primary);
+  animation: attendance-pulse 1.5s infinite ease-in-out;
+}
+
+@keyframes attendance-pulse {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* ============================================================
+   iPhone-Style Face ID Overlay
+   ============================================================ */
+.attendance-face-id-container {
+  position: relative;
+  width: 100%;
+  max-width: 48rem;
+  margin: 0 auto 1rem auto;
+}
+
+.attendance-face-id-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background-color: #000;
+  border: 0.0531rem solid var(--border-color);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.attendance-face-id-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 20;
+  transition: all 0.3s ease;
+}
+
+.attendance-face-id-face-outline {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 34%;
+  height: 46%;
+  border: 0.08rem solid rgba(255, 255, 255, 0.5);
+  border-radius: 1.5rem / 1.8rem;
+  box-sizing: border-box;
+}
+
+.attendance-face-id-face-outline.attendance-face-id-positioned {
+  border-color: var(--status-closed);
+  box-shadow: 0 0 1.275rem var(--status-closed);
+}
+
+.attendance-face-id-eye {
+  position: absolute;
+  top: 38%;
+  width: 5%;
+  height: 2%;
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 1rem;
+}
+
+.attendance-face-id-eye.attendance-face-id-eye-left {
+  left: 34%;
+}
+
+.attendance-face-id-eye.attendance-face-id-eye-right {
+  right: 34%;
+}
+
+.attendance-face-id-nose {
+  position: absolute;
+  top: 48%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2%;
+  height: 1.5%;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 0.5rem;
+}
+
+.attendance-face-id-mouth {
+  position: absolute;
+  top: 58%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4%;
+  height: 0.8%;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 0.4rem;
+}
+
+.attendance-face-id-center-dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 0.6rem;
+  height: 0.6rem;
+  background: var(--status-closed);
+  border-radius: 50%;
+  box-shadow: 0 0 0.5313rem var(--status-closed);
+  animation: attendance-pulse-dot 2s infinite;
+}
+
+@keyframes attendance-pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: translate(-50%, -50%) scale(1.3);
+  }
+}
+
+/* Scanning Ring */
+.attendance-scan-ring-container {
+  position: absolute;
+  top: 1.0625rem;
+  right: 1.0625rem;
+  z-index: 25;
+  width: 6rem;
+  height: 6rem;
+}
+
+.attendance-scan-ring {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.attendance-scan-ring-svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.attendance-scan-ring-bg {
+  fill: none;
+}
+
+.attendance-scan-ring-progress {
+  fill: none;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.3s ease;
+}
+
+.attendance-scan-ring-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: white;
+  text-shadow: 0 0 0.5313rem rgba(0, 0, 0, 0.8);
+}
+
+/* Scanning Line - animated horizontal line */
+.attendance-scan-line {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 0.1063rem;
+  background: linear-gradient(90deg, transparent, var(--status-closed), transparent);
+  z-index: 25;
+  animation: attendance-scan-line-move 2s ease-in-out infinite;
+  box-shadow: 0 0 0.5313rem var(--status-closed);
+}
+
+@keyframes attendance-scan-line-move {
+  0% {
+    top: 0%;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    top: 100%;
+    opacity: 0;
+  }
+}
+
+/* Face ID Empty State */
+.attendance-face-id-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5313rem;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  z-index: 5;
+}
+
+/* Face ID Instructions */
+.attendance-face-id-instructions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5313rem;
+  margin-top: 0.5313rem;
+}
+
+.attendance-face-id-step {
+  display: flex;
+  align-items: center;
+  gap: 0.5313rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  padding: 0.425rem 0.85rem;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+}
+
+.attendance-face-id-step.active {
+  color: white;
+  background: rgba(14, 82, 155, 0.2);
+}
+
+.attendance-face-id-step-number {
+  width: 1.275rem;
+  height: 1.275rem;
+  border-radius: 50%;
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.attendance-face-id-step.active .attendance-face-id-step-number {
+  background: var(--status-closed);
+  color: white;
+}
+
+.attendance-face-id-hint {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: center;
+  padding: 0.5313rem;
+  border-radius: var(--radius-md);
+}
+
+.attendance-face-id-hint.success {
+  color: var(--status-closed);
+  background: rgba(16, 185, 129, 0.15);
+  border: 0.0531rem solid var(--status-closed);
+}
+
+.attendance-face-id-hint.error {
+  color: #f43f5e;
+  background: rgba(244, 63, 94, 0.15);
+  border: 0.0531rem solid #f43f5e;
+}
+
+/* ============================================================
+   Register vs Scan views
+   ============================================================ */
+
+.attendance-view-head {
+  margin-bottom: 1.0625rem;
+}
+
+.attendance-view-head h2 {
+  margin: 0 0 0.425rem 0;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.attendance-view-head p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  max-width: 44rem;
+}
+
+.attendance-stepper.compact {
+  margin-bottom: 1.0625rem;
+}
+
+.attendance-identity-line {
+  display: flex;
+  align-items: center;
+  gap: 0.5313rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.5313rem;
+}
+
+.attendance-identity-line strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* ============================================================
+   Face capture (on-device liveness)
+   ============================================================ */
+
+.attendance-capture {
+  display: flex;
+  flex-direction: column;
+  gap: 1.0625rem;
+}
+
+.attendance-capture-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+}
+
+.attendance-capture-head h2 {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.attendance-capture-head p {
+  margin: 0.213rem 0 0 0;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.attendance-capture-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  width: 100%;
+  max-width: 32rem;
+  margin: 0 auto;
+}
+
+.attendance-capture-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background: #000;
+  border: 0.0531rem solid var(--border-color);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.attendance-capture-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.attendance-capture-frame.is-visible .attendance-capture-video {
+  opacity: 1;
+}
+
+.attendance-capture-canvas {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+  left: -9999px;
+  top: 0;
+}
+
+/* Oval guide centred on the frame. */
+.attendance-capture-oval {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 48%;
+  height: 68%;
+  transform: translate(-50%, -50%);
+  border: 0.125rem dashed rgba(255, 255, 255, 0.45);
+  border-radius: 50%;
+  pointer-events: none;
+  box-shadow: 0 0 0 999rem rgba(0, 0, 0, 0.3);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  z-index: 2;
+}
+
+.attendance-capture-oval.is-detected {
+  border-color: rgba(245, 158, 11, 0.75);
+}
+
+.attendance-capture-oval.is-framed {
+  border-style: solid;
+  border-color: rgba(16, 185, 129, 0.9);
+  box-shadow: 0 0 0 999rem rgba(0, 0, 0, 0.25), 0 0 1rem rgba(16, 185, 129, 0.45);
+}
+
+/* Face tracking bounding box overlay */
+.attendance-face-box {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 0.375rem;
+  z-index: 3;
+  transition: all 0.05s ease-out;
+}
+
+.attendance-face-box.unframed {
+  border: 0.125rem solid rgba(245, 158, 11, 0.85);
+  box-shadow: 0 0 0.5rem rgba(245, 158, 11, 0.4);
+}
+
+.attendance-face-box.framed {
+  border: 0.125rem solid rgba(16, 185, 129, 0.95);
+  box-shadow: 0 0 0.75rem rgba(16, 185, 129, 0.5);
+}
+
+.attendance-face-box .face-box-corner {
+  position: absolute;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-color: #fff;
+  border-style: solid;
+}
+.attendance-face-box .face-box-corner.tl { top: -0.125rem; left: -0.125rem; border-width: 0.125rem 0 0 0.125rem; }
+.attendance-face-box .face-box-corner.tr { top: -0.125rem; right: -0.125rem; border-width: 0.125rem 0.125rem 0 0; }
+.attendance-face-box .face-box-corner.bl { bottom: -0.125rem; left: -0.125rem; border-width: 0 0 0.125rem 0.125rem; }
+.attendance-face-box .face-box-corner.br { bottom: -0.125rem; right: -0.125rem; border-width: 0 0.125rem 0.125rem 0; }
+
+.attendance-capture-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.425rem;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.attendance-capture-badge {
+  position: absolute;
+  left: 50%;
+  bottom: 0.85rem;
+  transform: translateX(-50%);
+  padding: 0.3rem 0.7rem;
+  border-radius: 999rem;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.attendance-capture-diag {
+  margin-top: 0.425rem;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.attendance-capture-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.425rem;
+}
+
+.attendance-capture-step {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 999rem;
+  border: 0.0531rem solid var(--border-color);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.attendance-capture-step-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 50%;
+  background: var(--bg-tertiary);
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.attendance-capture-step.step-active {
+  border-color: var(--status-closed);
+  color: var(--text-primary);
+}
+
+.attendance-capture-step.step-active .attendance-capture-step-dot {
+  background: var(--status-closed);
+  color: #fff;
+}
+
+.attendance-capture-step.step-done {
+  border-color: rgba(16, 185, 129, 0.4);
+  color: var(--status-closed);
+}
+
+.attendance-capture-progress {
+  width: 100%;
+  height: 0.35rem;
+  border-radius: 999rem;
+  background: var(--bg-tertiary);
+  overflow: hidden;
+}
+
+.attendance-capture-progress-fill {
+  height: 100%;
+  background: var(--status-closed);
+  transition: width 0.15s linear;
+}
+
+/* Notice Board Announcement Styling */

@@ -1,4 +1,3 @@
-import * as faceapi from 'face-api.js';
 import { Camera, CheckCircle, Loader, XCircle } from 'lucide-react';
 import React, { startTransition, useCallback, useEffect, useRef, useState } from 'react';
 
@@ -43,78 +42,56 @@ type PunchResult = {
   debugInfo: string | null;
 };
 
+type AttendanceMode = 'register' | 'scan';
+
 interface FieldAttendanceProps {
   currentUser: { id: string; name: string; role: string };
   token: string;
 }
 
-const CHALLENGES = ['blink', 'turn_left', 'turn_right', 'smile'] as const;
-type Challenge = (typeof CHALLENGES)[number];
-
-const challengeLabel: Record<Challenge, string> = {
-  blink: 'Blink your eyes',
-  turn_left: 'Turn your head left',
-  turn_right: 'Turn your head right',
-  smile: 'Smile',
-};
-
-type Step = 'gps' | 'face' | 'face-scan' | 'done';
-
-const STEPS: { id: Step; label: string }[] = [
+const STEPS: { id: 'gps' | 'face' | 'done'; label: string }[] = [
   { id: 'gps', label: 'GPS Location' },
-  { id: 'face', label: 'Liveness Verification' },
-  { id: 'face-scan', label: 'Face Recognition Scan' },
-  { id: 'done', label: 'Attendance Marked' },
+  { id: 'face', label: 'Face Verification' },
+  { id: 'done', label: 'Attendance Logged' },
 ];
 
+const jsonHeaders = (token: string) => ({
+  Authorization: `Bearer ${token}`,
+});
+
+const readError = async (res: Response, fallback: string): Promise<string> => {
+  const data = (await res.json().catch(() => null)) as { error?: string } | null;
+  return data?.error || fallback;
+};
+
 export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, token }) => {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const overlayRef = useRef<HTMLCanvasElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const animationFrameRef = useRef<number>(0);
-
-  // Refs that mirror state so the rAF loop never sees stale closures
-  const faceModelsLoadedRef = useRef(false);
-  const livenessStageRef = useRef<'idle' | 'ready' | 'verifying' | 'passed' | 'failed'>('idle');
-  const challengeRef = useRef<Challenge | null>(null);
-  const faceDescriptorRef = useRef<number[] | null>(null);
-  const challengeSamplesRef = useRef<number[]>([]);
-
   const [logs, setLogs] = useState<FieldAttendanceLog[]>([]);
   const [settings, setSettings] = useState<FieldAttendanceSetting[]>([]);
-  const [fieldUsers, setFieldUsers] = useState<{ id: string; username: string }[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [settingsLoading, setSettingsLoading] = useState<boolean>(true);
   const [punchResult, setPunchResult] = useState<PunchResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
 
-  const [punchUserId, setPunchUserId] = useState(currentUser.id);
   const [punchStatus, setPunchStatus] = useState('Check-In');
-  const [step, setStep] = useState<Step>('gps');
+  const [mode, setMode] = useState<AttendanceMode | null>(null);
+  const [step, setStep] = useState<'gps' | 'face' | 'done'>('gps');
+  const [hasRegisteredFace, setHasRegisteredFace] = useState<boolean | null>(null);
 
   const [punchGpsLat, setPunchGpsLat] = useState<number | null>(null);
   const [punchGpsLng, setPunchGpsLng] = useState<number | null>(null);
   const [geoPermission, setGeoPermission] = useState<'idle' | 'granted' | 'denied' | 'unsupported'>('idle');
   const [geoLoading, setGeoLoading] = useState(false);
 
+  // Enrollment state
   const [cameraActive, setCameraActive] = useState(false);
-  const [cameraLoading, setCameraLoading] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
-  const [faceDetected, setFaceDetected] = useState(false);
-  const [faceDescriptor, setFaceDescriptor] = useState<number[] | null>(null);
-  const [capturedFrame, setCapturedFrame] = useState<string | null>(null);
-  const [faceModelsLoaded, setFaceModelsLoaded] = useState<boolean>(false);
-  const [faceModelsError, setFaceModelsError] = useState<string | null>(null);
+  const [cameraLoading, setCameraLoading] = useState(false);
+  const [capturedFrames, setCapturedFrames] = useState<string[]>([]); // data URLs
 
-  const [challenge, setChallenge] = useState<Challenge | null>(null);
-  const [livenessStage, setLivenessStage] = useState<'idle' | 'ready' | 'verifying' | 'passed' | 'failed'>('idle');
-  const [livenessResult, setLivenessResult] = useState<string | null>(null);
-
-  // Face Recognition Scan step (placeholder - backend validation to be wired later)
-  const [faceScanStage, setFaceScanStage] = useState<'idle' | 'scanning' | 'passed' | 'failed'>('idle');
-  const [faceScanResult, setFaceScanResult] = useState<string | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   const [siteModalOpen, setSiteModalOpen] = useState<boolean>(false);
   const [siteLabel, setSiteLabel] = useState('');
@@ -122,18 +99,10 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
   const [siteCenterLng, setSiteCenterLng] = useState<number | null>(null);
   const [siteRadius, setSiteRadius] = useState<number | null>(50);
 
-  // Keep mirror-refs in sync with state so the rAF loop always has fresh values
-  useEffect(() => { faceModelsLoadedRef.current = faceModelsLoaded; }, [faceModelsLoaded]);
-  useEffect(() => { livenessStageRef.current = livenessStage; }, [livenessStage]);
-  useEffect(() => { challengeRef.current = challenge; }, [challenge]);
-  useEffect(() => { faceDescriptorRef.current = faceDescriptor; }, [faceDescriptor]);
-
   const fetchLogs = useCallback(async () => {
     try {
-      const res = await fetch('/api/field/attendance', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error('Failed to fetch logs');
+      const res = await fetch('/api/field/attendance', { headers: jsonHeaders(token) });
+      if (!res.ok) throw new Error(await readError(res, 'Failed to fetch logs'));
       const data = await res.json();
       startTransition(() => setLogs(data));
     } catch (err) {
@@ -145,10 +114,8 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
 
   const fetchSettings = useCallback(async () => {
     try {
-      const res = await fetch('/api/field/attendance/settings', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error('Failed to fetch settings');
+      const res = await fetch('/api/field/attendance/settings', { headers: jsonHeaders(token) });
+      if (!res.ok) throw new Error(await readError(res, 'Failed to fetch settings'));
       const data = await res.json();
       startTransition(() => setSettings(data));
     } catch (err) {
@@ -158,45 +125,28 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
     }
   }, [token]);
 
-  const fetchFieldUsers = useCallback(async () => {
-    try {
-      const res = await fetch('/api/field/users', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error('Failed to fetch field users');
-      const data = await res.json();
-      const mapped = Array.isArray(data) ? data.map((u: any) => ({ id: u.id, username: u.username || u.name })) : [];
-      startTransition(() => setFieldUsers(mapped));
-    } catch (err) {
-      console.error('Failed to fetch field users:', err);
-    }
-  }, [token]);
-
-  const startCamera = useCallback(async () => {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      setCameraError('Camera API not supported by this browser.');
-      setCameraLoading(false);
-      return;
-    }
+  // ---------- Enrollment camera ----------
+  const startEnrollmentCamera = useCallback(async () => {
     setCameraError(null);
     setCameraLoading(true);
     try {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setCameraError('Camera API not supported by this browser.');
+        setCameraLoading(false);
+        return;
+      }
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
+        audio: false,
       });
       streamRef.current = stream;
       const video = videoRef.current;
       if (video) {
         video.srcObject = stream;
-        video.onplay = () => {
-          setCameraActive(true);
-          setCameraLoading(false);
-        };
         await video.play();
-        // Start the detection loop after play() resolves so we always use the latest
-        // version of the loop (not a stale closure from before models were loaded)
-        startFaceDetectionLoop();
       }
+      setCameraActive(true);
+      setCameraLoading(false);
     } catch (err) {
       setCameraError(err instanceof Error ? err.message : 'Failed to access camera.');
       setCameraActive(false);
@@ -204,27 +154,147 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
     }
   }, []);
 
-  const stopCamera = useCallback(() => {
+  const stopEnrollmentCamera = useCallback(() => {
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current.getTracks().forEach((track: MediaStreamTrack) => track.stop());
       streamRef.current = null;
     }
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
+    const video = videoRef.current;
+    if (video) video.srcObject = null;
+    setCameraActive(false);
+  }, []);
+
+  // ---------- Scan camera ----------
+  const [scanCameraActive, setScanCameraActive] = useState(false);
+  const [scanCameraLoading, setScanCameraLoading] = useState(false);
+  const [scanCameraError, setScanCameraError] = useState<string | null>(null);
+  const [scanStatus, setScanStatus] = useState<'scanning' | 'matched' | 'matched-fail' | 'idle'>('scanning');
+
+  const startScanCamera = useCallback(async () => {
+    setScanCameraError(null);
+    setScanCameraLoading(true);
+    try {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setScanCameraError('Camera API not supported by this browser.');
+        setScanCameraLoading(false);
+        return;
+      }
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
+        audio: false,
+      });
+      streamRef.current = stream;
+      const video = videoRef.current;
+      if (video) {
+        video.srcObject = stream;
+        await video.play();
+      }
+      setScanCameraActive(true);
+      setScanCameraLoading(false);
+    } catch (err) {
+      setScanCameraError(err instanceof Error ? err.message : 'Failed to access camera.');
+      setScanCameraActive(false);
+      setScanCameraLoading(false);
+    }
+  }, []);
+
+  const stopScanCamera = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
     }
     const video = videoRef.current;
-    if (video) {
-      video.srcObject = null;
-    }
-    setCameraActive(false);
-    setFaceDetected(false);
-    setFaceDescriptor(null);
+    if (video) video.srcObject = null;
+    setScanCameraActive(false);
   }, []);
+
+  // Start/stop scan camera when entering/leaving face verification step
+  useEffect(() => {
+    if (mode === 'scan' && step === 'face') {
+      startScanCamera();
+    } else {
+      stopScanCamera();
+    }
+    return () => {
+      stopScanCamera();
+    };
+  }, [mode, step, startScanCamera, stopScanCamera]);
+
+  const dataUrlToBlob = useCallback((dataUrl: string): Blob => {
+    if (!dataUrl || typeof dataUrl !== 'string' || !dataUrl.startsWith('data:')) {
+      throw new Error(`Invalid data URL: expected a data: URL string.`);
+    }
+    const parts = dataUrl.split(';base64,');
+    if (parts.length !== 2) {
+      throw new Error(`Invalid data URL format: missing base64 payload.`);
+    }
+    const contentType = parts[0].split(':')[1] || 'image/jpeg';
+    const raw = window.atob(parts[1]);
+    const rawLength = raw.length;
+    const uInt8Array = new Uint8Array(rawLength);
+    for (let i = 0; i < rawLength; ++i) {
+      uInt8Array[i] = raw.charCodeAt(i);
+    }
+    return new Blob([uInt8Array], { type: contentType });
+  }, []);
+
+  // Auto-scan loop: capture frames and send to Python for face recognition
+  useEffect(() => {
+    if (mode !== 'scan' || step !== 'face' || !scanCameraActive || scanStatus !== 'scanning') return;
+
+    let interval: number;
+
+    const loop = async () => {
+      const video = videoRef.current;
+      if (!video || video.videoWidth === 0 || video.videoHeight === 0) return;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+      const blob = dataUrlToBlob(dataUrl);
+
+      const formData = new FormData();
+      formData.append('file', blob, 'frame.jpg');
+      formData.append('user_id', currentUser.id);
+
+      try {
+        const res = await fetch(`${window.location.origin}/api/face/recognize`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        });
+        if (!res.ok) {
+          // Service error, keep scanning
+          return;
+        }
+        const data = await res.json();
+        if (data.matched && data.user_id === currentUser.id) {
+          setScanStatus('matched');
+        } else {
+          // Face detected but not matched, keep scanning
+        }
+      } catch {
+        // Network error, keep scanning
+      }
+    };
+
+    interval = window.setInterval(loop, 500);
+    loop(); // Run immediately
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [scanCameraActive, scanStatus, currentUser.id, mode, step, dataUrlToBlob]);
 
   const captureFrame = useCallback((): string | null => {
     const video = videoRef.current;
-    const canvas = canvasRef.current;
-    if (!video || !canvas) return null;
+    if (!video || video.videoWidth === 0 || video.videoHeight === 0) return null;
+    const canvas = document.createElement('canvas');
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     const ctx = canvas.getContext('2d');
@@ -233,277 +303,77 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
     return canvas.toDataURL('image/jpeg', 0.85);
   }, []);
 
-  const startFaceDetectionLoop = useCallback(() => {
-    const video = videoRef.current;
-    const overlay = overlayRef.current;
-    if (!video || !overlay) return;
-
-    // Cancel any previous loop before starting a fresh one
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
+  const addCapturedFrame = useCallback(() => {
+    const frame = captureFrame();
+    if (!frame) {
+      setCameraError('Could not capture frame. Try again.');
+      return;
     }
-
-    // Scale canvas coordinates from raw video space → displayed canvas space.
-    // The canvas element is sized to 100%×100% via CSS, so we scale drawing
-    // coordinates by sx/sy so they line up with the rendered video.
-    const drawOverlay = (
-      ovCtx: CanvasRenderingContext2D,
-      detection: faceapi.FaceDetection | null,
-      landmarks: faceapi.FaceLandmarks68 | null,
-      sx: number,
-      sy: number,
-      dw: number,
-      dh: number,
-    ) => {
-      ovCtx.clearRect(0, 0, dw, dh);
-
-      const midX = dw / 2;
-      const midY = dh / 2;
-
-      // Always draw the guide frame so users know where to position their face
-      // even before detection fires – face-shaped rounded rectangle
-      const guideColor = 'rgba(255,255,255,0.45)';
-      ovCtx.save();
-      ovCtx.strokeStyle = guideColor;
-      ovCtx.lineWidth = 2.5;
-      ovCtx.setLineDash([10, 6]);
-
-      // Face-shaped rounded rectangle guide (wider at top, narrower at chin)
-      const gw = dw * 0.28;
-      const gh = dh * 0.42;
-      const gx = midX - gw / 2;
-      const gy = midY - gh / 2;
-      const radius = Math.min(gw, gh) * 0.18;
-
-      ovCtx.beginPath();
-      ovCtx.moveTo(gx + radius, gy);
-      ovCtx.lineTo(gx + gw - radius, gy);
-      ovCtx.quadraticCurveTo(gx + gw, gy, gx + gw, gy + radius);
-      ovCtx.lineTo(gx + gw, gy + gh - radius);
-      ovCtx.quadraticCurveTo(gx + gw, gy + gh, gx + gw - radius, gy + gh);
-      ovCtx.lineTo(gx + radius, gy + gh);
-      ovCtx.quadraticCurveTo(gx, gy + gh, gx, gy + gh - radius);
-      ovCtx.lineTo(gx, gy + radius);
-      ovCtx.quadraticCurveTo(gx, gy, gx + radius, gy);
-      ovCtx.closePath();
-      ovCtx.stroke();
-      ovCtx.setLineDash([]);
-      ovCtx.restore();
-
-      if (!detection) {
-        // "Position face here" label when no face is detected
-        ovCtx.save();
-        ovCtx.font = 'bold 13px system-ui, sans-serif';
-        ovCtx.textAlign = 'center';
-        ovCtx.fillStyle = guideColor;
-        ovCtx.fillText('Position face here', midX, gy - 12);
-        ovCtx.restore();
-
-        // "No face" label
-        ovCtx.save();
-        ovCtx.font = 'bold 15px system-ui, sans-serif';
-        ovCtx.fillStyle = 'rgba(244,63,94,0.9)';
-        ovCtx.textAlign = 'left';
-        ovCtx.fillText('No face detected', 14, 32);
-        ovCtx.restore();
-        return;
-      }
-
-      const box = detection.box;
-      // Scale detection box from video space → canvas display space
-      const sxBox = box.x * sx;
-      const syBox = box.y * sy;
-      const swBox = box.width * sx;
-      const shBox = box.height * sy;
-
-      const faceHeight = shBox / dh;
-      const faceCenterX = (box.x + box.width / 2) * sx;
-      const faceCenterY = (box.y + box.height / 2) * sy;
-      const distFromCenter = Math.sqrt((faceCenterX - midX) ** 2 + (faceCenterY - midY) ** 2);
-      const isGoodSize = faceHeight > 0.18 && faceHeight < 0.6;
-      const isCentered = distFromCenter < dw * 0.12 && isGoodSize;
-      const color = isCentered ? '#10b981' : isGoodSize ? '#f59e0b' : '#f43f5e';
-
-      // Face bounding box
-      ovCtx.save();
-      ovCtx.strokeStyle = color;
-      ovCtx.lineWidth = 3;
-      ovCtx.strokeRect(sxBox, syBox, swBox, shBox);
-
-      // Confidence label
-      ovCtx.font = 'bold 13px system-ui, sans-serif';
-      ovCtx.fillStyle = color;
-      ovCtx.textAlign = 'left';
-      const score = Math.round((detection as unknown as { score: number }).score * 100);
-      ovCtx.fillText(`Face ${score}%`, sxBox + 2, syBox > 16 ? syBox - 6 : syBox + shBox + 16);
-      ovCtx.restore();
-
-      // Landmark dots (scaled)
-      if (landmarks) {
-        ovCtx.save();
-        ovCtx.fillStyle = isCentered ? '#10b981' : 'rgba(255,255,255,0.7)';
-        for (const p of landmarks.positions) {
-          ovCtx.beginPath();
-          ovCtx.arc(p.x * sx, p.y * sy, 2, 0, Math.PI * 2);
-          ovCtx.fill();
-        }
-        ovCtx.restore();
-      }
-
-      // Update guide frame colour to reflect alignment
-      ovCtx.save();
-      ovCtx.strokeStyle = isCentered ? 'rgba(16,185,129,0.85)' : 'rgba(255,255,255,0.4)';
-      ovCtx.lineWidth = 2.5;
-      ovCtx.setLineDash([10, 6]);
-      ovCtx.beginPath();
-      ovCtx.moveTo(gx + radius, gy);
-      ovCtx.lineTo(gx + gw - radius, gy);
-      ovCtx.quadraticCurveTo(gx + gw, gy, gx + gw, gy + radius);
-      ovCtx.lineTo(gx + gw, gy + gh - radius);
-      ovCtx.quadraticCurveTo(gx + gw, gy + gh, gx + gw - radius, gy + gh);
-      ovCtx.lineTo(gx + radius, gy + gh);
-      ovCtx.quadraticCurveTo(gx, gy + gh, gx, gy + gh - radius);
-      ovCtx.lineTo(gx, gy + radius);
-      ovCtx.quadraticCurveTo(gx, gy, gx + radius, gy);
-      ovCtx.closePath();
-      ovCtx.stroke();
-      ovCtx.setLineDash([]);
-      ovCtx.restore();
-
-      // Status text above guide frame
-      ovCtx.save();
-      ovCtx.font = 'bold 13px system-ui, sans-serif';
-      ovCtx.textAlign = 'center';
-      ovCtx.fillStyle = isCentered ? '#10b981' : isGoodSize ? '#f59e0b' : 'rgba(244,63,94,0.9)';
-      let hint = 'Move closer';
-      if (faceHeight > 0.6) hint = 'Move back a little';
-      else if (isGoodSize && !isCentered) hint = 'Centre your face';
-      else if (isCentered) hint = '✓ Perfect!';
-      ovCtx.fillText(hint, midX, gy - 12);
-      ovCtx.restore();
-    };
-
-    let verifying = false;
-
-    const tick = async () => {
-      if (
-        video.readyState >= 2 &&
-        faceModelsLoadedRef.current &&
-        video.videoWidth > 0 &&
-        video.videoHeight > 0
-      ) {
-        const ovCtx = overlay.getContext('2d');
-        const vw = video.videoWidth;
-        const vh = video.videoHeight;
-
-        // Match canvas intrinsic size to CSS display size so drawings align
-        const rect = video.getBoundingClientRect();
-        const dpr = window.devicePixelRatio || 1;
-        const dw = Math.max(rect.width * dpr, 1);
-        const dh = Math.max(rect.height * dpr, 1);
-        if (overlay.width !== dw) overlay.width = dw;
-        if (overlay.height !== dh) overlay.height = dh;
-
-        // Scale factors: video pixel space → canvas display pixel space
-        const sx = dw / vw;
-        const sy = dh / vh;
-
-        try {
-          // Single pass: detect + landmarks + descriptor together (no double inference)
-          const result = await faceapi
-            .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.3 }))
-            .withFaceLandmarks()
-            .withFaceDescriptor();
-
-          if (result) {
-            const descriptor = Array.from(result.descriptor);
-            setFaceDetected(true);
-            setFaceDescriptor(descriptor);
-            faceDescriptorRef.current = descriptor;
-
-            if (ovCtx) drawOverlay(ovCtx, result.detection, result.landmarks, sx, sy, dw, dh);
-
-            // Landmark-based liveness detection (descriptor distance is expression-invariant,
-            // so it fails for blink/smile. Use EAR/MAR/head-pose from landmarks instead.)
-            if (!verifying && livenessStageRef.current === 'ready' && result.landmarks) {
-              const landmarks = result.landmarks.positions;
-
-              // Helper: Euclidean distance between two points
-              const dist = (a: { x: number; y: number }, b: { x: number; y: number }) =>
-                Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
-
-              // Face width (eye corner to eye corner) for normalization
-              const faceWidth = dist(landmarks[36], landmarks[45]) || 1;
-
-              // ---- Blink: Eye Aspect Ratio (EAR) ----
-              // Left eye: 36-41, Right eye: 42-47
-              const earLeft =
-                (dist(landmarks[37], landmarks[41]) + dist(landmarks[38], landmarks[40])) /
-                (2 * dist(landmarks[36], landmarks[39]));
-              const earRight =
-                (dist(landmarks[43], landmarks[47]) + dist(landmarks[44], landmarks[46])) /
-                (2 * dist(landmarks[42], landmarks[45]));
-              const ear = (earLeft + earRight) / 2;
-              const blinked = ear < 0.22; // eyes closed
-
-              // ---- Smile: Mouth Aspect Ratio (MAR) ----
-              // Outer lip: 48-67, use 51/57 (top/bottom center) and 48/54 (corners)
-              const mar = dist(landmarks[51], landmarks[57]) / dist(landmarks[48], landmarks[54]);
-              const smiled = mar > 0.35; // mouth open/smiling
-
-              // ---- Head turn: nose tip (30) vs face center ----
-              const nose = landmarks[30];
-              const faceCenterX = (landmarks[36].x + landmarks[45].x) / 2;
-              const noseOffset = Math.abs(nose.x - faceCenterX) / faceWidth;
-              const turned = noseOffset > 0.12; // nose significantly off-center
-
-              // Challenge-specific check
-              let passed = false;
-              if (challengeRef.current === 'blink') passed = blinked;
-              else if (challengeRef.current === 'smile') passed = smiled;
-              else if (challengeRef.current === 'turn_left' || challengeRef.current === 'turn_right') passed = turned;
-              else passed = blinked || smiled || turned;
-
-              // Keep rolling samples for robustness (blink is fleeting)
-              const samples = challengeSamplesRef.current;
-              samples.push(passed ? 1 : 0);
-              if (samples.length > 20) samples.shift();
-              challengeSamplesRef.current = samples;
-
-              const passCount = samples.filter((s) => s === 1).length;
-              // Trigger if 3+ frames in the last 20 showed the action
-              if (passCount >= 3 && samples.length >= 10) {
-                verifying = true;
-                setLivenessStage('verifying');
-                setLivenessResult(null);
-                await new Promise((r) => setTimeout(r, 400));
-                const frame = captureFrame();
-                if (frame) {
-                  setCapturedFrame(frame);
-                  setLivenessStage('passed');
-                  setLivenessResult('Liveness verified — ready to mark attendance');
-                }
-              }
-            }
-          } else {
-            // Face temporarily out of frame during challenge — keep baseline and samples
-            setFaceDetected(false);
-            setFaceDescriptor(null);
-            faceDescriptorRef.current = null;
-            if (ovCtx) drawOverlay(ovCtx, null, null, sx, sy, dw, dh);
-          }
-        } catch {
-          // silently continue on inference errors
-        }
-      }
-      animationFrameRef.current = requestAnimationFrame(tick);
-    };
-    tick();
-    // No state/closure deps — the loop reads everything through refs
+    setCapturedFrames((prev) => [...prev, frame]);
+    setCameraError(null);
   }, [captureFrame]);
 
+  const removeCapturedFrame = useCallback((index: number) => {
+    setCapturedFrames((prev) => prev.filter((_, i) => i !== index));
+  }, []);
 
+  const clearCapturedFrames = useCallback(() => {
+    setCapturedFrames([]);
+  }, []);
 
+  // ---------- Enrollment submission ----------
+  const submitEnrollment = useCallback(async () => {
+    if (capturedFrames.length === 0) {
+      setCameraError('Capture at least one photo first.');
+      return;
+    }
+    setSubmitting(true);
+    setError(null);
+    setNotice(null);
+
+    let stored = 0;
+    try {
+      for (let i = 0; i < capturedFrames.length; i++) {
+        const dataUrl = capturedFrames[i];
+        if (typeof dataUrl !== 'string' || !dataUrl.startsWith('data:')) {
+          throw new Error(`Captured photo ${i + 1} is not a valid image data URL.`);
+        }
+        const blob = dataUrlToBlob(dataUrl);
+        if (!(blob instanceof Blob)) throw new Error('Captured photo is not a valid Blob instance.');
+        const formData = new FormData();
+        formData.append('userId', currentUser.id);
+        if (!(blob instanceof Blob)) throw new Error('Blob became invalid before image append.');
+        formData.append('image', blob, `face_${i + 1}.jpg`);
+
+        const res = await fetch('/api/face/register', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        });
+        if (!res.ok) {
+          throw new Error(await readError(res, `Enrollment failed on photo ${i + 1}.`));
+        }
+        stored += 1;
+        setNotice(`Enrolled photo ${stored} of ${capturedFrames.length}.`);
+      }
+
+      setNotice(`Enrollment complete. ${stored} template${stored === 1 ? '' : 's'} stored for ${currentUser.name}.`);
+      setHasRegisteredFace(true);
+      setCapturedFrames([]);
+      stopEnrollmentCamera();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Enrollment failed.');
+      setNotice(
+        stored > 0
+          ? `${stored} of ${capturedFrames.length} photos stored before the error. Capture more to complete.`
+          : null
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  }, [capturedFrames, currentUser.id, currentUser.name, token, stopEnrollmentCamera]);
+
+  // ---------- Geolocation ----------
   const requestGeolocation = useCallback(() => {
     if (!navigator.geolocation) {
       setGeoPermission('unsupported');
@@ -519,259 +389,144 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
       setError('Browser GPS blocked on IP over HTTP. Use HTTPS or localhost.');
       return;
     }
-    if ('permissions' in navigator) {
-      navigator.permissions.query({ name: 'geolocation' }).then((result) => {
-        if (result.state === 'denied') {
-          setGeoPermission('denied');
-          setError('Location permission previously denied. Enable it in browser site settings.');
-          return;
-        }
-        if (result.state === 'granted') setGeoPermission('granted');
-        doRequest();
-      });
-    } else {
-      doRequest();
-    }
 
-    function doRequest() {
-      setGeoLoading(true);
-      setGeoPermission('idle');
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setGeoLoading(false);
-          setGeoPermission('granted');
-          setPunchGpsLat(pos.coords.latitude);
-          setPunchGpsLng(pos.coords.longitude);
-          setError(null);
-        },
-        (err) => {
-          setGeoLoading(false);
-          setGeoPermission('denied');
-          setError(`GPS ${err.code === 1 ? 'denied' : err.code === 2 ? 'unavailable' : 'timed out'}.`);
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-      );
-    }
+    setGeoLoading(true);
+    setGeoPermission('idle');
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setGeoLoading(false);
+        setGeoPermission('granted');
+        setPunchGpsLat(pos.coords.latitude);
+        setPunchGpsLng(pos.coords.longitude);
+        setError(null);
+      },
+      (err) => {
+        setGeoLoading(false);
+        setGeoPermission('denied');
+        setError(`GPS ${err.code === 1 ? 'denied' : err.code === 2 ? 'unavailable' : 'timed out'}.`);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
   }, []);
 
-  const nextChallenge = useCallback(() => {
-    const c = CHALLENGES[Math.floor(Math.random() * CHALLENGES.length)];
-    setChallenge(c);
-    challengeRef.current = c;
-    challengeSamplesRef.current = [];
-    setLivenessStage('ready');
-    livenessStageRef.current = 'ready';
-    setLivenessResult(null);
-    setCapturedFrame(null);
-  }, []);
-
-
-  const handleStartLiveness = useCallback(async () => {
-    if (!cameraActive) {
-      await startCamera();
-      nextChallenge();
-      return;
-    }
-    // If already in ready state with a challenge, clicking again = retry with new challenge
-    if (livenessStage === 'ready' && challenge) {
-      nextChallenge();
-      return;
-    }
-    if (!challenge) {
-      nextChallenge();
-      return;
-    }
-    // Manual trigger: capture frame and mark as verified
-    const frame = captureFrame();
-    if (frame) {
-      setCapturedFrame(frame);
-      setLivenessStage('verifying');
-      setLivenessResult(null);
-      await new Promise((r) => setTimeout(r, 400));
-      setLivenessStage('passed');
-      setLivenessResult('Liveness verified — ready to mark attendance');
-    }
-  }, [cameraActive, startCamera, nextChallenge, challenge, livenessStage, captureFrame]);
-
-  const handleMarkAttendance = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // ---------- Punch ----------
+  const handleMarkAttendance = useCallback(async () => {
     setError(null);
     setPunchResult(null);
     setSubmitting(true);
-
-    if (!challenge) {
-      setSubmitting(false);
-      setError('Please complete the liveness challenge first.');
-      return;
-    }
-    if (!capturedFrame) {
-      setSubmitting(false);
-      setError('No face frame captured. Please use the camera.');
-      return;
-    }
-    if (!faceDescriptor) {
-      setSubmitting(false);
-      setError('No face detected. Please position your face in the camera.');
-      return;
-    }
-    if (livenessStage !== 'passed') {
-      setSubmitting(false);
-      setError('Liveness challenge not passed.');
-      return;
-    }
-    if (punchGpsLat === null || punchGpsLng === null) {
-      setSubmitting(false);
-      setError('GPS location not captured. Please allow location access.');
-      return;
-    }
-
-    const selectedUser = fieldUsers.find((u) => u.id === punchUserId);
-    const resolvedName = selectedUser ? selectedUser.username : punchUserId;
-
-    const frameBlob = await (await fetch(capturedFrame)).blob();
-    const formData = new FormData();
-    formData.append('frame', frameBlob, 'frame.jpg');
-    formData.append('userId', punchUserId);
-    formData.append('name', resolvedName);
-    formData.append('method', 'Facial');
-    formData.append('status', punchStatus);
-    formData.append('gpsLat', String(punchGpsLat));
-    formData.append('gpsLng', String(punchGpsLng));
-    formData.append('debugInfo', '');
-    formData.append('faceDescriptor', JSON.stringify(faceDescriptor));
-    formData.append('livenessPassed', String(true));
-    formData.append('challenge', challenge);
-
     try {
+      // Capture a frame for punch verification
+      const video = videoRef.current;
+      if (!video || video.videoWidth === 0 || video.videoHeight === 0) {
+        throw new Error('Camera not available for face verification.');
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('Canvas context unavailable.');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob((b) => {
+          if (b instanceof Blob) resolve(b);
+          else reject(new Error('Canvas did not produce a valid Blob.'));
+        }, 'image/jpeg', 0.85);
+      });
+
+      const formData = new FormData();
+      if (!(blob instanceof Blob)) throw new Error('Captured frame is not a Blob.');
+      formData.append('frame', blob, 'frame.jpg');
+      formData.append('user_id', currentUser.id);
+      formData.append('method', 'Facial');
+      formData.append('status', punchStatus);
+      if (punchGpsLat !== null && punchGpsLng !== null) {
+        formData.append('gpsLat', String(punchGpsLat));
+        formData.append('gpsLng', String(punchGpsLng));
+      }
+      formData.append('debugInfo', 'Face verification via microservice');
+
       const res = await fetch('/api/field/attendance/punch', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
       if (!res.ok) {
-        const errData = await res.json().catch(() => ({ error: 'Unknown error' }));
-        throw new Error(errData.error || 'Failed to mark attendance');
+        throw new Error(await readError(res, 'Failed to mark attendance'));
       }
-      const result = await res.json();
+      const result: PunchResult = await res.json();
       setPunchResult(result);
       setStep('done');
-      setLivenessStage('idle');
-      setChallenge(null);
-      setCapturedFrame(null);
-      setFaceDescriptor(null);
       await fetchLogs();
-      setSubmitting(false);
     } catch (err) {
-      setSubmitting(false);
       setError(err instanceof Error ? err.message : 'Failed to mark attendance');
+    } finally {
+      setSubmitting(false);
     }
-  };
+  }, [punchStatus, punchGpsLat, punchGpsLng, token, fetchLogs]);
 
-  const handleSubmitSite = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    try {
-      const res = await fetch('/api/field/attendance/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          label: siteLabel,
-          centerLat: siteCenterLat,
-          centerLng: siteCenterLng,
-          radiusMeters: siteRadius,
-          isActive: 1,
-        }),
-      });
-      if (!res.ok) throw new Error('Failed to create site');
-      await res.json();
-      setSiteLabel('');
-      setSiteCenterLat(null);
-      setSiteCenterLng(null);
-      setSiteRadius(50);
-      setSiteModalOpen(false);
-      await fetchSettings();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create site');
-    }
-  };
-
-  const handleDeleteSetting = async (id: number) => {
-    if (!window.confirm('Delete this site?')) return;
-    try {
-      const res = await fetch(`/api/field/attendance/settings/${id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error('Failed to delete site');
-      await fetchSettings();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete site');
-    }
-  };
-
+  // ---------- Lifecycle ----------
   useEffect(() => {
     fetchLogs();
     fetchSettings();
-    fetchFieldUsers();
-    loadFaceModels();
-  }, [token, fetchLogs, fetchSettings, fetchFieldUsers]);
+  }, [token, fetchLogs, fetchSettings]);
 
-  const loadFaceModels = useCallback(async () => {
-    try {
-      await Promise.all([
-        faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
-        faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
-        faceapi.nets.faceRecognitionNet.loadFromUri('/models'),
-      ]);
-      setFaceModelsLoaded(true);
-      setFaceModelsError(null);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Unknown error loading face models';
-      console.warn('Face models failed to load:', msg);
-      setFaceModelsError(`Face detection unavailable: ${msg}. Place model files in /public/models/`);
-      setFaceModelsLoaded(false);
-    }
-  }, []);
+  // Registration state decides which view the screen shows.
+  useEffect(() => {
+    let active = true;
+    setMode(null);
+    setHasRegisteredFace(null);
+    setStep('gps');
+    setPunchResult(null);
+    setError(null);
+    setNotice(null);
+    (async () => {
+      try {
+        const res = await fetch(`/api/face/references/${currentUser.id}`, { headers: jsonHeaders(token) });
+        if (!active) return;
+        if (res.ok) {
+          const data: { total_samples: number } = await res.json();
+          setHasRegisteredFace(data.total_samples > 0);
+        } else {
+          setHasRegisteredFace(false);
+        }
+      } catch {
+        if (active) setHasRegisteredFace(false);
+      }
+    })();
+    return () => {
+      active = false;
+      stopEnrollmentCamera();
+    };
+  }, [currentUser.id, token, stopEnrollmentCamera]);
 
   useEffect(() => {
-    return () => stopCamera();
-  }, [stopCamera]);
+    if (hasRegisteredFace === null) return;
+    setMode(hasRegisteredFace ? 'scan' : 'register');
+  }, [hasRegisteredFace]);
 
-  const getStepStatus = (id: Step): 'pending' | 'loading' | 'done' | 'failed' => {
-    const s = step as unknown as string;
+  // Cleanup camera on unmount
+  useEffect(() => {
+    return () => {
+      stopEnrollmentCamera();
+    };
+  }, [stopEnrollmentCamera]);
 
-    if (s === 'face' && id === 'gps') return 'done';
-    if (s === 'face-scan' && (id === 'gps' || id === 'face')) return 'done';
-    if (s === 'done' && (id === 'gps' || id === 'face' || id === 'face-scan')) return 'done';
-
-    if (s === id) {
-      if (id === 'gps') {
-        if (geoPermission === 'granted') return 'done';
-        if (geoPermission === 'denied') return 'failed';
-        return 'loading';
-      }
-      if (id === 'face') {
-        if (livenessStage === 'passed') return 'done';
-        if (livenessStage === 'failed') return 'failed';
-        return 'loading';
-      }
-      if (id === 'face-scan') {
-        if (faceScanStage === 'passed') return 'done';
-        if (faceScanStage === 'failed') return 'failed';
-        return 'loading';
-      }
-      return 'loading';
-    }
-
-    return 'pending';
+  // ---------- Step status ----------
+  const isStepDone = (id: 'gps' | 'face' | 'done') => {
+    if (step === 'done') return true;
+    if (step === 'face' && id === 'gps') return true;
+    return false;
   };
+  const isStepActive = (id: 'gps' | 'face' | 'done') => step === id;
 
   return (
     <div className="page-body">
       <div className="attendance-header">
         <h1 className="attendance-title">Field Attendance</h1>
         <p className="attendance-subtitle">
-          Secure field attendance portal. Verify location &rarr; Complete face verification &rarr; Mark attendance.
+          {mode === 'register'
+            ? 'Scan your face to enroll, then punch attendance from the site.'
+            : 'Secure field attendance portal. Verify location → Prove identity → Log punch.'}
         </p>
       </div>
 
@@ -782,655 +537,431 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
         </div>
       )}
 
-      {/* Stepper */}
-      <div className="attendance-stepper">
-        {STEPS.map((s, i) => {
-          const status = getStepStatus(s.id);
-          return (
-            <React.Fragment key={s.id}>
-              <div className="attendance-step">
-                <div className={`attendance-step-marker ${status}`}>
-                  {status === 'done' ? (
-                    <CheckCircle size={14} strokeWidth={2} />
-                  ) : status === 'failed' ? (
-                    <XCircle size={14} strokeWidth={2} />
-                  ) : status === 'loading' ? (
-                    <Loader size={14} strokeWidth={2} />
-                  ) : (
-                    i + 1
-                  )}
-                </div>
-                <span className={`attendance-step-label label-${status}`}>{s.label}</span>
-              </div>
-              {i < STEPS.length - 1 && (
-                <span style={{ flex: 1, height: 0.0531, backgroundColor: 'var(--border-color)' }} />
-              )}
-            </React.Fragment>
-          );
-        })}
-      </div>
+      {notice && !error && <div className="attendance-notice">{notice}</div>}
 
-      {/* Main content */}
       <div className="attendance-main">
-        {/* Left: Step content */}
         <div className="attendance-step-card">
-          {step === 'gps' && (
-            <>
-              <div className="attendance-step-header">
-                <div className="attendance-step-icon gps">
-                  <Camera size={20} />
-                </div>
-                <div>
-                  <h2 className="attendance-step-title">GPS Location Permission</h2>
-                  <p className="attendance-step-desc">
-                    Allow location access so we can verify you are within the approved site radius.
-                  </p>
-                </div>
-              </div>
-
-              {/* GPS response section */}
-              <div className={`attendance-gps-box ${geoPermission === 'granted' ? 'granted' : ''}`}>
-                <p className="attendance-gps-label">Location Access</p>
-                {geoPermission === 'idle' && (
-                  <div className="attendance-notice">
-                    Location has not been captured yet. Click "Allow Location Access" below to request permission.
-                  </div>
-                )}
-                {geoPermission === 'granted' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 0.5313 }}>
-                    <div className="attendance-gps-value">
-                      <span className="attendance-gps-dot" />
-                      <span>
-                        GPS captured &mdash; {punchGpsLat?.toFixed(6)}, {punchGpsLng?.toFixed(6)}
-                      </span>
-                    </div>
-                  </div>
-                )}
-                {geoPermission === 'denied' && (
-                  <div style={{ color: '#f43f5e', fontSize: '0.82rem' }}>
-                    Location permission denied. Enable it in browser site settings.
-                  </div>
-                )}
-                {geoPermission === 'unsupported' && (
-                  <div style={{ color: '#f43f5e', fontSize: '0.82rem', marginTop: '0.3188rem' }}>
-                    Geolocation not supported by this browser.
-                  </div>
-                )}
-              </div>
-
-              <form onSubmit={handleMarkAttendance} style={{ marginTop: 0.5313 }}>
-                <label className="form-label">Field User</label>
-                <select
-                  className="form-input"
-                  value={punchUserId}
-                  onChange={(e) => setPunchUserId(e.target.value)}
-                  required
-                >
-                  <option value="" disabled>
-                    Select field user
-                  </option>
-                  {fieldUsers.map((u) => (
-                    <option key={u.id} value={u.id}>
-                      {u.username}
-                    </option>
-                  ))}
-                </select>
-
-                <label className="form-label">Status</label>
-                <select className="form-input" value={punchStatus} onChange={(e) => setPunchStatus(e.target.value)}>
-                  <option value="Check-In">Check-In</option>
-                  <option value="Check-Out">Check-Out</option>
-                </select>
-              </form>
-
-              {/* GPS action button */}
-              <div
-                style={{ marginTop: '1rem', borderTop: '0.0531rem solid var(--border-color)', paddingTop: '0.85rem' }}
-              >
-                {geoPermission === 'idle' && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={requestGeolocation}
-                      className="btn btn-primary"
-                      disabled={geoLoading}
-                      style={{ width: '100%', padding: '0.85rem 1.5rem', fontSize: '1rem', fontWeight: 600 }}
-                    >
-                      {geoLoading ? <Loader size={18} strokeWidth={2} /> : null} Allow Location Access
-                    </button>
-                    {geoLoading && (
-                      <div className="attendance-loader-bar">
-                        <div className="attendance-loader-bar-fill" />
-                      </div>
-                    )}
-                  </>
-                )}
-                {geoPermission === 'granted' && (
-                  <button
-                    type="button"
-                    onClick={() => setStep('face')}
-                    className="btn btn-primary"
-                    style={{ width: '100%', padding: '0.85rem 1.5rem', fontSize: '1rem', fontWeight: 600 }}
-                  >
-                    Continue to Face Verification
-                  </button>
-                )}
-                {geoPermission === 'denied' && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={requestGeolocation}
-                      className="btn btn-outline"
-                      disabled={geoLoading}
-                      style={{ width: '100%', padding: '0.85rem 1.5rem', fontSize: '1rem', fontWeight: 600 }}
-                    >
-                      {geoLoading ? <Loader size={18} strokeWidth={2} /> : null} Retry Location Access
-                    </button>
-                    {geoLoading && (
-                      <div className="attendance-loader-bar">
-                        <div className="attendance-loader-bar-fill" />
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            </>
+          {mode === null && (
+            <div className="attendance-notice" style={{ textAlign: 'center' }}>
+              <Loader size={16} strokeWidth={2} />
+              <span>Checking your face enrollment…</span>
+            </div>
           )}
 
-          {step === 'face' && (
+          {/* View A: Register */}
+          {mode === 'register' && (
             <>
-              <div className="attendance-step-header">
-                <div className="attendance-step-icon face">
-                  <CheckCircle size={20} />
-                </div>
-                <div>
-                  <h2 className="attendance-step-title">Face Verification</h2>
-                  <p className="attendance-step-desc">Complete the liveness challenge, then mark your attendance.</p>
-                </div>
+              <div className="attendance-view-head">
+                <h2>Enroll your face to start</h2>
+                <p>
+                  Capture 2–4 photos of your face from different angles. We store only a face template,
+                  never a photo.
+                </p>
               </div>
 
-              {/* Face response section: camera panel */}
-              <div className="attendance-camera-panel">
-                <div className="attendance-camera-wrap">
-                  <video
-                    ref={videoRef}
-                    autoPlay
-                    playsInline
-                    muted
-                    style={{
-                      display: cameraActive ? 'block' : 'none',
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover',
-                    }}
-                  />
-                  <canvas
-                    ref={overlayRef}
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: '100%',
-                      height: '100%',
-                      pointerEvents: 'none',
-                      zIndex: 10,
-                    }}
-                  />
-                  <canvas ref={canvasRef} style={{ display: 'none' }} />
-                  {!cameraActive && !cameraError && (
-                    <div
-                      style={{
-                        position: 'absolute',
-                        inset: 0,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexDirection: 'column',
-                        gap: 0.425,
-                        color: 'var(--text-muted)',
-                        fontSize: '0.85rem',
-                        textAlign: 'center',
-                        zIndex: 5,
-                      }}
-                    >
-                      Camera will start when you begin liveness check
-                    </div>
-                  )}
-                  {cameraError && <div className="attendance-camera-error">{cameraError}</div>}
-                  {!cameraActive && faceModelsError && (
-                    <div
-                      style={{
-                        position: 'absolute',
-                        inset: 0,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexDirection: 'column',
-                        gap: 0.425,
-                        color: '#f43f5e',
-                        fontSize: '0.8rem',
-                        textAlign: 'center',
-                        zIndex: 5,
-                        padding: '1rem',
-                      }}
-                    >
-                      <XCircle size={20} strokeWidth={2} />
-                      <div>{faceModelsError}</div>
-                    </div>
-                  )}
-                  {!cameraActive && !cameraError && !faceModelsError && !faceModelsLoaded && (
-                    <div
-                      style={{
-                        position: 'absolute',
-                        inset: 0,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexDirection: 'column',
-                        gap: 0.425,
-                        color: 'var(--text-muted)',
-                        fontSize: '0.8rem',
-                        textAlign: 'center',
-                        zIndex: 5,
-                        padding: '1rem',
-                      }}
-                    >
-                      <Loader size={24} strokeWidth={2} />
-                      <div>Loading face detection models...</div>
-                    </div>
-                  )}
-                  {cameraActive && faceDetected && (
-                    <div className="attendance-camera-status detected">
-                      <CheckCircle size={12} strokeWidth={2} />
-                      Face Detected
-                    </div>
-                  )}
-                  {cameraActive && !faceDetected && !faceModelsError && (
-                    <div className="attendance-camera-status noface">
-                      <XCircle size={12} strokeWidth={2} />
-                      No Face
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Liveness status */}
-              <div className="attendance-liveness-card">
-                <div className="attendance-liveness-header">
-                  <p className="attendance-liveness-title">Liveness Challenge</p>
-                  <span
-                    className={`attendance-liveness-badge ${livenessStage === 'passed' ? 'passed' : livenessStage === 'failed' ? 'failed' : ''}`}
-                  >
-                    {livenessStage === 'passed' ? 'PASSED' : livenessStage === 'failed' ? 'FAILED' : 'PENDING'}
-                  </span>
-                </div>
-
-                {livenessStage === 'idle' && (
-                  <div style={{ textAlign: 'center', marginBottom: 0.7438 }}>
-                    <p className="attendance-liveness-hint">Complete a liveness challenge to prove you are present.</p>
-                  </div>
-                )}
-
-                {livenessStage === 'ready' && challenge && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 0.5313 }}>
-                    <div className="attendance-challenge">{challengeLabel[challenge]}</div>
-                    {livenessResult && (
-                      <p
-                        className="attendance-liveness-hint"
-                        style={{
-                          color: (livenessStage as 'passed') === 'passed' ? 'var(--status-closed)' : '#f43f5e',
-                          marginTop: '0.3188rem',
-                        }}
-                      >
-                        {livenessResult}
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                {livenessStage === 'verifying' && (
-                  <div style={{ textAlign: 'center', padding: '1rem 0' }}>
-                    <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>Verifying liveness...</span>
-                  </div>
-                )}
-
-                {livenessStage === 'failed' && livenessResult && (
-                  <div style={{ textAlign: 'center', marginTop: 0.5313 }}>
-                    <p className="attendance-liveness-hint" style={{ color: '#f43f5e', fontWeight: 600 }}>
-                      {livenessResult}
-                    </p>
-                  </div>
-                )}
-
-                {livenessStage === 'passed' && (
-                  <div style={{ textAlign: 'center', marginTop: 0.5313 }}>
-                    <p className="attendance-liveness-hint" style={{ color: 'var(--status-closed)', fontWeight: 600 }}>
-                      Liveness verified &mdash; ready to mark attendance
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* Face action button */}
-              <div
-                style={{ marginTop: '1rem', borderTop: '0.0531rem solid var(--border-color)', paddingTop: '0.85rem' }}
-              >
-                {livenessStage === 'idle' && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={handleStartLiveness}
-                      className="btn btn-primary"
-                      disabled={!faceModelsLoaded || cameraLoading}
-                      style={{ width: '100%', padding: '0.85rem 1.5rem', fontSize: '1rem', fontWeight: 600 }}
-                    >
-                      {cameraLoading ? <Loader size={18} strokeWidth={2} /> : null}
-                      Start Liveness Check
-                    </button>
-                    {cameraLoading && (
-                      <div className="attendance-loader-bar">
-                        <div className="attendance-loader-bar-fill" />
-                      </div>
-                    )}
-                  </>
-                )}
-                {livenessStage === 'ready' && challenge && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 0.5313, textAlign: 'center' }}>
-                    <div className="attendance-challenge">
-                      Perform: {challengeLabel[challenge]}
-                    </div>
-                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                      Auto-detecting your movement…
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleStartLiveness}
-                      className="btn btn-outline"
-                      style={{ width: '100%', padding: '0.6375rem 1rem', fontSize: '0.85rem', fontWeight: 600 }}
-                    >
-                      Retry Challenge
-                    </button>
-                  </div>
-                )}
-                {livenessStage === 'verifying' && (
-                  <>
-                    <button
-                      type="button"
-                      className="btn btn-primary"
-                      disabled
-                      style={{ width: '100%', padding: '0.85rem 1.5rem', fontSize: '1rem', fontWeight: 600 }}
-                    >
-                      <Loader size={18} strokeWidth={2} /> Verifying...
-                    </button>
-                    <div className="attendance-loader-bar">
-                      <div className="attendance-loader-bar-fill" />
-                    </div>
-                  </>
-                )}
-                {livenessStage === 'failed' && livenessResult && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={handleStartLiveness}
-                      className="btn btn-outline"
-                      disabled={(livenessStage as string) === 'verifying'}
-                      style={{ width: '100%', padding: '0.85rem 1.5rem', fontSize: '1rem', fontWeight: 600 }}
-                    >
-                      {(livenessStage as string) === 'verifying' ? <Loader size={18} strokeWidth={2} /> : null} Try
-                      Again
-                    </button>
-                  </>
-                )}
-                {livenessStage === 'passed' && (
-                  <button
-                    type="button"
-                    className="btn btn-primary"
-                    disabled={submitting}
-                    style={{ width: '100%', padding: '0.85rem 1.5rem', fontSize: '1rem', fontWeight: 600 }}
-                    onClick={() => setStep('face-scan')}
-                  >
-                    Continue to Face Recognition
-                  </button>
-                )}
-              </div>
-            </>
-          )}
-
-          {step === 'face-scan' && (
-            <>
-              <div className="attendance-step-header">
-                <div className="attendance-step-icon face">
-                  <Camera size={20} />
-                </div>
-                <div>
-                  <h2 className="attendance-step-title">Face Recognition Scan</h2>
-                  <p className="attendance-step-desc">
-                    Scan your face for identity verification before attendance is logged.
-                  </p>
-                </div>
-              </div>
-
-              {/* Face scan response section: camera panel */}
-              <div className="attendance-camera-panel">
-                <div className="attendance-camera-wrap">
-                  {faceScanStage === 'scanning' || cameraActive ? (
+              <div className="attendance-capture-card">
+                <div className="attendance-camera-panel">
+                  <div className="attendance-camera-wrap">
                     <video
                       ref={videoRef}
                       autoPlay
                       playsInline
                       muted
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        opacity: cameraActive ? 1 : 0,
+                      }}
                     />
-                  ) : null}
-                  <canvas ref={overlayRef} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 10 }} />
-                  <canvas ref={canvasRef} style={{ display: 'none' }} />
-                  {!cameraActive && faceScanStage === 'idle' && (
-                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 0.425, color: 'var(--text-muted)', fontSize: '0.85rem', textAlign: 'center', zIndex: 5 }}>
-                      Camera will start when you begin face scan
-                    </div>
-                  )}
-                  {cameraError && <div className="attendance-camera-error">{cameraError}</div>}
-                  {cameraActive && faceDetected && (
-                    <div className="attendance-camera-status detected">
-                      <CheckCircle size={12} strokeWidth={2} />
-                      Face Detected
-                    </div>
-                  )}
-                  {cameraActive && !faceDetected && (
-                    <div className="attendance-camera-status noface">
-                      <XCircle size={12} strokeWidth={2} />
-                      No Face
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Face scan status */}
-              <div className="attendance-liveness-card">
-                <div className="attendance-liveness-header">
-                  <p className="attendance-liveness-title">Face Scan Status</p>
-                  <span className={`attendance-liveness-badge ${faceScanStage === 'passed' ? 'passed' : faceScanStage === 'failed' ? 'failed' : ''}`}>
-                    {faceScanStage === 'passed' ? 'READY' : faceScanStage === 'failed' ? 'FAILED' : 'PENDING'}
-                  </span>
+                    {!cameraActive && !cameraLoading && !cameraError && (
+                      <button
+                        type="button"
+                        onClick={startEnrollmentCamera}
+                        className="btn btn-primary"
+                        style={{ width: '100%', padding: '0.85rem 1.5rem', fontSize: '1rem', fontWeight: 600 }}
+                      >
+                        Start Camera
+                      </button>
+                    )}
+                    {cameraLoading && (
+                      <div className="attendance-loader-bar">
+                        <div className="attendance-loader-bar-fill" />
+                      </div>
+                    )}
+                    {cameraError && (
+                      <div className="attendance-camera-error">{cameraError}</div>
+                    )}
+                  </div>
                 </div>
 
-                {faceScanStage === 'idle' && (
-                  <div style={{ textAlign: 'center', marginBottom: 0.7438 }}>
-                    <p className="attendance-liveness-hint">Start face scan to verify identity against enrolled template.</p>
-                  </div>
-                )}
-
-                {faceScanStage === 'scanning' && (
-                  <div style={{ textAlign: 'center', padding: '1rem 0' }}>
-                    <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>Scanning face...</span>
-                  </div>
-                )}
-
-                {faceScanStage === 'failed' && faceScanResult && (
-                  <div style={{ textAlign: 'center', marginTop: 0.5313 }}>
-                    <p className="attendance-liveness-hint" style={{ color: '#f43f5e', fontWeight: 600 }}>
-                      {faceScanResult}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => setFaceScanStage('idle')}
-                      className="btn btn-outline"
-                      style={{ width: '100%', padding: '0.6375rem 1rem', fontSize: '0.85rem', fontWeight: 600, marginTop: 0.425 }}
-                    >
-                      Retry Scan
-                    </button>
-                  </div>
-                )}
-
-                {faceScanStage === 'passed' && (
-                  <div style={{ textAlign: 'center', marginTop: 0.5313 }}>
-                    <p className="attendance-liveness-hint" style={{ color: 'var(--status-closed)', fontWeight: 600 }}>
-                      Identity verified &mdash; ready to log attendance
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* Face scan action button */}
-              <div style={{ marginTop: '1rem', borderTop: '0.0531rem solid var(--border-color)', paddingTop: '0.85rem' }}>
-                {faceScanStage === 'idle' && (
+                {cameraActive && (
                   <>
+                    <div className="attendance-action-bar">
+                      <button
+                        type="button"
+                        onClick={addCapturedFrame}
+                        className="btn btn-primary"
+                        disabled={submitting}
+                        style={{ width: '100%', padding: '0.85rem 1.5rem', fontSize: '1rem', fontWeight: 600 }}
+                      >
+                        {submitting ? <Loader size={18} strokeWidth={2} /> : null} Capture Photo
+                      </button>
+                    </div>
+
+                    {capturedFrames.length > 0 && (
+                      <div className="attendance-captured-frames">
+                                        {capturedFrames.map((frame, i) => (
+                          <div key={i} className="attendance-captured-frame">
+                            <img src={frame} alt={`Enrollment photo ${i + 1}`} />
+                            <button
+                              type="button"
+                              onClick={() => removeCapturedFrame(i)}
+                              className="btn btn-outline"
+                              style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
+                            >
+                              <XCircle size={14} strokeWidth={2} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="attendance-action-bar">
+                      <button
+                        type="button"
+                        onClick={submitEnrollment}
+                        className="btn btn-primary"
+                        disabled={capturedFrames.length === 0 || submitting}
+                        style={{ width: '100%', padding: '0.85rem 1.5rem', fontSize: '1rem', fontWeight: 600 }}
+                      >
+                        {submitting ? <Loader size={18} strokeWidth={2} /> : null} Submit Enrollment ({capturedFrames.length})
+                      </button>
+                    </div>
+
+                    <div className="attendance-action-bar">
+                      <button
+                        type="button"
+                        onClick={clearCapturedFrames}
+                        className="btn btn-outline"
+                        style={{ width: '100%', padding: '0.85rem 1.5rem', fontSize: '1rem', fontWeight: 600 }}
+                      >
+                        Clear All Photos
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {submitting && (
+                <div className="attendance-notice">
+                  <Loader size={16} strokeWidth={2} />
+                  <span>Storing your face template…</span>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* View B: Scan */}
+          {mode === 'scan' && (
+            <>
+              <div className="attendance-stepper">
+                {STEPS.map((stepItem, i) => {
+                  const status = isStepDone(stepItem.id) ? 'done' : isStepActive(stepItem.id) ? 'active' : 'pending';
+                  return (
+                    <React.Fragment key={stepItem.id}>
+                      <div className="attendance-step">
+                        <div className={`attendance-step-marker ${status}`}>
+                          {status === 'done' ? (
+                            <CheckCircle size={14} strokeWidth={2} />
+                          ) : status === 'active' ? (
+                            <Loader size={14} strokeWidth={2} />
+                          ) : (
+                            i + 1
+                          )}
+                        </div>
+                        <span className={`attendance-step-label label-${status}`}>{stepItem.label}</span>
+                      </div>
+                      {i < STEPS.length - 1 && <span className="attendance-step-connector" />}
+                    </React.Fragment>
+                  );
+                })}
+              </div>
+
+              {step === 'gps' && (
+                <>
+                  <div className="attendance-step-header">
+                    <div className="attendance-step-icon gps">
+                      <Camera size={20} />
+                    </div>
+                    <div>
+                      <h2 className="attendance-step-title">GPS Location Permission</h2>
+                      <p className="attendance-step-desc">
+                        Allow location access so we can verify you are within the approved site radius.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className={`attendance-gps-box ${geoPermission === 'granted' ? 'granted' : ''}`}>
+                    <p className="attendance-gps-label">Location Access</p>
+                    {geoPermission === 'idle' && (
+                      <div className="attendance-notice">
+                        Location has not been captured yet. Click "Allow Location Access" below.
+                      </div>
+                    )}
+                    {geoPermission === 'granted' && (
+                      <div className="attendance-gps-value">
+                        <span className="attendance-gps-dot" />
+                        <span>
+                          GPS captured — {punchGpsLat?.toFixed(6)}, {punchGpsLng?.toFixed(6)}
+                        </span>
+                      </div>
+                    )}
+                    {geoPermission === 'denied' && (
+                      <div style={{ color: '#f43f5e', fontSize: '0.82rem' }}>
+                        Location permission denied. Enable it in browser site settings.
+                      </div>
+                    )}
+                    {geoPermission === 'unsupported' && (
+                      <div style={{ color: '#f43f5e', fontSize: '0.82rem' }}>
+                        Geolocation not supported by this browser.
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="attendance-identity-line">
+                    <span className="attendance-gps-dot" />
+                    <span>
+                      Punching as <strong>{currentUser.name}</strong> ({currentUser.id})
+                    </span>
+                  </div>
+
+                  <form onSubmit={(e) => e.preventDefault()} style={{ marginTop: 0.5313 }}>
+                    <label className="form-label">Status</label>
+                    <select
+                      className="form-input"
+                      value={punchStatus}
+                      onChange={(e) => setPunchStatus(e.target.value)}
+                    >
+                      <option value="Check-In">Check-In</option>
+                      <option value="Check-Out">Check-Out</option>
+                    </select>
+                  </form>
+
+                  <div className="attendance-action-bar">
+                    {geoPermission === 'idle' && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={requestGeolocation}
+                          className="btn btn-primary"
+                          disabled={geoLoading}
+                          style={{ width: '100%', padding: '0.85rem 1.5rem', fontSize: '1rem', fontWeight: 600 }}
+                        >
+                          {geoLoading ? <Loader size={18} strokeWidth={2} /> : null} Allow Location Access
+                        </button>
+                        {geoLoading && (
+                          <div className="attendance-loader-bar">
+                            <div className="attendance-loader-bar-fill" />
+                          </div>
+                        )}
+                      </>
+                    )}
+                    {geoPermission === 'granted' && (
+                      <button
+                        type="button"
+                        onClick={() => setStep('face')}
+                        className="btn btn-primary"
+                        style={{ width: '100%', padding: '0.85rem 1.5rem', fontSize: '1rem', fontWeight: 600 }}
+                      >
+                        Continue to Face Verification
+                      </button>
+                    )}
+                    {(geoPermission === 'denied' || geoPermission === 'unsupported') && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={requestGeolocation}
+                          className="btn btn-outline"
+                          disabled={geoLoading}
+                          style={{ width: '100%', padding: '0.85rem 1.5rem', fontSize: '1rem', fontWeight: 600 }}
+                        >
+                          {geoLoading ? <Loader size={18} strokeWidth={2} /> : null} Retry Location Access
+                        </button>
+                        {geoLoading && (
+                          <div className="attendance-loader-bar">
+                            <div className="attendance-loader-bar-fill" />
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {step === 'face' && (
+                <>
+                  <div className="attendance-step-header">
+                    <div className="attendance-step-icon face">
+                      <Camera size={20} />
+                    </div>
+                    <div>
+                      <h2 className="attendance-step-title">Face Verification</h2>
+                      <p className="attendance-step-desc">
+                        {scanStatus === 'scanning'
+                          ? 'Scanning your face…'
+                          : scanStatus === 'matched'
+                            ? 'Face matched! Verifying…'
+                            : scanStatus === 'matched-fail'
+                              ? 'Face not recognized. Try again.'
+                              : 'Position your face in the camera.'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="attendance-camera-panel">
+                    <div className="attendance-camera-wrap">
+                      <video
+                        ref={videoRef}
+                        autoPlay
+                        playsInline
+                        muted
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          opacity: scanCameraActive ? 1 : 0,
+                        }}
+                      />
+                      {!scanCameraActive && !scanCameraLoading && !scanCameraError && (
+                        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <button
+                            type="button"
+                            onClick={startScanCamera}
+                            className="btn btn-primary"
+                            style={{ padding: '0.85rem 1.5rem', fontSize: '1rem', fontWeight: 600 }}
+                          >
+                            Start Camera
+                          </button>
+                        </div>
+                      )}
+                      {scanCameraLoading && (
+                        <div className="attendance-loader-bar">
+                          <div className="attendance-loader-bar-fill" />
+                        </div>
+                      )}
+                      {scanCameraError && (
+                        <div className="attendance-camera-error">{scanCameraError}</div>
+                      )}
+                    </div>
+                  </div>
+
+                  {scanStatus === 'scanning' && (
+                    <div className="attendance-action-bar">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setScanStatus('idle');
+                          stopScanCamera();
+                        }}
+                        className="btn btn-outline"
+                        style={{ width: '100%', padding: '0.85rem 1.5rem', fontSize: '1rem', fontWeight: 600 }}
+                      >
+                        Stop Scan
+                      </button>
+                    </div>
+                  )}
+
+                  {scanStatus === 'matched-fail' && (
+                    <div className="attendance-action-bar">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setScanStatus('scanning');
+                        }}
+                        className="btn btn-primary"
+                        style={{ width: '100%', padding: '0.85rem 1.5rem', fontSize: '1rem', fontWeight: 600 }}
+                      >
+                        Try Again
+                      </button>
+                    </div>
+                  )}
+
+                  {scanStatus === 'matched' && (
+                    <div className="attendance-action-bar">
+                      <button
+                        type="button"
+                        onClick={handleMarkAttendance}
+                        className="btn btn-primary"
+                        disabled={submitting}
+                        style={{ width: '100%', padding: '0.85rem 1.5rem', fontSize: '1rem', fontWeight: 600 }}
+                      >
+                        {submitting ? <Loader size={18} strokeWidth={2} /> : null} Verify & Log Attendance
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {step === 'done' && (
+                <>
+                  <div className="attendance-done-card">
+                    <div className="attendance-done-icon">✓</div>
+                    <h2 className="attendance-done-title">Attendance Marked</h2>
+                    <p className="attendance-done-desc">Your punch has been recorded successfully.</p>
+                    {punchResult && (
+                      <div className="attendance-punch-result">
+                        <p><strong>User:</strong> {punchResult.id}</p>
+                        <p><strong>Verified:</strong> {String(punchResult.verified)}</p>
+                        <p><strong>Within Radius:</strong> {String(punchResult.withinRadius)}</p>
+                        <p><strong>Distance:</strong> {punchResult.distanceMeters?.toFixed(2)} m</p>
+                        <p><strong>Face Score:</strong> {punchResult.faceMatchScore?.toFixed(3)}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="attendance-action-bar">
                     <button
                       type="button"
                       onClick={() => {
-                        setFaceScanStage('scanning');
-                        // Backend validation will be wired here; placeholder simulates success
-                        setTimeout(() => {
-                          setFaceScanStage('passed');
-                          setFaceScanResult('Face matched against enrolled template');
-                        }, 1500);
+                        setStep('gps');
+                        setPunchResult(null);
+                        setGeoPermission('idle');
+                        setPunchGpsLat(null);
+                        setPunchGpsLng(null);
+                        setNotice(null);
                       }}
                       className="btn btn-primary"
                       style={{ width: '100%', padding: '0.85rem 1.5rem', fontSize: '1rem', fontWeight: 600 }}
                     >
-                      Start Face Scan
+                      Done
                     </button>
-                  </>
-                )}
-                {faceScanStage === 'scanning' && (
-                  <>
-                    <button
-                      type="button"
-                      className="btn btn-primary"
-                      disabled
-                      style={{ width: '100%', padding: '0.85rem 1.5rem', fontSize: '1rem', fontWeight: 600 }}
-                    >
-                      <Loader size={18} strokeWidth={2} /> Scanning...
-                    </button>
-                    <div className="attendance-loader-bar">
-                      <div className="attendance-loader-bar-fill" />
-                    </div>
-                  </>
-                )}
-                {faceScanStage === 'passed' && (
-                  <button
-                    type="button"
-                    className="btn btn-primary"
-                    disabled={submitting}
-                    style={{ width: '100%', padding: '0.85rem 1.5rem', fontSize: '1rem', fontWeight: 600 }}
-                    onClick={() => {
-                      setSubmitting(true);
-                      // Backend will auto-log attendance log on scan match; placeholder advances to done
-                      setTimeout(() => {
-                        setSubmitting(false);
-                        setStep('done');
-                      }, 800);
-                    }}
-                  >
-                    {submitting ? <Loader size={18} strokeWidth={2} /> : null} Log Attendance
-                  </button>
-                )}
-              </div>
-            </>
-          )}
-
-          {step === 'done' && (
-            <>
-              <div className="attendance-done-card">
-                <div className="attendance-done-icon">&#10004;</div>
-                <h2 className="attendance-done-title">Attendance Marked</h2>
-                <p className="attendance-done-desc">
-                  Your punch has been recorded successfully. Check the result below.
-                </p>
-              </div>
-              {/* Done action button */}
-              <div
-                style={{ marginTop: '1rem', borderTop: '0.0531rem solid var(--border-color)', paddingTop: '0.85rem' }}
-              >
-                <button
-                  type="button"
-                  onClick={() => {
-                    setStep('gps');
-                    setPunchResult(null);
-                    setGeoPermission('idle');
-                    setPunchGpsLat(null);
-                    setPunchGpsLng(null);
-                    setCameraActive(false);
-                    setFaceDetected(false);
-                    setFaceDescriptor(null);
-                    setFaceScanStage('idle');
-                    setFaceScanResult(null);
-                    challengeSamplesRef.current = [];
-                    setCapturedFrame(null);
-                    setChallenge(null);
-                    setLivenessStage('idle');
-                    setLivenessResult(null);
-                    stopCamera();
-                  }}
-                  className="btn btn-primary"
-                  style={{ width: '100%', padding: '0.85rem 1.5rem', fontSize: '1rem', fontWeight: 600 }}
-                >
-                  Done
-                </button>
-              </div>
+                  </div>
+                </>
+              )}
             </>
           )}
         </div>
       </div>
 
-      {/* Punch result */}
       {punchResult && (
-        <div className={`attendance-result ${punchResult.verified ? 'verified' : 'failed'}`}>
-          <span className="attendance-result-icon">
-            {punchResult.verified ? <CheckCircle size={20} /> : <XCircle size={20} />}
-          </span>
-          <div className="attendance-result-content">
-            <p className="attendance-result-label">
-              {punchResult.verified ? 'Attendance Verified' : 'Attendance Failed'}
-            </p>
-            <div className="attendance-result-value">
-              Verified: {String(punchResult.verified)} &bull; Within Radius: {String(punchResult.withinRadius)} &bull;
-              Face Score: {punchResult.faceMatchScore?.toFixed(3)} &bull; Distance:{' '}
-              {punchResult.distanceMeters?.toFixed(2)} m
-              {punchResult.debugInfo && (
-                <>
-                  <br />
-                  <span
-                    style={{
-                      fontSize: '0.72rem',
-                      color: 'var(--text-muted)',
-                      marginTop: '0.2125rem',
-                      display: 'block',
-                    }}
-                  >
-                    {punchResult.debugInfo}
-                  </span>
-                </>
-              )}
-            </div>
-          </div>
+        <div
+          className={`attendance-punch-alert ${punchResult.verified ? 'attendance-punch-alert-verified' : 'attendance-punch-alert-failed'}`}
+        >
+          {punchResult.verified ? (
+            <>
+              <CheckCircle size={20} />
+              <span>Attendance verified and logged successfully.</span>
+            </>
+          ) : (
+            <>
+              <XCircle size={20} />
+              <span>Attendance punch failed. Please try again.</span>
+            </>
+          )}
         </div>
       )}
 
-      {/* Site Definition */}
       <section className="panel" style={{ marginBottom: 1.275 }}>
         <div className="panel-header">
           <h2 className="panel-title">Allowed Site Centers (Radius Check)</h2>
@@ -1447,108 +978,35 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
         <table className="data-table" style={{ width: '100%', marginTop: 0.75 }}>
           <thead>
             <tr style={{ borderBottom: '0.0531rem solid var(--border-color)' }}>
-              <th
-                style={{
-                  padding: '0.6375rem 0.85rem',
-                  color: 'var(--text-secondary)',
-                  fontWeight: 600,
-                  fontSize: '0.78rem',
-                  textTransform: 'uppercase',
-                }}
-              >
-                Name
-              </th>
-              <th
-                style={{
-                  padding: '0.6375rem 0.85rem',
-                  color: 'var(--text-secondary)',
-                  fontWeight: 600,
-                  fontSize: '0.78rem',
-                  textTransform: 'uppercase',
-                }}
-              >
-                Center Lat
-              </th>
-              <th
-                style={{
-                  padding: '0.6375rem 0.85rem',
-                  color: 'var(--text-secondary)',
-                  fontWeight: 600,
-                  fontSize: '0.78rem',
-                  textTransform: 'uppercase',
-                }}
-              >
-                Center Lng
-              </th>
-              <th
-                style={{
-                  padding: '0.6375rem 0.85rem',
-                  color: 'var(--text-secondary)',
-                  fontWeight: 600,
-                  fontSize: '0.78rem',
-                  textTransform: 'uppercase',
-                }}
-              >
-                Radius (m)
-              </th>
-              <th
-                style={{
-                  padding: '0.6375rem 0.85rem',
-                  color: 'var(--text-secondary)',
-                  fontWeight: 600,
-                  fontSize: '0.78rem',
-                  textTransform: 'uppercase',
-                }}
-              >
-                Active
-              </th>
-              <th
-                style={{
-                  padding: '0.6375rem 0.85rem',
-                  color: 'var(--text-secondary)',
-                  fontWeight: 600,
-                  fontSize: '0.78rem',
-                  textTransform: 'uppercase',
-                }}
-              >
-                Actions
-              </th>
+              <th style={thStyle}>Name</th>
+              <th style={thStyle}>Center Lat</th>
+              <th style={thStyle}>Center Lng</th>
+              <th style={thStyle}>Radius (m)</th>
+              <th style={thStyle}>Active</th>
             </tr>
           </thead>
           <tbody>
             {settings.map((s) => (
               <tr key={s.id} style={{ borderBottom: '0.0531rem solid var(--border-color)' }}>
-                <td style={{ padding: '0.7438rem 0.85rem', color: 'var(--text-primary)' }}>{s.label}</td>
-                <td style={{ padding: '0.7438rem 0.85rem', color: 'var(--text-primary)' }}>{s.centerLat}</td>
-                <td style={{ padding: '0.7438rem 0.85rem', color: 'var(--text-primary)' }}>{s.centerLng}</td>
-                <td style={{ padding: '0.7438rem 0.85rem', color: 'var(--text-primary)' }}>{s.radiusMeters}</td>
-                <td style={{ padding: '0.7438rem 0.85rem', color: 'var(--text-primary)' }}>
-                  {s.isActive ? 'Yes' : 'No'}
-                </td>
-                <td style={{ padding: '0.7438rem 0.85rem' }}>
-                  <button
-                    onClick={() => handleDeleteSetting(s.id)}
-                    className="btn btn-danger"
-                    style={{ padding: '0.2125rem 0.5313rem', fontSize: '0.75rem' }}
-                  >
-                    Delete
-                  </button>
-                </td>
+                <td style={tdStyle}>{s.label}</td>
+                <td style={tdStyle}>{s.centerLat}</td>
+                <td style={tdStyle}>{s.centerLng}</td>
+                <td style={tdStyle}>{s.radiusMeters}</td>
+                <td style={tdStyle}>{s.isActive ? 'Yes' : 'No'}</td>
               </tr>
             ))}
             {settings.length === 0 && (
               <tr>
-                <td colSpan={6} style={{ padding: '0.7438rem 0.85rem', color: 'var(--text-muted)' }}>
-                  No sites defined. Add one to enable radius presence checks.
+                <td colSpan={5} style={{ padding: '0.7438rem 0.85rem', color: 'var(--text-muted)' }}>
+                  No sites defined.
                 </td>
               </tr>
             )}
           </tbody>
         </table>
-        {settingsLoading && <p>Loading settings...</p>}
+        {settingsLoading && <p>Loading settings…</p>}
       </section>
 
-      {/* Logs */}
       <section className="panel">
         <div className="panel-header">
           <h2 className="panel-title" style={{ margin: 0 }}>
@@ -1556,151 +1014,43 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
           </h2>
         </div>
         {loading ? (
-          <p>Loading logs...</p>
+          <p>Loading logs…</p>
         ) : (
           <div className="table-wrapper">
             <table className="data-table" style={{ width: '100%' }}>
               <thead>
                 <tr style={{ borderBottom: '0.0531rem solid var(--border-color)' }}>
-                  <th
-                    style={{
-                      padding: '0.6375rem 0.85rem',
-                      color: 'var(--text-secondary)',
-                      fontWeight: 600,
-                      fontSize: '0.78rem',
-                      textTransform: 'uppercase',
-                    }}
-                  >
-                    Time
-                  </th>
-                  <th
-                    style={{
-                      padding: '0.6375rem 0.85rem',
-                      color: 'var(--text-secondary)',
-                      fontWeight: 600,
-                      fontSize: '0.78rem',
-                      textTransform: 'uppercase',
-                    }}
-                  >
-                    User
-                  </th>
-                  <th
-                    style={{
-                      padding: '0.6375rem 0.85rem',
-                      color: 'var(--text-secondary)',
-                      fontWeight: 600,
-                      fontSize: '0.78rem',
-                      textTransform: 'uppercase',
-                    }}
-                  >
-                    Status
-                  </th>
-                  <th
-                    style={{
-                      padding: '0.6375rem 0.85rem',
-                      color: 'var(--text-secondary)',
-                      fontWeight: 600,
-                      fontSize: '0.78rem',
-                      textTransform: 'uppercase',
-                    }}
-                  >
-                    GPS Lat
-                  </th>
-                  <th
-                    style={{
-                      padding: '0.6375rem 0.85rem',
-                      color: 'var(--text-secondary)',
-                      fontWeight: 600,
-                      fontSize: '0.78rem',
-                      textTransform: 'uppercase',
-                    }}
-                  >
-                    GPS Lng
-                  </th>
-                  <th
-                    style={{
-                      padding: '0.6375rem 0.85rem',
-                      color: 'var(--text-secondary)',
-                      fontWeight: 600,
-                      fontSize: '0.78rem',
-                      textTransform: 'uppercase',
-                    }}
-                  >
-                    Verified
-                  </th>
-                  <th
-                    style={{
-                      padding: '0.6375rem 0.85rem',
-                      color: 'var(--text-secondary)',
-                      fontWeight: 600,
-                      fontSize: '0.78rem',
-                      textTransform: 'uppercase',
-                    }}
-                  >
-                    Within Radius
-                  </th>
-                  <th
-                    style={{
-                      padding: '0.6375rem 0.85rem',
-                      color: 'var(--text-secondary)',
-                      fontWeight: 600,
-                      fontSize: '0.78rem',
-                      textTransform: 'uppercase',
-                    }}
-                  >
-                    Distance (m)
-                  </th>
-                  <th
-                    style={{
-                      padding: '0.6375rem 0.85rem',
-                      color: 'var(--text-secondary)',
-                      fontWeight: 600,
-                      fontSize: '0.78rem',
-                      textTransform: 'uppercase',
-                    }}
-                  >
-                    Debug
-                  </th>
+                  <th style={thStyle}>Time</th>
+                  <th style={thStyle}>User</th>
+                  <th style={thStyle}>Status</th>
+                  <th style={thStyle}>GPS Lat</th>
+                  <th style={thStyle}>GPS Lng</th>
+                  <th style={thStyle}>Verified</th>
+                  <th style={thStyle}>Within Radius</th>
+                  <th style={thStyle}>Distance (m)</th>
+                  <th style={thStyle}>Debug</th>
                 </tr>
               </thead>
               <tbody>
                 {logs.slice(0, 50).map((log) => (
                   <tr key={log.id} style={{ borderBottom: '0.0531rem solid var(--border-color)' }}>
-                    <td style={{ padding: '0.7438rem 0.85rem', color: 'var(--text-primary)' }}>{log.timestamp}</td>
-                    <td style={{ padding: '0.7438rem 0.85rem', color: 'var(--text-primary)' }}>
-                      {log.name} ({log.userId})
-                    </td>
-                    <td style={{ padding: '0.7438rem 0.85rem', color: 'var(--text-primary)' }}>{log.status}</td>
-                    <td style={{ padding: '0.7438rem 0.85rem', color: 'var(--text-primary)' }}>
-                      {log.gpsLat === null ? '-' : log.gpsLat.toFixed(4)}
-                    </td>
-                    <td style={{ padding: '0.7438rem 0.85rem', color: 'var(--text-primary)' }}>
-                      {log.gpsLng === null ? '-' : log.gpsLng.toFixed(4)}
-                    </td>
+                    <td style={tdStyle}>{log.timestamp}</td>
+                    <td style={tdStyle}>{log.name} ({log.userId})</td>
+                    <td style={tdStyle}>{log.status}</td>
+                    <td style={tdStyle}>{log.gpsLat === null ? '-' : log.gpsLat.toFixed(4)}</td>
+                    <td style={tdStyle}>{log.gpsLng === null ? '-' : log.gpsLng.toFixed(4)}</td>
                     <td
-                      style={{
-                        padding: '0.7438rem 0.85rem',
-                        color: log.verified ? 'var(--status-closed)' : '#f43f5e',
-                        fontWeight: 600,
-                      }}
+                      style={{ ...tdStyle, color: log.verified ? 'var(--status-closed)' : '#f43f5e', fontWeight: 600 }}
                     >
                       {log.verified ? 'Yes' : 'No'}
                     </td>
                     <td
-                      style={{
-                        padding: '0.7438rem 0.85rem',
-                        color: log.withinRadius ? 'var(--status-closed)' : '#f43f5e',
-                        fontWeight: 600,
-                      }}
+                      style={{ ...tdStyle, color: log.withinRadius ? 'var(--status-closed)' : '#f43f5e', fontWeight: 600 }}
                     >
                       {log.withinRadius ? 'Yes' : 'No'}
                     </td>
-                    <td style={{ padding: '0.7438rem 0.85rem', color: 'var(--text-primary)' }}>
-                      {log.distanceMeters === null ? '-' : log.distanceMeters.toFixed(2)}
-                    </td>
-                    <td style={{ padding: '0.7438rem 0.85rem', color: 'var(--text-secondary)', fontSize: '0.78rem' }}>
-                      {log.debugInfo ?? '-'}
-                    </td>
+                    <td style={tdStyle}>{log.distanceMeters === null ? '-' : log.distanceMeters.toFixed(2)}</td>
+                    <td style={{ ...tdStyle, color: 'var(--text-secondary)', fontSize: '0.78rem' }}>{log.debugInfo ?? '-'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -1709,7 +1059,6 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
         )}
       </section>
 
-      {/* Site Definition Modal */}
       {siteModalOpen && (
         <>
           <div className="modal-overlay" onClick={() => setSiteModalOpen(false)} />
@@ -1717,7 +1066,12 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
             <h2 style={{ marginTop: 0, marginBottom: 1, fontSize: '1.125rem', fontWeight: 600, color: 'white' }}>
               Define Site
             </h2>
-            <form onSubmit={handleSubmitSite} style={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+              }}
+              style={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}
+            >
               <div className="form-group">
                 <label className="form-label">Site Name</label>
                 <input
@@ -1778,3 +1132,18 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
     </div>
   );
 };
+
+const thStyle: React.CSSProperties = {
+  padding: '0.6375rem 0.85rem',
+  color: 'var(--text-secondary)',
+  fontWeight: 600,
+  fontSize: '0.78rem',
+  textTransform: 'uppercase',
+};
+
+const tdStyle: React.CSSProperties = {
+  padding: '0.7438rem 0.85rem',
+  color: 'var(--text-primary)',
+};
+
+export default FieldAttendance;

@@ -1108,21 +1108,36 @@ export interface FieldAttendanceSetting {
   createdAt: string;
 }
 
+export interface LivenessBlink {
+  depth: number;
+  durationMs: number;
+  frames: number;
+}
+
+export interface LivenessEvidence {
+  version: number;
+  blinks: LivenessBlink[];
+  framesProcessed: number;
+  faceWidthFrac: number;
+  yawRangeDeg: number;
+  brightness: number;
+  durationMs: number;
+  startedAt: string;
+}
+
 export interface PunchFieldAttendanceRequestBody {
-  userId: string;
-  name: string;
+  userId?: string;
+  name?: string;
   ioTime?: string;
   method: string;
   status: string;
   gpsLat?: number | null;
   gpsLng?: number | null;
-  faceMatchScore?: number | null;
-  faceMatchConfidence?: string | null;
-  photoUrl?: string | null;
   debugInfo?: string | null;
-  faceDescriptor?: number[] | null;
-  livenessPassed?: boolean | null;
-  challenge?: string | null;
+  /** JSON-encoded LivenessEvidence produced on the device. */
+  liveness?: string | null;
+  /** JSON-encoded face embedding produced on the device. */
+  embedding?: string | null;
 }
 
 export interface PunchFieldAttendanceResponse {
