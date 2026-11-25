@@ -38,10 +38,9 @@ const tryDownloadStoredVersion = async (
   const latestStored = [...versions].reverse().find((v) => v.file_path && v.file_path.trim() !== '');
   if (!latestStored) return false;
   try {
-    const res = await fetch(
-      `/api/document-generator/documents/${docId}/versions/${latestStored.id}/download`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+    const res = await fetch(`/api/document-generator/documents/${docId}/versions/${latestStored.id}/download`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
     if (!res.ok) return false;
     const blob = await res.blob();
     const safeRev = (latestStored.revision || '').trim() || 'Rev 00';
@@ -243,10 +242,9 @@ export const DocumentGenerator: React.FC<DocumentGeneratorProps> = ({ currentUse
     try {
       const safeRev = (version.revision || '').trim() || record.revision;
       if (version.file_path && version.file_path.trim() !== '') {
-        const res = await fetch(
-          `/api/document-generator/documents/${record.id}/versions/${version.id}/download`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        const res = await fetch(`/api/document-generator/documents/${record.id}/versions/${version.id}/download`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         if (!res.ok) throw new Error('Failed to download revision file.');
         const blob = await res.blob();
         triggerBlobDownload(blob, `${record.document_id} - ${safeRev}.docx`);

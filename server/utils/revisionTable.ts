@@ -15,11 +15,7 @@ export interface RevisionTableRow {
 const ROW_RE = /<w:tr[\s\S]*?<\/w:tr>/g;
 const CELL_RE = /<w:tc[\s\S]*?<\/w:tc>/g;
 
-const escapeXml = (value: string): string =>
-  value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+const escapeXml = (value: string): string => value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 /**
  * Locate the revision table within document.xml.

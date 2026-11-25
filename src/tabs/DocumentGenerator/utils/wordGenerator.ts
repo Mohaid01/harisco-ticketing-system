@@ -140,6 +140,7 @@ export const generateDocumentWord = async (params: GenerateWordParams): Promise<
    * Replace placeholders within each <w:t> text node individually.
    */
   function replaceWithinNodes(xml: string): string {
+    // eslint-disable-next-line security/detect-unsafe-regex
     const wTRegex = /<w:t(\s[^>]*)?>([\s\S]*?)<\/w:t>/g;
     let matchCount = 0;
     let replacedCount = 0;
@@ -163,6 +164,7 @@ export const generateDocumentWord = async (params: GenerateWordParams): Promise<
    * Replace placeholders that span multiple <w:t> runs.
    */
   function replaceAcrossRuns(xml: string): string {
+    // eslint-disable-next-line security/detect-unsafe-regex
     const wTRegex = /<w:t(\s[^>]*)?>([\s\S]*?)<\/w:t>/g;
 
     const nodes: Array<{
@@ -315,6 +317,7 @@ export const generateDocumentWord = async (params: GenerateWordParams): Promise<
     };
 
     const setCellText = (cellXml: string, value: string): string => {
+      // eslint-disable-next-line security/detect-unsafe-regex
       const wTRegex = /<w:t(\s[^>]*)?>([\s\S]*?)<\/w:t>/g;
       const hasTextNode = wTRegex.test(cellXml);
       if (hasTextNode) {

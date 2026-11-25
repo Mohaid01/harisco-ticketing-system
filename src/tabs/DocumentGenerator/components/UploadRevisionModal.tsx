@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 
 import type { AppUser } from '../../../types';
+
 import { REVISION_OPTIONS } from '../constants';
 
 interface UploadRevisionModalProps {
@@ -42,7 +43,10 @@ const SearchableUserSelect: React.FC<{
 
   return (
     <div style={{ marginBottom: '0.85rem' }}>
-      <label className="docgen-label" style={{ fontSize: '0.78rem', textTransform: 'uppercase', display: 'block', marginBottom: '0.3rem' }}>
+      <label
+        className="docgen-label"
+        style={{ fontSize: '0.78rem', textTransform: 'uppercase', display: 'block', marginBottom: '0.3rem' }}
+      >
         {label}
       </label>
       <div style={{ position: 'relative', width: '100%' }}>
@@ -62,7 +66,15 @@ const SearchableUserSelect: React.FC<{
         {open && (
           <div
             className="inv-assignee-dropdown"
-            style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10, maxHeight: '12rem', overflowY: 'auto' }}
+            style={{
+              position: 'absolute',
+              top: '100%',
+              left: 0,
+              right: 0,
+              zIndex: 10,
+              maxHeight: '12rem',
+              overflowY: 'auto',
+            }}
           >
             {filtered.length === 0 ? (
               <div className="inv-assignee-empty">No matching users available.</div>
