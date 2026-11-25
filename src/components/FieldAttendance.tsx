@@ -263,7 +263,7 @@ export const FieldAttendance: React.FC<FieldAttendanceProps> = ({ currentUser, t
       formData.append('user_id', currentUser.id);
 
       try {
-        const res = await fetch(`${window.location.origin}/api/face/recognize`, {
+        const res = await fetch(`${window.location.origin === 'http://localhost:5174' ? 'http://localhost:8000' : window.location.origin}/api/face/recognize`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}` },
           body: formData,
