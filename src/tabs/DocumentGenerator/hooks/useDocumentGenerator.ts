@@ -1,0 +1,204 @@
+import { useCallback, useEffect, useState } from 'react';
+
+import type { AppUser } from '../../../types';
+import type { ControlledDocumentData, DocumentSignOff } from '../types';
+
+import { DOC_PREFIX } from '../constants';
+
+interface UseDocumentGeneratorProps {
+  currentUser: AppUser;
+  token: string;
+}
+
+export const useDocumentGenerator = ({ currentUser, token }: UseDocumentGeneratorProps) => {
+  const currentYear = new Date().getFullYear().toString().slice(-2);
+  const todayIso = new Date().toISOString().split('T')[0];
+
+  const [entityCode, setEntityCode] = useState<string>('01');
+  const [departmentCode, setDepartmentCode] = useState<string>('COR');
+  const [docTypeCode, setDocTypeCode] = useState<string>('LE');
+  const [year, setYear] = useState<string>(currentYear);
+  const [revision, setRevision] = useState<string>('Rev 00');
+
+  const [previewId, setPreviewId] = useState<string>('');
+  const [previewLoading, setPreviewLoading] = useState<boolean>(false);
+
+  const [docTitle, setDocTitle] = useState<string>('');
+
+  const [signOff, setSignOff] = useState<DocumentSignOff>({
+    preparedByName: currentUser.name,
+    checkedByName: '',
+    approvedByName: '',
+    preparedByDate: todayIso,
+    checkedByDate: todayIso,
+    approvedByDate: todayIso,
+  });
+
+  // Single controlled content shared by all document types.
+  const [controlledData, setControlledData] = useState<ControlledDocumentData>({
+    title: '',
+    description: '',
+    appendixNumber: '',
+    formNumber: '',
+  });
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successInfo, setSuccessInfo] = useState<{
+    documentId: string;
+    fileName: string;
+  } | null>(null);
+  const [savedDocument, setSavedDocument] = useState<any>(null);
+
+  useEffect(() => {
+    let isCancelled = false;
+    const fetchPreview = async () => {
+      if (!entityCode || !departmentCode || !docTypeCode) return;
+      setPreviewLoading(true);
+      try {
+        const res = await fetch(
+          `/api/document-generator/preview-id?entity=${encodeURIComponent(entityCode)}&department=${encodeURIComponent(
+            departmentCode
+          )}&docType=${encodeURIComponent(docTypeCode)}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        if (res.ok && !isCancelled) {
+          const data = await res.json();
+          setPreviewId(data.documentId);
+        }
+      } catch {
+        if (!isCancelled) {
+          setPreviewId(`${DOC_PREFIX}-${entityCode}-${departmentCode}-${docTypeCode}-0001`);
+        }
+      } finally {
+        if (!isCancelled) setPreviewLoading(false);
+      }
+    };
+
+    fetchPreview();
+    return () => {
+      isCancelled = true;
+    };
+  }, [entityCode, departmentCode, docTypeCode, year, token]);
+
+  const getEffectiveTitle = useCallback((): string => {
+    return docTitle.trim() || 'Controlled Corporate Document';
+  }, [docTitle]);
+
+  const getContentPayload = useCallback((): ControlledDocumentData => {
+    return controlledData;
+  }, [controlledData]);
+
+  const buildGeneratePayload = () => {
+    const content = getContentPayload();
+    return {
+      entityCode,
+      departmentCode,
+      docTypeCode,
+      year,
+      revision,
+      title: content.title,
+      preparedByName: signOff.preparedByName,
+      checkedByName: signOff.checkedByName,
+      approvedByName: signOff.approvedByName,
+      preparedByDate: signOff.preparedByDate || todayIso,
+      checkedByDate: signOff.checkedByName.trim() ? signOff.checkedByDate || todayIso : '',
+      approvedByDate: signOff.approvedByName.trim() ? signOff.approvedByDate || todayIso : '',
+      docDate: todayIso,
+      contentJson: JSON.stringify(content),
+    };
+  };
+
+  const callGenerate = async () => {
+    setIsSubmitting(true);
+    setErrorMessage(null);
+    setSuccessInfo(null);
+
+    const payload = buildGeneratePayload();
+
+    try {
+      const res = await fetch('/api/document-generator/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Failed to generate document');
+      }
+
+      const data = await res.json();
+      return data.document;
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'An unexpected error occurred';
+      setErrorMessage(msg);
+      return null;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const saveDraft = async () => {
+    const doc = await callGenerate();
+    if (!doc) return null;
+    setSavedDocument(doc);
+    setSuccessInfo({ documentId: doc.documentId, fileName: doc.fileName });
+    return doc;
+  };
+
+  const submitDocument = async () => {
+    const doc = await callGenerate();
+    if (!doc) return null;
+    setSuccessInfo({
+      documentId: doc.documentId,
+      fileName: doc.fileName,
+    });
+    return doc;
+  };
+
+  const downloadDocument = async () => {
+    let doc = savedDocument;
+    if (!doc) {
+      doc = await callGenerate();
+      if (!doc) return null;
+      setSavedDocument(doc);
+    }
+    setSuccessInfo({ documentId: doc.documentId, fileName: doc.fileName });
+    return doc;
+  };
+
+  return {
+    entityCode,
+    setEntityCode,
+    departmentCode,
+    setDepartmentCode,
+    docTypeCode,
+    setDocTypeCode,
+    year,
+    setYear,
+    revision,
+    setRevision,
+    previewId,
+    previewLoading,
+    docTitle,
+    setDocTitle,
+    signOff,
+    setSignOff,
+    controlledData,
+    setControlledData,
+    isSubmitting,
+    errorMessage,
+    successInfo,
+    savedDocument,
+    getEffectiveTitle,
+    getContentPayload,
+    submitDocument,
+    saveDraft,
+    downloadDocument,
+  };
+};

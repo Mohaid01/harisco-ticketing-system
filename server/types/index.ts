@@ -1267,3 +1267,43 @@ export interface RevertHSEStatusResponse {
   updatedAt: string;
   newLog: DbHSEActivityLog;
 }
+
+// Document Version Types
+export interface DocumentVersion {
+  id: string;
+  document_id: string;
+  revision: string;
+  file_name: string;
+  file_path: string;
+  file_size: number;
+  uploaded_by: string;
+  uploaded_at: string;
+  note: string | null;
+}
+
+export type DocumentVersionsResponse = DocumentVersion[];
+
+export interface UploadDocumentVersionRequestBody {
+  revision: string;
+  note?: string;
+  // Optional sign-off data captured at the time of this revision
+  prepared_by_name?: string | null;
+  checked_by_name?: string | null;
+  approved_by_name?: string | null;
+  prepared_by_date?: string | null;
+  checked_by_date?: string | null;
+  approved_by_date?: string | null;
+}
+
+export interface UploadDocumentVersionResponse {
+  success: boolean;
+  id: string;
+  document_id: string;
+  revision: string;
+  file_name: string;
+  file_path: string;
+  file_size: number;
+  uploaded_by: string;
+  uploaded_at: string;
+  newLog?: any;
+}

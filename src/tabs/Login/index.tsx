@@ -77,7 +77,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
           <img src={logoFull} alt="Haris & Co Logo" />
         </div>
 
-        <h2 className="login-title">Ticketing System</h2>
+        <h2 className="login-title">Haris & Co Integrated Management System</h2>
         <p className="login-subtitle">Sign in to raise issues regarding IT equipment.</p>
 
         {error && (

@@ -876,6 +876,112 @@ export async function initDb() {
   await db.exec('CREATE INDEX IF NOT EXISTS idx_screen_overrides_screen ON screen_overrides(screen_name)');
   await db.exec('CREATE INDEX IF NOT EXISTS idx_screen_overrides_user ON screen_overrides(user_id)');
 
+  // Create Document Generator Tables
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS document_sequences (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      entity_code TEXT NOT NULL,
+      department_code TEXT NOT NULL,
+      doc_type_code TEXT NOT NULL,
+      year TEXT NOT NULL,
+      last_sequence INTEGER NOT NULL DEFAULT 0,
+      updated_at TEXT NOT NULL,
+      UNIQUE(entity_code, department_code, doc_type_code, year)
+    )
+  `);
+
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS generated_documents (
+      id TEXT PRIMARY KEY,
+      document_id TEXT UNIQUE NOT NULL,
+      entity_code TEXT NOT NULL,
+      department_code TEXT NOT NULL,
+      doc_type_code TEXT NOT NULL,
+      year TEXT NOT NULL,
+      sequence_number INTEGER NOT NULL,
+      revision TEXT NOT NULL DEFAULT 'Rev 00',
+      title TEXT NOT NULL,
+      prepared_by_id TEXT NOT NULL,
+      prepared_by_name TEXT NOT NULL,
+      checked_by_name TEXT,
+      approved_by_name TEXT,
+      doc_date TEXT NOT NULL,
+      content_json TEXT,
+      file_name TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )
+  `);
+
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_gen_docs_entity ON generated_documents(entity_code)');
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_gen_docs_dept ON generated_documents(department_code)');
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_gen_docs_doctype ON generated_documents(doc_type_code)');
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_gen_docs_year ON generated_documents(year)');
+
+  // Create Document Versions table for revision history and file storage
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS document_versions (
+      id TEXT PRIMARY KEY,
+      document_id TEXT NOT NULL,
+      revision TEXT NOT NULL,
+      file_name TEXT NOT NULL,
+      file_path TEXT NOT NULL,
+      file_size INTEGER NOT NULL,
+      uploaded_by TEXT NOT NULL,
+      uploaded_at TEXT NOT NULL,
+      note TEXT,
+      prepared_by_name TEXT,
+      checked_by_name TEXT,
+      approved_by_name TEXT,
+      prepared_by_date TEXT,
+      checked_by_date TEXT,
+      approved_by_date TEXT,
+      FOREIGN KEY (document_id) REFERENCES generated_documents(id) ON DELETE CASCADE
+    )
+  `);
+
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_doc_versions_document ON document_versions(document_id)');
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_doc_versions_revision ON document_versions(revision)');
+
+  // Self-healing migration: add sign-off columns to existing document_versions tables
+  try {
+    const docVerCols = await db.all<{ name: string }[]>('PRAGMA table_info(document_versions)');
+    const docVerColNames = docVerCols.map((c) => c.name);
+    const requiredVersionCols: Record<string, string> = {
+      prepared_by_name: 'TEXT',
+      checked_by_name: 'TEXT',
+      approved_by_name: 'TEXT',
+      prepared_by_date: 'TEXT',
+      checked_by_date: 'TEXT',
+      approved_by_date: 'TEXT',
+    };
+    for (const [colName, colType] of Object.entries(requiredVersionCols)) {
+      if (!docVerColNames.includes(colName)) {
+        await db.exec(`ALTER TABLE document_versions ADD COLUMN ${colName} ${colType}`);
+      }
+    }
+  } catch {
+    // Table may not exist yet or already has all columns
+  }
+
+  // Self-healing migration: add sign-off date columns to existing generated_documents tables
+  try {
+    const genDocsCols = await db.all<{ name: string }[]>('PRAGMA table_info(generated_documents)');
+    const genDocColNames = genDocsCols.map((c) => c.name);
+    const requiredDateCols: Record<string, string> = {
+      prepared_by_date: 'TEXT',
+      checked_by_date: 'TEXT',
+      approved_by_date: 'TEXT',
+    };
+    for (const [colName, colType] of Object.entries(requiredDateCols)) {
+      if (!genDocColNames.includes(colName)) {
+        await db.exec(`ALTER TABLE generated_documents ADD COLUMN ${colName} ${colType}`);
+      }
+    }
+  } catch {
+    // Table may not exist yet or already has all columns
+  }
+
   // Seed initial admin user if table is empty
   const userCount = await db.get<{ count: number }>('SELECT COUNT(*) as count FROM users');
   if (userCount && userCount.count === 0) {

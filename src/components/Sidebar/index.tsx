@@ -32,6 +32,7 @@ interface HeaderProps {
   onLogout: () => void;
   onChangePasswordClick: () => void;
   cvGeneratorAllowed: boolean;
+  docGeneratorAllowed: boolean;
 }
 
 interface MenuItem {
@@ -140,6 +141,13 @@ const MENU_ITEMS: MenuItem[] = [
         label: 'CV Generator',
         icon: FileText,
         roles: ['it', 'employee', 'manager', 'executive', 'external'],
+        requiresScreenOverride: true,
+      },
+      {
+        id: 'document_generator',
+        label: 'Document Generator',
+        icon: FileText,
+        roles: ['it', 'employee', 'manager', 'executive'],
         requiresScreenOverride: true,
       },
     ],
@@ -252,6 +260,7 @@ export const Header: React.FC<HeaderProps> = ({
   onLogout,
   onChangePasswordClick,
   cvGeneratorAllowed,
+  docGeneratorAllowed,
 }) => {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [currentDate, setCurrentDate] = useState(formatDate(new Date()));
@@ -263,6 +272,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   const screenOverrideFlags: Record<string, boolean> = {
     cv_generator: cvGeneratorAllowed,
+    document_generator: docGeneratorAllowed,
   };
 
   const visibleItems = MENU_ITEMS.filter((item) =>
@@ -310,7 +320,7 @@ export const Header: React.FC<HeaderProps> = ({
       {/* Row 1: Date | Title | Time */}
       <div className="header-top-strip">
         <span className="header-date">{currentDate}</span>
-        <span className="header-title">Haris & Co. Dashboard</span>
+        <span className="header-title">Haris & Co Integrated Management System</span>
         <span className="header-time">{currentTime}</span>
       </div>
 

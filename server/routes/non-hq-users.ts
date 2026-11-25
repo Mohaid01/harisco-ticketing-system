@@ -176,7 +176,7 @@ router.put(
     const userId = String(req.params.id);
     const { name, email, username, password, department, designation, active } = req.body;
 
-    if (username && !username.trim()) {
+    if (username !== undefined && username !== null && !String(username).trim()) {
       res.status(400).json({ error: 'Username is required.' });
       return;
     }
@@ -184,11 +184,13 @@ router.put(
     try {
       const db = getDb();
 
+      let formattedUsername: string | undefined;
+
       if (username) {
         // Format employee code to HC-XXXXX
         const rawUsername = username.trim();
         const numericPart = rawUsername.replace(/\D/g, '');
-        const formattedUsername = numericPart ? `HC-${numericPart.padStart(5, '0')}` : `HC-${rawUsername}`;
+        formattedUsername = numericPart ? `HC-${numericPart.padStart(5, '0')}` : `HC-${rawUsername}`;
 
         // Check username uniqueness across ALL user tables (excluding current user)
         const tables = ['users', 'factory_users', 'external_users', 'field_users', 'non_hq_users'];
@@ -204,23 +206,47 @@ router.put(
         }
       }
 
-      let query =
-        'UPDATE non_hq_users SET name = ?, email = ?, department = ?, designation = ?, active = ? WHERE id = ?';
-      const params: (string | number | null)[] = [
-        name.trim(),
-        email || null,
-        department || null,
-        designation || null,
-        active !== undefined ? (active ? 1 : 0) : null,
-        userId,
-      ];
+      const setClauses: string[] = [];
+      const params: (string | number | null)[] = [];
+
+      if (name !== undefined) {
+        setClauses.push('name = ?');
+        params.push(String(name).trim());
+      }
+
+      if (email !== undefined) {
+        setClauses.push('email = ?');
+        params.push(email || null);
+      }
+
+      if (department !== undefined) {
+        setClauses.push('department = ?');
+        params.push(department || null);
+      }
+
+      if (designation !== undefined) {
+        setClauses.push('designation = ?');
+        params.push(designation || null);
+      }
+
+      if (active !== undefined) {
+        setClauses.push('is_active = ?');
+        params.push(active ? 1 : 0);
+      }
 
       if (password && password.trim()) {
         const passwordHash = await bcrypt.hash(password.trim(), 10);
-        query =
-          'UPDATE non_hq_users SET name = ?, email = ?, department = ?, designation = ?, passwordHash = ?, needsPasswordReset = 1, active = ? WHERE id = ?';
-        params.splice(5, 0, passwordHash);
+        setClauses.push('passwordHash = ?', 'needsPasswordReset = 1');
+        params.push(passwordHash, 1);
       }
+
+      if (setClauses.length === 0) {
+        res.status(400).json({ error: 'No fields to update.' });
+        return;
+      }
+
+      const query = `UPDATE non_hq_users SET ${setClauses.join(', ')} WHERE id = ?`;
+      params.push(userId);
 
       const result = await db.run(query, params);
 
@@ -230,7 +256,7 @@ router.put(
       }
 
       // If username was updated, apply the formatted username
-      if (username) {
+      if (formattedUsername) {
         await db.run('UPDATE non_hq_users SET username = ? WHERE id = ?', [formattedUsername, userId]);
       }
 
@@ -238,6 +264,11 @@ router.put(
         'SELECT id, name, email, username, role, avatar, department, designation, isDepartmentHead, loginEnabled, is_active FROM non_hq_users WHERE id = ?',
         [userId]
       );
+
+      if (!updatedUser) {
+        res.status(404).json({ error: 'Non HQ user not found.' });
+        return;
+      }
 
       const response: UpdateNonHqUserResponse = {
         id: userId,

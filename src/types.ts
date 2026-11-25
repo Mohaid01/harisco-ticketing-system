@@ -149,6 +149,12 @@ export interface AdminTicket {
   }[];
 }
 
+// Holiday Types
+export interface Holiday {
+  date: string;
+  name: string;
+}
+
 // Sidebar Types
 export type ActiveTab =
   | 'noticeboard'
@@ -163,6 +169,7 @@ export type ActiveTab =
   | 'leaves'
   | 'site_duties'
   | 'cv_generator'
+  | 'document_generator'
   | 'users_statistics'
   | 'external_users'
   | 'field_users'
