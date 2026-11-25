@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 
+import type { AppUser } from '../../../types';
 import { REVISION_OPTIONS } from '../constants';
 
 interface UploadRevisionModalProps {
@@ -14,7 +15,77 @@ interface UploadRevisionModalProps {
   onClose: () => void;
   onSuccess: () => void;
   defaultPreparedByName?: string;
+  allUsers?: AppUser[];
 }
+
+const SearchableUserSelect: React.FC<{
+  label: string;
+  value: string;
+  users: AppUser[];
+  onChange: (value: string) => void;
+}> = ({ label, value, users, onChange }) => {
+  const [search, setSearch] = useState('');
+  const [open, setOpen] = useState(false);
+
+  const filtered = users.filter(
+    (u) =>
+      !search ||
+      u.name.toLowerCase().includes(search.toLowerCase()) ||
+      (u.designation || '').toLowerCase().includes(search.toLowerCase())
+  );
+
+  const selectUser = (u: AppUser) => {
+    onChange(`${u.name} (${u.designation || ''})`);
+    setSearch('');
+    setOpen(false);
+  };
+
+  return (
+    <div style={{ marginBottom: '0.85rem' }}>
+      <label className="docgen-label" style={{ fontSize: '0.78rem', textTransform: 'uppercase', display: 'block', marginBottom: '0.3rem' }}>
+        {label}
+      </label>
+      <div style={{ position: 'relative', width: '100%' }}>
+        <input
+          type="text"
+          className="form-input"
+          value={search || value}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setOpen(true);
+            onChange(e.target.value);
+          }}
+          onFocus={() => setOpen(true)}
+          onBlur={() => setTimeout(() => setOpen(false), 150)}
+          placeholder={`Select ${label.toLowerCase()}`}
+        />
+        {open && (
+          <div
+            className="inv-assignee-dropdown"
+            style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10, maxHeight: '12rem', overflowY: 'auto' }}
+          >
+            {filtered.length === 0 ? (
+              <div className="inv-assignee-empty">No matching users available.</div>
+            ) : (
+              filtered.map((u) => (
+                <div
+                  key={u.id}
+                  className={`inv-assignee-item ${value && value.includes(u.name) ? 'inv-assignee-item-active' : ''}`}
+                  onMouseDown={(e) => {
+                    e.stopPropagation();
+                    selectUser(u);
+                  }}
+                >
+                  {u.name} ({u.designation || ''})
+                </div>
+              ))
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 
 export const UploadRevisionModal: React.FC<UploadRevisionModalProps> = ({
   document,
@@ -23,6 +94,7 @@ export const UploadRevisionModal: React.FC<UploadRevisionModalProps> = ({
   onClose,
   onSuccess,
   defaultPreparedByName,
+  allUsers,
 }) => {
   const currentRev = document.revision || 'Rev 00';
   const defaultRev = currentRev.startsWith('Rev 0')
@@ -238,18 +310,12 @@ export const UploadRevisionModal: React.FC<UploadRevisionModalProps> = ({
           />
         </div>
 
-        <div style={{ marginBottom: '0.85rem' }}>
-          <label className="docgen-label" style={labelStyle}>
-            Prepared By
-          </label>
-          <input
-            type="text"
-            className="form-input"
-            value={preparedByName}
-            onChange={(e) => setPreparedByName(e.target.value)}
-            placeholder="Prepared by name"
-          />
-        </div>
+        <SearchableUserSelect
+          label="Prepared By"
+          value={preparedByName}
+          users={allUsers || []}
+          onChange={setPreparedByName}
+        />
 
         <div style={{ marginBottom: '0.85rem' }}>
           <label className="docgen-label" style={labelStyle}>
@@ -263,18 +329,12 @@ export const UploadRevisionModal: React.FC<UploadRevisionModalProps> = ({
           />
         </div>
 
-        <div style={{ marginBottom: '0.85rem' }}>
-          <label className="docgen-label" style={labelStyle}>
-            Checked By
-          </label>
-          <input
-            type="text"
-            className="form-input"
-            value={checkedByName}
-            onChange={(e) => setCheckedByName(e.target.value)}
-            placeholder="Checked by name"
-          />
-        </div>
+        <SearchableUserSelect
+          label="Checked By"
+          value={checkedByName}
+          users={allUsers || []}
+          onChange={setCheckedByName}
+        />
 
         <div style={{ marginBottom: '0.85rem' }}>
           <label className="docgen-label" style={labelStyle}>
@@ -288,18 +348,12 @@ export const UploadRevisionModal: React.FC<UploadRevisionModalProps> = ({
           />
         </div>
 
-        <div style={{ marginBottom: '0.85rem' }}>
-          <label className="docgen-label" style={labelStyle}>
-            Approved By
-          </label>
-          <input
-            type="text"
-            className="form-input"
-            value={approvedByName}
-            onChange={(e) => setApprovedByName(e.target.value)}
-            placeholder="Approved by name"
-          />
-        </div>
+        <SearchableUserSelect
+          label="Approved By"
+          value={approvedByName}
+          users={allUsers || []}
+          onChange={setApprovedByName}
+        />
 
         <div style={{ marginBottom: '0.85rem' }}>
           <label className="docgen-label" style={labelStyle}>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 
+import type { AppUser } from '../../../types';
 import type { GeneratedDocumentRecord } from '../types';
 
 import { DEPARTMENTS, ENTITIES, DOCUMENT_TYPES } from '../constants';
@@ -22,6 +23,7 @@ interface DocumentRegistryTableProps {
   onViewDocument: (doc: GeneratedDocumentRecord) => void;
   token: string;
   currentUserName: string;
+  allUsers: AppUser[];
 }
 
 export const DocumentRegistryTable: React.FC<DocumentRegistryTableProps> = ({
@@ -41,6 +43,7 @@ export const DocumentRegistryTable: React.FC<DocumentRegistryTableProps> = ({
   onViewDocument,
   token,
   currentUserName,
+  allUsers,
 }) => {
   const [uploadDoc, setUploadDoc] = useState<{
     id: string;
@@ -216,6 +219,7 @@ export const DocumentRegistryTable: React.FC<DocumentRegistryTableProps> = ({
           onClose={() => setUploadOpen(false)}
           onSuccess={handleUploadSuccess}
           defaultPreparedByName={currentUserName}
+          allUsers={allUsers}
         />
       )}
     </div>

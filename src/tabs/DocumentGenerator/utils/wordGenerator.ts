@@ -378,11 +378,11 @@ export const generateDocumentWord = async (params: GenerateWordParams): Promise<
         setCellText(cells[1], version.uploaded_at ? formatDateDDMMYYYY(version.uploaded_at) : '')
       );
       newRowXml = newRowXml.replace(cells[2], setCellText(cells[2], version.note || ''));
-      newRowXml = newRowXml.replace(cells[3], setCellText(cells[3], getInitials(signOff.preparedByName)));
+      newRowXml = newRowXml.replace(cells[3], setCellText(cells[3], signOff.preparedByName || ''));
       newRowXml = newRowXml.replace(cells[4], setCellText(cells[4], signOff.preparedByDate || ''));
-      newRowXml = newRowXml.replace(cells[5], setCellText(cells[5], getInitials(signOff.checkedByName)));
+      newRowXml = newRowXml.replace(cells[5], setCellText(cells[5], signOff.checkedByName || ''));
       newRowXml = newRowXml.replace(cells[6], setCellText(cells[6], signOff.checkedByDate || ''));
-      newRowXml = newRowXml.replace(cells[7], setCellText(cells[7], getInitials(signOff.approvedByName)));
+      newRowXml = newRowXml.replace(cells[7], setCellText(cells[7], signOff.approvedByName || ''));
       newRowXml = newRowXml.replace(cells[8], setCellText(cells[8], signOff.approvedByDate || ''));
 
       newTableXml = newTableXml.replace(rowXml, newRowXml);

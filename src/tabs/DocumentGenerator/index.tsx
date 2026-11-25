@@ -328,6 +328,7 @@ export const DocumentGenerator: React.FC<DocumentGeneratorProps> = ({ currentUse
           onViewDocument={handleViewDocument}
           token={token}
           currentUserName={currentUser.name}
+          allUsers={allUsers}
         />
       )}
 

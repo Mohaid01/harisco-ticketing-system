@@ -103,8 +103,8 @@ export const useDocumentGenerator = ({ currentUser, token }: UseDocumentGenerato
       checkedByName: signOff.checkedByName,
       approvedByName: signOff.approvedByName,
       preparedByDate: signOff.preparedByDate || todayIso,
-      checkedByDate: signOff.checkedByDate || todayIso,
-      approvedByDate: signOff.approvedByDate || todayIso,
+      checkedByDate: signOff.checkedByName.trim() ? signOff.checkedByDate || todayIso : '',
+      approvedByDate: signOff.approvedByName.trim() ? signOff.approvedByDate || todayIso : '',
       docDate: todayIso,
       contentJson: JSON.stringify(content),
     };

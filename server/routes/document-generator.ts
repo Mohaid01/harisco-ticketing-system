@@ -15,14 +15,6 @@ import { mergeRevisionTable, type RevisionTableRow } from '../utils/revisionTabl
 const router = Router();
 const SCREEN_NAME = 'document_generator';
 
-const getInitials = (name: string | null | undefined): string => {
-  if (!name) return '';
-  return name
-    .split(' ')
-    .map((part) => part.charAt(0).toUpperCase())
-    .join('');
-};
-
 const formatDateDDMMYYYY = (isoDate: string | null | undefined): string => {
   if (!isoDate) return '';
   const d = new Date(isoDate);
@@ -549,11 +541,11 @@ router.post(
           revision: v.revision,
           date: formatDateDDMMYYYY(v.uploaded_at),
           note: v.note || '',
-          preparedInitials: getInitials(v.prepared_by_name),
+          preparedInitials: v.prepared_by_name || '',
           preparedDate: v.prepared_by_date || '',
-          checkedInitials: getInitials(v.checked_by_name),
+          checkedInitials: v.checked_by_name || '',
           checkedDate: v.checked_by_date || '',
-          approvedInitials: getInitials(v.approved_by_name),
+          approvedInitials: v.approved_by_name || '',
           approvedDate: v.approved_by_date || '',
         }));
 
