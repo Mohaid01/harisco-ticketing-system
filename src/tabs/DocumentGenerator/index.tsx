@@ -13,6 +13,45 @@ import './DocumentGenerator.css';
 
 type SubTab = 'registry' | 'access';
 
+const triggerBlobDownload = (blob: Blob, fileName: string) => {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
+
+/**
+ * Download the newest stored revision file (one that was uploaded and merged
+ * server-side, preserving page-2+ content). Returns true if a stored file was
+ * served, false when there is none (caller should regenerate from template).
+ */
+const tryDownloadStoredVersion = async (
+  docId: string,
+  versions: DocumentVersion[],
+  documentNo: string,
+  token: string
+): Promise<boolean> => {
+  const latestStored = [...versions].reverse().find((v) => v.file_path && v.file_path.trim() !== '');
+  if (!latestStored) return false;
+  try {
+    const res = await fetch(
+      `/api/document-generator/documents/${docId}/versions/${latestStored.id}/download`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    if (!res.ok) return false;
+    const blob = await res.blob();
+    const safeRev = (latestStored.revision || '').trim() || 'Rev 00';
+    triggerBlobDownload(blob, `${documentNo} - ${safeRev}.docx`);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 export const DocumentGenerator: React.FC<DocumentGeneratorProps> = ({ currentUser, token, allUsers }) => {
   const [activeSubTab, setActiveSubTab] = useState<SubTab>('registry');
   const [newDocumentOpen, setNewDocumentOpen] = useState<boolean>(false);
@@ -87,6 +126,14 @@ export const DocumentGenerator: React.FC<DocumentGeneratorProps> = ({ currentUse
         versions = [];
       }
 
+      // Prefer the stored (uploaded + merged) file so page-2+ content is preserved.
+      const servedStored = await tryDownloadStoredVersion(doc.id, versions, doc.documentId, token);
+      if (servedStored) {
+        refreshDocuments();
+        setNewDocumentOpen(false);
+        return;
+      }
+
       const bytes = await generateDocumentWord({
         documentId: doc.documentId,
         revision: doc.revision,
@@ -102,7 +149,7 @@ export const DocumentGenerator: React.FC<DocumentGeneratorProps> = ({ currentUse
         versions,
       });
 
-      downloadWordBlob(bytes, doc.documentId);
+      downloadWordBlob(bytes, `${doc.documentId} - ${doc.revision}`);
       refreshDocuments();
       setNewDocumentOpen(false);
     } catch (err: unknown) {
@@ -112,35 +159,59 @@ export const DocumentGenerator: React.FC<DocumentGeneratorProps> = ({ currentUse
     }
   };
 
-  const handleDownloadWordFromRegistry = async (record: GeneratedDocumentRecord) => {
+  const buildTemplateBytes = async (record: GeneratedDocumentRecord, versions: DocumentVersion[]) => {
+    let parsedContent: { title: string; description: string; appendixNumber: string; formNumber: string } = {
+      title: '',
+      description: '',
+      appendixNumber: '',
+      formNumber: '',
+    };
     try {
-      let parsedContent: { title: string; description: string; appendixNumber: string; formNumber: string } = {
-        title: '',
-        description: '',
-        appendixNumber: '',
-        formNumber: '',
-      };
-      try {
-        if (record.content_json) {
-          const parsed = JSON.parse(record.content_json) as {
-            title?: string;
-            description?: string;
-            appendixNumber?: string;
-            formNumber?: string;
-          };
-          parsedContent = {
-            title: parsed.title ?? record.title,
-            description: parsed.description ?? '',
-            appendixNumber: parsed.appendixNumber ?? '',
-            formNumber: parsed.formNumber ?? '',
-          };
-        } else {
-          parsedContent = { title: record.title, description: '', appendixNumber: '', formNumber: '' };
-        }
-      } catch {
+      if (record.content_json) {
+        const parsed = JSON.parse(record.content_json) as {
+          title?: string;
+          description?: string;
+          appendixNumber?: string;
+          formNumber?: string;
+        };
+        parsedContent = {
+          title: parsed.title ?? record.title,
+          description: parsed.description ?? '',
+          appendixNumber: parsed.appendixNumber ?? '',
+          formNumber: parsed.formNumber ?? '',
+        };
+      } else {
         parsedContent = { title: record.title, description: '', appendixNumber: '', formNumber: '' };
       }
+    } catch {
+      parsedContent = { title: record.title, description: '', appendixNumber: '', formNumber: '' };
+    }
 
+    return generateDocumentWord({
+      documentId: record.document_id,
+      revision: record.revision,
+      entityCode: record.entity_code,
+      departmentCode: record.department_code,
+      docTypeCode: record.doc_type_code,
+      docDate: record.doc_date,
+      title: record.title,
+      appendixNumber: parsedContent.appendixNumber,
+      formNumber: parsedContent.formNumber,
+      content: parsedContent,
+      signOff: {
+        preparedByName: record.prepared_by_name,
+        checkedByName: record.checked_by_name || '',
+        approvedByName: record.approved_by_name || '',
+        preparedByDate: record.prepared_by_date || '',
+        checkedByDate: record.checked_by_date || '',
+        approvedByDate: record.approved_by_date || '',
+      },
+      versions,
+    });
+  };
+
+  const handleDownloadWordFromRegistry = async (record: GeneratedDocumentRecord) => {
+    try {
       // Fetch revision versions for the revision table in Word
       let versions: DocumentVersion[] = [];
       try {
@@ -155,33 +226,39 @@ export const DocumentGenerator: React.FC<DocumentGeneratorProps> = ({ currentUse
         versions = [];
       }
 
-      const bytes = await generateDocumentWord({
-        documentId: record.document_id,
-        revision: record.revision,
-        entityCode: record.entity_code,
-        departmentCode: record.department_code,
-        docTypeCode: record.doc_type_code,
-        docDate: record.doc_date,
-        title: record.title,
-        appendixNumber: parsedContent.appendixNumber,
-        formNumber: parsedContent.formNumber,
-        content: parsedContent,
-        signOff: {
-          preparedByName: record.prepared_by_name,
-          checkedByName: record.checked_by_name || '',
-          approvedByName: record.approved_by_name || '',
-          preparedByDate: record.prepared_by_date || '',
-          checkedByDate: record.checked_by_date || '',
-          approvedByDate: record.approved_by_date || '',
-        },
-        versions,
-      });
+      // Prefer the stored (uploaded + merged) file so page-2+ content is preserved.
+      const servedStored = await tryDownloadStoredVersion(record.id, versions, record.document_id, token);
+      if (servedStored) return;
 
-      downloadWordBlob(bytes, record.document_id);
+      const bytes = await buildTemplateBytes(record, versions);
+      downloadWordBlob(bytes, `${record.document_id} - ${record.revision}`);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Unknown error generating Word document';
       alert('Word generation failed: ' + msg);
       console.error('Failed to download existing document Word:', err);
+    }
+  };
+
+  const handleDownloadVersion = async (record: GeneratedDocumentRecord, version: DocumentVersion) => {
+    try {
+      const safeRev = (version.revision || '').trim() || record.revision;
+      if (version.file_path && version.file_path.trim() !== '') {
+        const res = await fetch(
+          `/api/document-generator/documents/${record.id}/versions/${version.id}/download`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (!res.ok) throw new Error('Failed to download revision file.');
+        const blob = await res.blob();
+        triggerBlobDownload(blob, `${record.document_id} - ${safeRev}.docx`);
+        return;
+      }
+      // No stored file (e.g. the draft): regenerate from template with this revision only.
+      const bytes = await buildTemplateBytes(record, []);
+      downloadWordBlob(bytes, `${record.document_id} - ${safeRev}`);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Unknown error downloading revision';
+      alert('Download failed: ' + msg);
+      console.error('Failed to download revision:', err);
     }
   };
 
@@ -248,9 +325,9 @@ export const DocumentGenerator: React.FC<DocumentGeneratorProps> = ({ currentUse
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
           onRefresh={refreshDocuments}
-          onDownloadWord={handleDownloadWordFromRegistry}
           onViewDocument={handleViewDocument}
           token={token}
+          currentUserName={currentUser.name}
         />
       )}
 
@@ -296,6 +373,8 @@ export const DocumentGenerator: React.FC<DocumentGeneratorProps> = ({ currentUse
           onClose={() => setDetailDocId(null)}
           document={documents.find((d) => d.id === detailDocId) || null}
           token={token}
+          onDownloadLatest={handleDownloadWordFromRegistry}
+          onDownloadVersion={handleDownloadVersion}
         />
       )}
     </div>

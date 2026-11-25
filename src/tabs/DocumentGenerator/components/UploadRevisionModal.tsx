@@ -13,6 +13,7 @@ interface UploadRevisionModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  defaultPreparedByName?: string;
 }
 
 export const UploadRevisionModal: React.FC<UploadRevisionModalProps> = ({
@@ -21,15 +22,24 @@ export const UploadRevisionModal: React.FC<UploadRevisionModalProps> = ({
   isOpen,
   onClose,
   onSuccess,
+  defaultPreparedByName,
 }) => {
   const currentRev = document.revision || 'Rev 00';
   const defaultRev = currentRev.startsWith('Rev 0')
     ? `Rev 0${parseInt(currentRev.replace('Rev 0', ''), 10) + 1}`
     : 'Rev 01';
 
+  const todayIso = new Date().toISOString().split('T')[0];
+
   const [revision, setRevision] = useState(defaultRev);
   const [file, setFile] = useState<File | null>(null);
   const [note, setNote] = useState('');
+  const [preparedByName, setPreparedByName] = useState(defaultPreparedByName || '');
+  const [checkedByName, setCheckedByName] = useState('');
+  const [approvedByName, setApprovedByName] = useState('');
+  const [preparedByDate, setPreparedByDate] = useState(todayIso);
+  const [checkedByDate, setCheckedByDate] = useState(todayIso);
+  const [approvedByDate, setApprovedByDate] = useState(todayIso);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -45,8 +55,8 @@ export const UploadRevisionModal: React.FC<UploadRevisionModalProps> = ({
 
     if (file) {
       const ext = file.name.split('.').pop()?.toLowerCase();
-      if (ext !== 'doc' && ext !== 'docx') {
-        setError('Only .doc and .docx files are allowed.');
+      if (ext !== 'docx') {
+        setError('Only .docx files are allowed.');
         return;
       }
 
@@ -56,6 +66,19 @@ export const UploadRevisionModal: React.FC<UploadRevisionModalProps> = ({
       }
     }
 
+    if (!preparedByName.trim()) {
+      setError('Prepared By is required.');
+      return;
+    }
+    if (checkedByName.trim() && !checkedByDate) {
+      setError('Checked Date is required when Checked By is provided.');
+      return;
+    }
+    if (approvedByName.trim() && !approvedByDate) {
+      setError('Approved Date is required when Approved By is provided.');
+      return;
+    }
+
     setUploading(true);
 
     try {
@@ -63,6 +86,12 @@ export const UploadRevisionModal: React.FC<UploadRevisionModalProps> = ({
       if (file) formData.append('file', file);
       if (revision) formData.append('revision', revision);
       if (note) formData.append('note', note);
+      formData.append('prepared_by_name', preparedByName.trim());
+      formData.append('checked_by_name', checkedByName.trim());
+      formData.append('approved_by_name', approvedByName.trim());
+      formData.append('prepared_by_date', preparedByDate);
+      formData.append('checked_by_date', checkedByName.trim() ? checkedByDate : '');
+      formData.append('approved_by_date', approvedByName.trim() ? approvedByDate : '');
 
       const res = await fetch(`/api/document-generator/documents/${document.id}/upload`, {
         method: 'POST',
@@ -88,6 +117,13 @@ export const UploadRevisionModal: React.FC<UploadRevisionModalProps> = ({
   };
 
   if (!isOpen) return null;
+
+  const labelStyle: React.CSSProperties = {
+    fontSize: '0.78rem',
+    textTransform: 'uppercase',
+    display: 'block',
+    marginBottom: '0.3rem',
+  };
 
   return (
     <div
@@ -138,10 +174,7 @@ export const UploadRevisionModal: React.FC<UploadRevisionModalProps> = ({
         </div>
 
         <div style={{ marginBottom: '0.85rem' }}>
-          <label
-            className="docgen-label"
-            style={{ fontSize: '0.78rem', textTransform: 'uppercase', display: 'block', marginBottom: '0.3rem' }}
-          >
+          <label className="docgen-label" style={labelStyle}>
             Document ID
           </label>
           <input
@@ -154,10 +187,7 @@ export const UploadRevisionModal: React.FC<UploadRevisionModalProps> = ({
         </div>
 
         <div style={{ marginBottom: '0.85rem' }}>
-          <label
-            className="docgen-label"
-            style={{ fontSize: '0.78rem', textTransform: 'uppercase', display: 'block', marginBottom: '0.3rem' }}
-          >
+          <label className="docgen-label" style={labelStyle}>
             Current Revision
           </label>
           <input
@@ -170,10 +200,7 @@ export const UploadRevisionModal: React.FC<UploadRevisionModalProps> = ({
         </div>
 
         <div style={{ marginBottom: '0.85rem' }}>
-          <label
-            className="docgen-label"
-            style={{ fontSize: '0.78rem', textTransform: 'uppercase', display: 'block', marginBottom: '0.3rem' }}
-          >
+          <label className="docgen-label" style={labelStyle}>
             New Revision
           </label>
           <select className="form-input" value={revision} onChange={(e) => setRevision(e.target.value)}>
@@ -186,26 +213,20 @@ export const UploadRevisionModal: React.FC<UploadRevisionModalProps> = ({
         </div>
 
         <div style={{ marginBottom: '0.85rem' }}>
-          <label
-            className="docgen-label"
-            style={{ fontSize: '0.78rem', textTransform: 'uppercase', display: 'block', marginBottom: '0.3rem' }}
-          >
-            File (.doc / .docx, max 15 MB) (optional)
+          <label className="docgen-label" style={labelStyle}>
+            File (.docx, max 15 MB) (optional)
           </label>
           <input
             type="file"
             className="form-input"
-            accept=".doc,.docx"
+            accept=".docx"
             onChange={handleFileChange}
             style={{ padding: '0.4rem' }}
           />
         </div>
 
         <div style={{ marginBottom: '0.85rem' }}>
-          <label
-            className="docgen-label"
-            style={{ fontSize: '0.78rem', textTransform: 'uppercase', display: 'block', marginBottom: '0.3rem' }}
-          >
+          <label className="docgen-label" style={labelStyle}>
             Change Note (optional)
           </label>
           <textarea
@@ -214,6 +235,81 @@ export const UploadRevisionModal: React.FC<UploadRevisionModalProps> = ({
             onChange={(e) => setNote(e.target.value)}
             rows={3}
             placeholder="Describe what changed in this revision..."
+          />
+        </div>
+
+        <div style={{ marginBottom: '0.85rem' }}>
+          <label className="docgen-label" style={labelStyle}>
+            Prepared By
+          </label>
+          <input
+            type="text"
+            className="form-input"
+            value={preparedByName}
+            onChange={(e) => setPreparedByName(e.target.value)}
+            placeholder="Prepared by name"
+          />
+        </div>
+
+        <div style={{ marginBottom: '0.85rem' }}>
+          <label className="docgen-label" style={labelStyle}>
+            Prepared Date
+          </label>
+          <input
+            type="date"
+            className="form-input"
+            value={preparedByDate}
+            onChange={(e) => setPreparedByDate(e.target.value)}
+          />
+        </div>
+
+        <div style={{ marginBottom: '0.85rem' }}>
+          <label className="docgen-label" style={labelStyle}>
+            Checked By
+          </label>
+          <input
+            type="text"
+            className="form-input"
+            value={checkedByName}
+            onChange={(e) => setCheckedByName(e.target.value)}
+            placeholder="Checked by name"
+          />
+        </div>
+
+        <div style={{ marginBottom: '0.85rem' }}>
+          <label className="docgen-label" style={labelStyle}>
+            Checked Date
+          </label>
+          <input
+            type="date"
+            className="form-input"
+            value={checkedByDate}
+            onChange={(e) => setCheckedByDate(e.target.value)}
+          />
+        </div>
+
+        <div style={{ marginBottom: '0.85rem' }}>
+          <label className="docgen-label" style={labelStyle}>
+            Approved By
+          </label>
+          <input
+            type="text"
+            className="form-input"
+            value={approvedByName}
+            onChange={(e) => setApprovedByName(e.target.value)}
+            placeholder="Approved by name"
+          />
+        </div>
+
+        <div style={{ marginBottom: '0.85rem' }}>
+          <label className="docgen-label" style={labelStyle}>
+            Approved Date
+          </label>
+          <input
+            type="date"
+            className="form-input"
+            value={approvedByDate}
+            onChange={(e) => setApprovedByDate(e.target.value)}
           />
         </div>
 

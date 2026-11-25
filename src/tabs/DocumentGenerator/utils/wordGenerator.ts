@@ -74,7 +74,7 @@ export const generateDocumentWord = async (params: GenerateWordParams): Promise<
     '{DocNumber}': formNumber,
     '{docNumber}': formNumber,
     '{FORM_NUMBER}': formNumber,
-    '{Document Number}': formNumber,
+    '{Document Number}': params.documentId,
     '{REVISION}': revision,
     '{Revision}': revision,
     '{revision}': revision,
@@ -140,10 +140,10 @@ export const generateDocumentWord = async (params: GenerateWordParams): Promise<
    * Replace placeholders within each <w:t> text node individually.
    */
   function replaceWithinNodes(xml: string): string {
-    const wTRegex = /<w:t([^>]*)>([\s\S]*?)<\/w:t>/g;
+    const wTRegex = /<w:t(\s[^>]*)?>([\s\S]*?)<\/w:t>/g;
     let matchCount = 0;
     let replacedCount = 0;
-    const result = xml.replace(wTRegex, (_match, attrs, text) => {
+    const result = xml.replace(wTRegex, (_match, attrs = '', text) => {
       matchCount++;
       let newText = text;
       for (const [placeholder, value] of Object.entries(values)) {
@@ -163,7 +163,7 @@ export const generateDocumentWord = async (params: GenerateWordParams): Promise<
    * Replace placeholders that span multiple <w:t> runs.
    */
   function replaceAcrossRuns(xml: string): string {
-    const wTRegex = /<w:t([^>]*)>([\s\S]*?)<\/w:t>/g;
+    const wTRegex = /<w:t(\s[^>]*)?>([\s\S]*?)<\/w:t>/g;
 
     const nodes: Array<{
       openTag: string;
@@ -174,7 +174,7 @@ export const generateDocumentWord = async (params: GenerateWordParams): Promise<
 
     let m: RegExpExecArray | null;
     while ((m = wTRegex.exec(xml)) !== null) {
-      const attrs = m[1];
+      const attrs = m[1] ?? '';
       const text = m[2];
       nodes.push({
         openTag: `<w:t${attrs}>`,
@@ -257,13 +257,43 @@ export const generateDocumentWord = async (params: GenerateWordParams): Promise<
    *   0: Rev, 1: Date, 2: Description, 3: Prepared by initials, 4: Prepared date,
    *   5: Checked by initials, 6: Checked date, 7: Approved by initials, 8: Approved date
    */
-  function injectRevisionRows(xml: string): string {
-    const tblStart = xml.indexOf('<w:tbl>');
-    if (tblStart === -1) return xml;
-    const tblEnd = xml.indexOf('</w:tbl>', tblStart);
-    if (tblEnd === -1) return xml;
+  /**
+   * Locate the revision table within document.xml.
+   * The first <w:tbl> is the title block; the revision table is the one whose
+   * rows include a 9-cell row and that has at least 3 rows (header + data).
+   * Returns the [start, end) offsets of the chosen table, or null.
+   */
+  function findRevisionTable(xml: string): { start: number; end: number } | null {
+    const tableRegex = /<w:tbl[\s\S]*?<\/w:tbl>/g;
+    let fallback: { start: number; end: number } | null = null;
+    let m: RegExpExecArray | null;
+    while ((m = tableRegex.exec(xml)) !== null) {
+      const tableXml = m[0];
+      const rowRegex = /<w:tr[\s\S]*?<\/w:tr>/g;
+      const rows: string[] = [];
+      let r: RegExpExecArray | null;
+      while ((r = rowRegex.exec(tableXml)) !== null) rows.push(r[0]);
+      if (rows.length < 3) continue;
 
-    const tableXml = xml.slice(tblStart, tblEnd + '</w:tbl>'.length);
+      const hasNineCellRow = rows.some((rowXml) => {
+        const cellMatches = rowXml.match(/<w:tc[\s\S]*?<\/w:tc>/g);
+        return cellMatches ? cellMatches.length === 9 : false;
+      });
+
+      if (hasNineCellRow) {
+        return { start: m.index, end: m.index + tableXml.length };
+      }
+      if (!fallback) fallback = { start: m.index, end: m.index + tableXml.length };
+    }
+    return fallback;
+  }
+
+  function injectRevisionRows(xml: string): string {
+    const bounds = findRevisionTable(xml);
+    if (!bounds) return xml;
+    const { start: tblStart, end: tblEnd } = bounds;
+
+    const tableXml = xml.slice(tblStart, tblEnd);
 
     const rowRegex = /<w:tr[\s\S]*?<\/w:tr>/g;
     const rows: string[] = [];
@@ -285,22 +315,36 @@ export const generateDocumentWord = async (params: GenerateWordParams): Promise<
     };
 
     const setCellText = (cellXml: string, value: string): string => {
-      const wTRegex = /<w:t([^>]*)>([\s\S]*?)<\/w:t>/g;
+      const wTRegex = /<w:t(\s[^>]*)?>([\s\S]*?)<\/w:t>/g;
       const hasTextNode = wTRegex.test(cellXml);
-      if (!hasTextNode) {
-        const tcClose = cellXml.indexOf('</w:tc>');
-        if (tcClose === -1) return cellXml;
-        const tcPrClose = cellXml.indexOf('</w:tcPr>');
-        const insertPos = tcPrClose !== -1 ? tcPrClose + '</w:tcPr>'.length : tcClose;
-        return (
-          cellXml.slice(0, insertPos) +
-          `<w:r><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/><w:sz w:val="24"/></w:rPr><w:t xml:space="preserve">${value}</w:t></w:r>` +
-          cellXml.slice(insertPos)
-        );
+      if (hasTextNode) {
+        let firstDone = false;
+        return cellXml.replace(wTRegex, (_match, attrs = '') => {
+          if (!firstDone) {
+            firstDone = true;
+            return `<w:t${attrs}>${value}</w:t>`;
+          }
+          return `<w:t${attrs}></w:t>`;
+        });
       }
-      return cellXml.replace(wTRegex, (_match, attrs) => {
-        return `<w:t${attrs}>${value}</w:t>`;
-      });
+
+      // No text node: inject a run inside the first paragraph (runs must live in a <w:p>).
+      const run = `<w:r><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/><w:b/><w:bCs/><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t xml:space="preserve">${value}</w:t></w:r>`;
+
+      const selfClosing = cellXml.match(/<w:p\b[^>]*\/>/);
+      if (selfClosing) {
+        const pOpen = selfClosing[0].slice(0, -2) + '>';
+        return cellXml.replace(selfClosing[0], pOpen + run + '</w:p>');
+      }
+
+      const pClose = cellXml.indexOf('</w:p>');
+      if (pClose !== -1) {
+        return cellXml.slice(0, pClose) + run + cellXml.slice(pClose);
+      }
+
+      const tcClose = cellXml.indexOf('</w:tc>');
+      if (tcClose === -1) return cellXml;
+      return cellXml.slice(0, tcClose) + `<w:p>${run}</w:p>` + cellXml.slice(tcClose);
     };
 
     const revisionRows: Array<{ revision: string; uploaded_at: string; note: string | null }> = [];
@@ -322,7 +366,7 @@ export const generateDocumentWord = async (params: GenerateWordParams): Promise<
       if (rowIdx >= rows.length) break;
 
       const version = revisionRows[v];
-      const rowXml = rows[v];
+      const rowXml = rows[rowIdx];
       const cells = getCells(rowXml);
 
       if (cells.length < 9) continue;
@@ -344,10 +388,10 @@ export const generateDocumentWord = async (params: GenerateWordParams): Promise<
       newTableXml = newTableXml.replace(rowXml, newRowXml);
     }
 
-    return xml.slice(0, tblStart) + newTableXml + xml.slice(tblEnd + '</w:tbl>'.length);
+    return xml.slice(0, tblStart) + newTableXml + xml.slice(tblEnd);
   }
 
-  const templateUrl = new URL('../assets/word-new-template.docx', import.meta.url).href;
+  const templateUrl = new URL('../assets/document-template.docx', import.meta.url).href;
   console.log(`[WordGenerator] Template URL: ${templateUrl}`);
 
   const response = await fetch(templateUrl);

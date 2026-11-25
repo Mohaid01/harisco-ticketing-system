@@ -930,12 +930,39 @@ export async function initDb() {
       uploaded_by TEXT NOT NULL,
       uploaded_at TEXT NOT NULL,
       note TEXT,
+      prepared_by_name TEXT,
+      checked_by_name TEXT,
+      approved_by_name TEXT,
+      prepared_by_date TEXT,
+      checked_by_date TEXT,
+      approved_by_date TEXT,
       FOREIGN KEY (document_id) REFERENCES generated_documents(id) ON DELETE CASCADE
     )
   `);
 
   await db.exec('CREATE INDEX IF NOT EXISTS idx_doc_versions_document ON document_versions(document_id)');
   await db.exec('CREATE INDEX IF NOT EXISTS idx_doc_versions_revision ON document_versions(revision)');
+
+  // Self-healing migration: add sign-off columns to existing document_versions tables
+  try {
+    const docVerCols = await db.all<{ name: string }[]>('PRAGMA table_info(document_versions)');
+    const docVerColNames = docVerCols.map((c) => c.name);
+    const requiredVersionCols: Record<string, string> = {
+      prepared_by_name: 'TEXT',
+      checked_by_name: 'TEXT',
+      approved_by_name: 'TEXT',
+      prepared_by_date: 'TEXT',
+      checked_by_date: 'TEXT',
+      approved_by_date: 'TEXT',
+    };
+    for (const [colName, colType] of Object.entries(requiredVersionCols)) {
+      if (!docVerColNames.includes(colName)) {
+        await db.exec(`ALTER TABLE document_versions ADD COLUMN ${colName} ${colType}`);
+      }
+    }
+  } catch {
+    // Table may not exist yet or already has all columns
+  }
 
   // Self-healing migration: add sign-off date columns to existing generated_documents tables
   try {

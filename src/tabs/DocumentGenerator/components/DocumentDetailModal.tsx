@@ -19,9 +19,18 @@ interface DocumentDetailModalProps {
   onClose: () => void;
   document: GeneratedDocumentRecord | null;
   token: string;
+  onDownloadLatest: (doc: GeneratedDocumentRecord) => void;
+  onDownloadVersion: (doc: GeneratedDocumentRecord, version: DocumentVersion) => void;
 }
 
-export const DocumentDetailModal: React.FC<DocumentDetailModalProps> = ({ isOpen, onClose, document, token }) => {
+export const DocumentDetailModal: React.FC<DocumentDetailModalProps> = ({
+  isOpen,
+  onClose,
+  document,
+  token,
+  onDownloadLatest,
+  onDownloadVersion,
+}) => {
   const [versions, setVersions] = useState<DocumentVersion[]>([]);
 
   useEffect(() => {
@@ -170,6 +179,9 @@ export const DocumentDetailModal: React.FC<DocumentDetailModalProps> = ({ isOpen
                     <th style={{ padding: '0.4rem', color: 'var(--text-muted)', fontWeight: 600 }}>Revision</th>
                     <th style={{ padding: '0.4rem', color: 'var(--text-muted)', fontWeight: 600 }}>Change Note</th>
                     <th style={{ padding: '0.4rem', color: 'var(--text-muted)', fontWeight: 600 }}>Uploaded At</th>
+                    <th style={{ padding: '0.4rem', color: 'var(--text-muted)', fontWeight: 600, textAlign: 'right' }}>
+                      Download
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -179,6 +191,16 @@ export const DocumentDetailModal: React.FC<DocumentDetailModalProps> = ({ isOpen
                       <td style={{ padding: '0.4rem', color: 'var(--text-secondary)' }}>{v.note || '-'}</td>
                       <td style={{ padding: '0.4rem', color: 'var(--text-secondary)' }}>
                         {new Date(v.uploaded_at).toLocaleDateString()}
+                      </td>
+                      <td style={{ padding: '0.4rem', textAlign: 'right' }}>
+                        <button
+                          type="button"
+                          className="docgen-btn docgen-btn-primary"
+                          style={{ padding: '0.2rem 0.5rem', fontSize: '0.72rem' }}
+                          onClick={() => document && onDownloadVersion(document, v)}
+                        >
+                          Download
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -259,7 +281,14 @@ export const DocumentDetailModal: React.FC<DocumentDetailModalProps> = ({ isOpen
           </table>
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.65rem', marginTop: '1rem' }}>
+          <button
+            type="button"
+            className="docgen-btn docgen-btn-primary"
+            onClick={() => document && onDownloadLatest(document)}
+          >
+            Download Latest
+          </button>
           <button type="button" className="docgen-btn docgen-btn-secondary" onClick={onClose}>
             Close
           </button>

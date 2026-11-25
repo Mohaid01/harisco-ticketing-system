@@ -19,9 +19,9 @@ interface DocumentRegistryTableProps {
   searchQuery: string;
   setSearchQuery: (val: string) => void;
   onRefresh: () => void;
-  onDownloadWord: (doc: GeneratedDocumentRecord) => void;
   onViewDocument: (doc: GeneratedDocumentRecord) => void;
   token: string;
+  currentUserName: string;
 }
 
 export const DocumentRegistryTable: React.FC<DocumentRegistryTableProps> = ({
@@ -38,9 +38,9 @@ export const DocumentRegistryTable: React.FC<DocumentRegistryTableProps> = ({
   searchQuery,
   setSearchQuery,
   onRefresh,
-  onDownloadWord,
   onViewDocument,
   token,
+  currentUserName,
 }) => {
   const [uploadDoc, setUploadDoc] = useState<{
     id: string;
@@ -186,14 +186,6 @@ export const DocumentRegistryTable: React.FC<DocumentRegistryTableProps> = ({
                   <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                     <button
                       type="button"
-                      className="docgen-btn docgen-btn-primary"
-                      style={{ padding: '0.25rem 0.55rem', fontSize: '0.75rem', marginRight: '0.4rem' }}
-                      onClick={() => onDownloadWord(doc)}
-                    >
-                      Download
-                    </button>
-                    <button
-                      type="button"
                       className="docgen-btn docgen-btn-secondary"
                       style={{ padding: '0.25rem 0.55rem', fontSize: '0.75rem', marginRight: '0.4rem' }}
                       onClick={() => handleOpenUpload(doc)}
@@ -223,6 +215,7 @@ export const DocumentRegistryTable: React.FC<DocumentRegistryTableProps> = ({
           isOpen={uploadOpen}
           onClose={() => setUploadOpen(false)}
           onSuccess={handleUploadSuccess}
+          defaultPreparedByName={currentUserName}
         />
       )}
     </div>

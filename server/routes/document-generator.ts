@@ -10,9 +10,28 @@ import { DEPARTMENTS, DOC_PREFIX, DOCUMENT_TYPES, ENTITIES } from '../constants/
 import { getDb } from '../db.ts';
 import { authenticateToken } from '../middleware/auth.ts';
 import logger from '../utils/logger.ts';
+import { mergeRevisionTable, type RevisionTableRow } from '../utils/revisionTable.ts';
 
 const router = Router();
 const SCREEN_NAME = 'document_generator';
+
+const getInitials = (name: string | null | undefined): string => {
+  if (!name) return '';
+  return name
+    .split(' ')
+    .map((part) => part.charAt(0).toUpperCase())
+    .join('');
+};
+
+const formatDateDDMMYYYY = (isoDate: string | null | undefined): string => {
+  if (!isoDate) return '';
+  const d = new Date(isoDate);
+  if (isNaN(d.getTime())) return isoDate;
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  return `${day}-${month}-${year}`;
+};
 
 // Ensure upload directory exists
 const UPLOAD_DIR = path.resolve(process.cwd(), 'uploads', 'documents');
@@ -36,10 +55,10 @@ const upload = multer({
   limits: { fileSize: 15 * 1024 * 1024 }, // 15 MB
   fileFilter: (_req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
-    if (ext === '.doc' || ext === '.docx') {
+    if (ext === '.docx') {
       cb(null, true);
     } else {
-      cb(new Error('Only .doc and .docx files are allowed.'));
+      cb(new Error('Only .docx files are allowed.'));
     }
   },
 });
@@ -236,6 +255,44 @@ router.post('/generate', authenticateToken, async (req: ApiAuthRequest<GenerateR
     );
 
     logger.info('CHECKPOINT 5');
+
+    // Persist the draft as the first revision so the revision table can always
+    // be reconstructed (newest first) on subsequent uploads.
+    let draftNote = title.trim();
+    try {
+      const parsed = contentJson ? JSON.parse(contentJson) : null;
+      if (parsed && typeof parsed.description === 'string' && parsed.description.trim()) {
+        draftNote = parsed.description.trim();
+      }
+    } catch {
+      // intentional: fall back to title as the draft note
+    }
+
+    await db.run(
+      `INSERT INTO document_versions (
+        id, document_id, revision, file_name, file_path, file_size,
+        uploaded_by, uploaded_at, note,
+        prepared_by_name, checked_by_name, approved_by_name,
+        prepared_by_date, checked_by_date, approved_by_date
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        crypto.randomUUID(),
+        docUuid,
+        revision,
+        `${documentId}.docx`,
+        '',
+        0,
+        user.id,
+        nowIso,
+        draftNote,
+        preparedByName?.trim() || user.name,
+        checkedByName?.trim() || null,
+        approvedByName?.trim() || null,
+        preparedByDate || null,
+        checkedByDate || null,
+        approvedByDate || null,
+      ]
+    );
 
     await db.exec('COMMIT');
 
@@ -440,7 +497,10 @@ router.post(
 
       const nowIso = new Date().toISOString();
 
-      // If a file was uploaded, store it as a new version
+      let mergedSize = 0;
+
+      // If a file was uploaded, store it as a new version and rebuild the
+      // revision table inside it (newest revision on top, draft last).
       if (file) {
         const versionId = crypto.randomUUID();
         const relativePath = path.relative(process.cwd(), file.path);
@@ -470,6 +530,48 @@ router.post(
             approved_by_date ?? null,
           ]
         );
+
+        const versionRows = await db.all<
+          Array<{
+            revision: string;
+            uploaded_at: string;
+            note: string | null;
+            prepared_by_name: string | null;
+            prepared_by_date: string | null;
+            checked_by_name: string | null;
+            checked_by_date: string | null;
+            approved_by_name: string | null;
+            approved_by_date: string | null;
+          }>
+        >(`SELECT * FROM document_versions WHERE document_id = ? ORDER BY uploaded_at DESC`, [existing.id]);
+
+        const tableRows: RevisionTableRow[] = versionRows.map((v) => ({
+          revision: v.revision,
+          date: formatDateDDMMYYYY(v.uploaded_at),
+          note: v.note || '',
+          preparedInitials: getInitials(v.prepared_by_name),
+          preparedDate: v.prepared_by_date || '',
+          checkedInitials: getInitials(v.checked_by_name),
+          checkedDate: v.checked_by_date || '',
+          approvedInitials: getInitials(v.approved_by_name),
+          approvedDate: v.approved_by_date || '',
+        }));
+
+        try {
+          const originalBuffer = fs.readFileSync(file.path);
+          const mergedBuffer = await mergeRevisionTable(originalBuffer, tableRows);
+          fs.writeFileSync(file.path, mergedBuffer);
+          mergedSize = mergedBuffer.length;
+          await db.run(`UPDATE document_versions SET file_size = ? WHERE id = ?`, [mergedSize, versionId]);
+        } catch (mergeErr) {
+          logger.error('[docgen] Failed to merge revision table:', mergeErr);
+          try {
+            fs.unlinkSync(file.path);
+          } catch {
+            // intentional: file cleanup is best-effort
+          }
+          return res.status(500).json({ error: 'Failed to merge revision table into uploaded document.' });
+        }
       }
 
       // Update generated_documents to latest revision
@@ -488,7 +590,7 @@ router.post(
         revision: nextRevision,
         file_name: file ? file.originalname : null,
         file_path: file ? path.relative(process.cwd(), file.path) : null,
-        file_size: file ? file.size : 0,
+        file_size: file ? mergedSize : 0,
         uploaded_by: user.id,
         uploaded_at: nowIso,
       });
